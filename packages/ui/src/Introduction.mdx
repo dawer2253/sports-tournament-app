@@ -36,6 +36,13 @@ Kolory jako zmienne CSS w przestrzeni **oklch** (Tailwind v4, `@theme inline`), 
 
 Zmiana motywu = podmiana bloków `:root` / `.dark` w `src/index.css` (np. eksport z tweakcn).
 
+## Decyzje projektowe (design)
+Ustalenia obowiązujące w całym UI — realizowane komponentami, nie kopiowaniem klas:
+- **Font główny: IBM Plex Sans** (`--font-sans`). Charakter „inżynierski", nie-generyczny.
+- **Tytuł strony (H1) zawsze WERSALIKAMI** — przez komponent `Heading` (poziom `page`). Nie używamy surowego `<h1>` ani ręcznego `uppercase` na ekranach. Zob. „UI · Heading".
+- **Badge kanciaste** — `rounded-[3px]`, równa wysokość, `font-semibold` + `tracking-wide` (bez „pigułek"). Zob. „UI · Badge".
+- **Kolory tylko z tokenów** motywu northern-lights (oklch); akcent publiczny przez `--brand`.
+
 ## Jak pisać specki
 Dla każdego ekranu twórz plik `*.mdx` obok `*.stories.tsx` i opisz: **Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania**.
 Wzór: „Ekrany · Public · Tabela" lub „Ekrany · Admin · Drabinka".

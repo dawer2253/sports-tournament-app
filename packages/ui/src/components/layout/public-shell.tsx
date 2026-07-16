@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Heading } from '@/components/ui/typography'
 import { tournament } from '@/lib/demo-data'
 
 export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'bracket' | 'scorers'
@@ -28,7 +29,7 @@ export function PublicShell({ active, children, live = true }: PublicShellProps)
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 pb-5 pt-8">
           <div className="grid size-14 place-items-center rounded-xl bg-white/15 text-3xl backdrop-blur">⚽</div>
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-extrabold uppercase tracking-tight">{tournament.name}</h1>
+            <Heading className="truncate font-extrabold text-current">{tournament.name}</Heading>
             <p className="text-sm text-brand-foreground/80">
               {tournament.season} · {tournament.teamsCount} drużyn · {tournament.sport}
             </p>

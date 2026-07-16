@@ -1,0 +1,37 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './typography.stories'
+
+<Meta of={Stories} />
+
+# Heading — nagłówki
+
+Komponent typografii nagłówków. Reguły stylu nagłówków żyją w jednym miejscu (`components/ui/typography.tsx`), żeby żaden ekran nie mógł ich złamać przypadkiem — nie używamy surowych `<h1>`/`<h2>` w ekranach.
+
+<Canvas of={Stories.Wszystkie} />
+
+## Poziomy
+| `level` | Znacznik | Zastosowanie | Styl |
+|---|---|---|---|
+| `page` (domyślny) | `h1` | tytuł strony/turnieju | **ZAWSZE WERSALIKI**, `text-2xl font-bold` |
+| `section` | `h2` | nagłówek sekcji | `text-lg font-semibold` |
+| `card` | `h3` | tytuł karty | `text-base font-semibold` |
+
+## Zasady
+- **Tytuł strony (H1) jest zawsze pisany wersalikami** — to decyzja projektowa, wymuszona w wariancie `page`. Nie ustawiaj `uppercase` ręcznie na ekranach.
+- Używaj `Heading`, nie surowego `<h1>`/`<h2>`. Do zmiany samego znacznika (semantyka) bez zmiany wyglądu użyj `as` (np. `<Heading level="page" as="h2">`).
+- Nagłówki dziedziczą font główny **IBM Plex Sans** (`--font-sans`).
+
+## Użycie
+```tsx
+import { Heading } from '@/components/ui/typography'
+
+<Heading>Liga Osiedlowa 2026</Heading>            {/* H1, wersaliki */}
+<Heading level="section">Najbliższe mecze</Heading> {/* H2 */}
+<Heading level="card">Ustawienia ligi</Heading>     {/* H3 */}
+```
+
+`AdminShell` i `PublicShell` już używają `Heading` dla tytułu strony.
+
+## Otwarte pytania
+- Czy dodać poziom `display` (większy, pod duże ekrany publiczne/telebim)?
+- Czy tytuły kart też mają być wersalikami, czy tylko H1 strony?
