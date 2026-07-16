@@ -28,7 +28,7 @@ export function PublicShell({ active, children, live = true }: PublicShellProps)
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 pb-5 pt-8">
           <div className="grid size-14 place-items-center rounded-xl bg-white/15 text-3xl backdrop-blur">⚽</div>
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-extrabold tracking-tight">{tournament.name}</h1>
+            <h1 className="truncate text-2xl font-extrabold uppercase tracking-tight">{tournament.name}</h1>
             <p className="text-sm text-brand-foreground/80">
               {tournament.season} · {tournament.teamsCount} drużyn · {tournament.sport}
             </p>

@@ -95,7 +95,7 @@ export function AdminShell({ active, title, subtitle, actions, children }: Admin
 
         <div className="flex flex-col gap-1 border-b px-6 py-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-tight">{title}</h1>
             {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           {actions && <div className="flex gap-2 sm:ml-auto">{actions}</div>}
