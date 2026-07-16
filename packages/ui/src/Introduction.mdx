@@ -38,7 +38,7 @@ Zmiana motywu = podmiana bloków `:root` / `.dark` w `src/index.css` (np. ekspor
 
 ## Decyzje projektowe (design)
 Ustalenia obowiązujące w całym UI — realizowane komponentami, nie kopiowaniem klas:
-- **Font główny: IBM Plex Sans** (`--font-sans`). Charakter „inżynierski", nie-generyczny.
+- **Font główny: Inter** (`--font-sans`). Czysty, neutralny, bardzo dobra czytelność i polskie znaki.
 - **Tytuł strony (H1) zawsze WERSALIKAMI** — przez komponent `Heading` (poziom `page`). Nie używamy surowego `<h1>` ani ręcznego `uppercase` na ekranach. Zob. „UI · Heading".
 - **Badge kanciaste** — `rounded-[3px]`, równa wysokość, `font-semibold` + `tracking-wide` (bez „pigułek"). Zob. „UI · Badge".
 - **Kolory tylko z tokenów** motywu northern-lights (oklch); akcent publiczny przez `--brand`.
