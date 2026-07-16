@@ -1,0 +1,40 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './public-home.stories'
+
+<Meta of={Stories} />
+
+# Public · Przegląd turnieju — specyfikacja
+
+Publiczny, read-only ekran startowy turnieju (dostępny po `slug`, np. `/t/liga-osiedlowa`). Skrót najważniejszych informacji: co się teraz dzieje, kto prowadzi w tabeli i kto strzela gole.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Dać kibicowi jeden rzut oka na stan rozgrywek: trwające i najbliższe mecze, czołówkę tabeli oraz króla strzelców — bez logowania i bez wchodzenia w podstrony.
+
+## Dane (wejście)
+- **Mecze** — `fixtures` o statusie `live` lub `scheduled` (godzina, boisko, drużyny). Zakończone mecze pomijamy.
+- **Tabela (skrót)** — pierwsze 5 pozycji z `standings` (pozycja, monogram drużyny, nazwa, punkty).
+- **Strzelcy** — lider (`scorers[0]`) plus kolejnych 3 zawodników z `scorers`.
+- Branding turnieju: kolor wiodący (`--brand`), logo, nazwa — z nagłówka `PublicShell`.
+
+## Reguły
+- Sekcja meczów: `live` przed `scheduled`, w kolejności godziny rozpoczęcia.
+- Mecz `live` oznaczony plakietką „Na żywo" z pulsującą kropką; `scheduled` pokazuje godzinę.
+- Tabela w skrócie sortowana tak samo jak pełna (pkt → tiebreaki turnieju).
+- Król strzelców to pozycja 1 z listy; „gonić" go mogą zawodnicy z tą samą liczbą goli (kolejność wg listy).
+
+## Stany
+- **Domyślny** — mecze `live` i `scheduled`, top 5 tabeli, lider + 3 strzelców (powyżej).
+- **Brak meczów** — gdy nie ma pozycji `live`/`scheduled`, sekcja pokazuje komunikat „Brak zaplanowanych meczów".
+- **Przed startem sezonu** — tabela z zerami, brak strzelców (TODO: pusty stan sekcji strzelców).
+
+## Zachowanie
+- Auto-odświeżanie (polling) — wskaźnik „Na żywo" w nagłówku `PublicShell`.
+- „Zobacz pełną tabelę" prowadzi do zakładki Tabela.
+- Responsywność: grid `lg:grid-cols-3`; na wąskich ekranach karty układają się w jedną kolumnę, sekcja strzelców łamie się na blok lider + lista.
+
+## Otwarte pytania
+- Ile najbliższych meczów pokazywać, gdy jest ich dużo — limit czy scroll?
+- Czy przy remisie w liczbie goli pokazywać wszystkich współliderów jako „króla strzelców"?
+- Czy dodać sekcję ostatnich wyników obok najbliższych meczów?

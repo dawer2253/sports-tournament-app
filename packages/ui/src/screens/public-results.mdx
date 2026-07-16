@@ -1,0 +1,40 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './public-results.stories'
+
+<Meta of={Stories} />
+
+# Public · Wyniki — specyfikacja
+
+Publiczny, read-only widok wyników meczów rozegranych i trwających (dostępny po `slug`, np. `/t/liga-osiedlowa`).
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pokazać kibicom i zawodnikom aktualne rezultaty — bez logowania, na żywo i z historią.
+
+## Dane (wejście)
+- Mecze o statusie `finished` lub `live` (mecze `scheduled` należą do terminarza, nie tutaj).
+- Dla każdego meczu: gospodarz, gość, wynik (`homeScore:awayScore`), status, data.
+- Zdarzenia meczu (`events`) — do wypisania strzelców z minutami (typ `goal`).
+
+## Reguły
+- Filtr: pokazujemy wyłącznie `finished` i `live`.
+- Grupowanie po `date`; nagłówek daty jako `text-sm text-muted-foreground`.
+- Kolejność grup i meczów zgodna z kolejnością źródła danych.
+- Wynik jako pigułka `bg-foreground / text-background`; brak wyniku traktowany jako `0`.
+- Strzelcy: nazwiska z minutami w jednej drobnej linijce pod wynikiem.
+
+## Stany
+- **Lista wyników** — domyślny (powyżej).
+- **Mecz na żywo** — plakietka „Na żywo" z pulsującą kropką pod wynikiem oraz wskaźnik „Na żywo" w nagłówku.
+- **Brak rozegranych meczów** — pusty stan z komunikatem.
+
+## Zachowanie
+- Auto-odświeżanie (polling) co X s — aktualizacja wyników live.
+- Responsywność: układ wierszowy skaluje się w obrębie `max-w-5xl`.
+- Read-only — brak akcji edycji.
+
+## Otwarte pytania
+- Czy pokazywać kartki (żółte/czerwone) obok strzelców?
+- Czy dodać minutę trwania meczu live (np. „67'") zamiast samej plakietki?
+- Sortowanie grup: rosnąco czy malejąco po dacie na produkcji?

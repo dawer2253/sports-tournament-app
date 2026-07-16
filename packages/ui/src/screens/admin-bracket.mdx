@@ -1,0 +1,44 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-bracket.stories'
+
+<Meta of={Stories} />
+
+# Admin · Drabinka — specyfikacja
+
+Widok i zarządzanie drabinką pucharową turnieju (faza pucharowa, single-elimination).
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Umożliwić organizatorowi podgląd drabinki pucharowej oraz zarządzanie nią — ustawienie rozstawienia, wygenerowanie par i edycję wyników poszczególnych meczów.
+
+## Dane (wejście)
+- `bracket` — lista rund (`Półfinały`, `Finał`), każda z listą meczów (`BracketMatch`: `home`, `away`, `homeScore`, `awayScore`, `winner`).
+- `bracketWinner` — drużyna, która wygrała finał (mistrz turnieju).
+- Monogram drużyny (`abbr`), nazwa (`name`) i wynik pojedynku.
+
+## Reguły
+- Format: single-elimination — zwycięzca meczu awansuje do następnej rundy.
+- Zwycięzca meczu wyróżniony pogrubieniem; przegrany wyszarzony (`text-muted-foreground`).
+- Finał wyróżniony ramką `ring-2 ring-primary`.
+- Kolumna `Zwycięzca` prezentuje mistrza na akcencie strony publicznej (`bg-brand`).
+
+## Stany
+- **Rozegrana drabinka** — domyślny (powyżej): komplet wyników, wyłoniony mistrz.
+- **Puste sloty** — mecze bez wyłonionych drużyn pokazują `Do wyłonienia` i `–` zamiast wyniku (TODO: osobny wariant story).
+- **Drabinka niewygenerowana** — brak par, widoczny tylko przycisk `Generuj drabinkę` (TODO).
+
+## Zachowanie
+- `Ustaw rozstawienie` — otwiera konfigurację rozstawienia drużyn przed losowaniem par.
+- `Generuj drabinkę` — tworzy pary na podstawie rozstawienia (nadpisuje istniejącą drabinkę po potwierdzeniu).
+- Kliknięcie karty meczu otwiera edycję wyniku pojedynku.
+- Kontener przewijany poziomo (`overflow-x-auto`) dla wąskich ekranów.
+
+## Kaskada
+- Zmiana wyniku meczu, która zmienia zwycięzcę, unieważnia wszystkie kolejne rundy zależne od tego pojedynku i czyści ich wyniki.
+- Taka operacja wymaga dodatkowego potwierdzenia — sygnalizowana kartą-alertem pod drabinką.
+
+## Otwarte pytania
+- Czy rozstawienie jest edytowalne po wygenerowaniu drabinki?
+- Czy przy kaskadzie pokazywać dokładną listę meczów, które zostaną wyczyszczone?
+- Obsługa dogrywek / rzutów karnych przy remisie w fazie pucharowej?

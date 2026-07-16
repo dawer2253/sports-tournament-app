@@ -1,0 +1,37 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './public-scorers.stories'
+
+<Meta of={Stories} />
+
+# Public · Strzelcy — specyfikacja
+
+Publiczny, read-only widok klasyfikacji strzelców turnieju (dostępny po `slug`, np. `/t/liga-osiedlowa`).
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pokazać ranking najskuteczniejszych zawodników kibicom i sponsorom — bez logowania.
+
+## Dane (wejście)
+- Lista strzelców z pozycją (`pos`), nazwiskiem zawodnika (`player`), drużyną (`team`) i liczbą goli (`goals`).
+- Liczba goli agregowana **on-read** ze zdarzeń bramkowych meczów turnieju.
+- Branding turnieju z nagłówka (`PublicShell`).
+
+## Reguły
+- Sortowanie malejąco wg liczby goli; pozycja `1` wyróżniona (tło `bg-primary/10`, tekst `text-primary`).
+- Przy równej liczbie goli decyduje mniejsza liczba rozegranych spotkań (tiebreak — TODO: potwierdzić z regulaminem).
+- Odmiana słowa „gol/gole/goli" dobierana wg reguł liczebników polskich.
+
+## Stany
+- **Pełna lista** — domyślny (powyżej).
+- **Brak strzelców** — lista pusta, komunikat zastępczy (TODO: wariant `Pusty`).
+- **Remis na czele** — kilku zawodników z tą samą liczbą goli (TODO: sposób prezentacji ex aequo).
+
+## Zachowanie
+- Auto-odświeżanie (polling) — wskaźnik „Na żywo" w nagłówku.
+- Responsywność: długie nazwiska i nazwy drużyn ucinane (`truncate`), plakietka z golami zawsze widoczna.
+
+## Otwarte pytania
+- Czy pokazywać liczbę rozegranych meczów / gole na mecz?
+- Czy uwzględniać samobóje i rzuty karne osobno?
+- Ilu zawodników na liście na MVP (top 10 czy wszyscy)?

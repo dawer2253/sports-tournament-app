@@ -1,0 +1,39 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-match-result.stories'
+
+<Meta of={Stories} />
+
+# Admin · Wynik meczu — specyfikacja
+
+Ekran wpisywania i edycji wyniku pojedynczego meczu wraz z listą zdarzeń.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Umożliwić organizatorowi szybkie wprowadzenie wyniku meczu, ustawienie jego statusu i rejestrację zdarzeń (gole, kartki) — z jednego ekranu.
+
+## Dane (wejście)
+- Pojedynczy mecz (`Match`): drużyny gospodarza i gościa, `homeScore`/`awayScore`, `status`, `round`, `date`, `kickoff`, `venue`.
+- Lista zdarzeń meczu (`MatchEvent[]`): typ (`goal`/`yellow`/`red`), zawodnik, minuta.
+- Nagłówek shella składa metadane meczu: `Kolejka {round} · {date} · {kickoff} · {venue}`.
+
+## Reguły
+- Wynik: dwie liczby całkowite ≥ 0, rozdzielone dwukropkiem; puste = mecz jeszcze bez wyniku.
+- Status: dokładnie jeden z trzech (`Zakończony`, `Trwa`, `Zaplanowany`); aktywny wyróżniony wariantem plakietki.
+- Typy zdarzeń zależą od sportu (piłka: gol, kartka; kosz: punkty, faul) — lista dostępnych typów pochodzi z konfiguracji dyscypliny.
+
+## Stany
+- **Edycja wyniku** — domyślny (powyżej), wynik i zdarzenia z meczu.
+- **Bez wyniku** — pola wyniku puste, status `Zaplanowany`, brak zdarzeń (TODO).
+- **Zapisywanie** — przycisk `Zapisz` w stanie ładowania, formularz zablokowany (TODO).
+
+## Zachowanie
+- Kliknięcie plakietki statusu zmienia status meczu (jeden aktywny naraz).
+- `Dodaj` otwiera formularz nowego zdarzenia (wybór typu, zawodnika, minuty) (TODO).
+- `Zapisz` zapisuje wynik, status i zdarzenia; `Anuluj` odrzuca zmiany.
+- Responsywność: grid `lg:grid-cols-5` (wynik 3 / zdarzenia 2); poniżej `lg` karty układają się pionowo.
+
+## Otwarte pytania
+- Czy status `Zakończony` wymaga wypełnionego wyniku przed zapisem?
+- Czy suma goli w zdarzeniach musi zgadzać się z wpisanym wynikiem?
+- Edycja/usuwanie istniejących zdarzeń — inline czy w osobnym oknie?

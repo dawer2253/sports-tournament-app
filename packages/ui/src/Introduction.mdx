@@ -1,0 +1,41 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Wprowadzenie" />
+
+# TournamentApp — Design System
+
+Biblioteka komponentów i żywa specyfikacja UI dla aplikacji do organizowania lig/turniejów.
+Komponenty (shadcn/ui na Radix, Tailwind v4) + kompletne ekrany + **specki pisane jako strony MDX** obok stories.
+
+Motyw: **northern-lights** (tweakcn) — zielony `primary`, błękit/cyan jako akcenty. Tryb jasny/ciemny przełącznikiem **Motyw** (góra).
+
+## Struktura
+- **UI** — komponenty atomowe (Button, Badge, Card, Table, Tabs, Input…). Każdy ma stories + autodocs.
+- **Ekrany** — złożone widoki panelu admina i strony publicznej. Każdy ekran ma stronę specyfikacji (`.mdx`).
+
+### Ekrany — Admin (panel/CMS)
+Logowanie · Dashboard · Kreator turnieju · Drużyny · Terminarz · Wynik meczu · Drabinka · Obiekty · Statystyki · Branding i ustawienia.
+
+### Ekrany — Public (strona rozgrywek)
+Przegląd · Tabela · Terminarz · Wyniki · Drabinka · Strzelcy.
+
+Wspólne layouty: `AdminShell` (sidebar + topbar) i `PublicShell` (brandowany nagłówek + zakładki). Dane demo w `src/lib/demo-data.ts` (spójne między ekranami).
+
+## Tokeny motywu
+Kolory jako zmienne CSS w przestrzeni **oklch** (Tailwind v4, `@theme inline`), z obsługą trybu jasny/ciemny i koloru `--brand` per turniej.
+
+| Token | Rola |
+|---|---|
+| `--background` / `--foreground` | tło / tekst |
+| `--primary` | akcja główna (zieleń marki) |
+| `--secondary` / `--accent` | akcenty (błękit / cyan) |
+| `--muted` / `--muted-foreground` | tła pomocnicze / tekst drugorzędny |
+| `--destructive` | błędy, ostrzeżenia, kolizje |
+| `--border` / `--input` / `--ring` | obrysy i focus |
+| `--brand` | kolor publicznej strony turnieju (konfigurowalny per turniej) |
+
+Zmiana motywu = podmiana bloków `:root` / `.dark` w `src/index.css` (np. eksport z tweakcn).
+
+## Jak pisać specki
+Dla każdego ekranu twórz plik `*.mdx` obok `*.stories.tsx` i opisz: **Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania**.
+Wzór: „Ekrany · Public · Tabela" lub „Ekrany · Admin · Drabinka".

@@ -1,0 +1,36 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-venues.stories'
+
+<Meta of={Stories} />
+
+# Admin · Obiekty — specyfikacja
+
+Ekran administracyjny z listą obiektów (boisk, hal), na których rozgrywane są mecze turnieju.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek — dodawanie, edycję i usuwanie obiektów przypisywanych później do meczów w terminarzu.
+
+## Dane (wejście)
+- Lista obiektów: `name` (nazwa), `address` (adres), `matches` (liczba przypisanych meczów).
+- Źródło: `venues` z warstwy danych (docelowo z API turnieju).
+
+## Reguły
+- Kolumna „Mecze" pokazuje liczbę meczów przypisanych do obiektu (`tabular-nums`).
+- Nazwa obiektu prezentowana z ikoną `MapPin` i pogrubieniem; adres w kolorze `text-muted-foreground`.
+- Akcje wiersza (edycja, usunięcie) wyrównane do prawej, ikonograficzne.
+
+## Stany
+- **Lista obiektów** — domyślny (powyżej).
+- **Brak obiektów** — pusta tabela z zachętą „Dodaj obiekt" (TODO).
+- **Usuwanie z przypisanymi meczami** — potwierdzenie z ostrzeżeniem, gdy `matches > 0` (TODO).
+
+## Zachowanie
+- Przycisk „Dodaj obiekt" (ikona `Plus`) w nagłówku otwiera formularz dodawania (TODO: dialog).
+- Edycja (`Pencil`) otwiera formularz z danymi obiektu; usunięcie (`Trash2`) wymaga potwierdzenia.
+- Responsywność: tabela przewijana poziomo na wąskich ekranach.
+
+## Otwarte pytania
+- Czy usuwanie obiektu z przypisanymi meczami ma być blokowane, czy tylko ostrzegać?
+- Czy dodać pojemność/typ obiektu (boisko vs hala) jako osobne pola?

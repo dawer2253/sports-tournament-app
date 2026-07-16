@@ -1,0 +1,41 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-schedule.stories'
+
+<Meta of={Stories} />
+
+# Admin · Terminarz — specyfikacja
+
+Ekran zarządzania terminarzem turnieju w panelu organizatora (`AdminShell`, zakładka „Terminarz").
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Umożliwić organizatorowi przeglądanie meczów kolejka po kolejce, wpisywanie i edycję wyników oraz szybki wgląd w tabelę i strzelców — bez opuszczania jednego ekranu.
+
+## Dane (wejście)
+- `tournament` — nazwa, liczba drużyn, liczba kolejek, sport, bieżąca kolejka (`currentRound`).
+- `fixtures` — mecze; wyświetlane są tylko te z bieżącej kolejki (`round === currentRound`). Pola: `kickoff`, `venue`, `home`, `away`, `homeScore`, `awayScore`, `status`, `date`, `collision`.
+- `standings` — klasyfikacja (kolumny: #, drużyna, M, W, R, P, bramki, pkt).
+- `scorers` — ranking strzelców (pozycja, zawodnik, drużyna, gole).
+
+## Reguły
+- Wynik jako „pill" (`bg-foreground` / `text-background`) pokazywany dla meczów `finished` i `live`; dla `scheduled` obramowany placeholder `– : –`.
+- Akcja wiersza: `Wpisz wynik` (outline) dla `scheduled`, `Edytuj` dla `finished` i `live`.
+- Mecz z `collision === true` dostaje tło `bg-destructive/5` oraz plakietkę „Kolizja boiska" (`AlertTriangle`).
+- Data kolejki brana z pierwszego meczu w kolejce.
+
+## Stany
+- **Status meczu** — plakietka: `Zakończony` (default, `Check`), `Zaplanowany` (secondary), `Na żywo` (destructive z pulsującą kropką).
+- **Kolizja boiska** — wyróżnione tło wiersza + plakietka destructive.
+- **Pusta kolejka** — brak meczów w danej kolejce (TODO: komunikat zastępczy).
+
+## Zachowanie
+- Nawigacja kolejek strzałkami `ChevronLeft` / `ChevronRight` (TODO: podpięcie zmiany `currentRound`).
+- Zakładki `Tabs`: Terminarz, Tabela, Strzelcy — domyślnie „Terminarz".
+- Akcje nagłówka: `Tiebreaki` (outline, `SlidersHorizontal`) oraz `Generuj terminarz` (`RefreshCw`).
+- Responsywność: kolumna czas/obiekt ma stałą szerokość (`w-32`), nazwy drużyn skalują się elastycznie.
+
+## Otwarte pytania
+- Czy generowanie terminarza nadpisuje istniejące wyniki, czy tylko brakujące mecze?
+- Jak rozwiązywać kolizje boisk — automatycznie czy ręcznie przez organizatora?
+- Czy edycja wyniku otwiera dialog, czy osobny ekran meczu?

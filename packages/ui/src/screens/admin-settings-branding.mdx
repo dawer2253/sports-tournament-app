@@ -1,0 +1,42 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-settings-branding.stories'
+
+<Meta of={Stories} />
+
+# Admin · Branding i ustawienia — specyfikacja
+
+Ekran administracyjny do konfiguracji brandingu turnieju oraz reguł rozstrzygania remisów w tabeli.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pozwolić organizatorowi ustawić publiczną tożsamość turnieju (nazwa, adres `/t/slug`, kolor wiodący, logo) oraz kolejność tiebreaków, według której sortowana jest tabela ligowa.
+
+## Dane (wejście)
+- `tournament.name` — nazwa publiczna widoczna na stronie i w tytule ekranu.
+- `tournament.slug` — segment adresu publicznego, prezentowany z prefiksem `/t/`.
+- Kolor wiodący (`--brand`) — wybierany z palety tokenów motywu.
+- Logo — plik graficzny wgrywany przez upload.
+- `tiebreakers` — uporządkowana lista reguł remisowych (`key`, `label`).
+
+## Reguły
+- Slug: małe litery, cyfry i myślniki; unikalny w obrębie konta; edycja zmienia publiczny URL.
+- Dokładnie jeden kolor wiodący jest aktywny (zaznaczony pierścieniem).
+- Kolejność tiebreaków wyznacza priorytet sortowania tabeli od góry (pozycja 1 = pierwsze kryterium po punktach).
+
+## Stany
+- **Domyślny** — formularz wypełniony bieżącymi wartościami turnieju (powyżej).
+- **Logo wgrane** — miniatura zamiast pola przeciągania (TODO).
+- **Zapisywanie** — przycisk w stanie ładowania, pola zablokowane (TODO).
+- **Błąd walidacji slug** — slug zajęty lub niepoprawny (TODO).
+
+## Zachowanie
+- Kliknięcie próbki koloru zmienia zaznaczenie i podgląd akcentu.
+- Pole logo przyjmuje przeciągnięcie pliku lub kliknięcie otwierające wybór z dysku.
+- Wiersze tiebreaków można przeciągać uchwytem (GripVertical) — zmiana kolejności aktualizuje numerację priorytetów (TODO: implementacja drag & drop).
+- „Zapisz zmiany" wysyła cały formularz jednym żądaniem.
+
+## Otwarte pytania
+- Czy kolor wiodący ma być wyłącznie z palety motywu, czy dopuszczamy dowolny hex?
+- Jakie formaty i maksymalny rozmiar logo akceptujemy?
+- Czy przy zmianie slug utrzymujemy przekierowanie ze starego adresu?

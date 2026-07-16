@@ -1,0 +1,41 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-login.stories'
+
+<Meta of={Stories} />
+
+# Admin · Logowanie — specyfikacja
+
+Pełnoekranowy widok uwierzytelniania organizatora (poza `AdminShell`). Bramka do panelu
+zarządzania rozgrywkami — obejmuje logowanie i rejestrację nowego konta.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Umożliwić organizatorowi zalogowanie się do panelu lub założenie nowego konta, z czytelnym
+przekazem marketingowym o produkcie.
+
+## Dane (wejście)
+- **Logowanie:** e-mail, hasło.
+- **Rejestracja:** nazwa organizatora, e-mail, hasło, powtórzenie hasła.
+- Panel brandowy: statyczne hasło marketingowe i lista cech produktu (bez danych z API).
+
+## Reguły
+- E-mail musi mieć poprawny format; hasło jest wymagane.
+- Rejestracja: oba hasła muszą być identyczne, minimalna długość hasła (TODO — do ustalenia).
+- Link „Nie pamiętasz hasła?" prowadzi do osobnego przepływu resetu (TODO).
+
+## Stany
+- **Logowanie** — domyślny (powyżej).
+- **Rejestracja** — formularz zakładania konta (`Rejestracja`).
+- **Błąd / ładowanie / walidacja pól** — TODO (blokada przycisku, `aria-invalid`, komunikat).
+
+## Zachowanie
+- Layout dwukolumnowy na `md+`: lewa kolumna brandowa (`bg-primary`), prawa formularz.
+- Na mobile lewa kolumna jest ukryta; logo pokazywane jest nad formularzem.
+- Przyciski akcji na całą szerokość formularza; formularz nie przeładowuje strony.
+- Przełączanie logowanie ↔ rejestracja linkiem pod formularzem.
+
+## Otwarte pytania
+- Logowanie przez dostawców zewnętrznych (Google / Apple)?
+- Weryfikacja e-mail po rejestracji — wymagana na MVP?
+- Zapamiętywanie sesji („Zapamiętaj mnie")?

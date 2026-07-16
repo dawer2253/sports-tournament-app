@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sports Tournament App — makiety hi-fi</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      container: { center: true },
+      extend: {
+        fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','sans-serif'] },
+        colors: {
+          border:'hsl(var(--border))', input:'hsl(var(--input))', ring:'hsl(var(--ring))',
+          background:'hsl(var(--background))', foreground:'hsl(var(--foreground))',
+          primary:{DEFAULT:'hsl(var(--primary))', foreground:'hsl(var(--primary-foreground))'},
+          secondary:{DEFAULT:'hsl(var(--secondary))', foreground:'hsl(var(--secondary-foreground))'},
+          muted:{DEFAULT:'hsl(var(--muted))', foreground:'hsl(var(--muted-foreground))'},
+          accent:{DEFAULT:'hsl(var(--accent))', foreground:'hsl(var(--accent-foreground))'},
+          destructive:{DEFAULT:'hsl(var(--destructive))', foreground:'hsl(var(--destructive-foreground))'},
+          card:{DEFAULT:'hsl(var(--card))', foreground:'hsl(var(--card-foreground))'},
+          brand:{DEFAULT:'hsl(var(--brand))', foreground:'hsl(var(--brand-foreground))'},
+        },
+        borderRadius:{ lg:'var(--radius)', md:'calc(var(--radius) - 2px)', sm:'calc(var(--radius) - 4px)' }
+      }
+    }
+  }
+</script>
+<style type="text/tailwindcss">
+  :root{
+    --background:0 0% 100%; --foreground:240 10% 3.9%;
+    --card:0 0% 100%; --card-foreground:240 10% 3.9%;
+    --primary:142 71% 29%; --primary-foreground:0 0% 100%;
+    --secondary:240 4.8% 95.9%; --secondary-foreground:240 5.9% 10%;
+    --muted:240 4.8% 95.9%; --muted-foreground:240 3.8% 46.1%;
+    --accent:240 4.8% 95.9%; --accent-foreground:240 5.9% 10%;
+    --destructive:0 72% 51%; --destructive-foreground:0 0% 100%;
+    --border:240 5.9% 90%; --input:240 5.9% 90%; --ring:142 71% 29%;
+    --brand:142 71% 29%; --brand-foreground:0 0% 100%;
+    --radius:0.65rem;
+  }
+  *{ border-color:hsl(var(--border)); }
+  body{ background:hsl(var(--muted)); color:hsl(var(--foreground)); font-family:'Inter',sans-serif; }
+  .btn{ @apply inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors h-9 px-4 whitespace-nowrap; }
+  .btn-primary{ @apply btn bg-primary text-primary-foreground hover:opacity-90; }
+  .btn-outline{ @apply btn border bg-background hover:bg-accent; }
+  .btn-ghost{ @apply btn hover:bg-accent; }
+  .btn-sm{ @apply h-8 px-3 text-xs; }
+  .btn-icon{ @apply inline-flex items-center justify-center rounded-md h-9 w-9 hover:bg-accent transition-colors; }
+  .card{ @apply bg-card text-card-foreground border rounded-lg shadow-sm; }
+  .badge{ @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .input{ @apply h-9 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring/40; }
+  .label{ @apply text-sm font-medium; }
+  .nav-link{ @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-foreground transition-colors; }
+  .nav-link.active{ @apply bg-accent text-foreground font-medium; }
+  [data-screen]{ display:none; } [data-screen].active{ display:block; }
+  [data-lucide]{ width:1em; height:1em; }
+</style>
+</head>
+<body>
+
+<!-- prototype switcher -->
+<div class="sticky top-0 z-30 bg-foreground text-background">
+  <div class="max-w-7xl mx-auto px-4 h-11 flex items-center gap-3 text-xs">
+    <span class="font-semibold flex items-center gap-1.5"><i data-lucide="layout-dashboard"></i> Makiety hi-fi</span>
+    <div class="ml-auto flex items-center gap-1 bg-white/10 rounded-lg p-1">
+      <span class="px-2 text-white/50">Admin</span>
+      <button onclick="show('login')"  class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Logowanie</button>
+      <button onclick="show('dash')"   class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Dashboard</button>
+      <button onclick="show('wizard')" class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Kreator</button>
+      <button onclick="show('teams')"  class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Drużyny</button>
+      <button onclick="show('sched')"  class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Terminarz</button>
+      <button onclick="show('result')" class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Wynik</button>
+    </div>
+    <div class="flex items-center gap-1 bg-white/10 rounded-lg p-1">
+      <span class="px-2 text-white/50">Public</span>
+      <button onclick="show('pubtab')" class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Tabela</button>
+      <button onclick="show('pubcup')" class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Drabinka</button>
+      <button onclick="show('pubsco')" class="pnav px-2.5 py-1 rounded-md hover:bg-white/15">Strzelcy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== LOGIN ===================== -->
+<section data-screen="login">
+  <div class="min-h-[calc(100vh-44px)] grid lg:grid-cols-2">
+    <div class="hidden lg:flex flex-col justify-between bg-primary text-primary-foreground p-12">
+      <div class="flex items-center gap-2 text-lg font-bold"><i data-lucide="trophy"></i> Tournament<span class="opacity-80">App</span></div>
+      <div>
+        <h2 class="text-3xl font-extrabold leading-tight">Organizuj ligi<br>i turnieje w kilka minut.</h2>
+        <p class="mt-4 text-primary-foreground/80 max-w-sm">Generuj terminarze, prowadź tabele, publikuj rozgrywki dla zawodników i sponsorów.</p>
+      </div>
+      <div class="flex gap-6 text-sm text-primary-foreground/70">
+        <span class="flex items-center gap-2"><i data-lucide="check"></i> Piłka i koszykówka</span>
+        <span class="flex items-center gap-2"><i data-lucide="check"></i> Liga · Puchar · Grupy</span>
+      </div>
+    </div>
+    <div class="flex items-center justify-center p-6">
+      <div class="w-full max-w-sm">
+        <h1 class="text-2xl font-bold">Zaloguj się</h1>
+        <p class="text-sm text-muted-foreground mb-6">Panel organizatora</p>
+        <div class="space-y-4">
+          <div class="space-y-1.5"><label class="label">E-mail</label><input class="input" value="organizator@klub.pl"></div>
+          <div class="space-y-1.5"><div class="flex justify-between"><label class="label">Hasło</label><a class="text-xs text-primary">Nie pamiętasz?</a></div><input type="password" class="input" value="********"></div>
+          <button onclick="show('dash')" class="btn-primary w-full">Zaloguj się</button>
+          <div class="text-center text-sm text-muted-foreground">Nie masz konta? <a class="text-primary font-medium">Zarejestruj się</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== ADMIN SHELL ===================== -->
+<div id="adminShell">
+<div class="flex min-h-[calc(100vh-44px)] max-w-[1400px] mx-auto">
+  <aside class="w-60 shrink-0 bg-card border-r p-3 hidden md:flex flex-col">
+    <div class="flex items-center gap-2 px-2 py-3 font-bold"><i data-lucide="trophy" class="text-primary"></i> Tournament<span class="text-primary">App</span></div>
+    <nav class="mt-2 space-y-1">
+      <a onclick="show('dash')"  class="nav-link" data-nav="dash"><i data-lucide="layout-grid"></i> Turnieje</a>
+      <a onclick="show('teams')" class="nav-link" data-nav="teams"><i data-lucide="users"></i> Drużyny</a>
+      <a onclick="show('sched')" class="nav-link" data-nav="sched"><i data-lucide="calendar-days"></i> Terminarz</a>
+      <a class="nav-link"><i data-lucide="map-pin"></i> Obiekty</a>
+      <a class="nav-link"><i data-lucide="bar-chart-3"></i> Statystyki</a>
+      <a class="nav-link"><i data-lucide="palette"></i> Branding</a>
+      <a class="nav-link"><i data-lucide="settings"></i> Ustawienia</a>
+    </nav>
+    <div class="mt-auto flex items-center gap-2 p-2 rounded-md hover:bg-accent">
+      <div class="w-8 h-8 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-semibold">KS</div>
+      <div class="text-xs leading-tight"><div class="font-medium">Klub Sportowy</div><div class="text-muted-foreground">organizator@klub.pl</div></div>
+      <i data-lucide="log-out" class="ml-auto text-muted-foreground"></i>
+    </div>
+  </aside>
+
+  <div class="flex-1 min-w-0 flex flex-col bg-background">
+    <header class="h-14 border-b flex items-center gap-3 px-6">
+      <div class="relative w-72 max-w-[40vw]">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"></i>
+        <input class="input pl-9" placeholder="Szukaj turnieju, drużyny…">
+      </div>
+      <button class="btn-icon ml-auto"><i data-lucide="bell"></i></button>
+      <button class="btn-outline btn-sm"><i data-lucide="external-link"></i> Podgląd public</button>
+    </header>
+
+    <main class="p-6 overflow-auto">
+
+    <!-- DASHBOARD -->
+    <section data-screen="dash" class="active">
+      <div class="flex items-center justify-between mb-6">
+        <div><h1 class="text-2xl font-bold tracking-tight">Twoje turnieje</h1>
+          <p class="text-sm text-muted-foreground">Zarządzaj ligami i turniejami</p></div>
+        <button onclick="show('wizard')" class="btn-primary"><i data-lucide="plus"></i> Nowy turniej</button>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4"><div class="text-xs text-muted-foreground">Aktywne</div><div class="text-2xl font-bold mt-1">2</div></div>
+        <div class="card p-4"><div class="text-xs text-muted-foreground">Drużyny</div><div class="text-2xl font-bold mt-1">24</div></div>
+        <div class="card p-4"><div class="text-xs text-muted-foreground">Mecze (30 dni)</div><div class="text-2xl font-bold mt-1">38</div></div>
+        <div class="card p-4"><div class="text-xs text-muted-foreground">Odsłony public</div><div class="text-2xl font-bold mt-1">1 204</div></div>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="card p-5 hover:shadow-md transition-shadow cursor-pointer" onclick="show('sched')">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary grid place-items-center text-xl">⚽</div>
+            <span class="badge bg-primary/10 text-primary">Trwa</span></div>
+          <h3 class="font-semibold">Liga Osiedlowa 2026</h3>
+          <p class="text-sm text-muted-foreground">Piłka nożna · Liga · 8 drużyn</p>
+          <div class="mt-3 h-1.5 rounded-full bg-muted overflow-hidden"><div class="h-full bg-primary" style="width:36%"></div></div>
+          <div class="mt-2 text-xs text-muted-foreground flex justify-between"><span>Kolejka 5 / 14</span><span>/t/liga-osiedlowa</span></div>
+        </div>
+        <div class="card p-5 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-lg bg-orange-500/10 grid place-items-center text-xl">🏀</div>
+            <span class="badge bg-amber-100 text-amber-700">Szkic</span></div>
+          <h3 class="font-semibold">Puchar Miasta — Kosz</h3>
+          <p class="text-sm text-muted-foreground">Koszykówka · Puchar · 16 drużyn</p>
+          <div class="mt-3 text-xs text-muted-foreground">Terminarz niewygenerowany</div>
+        </div>
+        <div class="card p-5 hover:shadow-md transition-shadow cursor-pointer">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-lg bg-muted grid place-items-center text-xl">⚽</div>
+            <span class="badge bg-muted text-muted-foreground">Zakończony</span></div>
+          <h3 class="font-semibold">Turniej Zimowy</h3>
+          <p class="text-sm text-muted-foreground">Piłka nożna · Grupy + playoff</p>
+          <div class="mt-3 text-xs text-muted-foreground flex items-center gap-1"><i data-lucide="trophy" class="text-amber-500"></i> Zwycięzca: FC Górka</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WIZARD -->
+    <section data-screen="wizard">
+      <button onclick="show('dash')" class="text-sm text-muted-foreground mb-3 inline-flex items-center gap-1"><i data-lucide="arrow-left"></i> Wróć</button>
+      <h1 class="text-2xl font-bold tracking-tight mb-1">Nowy turniej</h1>
+      <p class="text-sm text-muted-foreground mb-6">Skonfiguruj rozgrywki w 4 krokach</p>
+      <ol class="flex items-center gap-2 mb-8 text-sm">
+        <li class="flex items-center gap-2 text-primary font-medium"><span class="w-6 h-6 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs">✓</span> Sport</li>
+        <span class="flex-1 h-px bg-primary"></span>
+        <li class="flex items-center gap-2 font-medium"><span class="w-6 h-6 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs">2</span> Format</li>
+        <span class="flex-1 h-px bg-border"></span>
+        <li class="flex items-center gap-2 text-muted-foreground"><span class="w-6 h-6 rounded-full border grid place-items-center text-xs">3</span> Drużyny</li>
+        <span class="flex-1 h-px bg-border"></span>
+        <li class="flex items-center gap-2 text-muted-foreground"><span class="w-6 h-6 rounded-full border grid place-items-center text-xs">4</span> Terminarz</li>
+      </ol>
+      <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <label class="card p-5 cursor-pointer ring-2 ring-primary relative">
+          <i data-lucide="check-circle-2" class="absolute top-3 right-3 text-primary"></i>
+          <div class="w-10 h-10 rounded-lg bg-primary/10 text-primary grid place-items-center mb-3"><i data-lucide="list-ordered"></i></div>
+          <div class="font-semibold">Liga (każdy z każdym)</div>
+          <p class="text-sm text-muted-foreground mt-1">Round-robin, 1 lub 2 rundy, tabela ligowa.</p></label>
+        <label class="card p-5 cursor-pointer hover:border-foreground/30">
+          <div class="w-10 h-10 rounded-lg bg-muted grid place-items-center mb-3"><i data-lucide="git-fork"></i></div>
+          <div class="font-semibold">Puchar (drabinka)</div>
+          <p class="text-sm text-muted-foreground mt-1">System pucharowy, awans zwycięzców.</p></label>
+        <label class="card p-5 cursor-pointer hover:border-foreground/30">
+          <div class="w-10 h-10 rounded-lg bg-muted grid place-items-center mb-3"><i data-lucide="trophy"></i></div>
+          <div class="font-semibold">Grupy + playoff</div>
+          <p class="text-sm text-muted-foreground mt-1">Faza grupowa → najlepsi do drabinki.</p></label>
+      </div>
+      <div class="card p-5 mb-6">
+        <div class="font-medium mb-4">Ustawienia ligi</div>
+        <div class="grid sm:grid-cols-2 gap-5 text-sm">
+          <label class="flex items-center justify-between"><span>Mecz i rewanż (2 rundy)</span>
+            <span class="w-9 h-5 rounded-full bg-primary relative"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span></label>
+          <label class="flex items-center justify-between"><span>Auto-harmonogram dat</span>
+            <span class="w-9 h-5 rounded-full bg-primary relative"><span class="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white"></span></span></label>
+          <div class="space-y-1.5"><label class="label">Punkty za zwycięstwo</label><input class="input" value="3"></div>
+          <div class="space-y-1.5"><label class="label">Punkty za remis</label><input class="input" value="1"></div>
+        </div>
+      </div>
+      <div class="flex justify-between">
+        <button onclick="show('dash')" class="btn-outline">Anuluj</button>
+        <button onclick="show('teams')" class="btn-primary">Dalej: drużyny <i data-lucide="arrow-right"></i></button>
+      </div>
+    </section>
+
+    <!-- TEAMS -->
+    <section data-screen="teams">
+      <div class="flex items-center justify-between mb-6">
+        <div><h1 class="text-2xl font-bold tracking-tight">Drużyny</h1>
+          <p class="text-sm text-muted-foreground">Liga Osiedlowa 2026 · 8 drużyn</p></div>
+        <button class="btn-primary"><i data-lucide="plus"></i> Dodaj drużynę</button>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="p-4 border-b flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-primary/10 text-primary grid place-items-center font-bold">FG</div>
+            <div class="flex-1"><div class="font-semibold">FC Górka</div><div class="text-xs text-muted-foreground">12 zawodników</div></div>
+            <button class="btn-icon"><i data-lucide="pencil"></i></button>
+          </div>
+          <ul class="p-2 text-sm">
+            <li class="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-accent"><span class="w-6 text-center text-muted-foreground">9</span> Jan Kowalski <span class="ml-auto text-xs text-muted-foreground">Napastnik</span></li>
+            <li class="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-accent"><span class="w-6 text-center text-muted-foreground">10</span> Piotr Zieliński <span class="ml-auto text-xs text-muted-foreground">Pomocnik</span></li>
+            <li class="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-accent"><span class="w-6 text-center text-muted-foreground">1</span> Marek Lis <span class="ml-auto text-xs text-muted-foreground">Bramkarz</span></li>
+            <li class="px-2 py-1.5"><button class="text-xs text-primary inline-flex items-center gap-1"><i data-lucide="plus"></i> Dodaj zawodnika</button></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="p-4 border-b flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-orange-500/10 text-orange-600 grid place-items-center font-bold">DR</div>
+            <div class="flex-1"><div class="font-semibold">Dragons</div><div class="text-xs text-muted-foreground">11 zawodników</div></div>
+            <button class="btn-icon"><i data-lucide="pencil"></i></button>
+          </div>
+          <ul class="p-2 text-sm">
+            <li class="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-accent"><span class="w-6 text-center text-muted-foreground">7</span> Michał Nowak <span class="ml-auto text-xs text-muted-foreground">Skrzydłowy</span></li>
+            <li class="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-accent"><span class="w-6 text-center text-muted-foreground">4</span> Adam Wójcik <span class="ml-auto text-xs text-muted-foreground">Obrońca</span></li>
+            <li class="px-2 py-1.5"><button class="text-xs text-primary inline-flex items-center gap-1"><i data-lucide="plus"></i> Dodaj zawodnika</button></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section data-screen="sched">
+      <div class="flex items-center justify-between mb-4">
+        <div><h1 class="text-2xl font-bold tracking-tight">Liga Osiedlowa 2026</h1>
+          <p class="text-sm text-muted-foreground">8 drużyn · 14 kolejek · piłka nożna</p></div>
+        <div class="flex gap-2">
+          <button class="btn-outline"><i data-lucide="settings-2"></i> Tiebreaki</button>
+          <button class="btn-primary"><i data-lucide="refresh-cw"></i> Generuj terminarz</button></div>
+      </div>
+      <div class="flex gap-1 mb-5 border-b">
+        <button class="px-3 py-2 text-sm border-b-2 border-primary font-medium -mb-px">Terminarz</button>
+        <button class="px-3 py-2 text-sm text-muted-foreground">Tabela</button>
+        <button class="px-3 py-2 text-sm text-muted-foreground">Strzelcy</button>
+      </div>
+      <div class="flex items-center gap-2 mb-3 text-sm">
+        <button class="btn-icon h-8 w-8"><i data-lucide="chevron-left"></i></button>
+        <span class="font-medium">Kolejka 5</span>
+        <button class="btn-icon h-8 w-8"><i data-lucide="chevron-right"></i></button>
+        <span class="text-muted-foreground ml-2">28.06.2026</span>
+      </div>
+      <div class="card divide-y">
+        <div class="flex items-center gap-4 p-3 text-sm hover:bg-accent/50">
+          <div class="w-32 shrink-0 text-muted-foreground flex items-center gap-1.5"><i data-lucide="clock"></i> 17:00 · Boisko A</div>
+          <div class="flex-1 text-right font-medium">FC Górka</div>
+          <div class="px-2.5 py-1 rounded-md bg-foreground text-background font-bold tabular-nums">2 : 1</div>
+          <div class="flex-1 font-medium text-muted-foreground">Dragons</div>
+          <span class="badge bg-primary/10 text-primary"><i data-lucide="check" class="mr-1"></i> Zakończony</span>
+          <button onclick="show('result')" class="btn-ghost btn-sm">Edytuj</button>
+        </div>
+        <div class="flex items-center gap-4 p-3 text-sm hover:bg-accent/50">
+          <div class="w-32 shrink-0 text-muted-foreground flex items-center gap-1.5"><i data-lucide="clock"></i> 19:00 · Boisko A</div>
+          <div class="flex-1 text-right font-medium">Orły</div>
+          <div class="px-2.5 py-1 rounded-md border text-muted-foreground tabular-nums">— : —</div>
+          <div class="flex-1 font-medium">Sparta</div>
+          <span class="badge bg-muted text-muted-foreground">Zaplanowany</span>
+          <button onclick="show('result')" class="btn-outline btn-sm">Wpisz wynik</button>
+        </div>
+        <div class="flex items-center gap-4 p-3 text-sm bg-destructive/5">
+          <div class="w-32 shrink-0 text-muted-foreground flex items-center gap-1.5"><i data-lucide="clock"></i> 19:00 · Boisko A</div>
+          <div class="flex-1 text-right font-medium">Tygrysy</div>
+          <div class="px-2.5 py-1 rounded-md border text-muted-foreground tabular-nums">— : —</div>
+          <div class="flex-1 font-medium">Wilki</div>
+          <span class="badge bg-destructive/10 text-destructive"><i data-lucide="alert-triangle" class="mr-1"></i> Kolizja boiska</span>
+          <button class="btn-ghost btn-sm">Zmień</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section data-screen="result">
+      <button onclick="show('sched')" class="text-sm text-muted-foreground mb-3 inline-flex items-center gap-1"><i data-lucide="arrow-left"></i> Terminarz</button>
+      <h1 class="text-2xl font-bold tracking-tight mb-1">Wynik meczu</h1>
+      <p class="text-sm text-muted-foreground mb-6">Kolejka 5 · 28.06.2026 17:00 · Boisko A</p>
+      <div class="grid lg:grid-cols-5 gap-4">
+        <div class="card p-6 lg:col-span-3">
+          <div class="flex items-center justify-center gap-6">
+            <div class="flex-1 text-center">
+              <div class="w-14 h-14 rounded-full bg-primary/10 text-primary grid place-items-center font-bold mx-auto mb-2">FG</div>
+              <div class="font-semibold">FC Górka</div></div>
+            <div class="flex items-center gap-3">
+              <input class="w-16 h-16 text-center text-3xl font-bold rounded-lg border" value="2">
+              <span class="text-2xl text-muted-foreground">:</span>
+              <input class="w-16 h-16 text-center text-3xl font-bold rounded-lg border" value="1">
+            </div>
+            <div class="flex-1 text-center">
+              <div class="w-14 h-14 rounded-full bg-orange-500/10 text-orange-600 grid place-items-center font-bold mx-auto mb-2">DR</div>
+              <div class="font-semibold">Dragons</div></div>
+          </div>
+          <div class="mt-6 flex items-center justify-center gap-2 text-sm">
+            <span class="text-muted-foreground">Status:</span>
+            <button class="badge bg-primary/10 text-primary">Zakończony</button>
+            <button class="badge bg-muted text-muted-foreground">Trwa</button>
+            <button class="badge bg-muted text-muted-foreground">Zaplanowany</button>
+          </div>
+        </div>
+        <div class="card lg:col-span-2">
+          <div class="p-4 border-b flex items-center justify-between">
+            <div class="font-medium">Zdarzenia</div>
+            <button class="btn-outline btn-sm"><i data-lucide="plus"></i> Dodaj</button>
+          </div>
+          <ul class="p-2 text-sm">
+            <li class="flex items-center gap-3 p-2 rounded-md hover:bg-accent">⚽ <span class="flex-1">Gol · J. Kowalski</span><span class="text-muted-foreground tabular-nums">23'</span></li>
+            <li class="flex items-center gap-3 p-2 rounded-md hover:bg-accent">🟨 <span class="flex-1">Żółta · M. Nowak</span><span class="text-muted-foreground tabular-nums">41'</span></li>
+            <li class="flex items-center gap-3 p-2 rounded-md hover:bg-accent">⚽ <span class="flex-1">Gol · J. Kowalski</span><span class="text-muted-foreground tabular-nums">67'</span></li>
+            <li class="flex items-center gap-3 p-2 rounded-md hover:bg-accent">⚽ <span class="flex-1">Gol · A. Wójcik (Dragons)</span><span class="text-muted-foreground tabular-nums">80'</span></li>
+          </ul>
+          <p class="px-4 pb-3 text-xs text-muted-foreground">Typy zdarzeń zależą od sportu (piłka: gol, kartka; kosz: punkty, faul).</p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <button onclick="show('sched')" class="btn-outline">Anuluj</button>
+        <button onclick="show('sched')" class="btn-primary"><i data-lucide="save"></i> Zapisz</button>
+      </div>
+    </section>
+
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- ===================== PUBLIC SHELL ===================== -->
+<div id="publicShell" class="hidden">
+  <header class="bg-brand text-brand-foreground">
+    <div class="max-w-5xl mx-auto px-6 pt-8 pb-5 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-xl bg-white/15 grid place-items-center text-3xl backdrop-blur">⚽</div>
+      <div><h1 class="text-2xl font-extrabold tracking-tight">Liga Osiedlowa 2026</h1>
+        <p class="text-brand-foreground/80 text-sm">Sezon 2025/2026 · 8 drużyn · piłka nożna</p></div>
+      <span class="ml-auto badge bg-white/15 text-brand-foreground"><span class="w-2 h-2 rounded-full bg-white animate-pulse mr-1.5"></span> Na żywo</span>
+    </div>
+    <div class="max-w-5xl mx-auto px-6 flex gap-1 text-sm">
+      <button onclick="show('pubtab')" class="pubtab px-4 py-2.5 rounded-t-lg font-medium" data-pub="pubtab">Tabela</button>
+      <button class="px-4 py-2.5 text-brand-foreground/75 hover:text-brand-foreground">Terminarz</button>
+      <button class="px-4 py-2.5 text-brand-foreground/75 hover:text-brand-foreground">Wyniki</button>
+      <button onclick="show('pubcup')" class="pubtab px-4 py-2.5 rounded-t-lg" data-pub="pubcup">Drabinka</button>
+      <button onclick="show('pubsco')" class="pubtab px-4 py-2.5 rounded-t-lg" data-pub="pubsco">Strzelcy</button>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    <!-- STANDINGS -->
+    <section data-screen="pubtab" class="active">
+      <div class="card overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-muted/60 text-muted-foreground text-xs uppercase">
+            <tr><th class="text-left px-4 py-3 w-10">#</th><th class="text-left px-4 py-3">Drużyna</th>
+              <th class="px-3 py-3 w-10">M</th><th class="px-3 py-3 w-10">W</th><th class="px-3 py-3 w-10">R</th>
+              <th class="px-3 py-3 w-10">P</th><th class="px-3 py-3 w-16">Bramki</th><th class="px-3 py-3 w-14 text-foreground font-bold">Pkt</th><th class="px-3 py-3 w-24">Forma</th></tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr class="bg-primary/5"><td class="px-4 py-3"><span class="w-6 h-6 grid place-items-center rounded-md bg-primary text-primary-foreground text-xs font-bold">1</span></td>
+              <td class="px-4 py-3 font-medium flex items-center gap-2"><span class="w-6 h-6 rounded bg-primary/10 text-primary grid place-items-center text-[10px] font-bold">FG</span> FC Górka</td>
+              <td class="text-center">5</td><td class="text-center">4</td><td class="text-center">1</td><td class="text-center">0</td><td class="text-center text-muted-foreground tabular-nums">12:4</td><td class="text-center font-bold">13</td>
+              <td class="px-3"><div class="flex gap-0.5"><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-amber-400"></i><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-primary"></i></div></td></tr>
+            <tr><td class="px-4 py-3 text-center font-semibold">2</td><td class="px-4 py-3 font-medium flex items-center gap-2"><span class="w-6 h-6 rounded bg-muted grid place-items-center text-[10px] font-bold">SP</span> Sparta</td><td class="text-center">5</td><td class="text-center">3</td><td class="text-center">1</td><td class="text-center">1</td><td class="text-center text-muted-foreground tabular-nums">9:6</td><td class="text-center font-bold">10</td><td class="px-3"><div class="flex gap-0.5"><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-amber-400"></i><i class="w-2 h-2 rounded-full bg-primary"></i></div></td></tr>
+            <tr><td class="px-4 py-3 text-center font-semibold">3</td><td class="px-4 py-3 font-medium flex items-center gap-2"><span class="w-6 h-6 rounded bg-muted grid place-items-center text-[10px] font-bold">OR</span> Orły</td><td class="text-center">5</td><td class="text-center">3</td><td class="text-center">1</td><td class="text-center">1</td><td class="text-center text-muted-foreground tabular-nums">8:7</td><td class="text-center font-bold">10</td><td class="px-3"><div class="flex gap-0.5"><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-amber-400"></i><i class="w-2 h-2 rounded-full bg-primary"></i></div></td></tr>
+            <tr><td class="px-4 py-3 text-center font-semibold">4</td><td class="px-4 py-3 font-medium flex items-center gap-2"><span class="w-6 h-6 rounded bg-orange-500/10 text-orange-600 grid place-items-center text-[10px] font-bold">DR</span> Dragons</td><td class="text-center">5</td><td class="text-center">2</td><td class="text-center">0</td><td class="text-center">3</td><td class="text-center text-muted-foreground tabular-nums">7:8</td><td class="text-center font-bold">6</td><td class="px-3"><div class="flex gap-0.5"><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-primary"></i><i class="w-2 h-2 rounded-full bg-destructive"></i></div></td></tr>
+            <tr><td class="px-4 py-3 text-center font-semibold">5</td><td class="px-4 py-3 font-medium flex items-center gap-2"><span class="w-6 h-6 rounded bg-muted grid place-items-center text-[10px] font-bold">WI</span> Wilki</td><td class="text-center">5</td><td class="text-center">0</td><td class="text-center">0</td><td class="text-center">5</td><td class="text-center text-muted-foreground tabular-nums">3:14</td><td class="text-center font-bold">0</td><td class="px-3"><div class="flex gap-0.5"><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-destructive"></i><i class="w-2 h-2 rounded-full bg-destructive"></i></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="text-xs text-muted-foreground mt-3">Sortowanie: pkt → bezpośredni mecz → różnica bramek → bramki zdobyte.</p>
+    </section>
+
+    <!-- BRACKET -->
+    <section data-screen="pubcup">
+      <div class="flex items-stretch gap-8 overflow-x-auto pb-4">
+        <div class="flex flex-col justify-around gap-4 min-w-[190px]">
+          <div class="text-xs font-semibold text-muted-foreground uppercase">Półfinały</div>
+          <div class="card text-sm overflow-hidden">
+            <div class="px-3 py-2 flex justify-between border-b"><span class="font-medium flex items-center gap-2"><span class="w-5 h-5 rounded bg-primary/10 text-primary grid place-items-center text-[9px] font-bold">FG</span>FC Górka</span><span class="font-bold">3</span></div>
+            <div class="px-3 py-2 flex justify-between text-muted-foreground"><span class="flex items-center gap-2"><span class="w-5 h-5 rounded bg-muted grid place-items-center text-[9px] font-bold">WI</span>Wilki</span><span>1</span></div></div>
+          <div class="card text-sm overflow-hidden">
+            <div class="px-3 py-2 flex justify-between text-muted-foreground border-b"><span class="flex items-center gap-2"><span class="w-5 h-5 rounded bg-muted grid place-items-center text-[9px] font-bold">OR</span>Orły</span><span>0</span></div>
+            <div class="px-3 py-2 flex justify-between"><span class="font-medium flex items-center gap-2"><span class="w-5 h-5 rounded bg-muted grid place-items-center text-[9px] font-bold">SP</span>Sparta</span><span class="font-bold">2</span></div></div>
+        </div>
+        <div class="flex flex-col justify-center gap-4 min-w-[190px]">
+          <div class="text-xs font-semibold text-muted-foreground uppercase">Finał</div>
+          <div class="card text-sm overflow-hidden ring-2 ring-primary">
+            <div class="px-3 py-2 flex justify-between border-b"><span class="font-medium flex items-center gap-2"><span class="w-5 h-5 rounded bg-primary/10 text-primary grid place-items-center text-[9px] font-bold">FG</span>FC Górka</span><span class="font-bold">2</span></div>
+            <div class="px-3 py-2 flex justify-between text-muted-foreground"><span class="flex items-center gap-2"><span class="w-5 h-5 rounded bg-muted grid place-items-center text-[9px] font-bold">SP</span>Sparta</span><span>1</span></div></div>
+        </div>
+        <div class="flex flex-col justify-center min-w-[170px]">
+          <div class="text-xs font-semibold text-muted-foreground uppercase mb-4">Zwycięzca</div>
+          <div class="bg-brand text-brand-foreground rounded-xl px-5 py-8 text-center shadow-lg">
+            <i data-lucide="trophy" class="text-3xl mb-2"></i><div class="font-bold text-lg">FC Górka</div><div class="text-brand-foreground/80 text-xs mt-1">Mistrz 2026</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCORERS -->
+    <section data-screen="pubsco">
+      <div class="card overflow-hidden">
+        <div class="px-4 py-3 border-b font-medium flex items-center gap-2"><i data-lucide="goal" class="text-primary"></i> Klasyfikacja strzelców</div>
+        <ul class="divide-y text-sm">
+          <li class="flex items-center gap-3 px-4 py-3"><span class="w-7 h-7 grid place-items-center rounded-full bg-amber-100 text-amber-700 font-bold text-xs">1</span><span class="font-medium flex-1">Jan Kowalski <span class="text-muted-foreground font-normal">· FC Górka</span></span><span class="badge bg-primary/10 text-primary">8 goli</span></li>
+          <li class="flex items-center gap-3 px-4 py-3"><span class="w-7 h-7 grid place-items-center rounded-full bg-muted font-bold text-xs">2</span><span class="font-medium flex-1">Adam Wójcik <span class="text-muted-foreground font-normal">· Dragons</span></span><span class="badge bg-muted text-muted-foreground">6 goli</span></li>
+          <li class="flex items-center gap-3 px-4 py-3"><span class="w-7 h-7 grid place-items-center rounded-full bg-muted font-bold text-xs">3</span><span class="font-medium flex-1">Piotr Zieliński <span class="text-muted-foreground font-normal">· FC Górka</span></span><span class="badge bg-muted text-muted-foreground">5 goli</span></li>
+          <li class="flex items-center gap-3 px-4 py-3"><span class="w-7 h-7 grid place-items-center rounded-full bg-muted font-bold text-xs">4</span><span class="font-medium flex-1">Tomasz Mazur <span class="text-muted-foreground font-normal">· Sparta</span></span><span class="badge bg-muted text-muted-foreground">4 gole</span></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+  <footer class="max-w-5xl mx-auto px-6 py-8 text-center text-xs text-muted-foreground">Powered by TournamentApp · /t/liga-osiedlowa</footer>
+</div>
+
+<script>
+  function show(id){
+    const isPublic = id.startsWith('pub');
+    const isLogin = id === 'login';
+    document.getElementById('adminShell').classList.toggle('hidden', isPublic || isLogin);
+    document.getElementById('publicShell').classList.toggle('hidden', !isPublic);
+    document.querySelectorAll('[data-screen]').forEach(s=>s.classList.toggle('active', s.dataset.screen===id));
+    document.querySelectorAll('[data-nav]').forEach(n=>n.classList.toggle('active', n.dataset.nav===id));
+    document.querySelectorAll('[data-pub]').forEach(t=>{
+      const on = t.dataset.pub===id;
+      t.classList.toggle('bg-white', on); t.classList.toggle('text-brand', on); t.classList.toggle('font-medium', on);
+    });
+    window.scrollTo(0,0);
+    if(window.lucide) lucide.createIcons();
+  }
+  show('login');
+  lucide.createIcons();
+</script>
+</body>
+</html>

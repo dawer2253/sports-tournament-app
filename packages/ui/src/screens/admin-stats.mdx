@@ -1,0 +1,40 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-stats.stories'
+
+<Meta of={Stories} />
+
+# Admin · Statystyki — specyfikacja
+
+Ekran statystyk turnieju dla organizatora, wewnątrz `AdminShell` (zakładka „Statystyki").
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Dać organizatorowi szybki przegląd kondycji rozgrywek: skala aktywności (mecze, bramki), skuteczność ofensywna oraz dyscyplina (kartki), bez wchodzenia w szczegóły pojedynczych meczów.
+
+## Dane (wejście)
+- Metryki liczone **on-read** z agregatów tabeli (`standings`): rozegrane mecze = suma `p` / 2, bramki łącznie = suma `gf`, średnia bramek na mecz = bramki / mecze.
+- Żółte kartki — wartość zbiorcza turnieju (docelowo suma zdarzeń `MatchEvent` typu `yellow`).
+- Najlepsi strzelcy — `scorers` (pozycja, zawodnik, drużyna, liczba goli).
+- Najskuteczniejsze drużyny — `standings` posortowane malejąco wg `gf`, top 5.
+
+## Reguły
+- Kafle metryk: siatka `sm:grid-cols-2 lg:grid-cols-4`, wartość `text-2xl font-bold`, etykieta `text-xs text-muted-foreground`.
+- Średnia bramek zaokrąglana do jednego miejsca po przecinku (separator dziesiętny: przecinek).
+- Słupek drużyny: szerokość = `gf / max(gf) * 100%`, lider ma pełny słupek.
+- Kolejność strzelców i drużyn — malejąco wg goli.
+
+## Stany
+- **Domyślny** — pełny komplet danych (powyżej).
+- **Brak rozegranych meczów** — wszystkie metryki zerowe, listy puste, słupki 0% (TODO: pusty stan z komunikatem).
+- **Turniej zakończony** — te same sekcje, dane finalne (bez zmian w układzie).
+
+## Zachowanie
+- Wszystkie kolory przez tokeny theme — poprawny tryb jasny i ciemny (motyw globalny z toolbara).
+- Responsywność: metryki 1→2→4 kolumny, sekcje analityczne 1→2 kolumny (`lg:grid-cols-2`).
+- Słupki i listy renderowane bez bibliotek zewnętrznych (czysty CSS na tokenach).
+
+## Otwarte pytania
+- Czy liczyć żółte kartki realnie ze zdarzeń meczów, czy trzymać agregat po stronie API?
+- Czy dodać metryki dyscypliny osobno (czerwone kartki, czyste konta)?
+- Ile pozycji pokazywać w „Najskuteczniejsze drużyny" — stałe top 5 czy konfigurowalne?

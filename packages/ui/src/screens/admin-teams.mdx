@@ -1,0 +1,40 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-teams.stories'
+
+<Meta of={Stories} />
+
+# Admin · Drużyny — specyfikacja
+
+Ekran zarządzania drużynami i ich składami w obrębie jednego turnieju.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Umożliwić organizatorowi przegląd wszystkich drużyn turnieju oraz zarządzanie każdą drużyną i jej zawodnikami z jednego miejsca.
+
+## Dane (wejście)
+- `tournament` — nazwa turnieju i liczba drużyn (w podtytule).
+- `teams` — lista drużyn: skrót (`abbr`), nazwa (`name`), liczba zawodników (`players`).
+- `players` — zawodnicy przypisani do drużyny przez `teamId`: numer, imię i nazwisko, pozycja.
+
+## Reguły
+- Skład drużyny to zawodnicy z `players` odfiltrowani po `teamId`.
+- Drużyny bez wpisów w `players` pokazują 2 pozycje przykładowe (placeholder) zamiast pustej listy.
+- Podtytuł łączy nazwę turnieju z liczbą drużyn liczoną z `teams`.
+
+## Stany
+- **Pełna lista** — domyślny (powyżej): 8 kart drużyn w siatce dwukolumnowej.
+- **Drużyna z realnym składem** — lista zawodników z numerem, imieniem i pozycją.
+- **Drużyna bez składu** — pozycje przykładowe z numerem „—".
+- **Pusta lista drużyn** — komunikat zachęcający do dodania pierwszej drużyny (TODO).
+
+## Zachowanie
+- Przycisk „Dodaj drużynę" (nagłówek) otwiera formularz nowej drużyny (TODO: dialog).
+- Ikona ołówka na karcie otwiera edycję danych drużyny (TODO: dialog).
+- Przycisk „Dodaj zawodnika" dopisuje zawodnika do składu danej drużyny (TODO: dialog).
+- Responsywność: jedna kolumna na wąskich ekranach, dwie od `lg`.
+
+## Otwarte pytania
+- Czy usuwanie drużyny/zawodnika dostępne stąd, czy tylko z ekranu edycji?
+- Czy pokazywać zdjęcia/awatary zawodników w składzie?
+- Czy limit zawodników na drużynę jest konfigurowalny per turniej?

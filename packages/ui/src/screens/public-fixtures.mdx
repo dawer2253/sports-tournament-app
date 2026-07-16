@@ -1,0 +1,37 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './public-fixtures.stories'
+
+<Meta of={Stories} />
+
+# Public · Terminarz — specyfikacja
+
+Publiczny, read-only widok terminarza pojedynczej kolejki (dostępny po `slug`, np. `/t/liga-osiedlowa`).
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pokazać kibicom i zawodnikom rozkład meczów wybranej kolejki — godziny, boiska, wyniki i statusy — bez logowania.
+
+## Dane (wejście)
+- Lista meczów kolejki (`Match[]`): gospodarz, gość, godzina (`kickoff`), boisko (`venue`), status, wynik (`homeScore` / `awayScore`).
+- Numer kolejki (`round`) oraz data rozgrywania (`date`) — brane z meczów kolejki.
+
+## Reguły
+- Wynik (pigułka `bg-foreground`) wyświetlany tylko dla statusów `finished` i `live`.
+- Dla statusu `scheduled` w miejscu wyniku pokazujemy godzinę w obramowanym placeholderze.
+- Status meczu jako Badge: `finished` → default „Zakończony", `scheduled` → secondary „Zaplanowany", `live` → secondary z pulsującą kropką „Na żywo".
+- Widok jest read-only — brak akcji edycji (to strona publiczna).
+
+## Stany
+- **Domyślny** — kolejka z meczami zakończonymi, zaplanowanymi i trwającym na żywo (powyżej).
+- **Brak meczów w kolejce** — pusty stan z komunikatem (TODO).
+- **Kolejka w całości zaplanowana** — same placeholdery godzin, brak wyników (TODO).
+
+## Zachowanie
+- Nawigacja między kolejkami: strzałki `‹` / `›` przełączają `round` (na razie statyczne).
+- Auto-odświeżanie (polling) dla meczów `live` — aktualizacja wyniku i statusu.
+- Responsywność: na wąskich ekranach kolumna czasu/boiska skraca się (`truncate`), układ pozostaje jednowierszowy.
+
+## Otwarte pytania
+- Czy grupować mecze wg boiska lub godziny przy większej liczbie spotkań?
+- Czy pokazywać wskaźnik kolizji terminów (`collision`) w widoku publicznym?
