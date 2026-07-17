@@ -1,0 +1,53 @@
+name: Chromatic
+
+# Regresja wizualna Storybooka: na każdym PR-ze oraz baseline po merge do main.
+# Monorepo bez roota — cały build leci w packages/ui (tam jest package-lock.json).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nowszy push na ten sam branch anuluje poprzedni build (oszczędza minuty i snapshoty).
+concurrency:
+  group: chromatic-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  chromatic:
+    name: Regresja wizualna (Chromatic)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ui
+    steps:
+      # fetch-depth: 0 — Chromatic potrzebuje pełnej historii git do wyliczenia baseline.
+      - name: Checkout (pełna historia)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Node + cache npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: packages/ui/package-lock.json
+
+      - name: Instalacja zależności
+        run: npm ci
+
+      # Akcja sama odpali `npm run build-storybook` w workingDir, zbuduje i wyśle snapshoty.
+      - name: Publikacja do Chromatic
+        uses: chromaui/action@latest # opcjonalnie przypnij do konkretnego SHA
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          workingDir: packages/ui
+          buildScriptName: build-storybook
+          # Zmiany wizualne nie wywalają joba — akceptujesz je w UI Chromatic (lub przez GitHub App).
+          exitZeroOnChanges: true
+          # TurboSnap — snapshotuje tylko stories dotknięte zmianą (mocno oszczędza limit).
+          # Odkomentuj, gdy potwierdzisz, że działa (Vite/Storybook): przy niepewności robi pełny build.
+          # onlyChanged: true
