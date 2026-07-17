@@ -3,9 +3,9 @@ import * as Stories from './admin-tournament-create.stories'
 
 <Meta of={Stories} />
 
-# Admin · Kreator turnieju — specyfikacja
+# Kreator turnieju (Admin): specyfikacja
 
-Kreator zakładania nowego turnieju w panelu administratora — konfiguracja w 4 krokach (Sport → Format → Drużyny → Terminarz).
+Kreator zakładania nowego turnieju w panelu administratora: konfiguracja w 4 krokach (Sport → Format → Drużyny → Terminarz).
 
 <Canvas of={Stories.Domyslny} />
 
@@ -13,21 +13,21 @@ Kreator zakładania nowego turnieju w panelu administratora — konfiguracja w 4
 Poprowadzić organizatora przez utworzenie turnieju krok po kroku, tak aby nie musiał znać wszystkich pojęć z góry i nie mógł pominąć wymaganej konfiguracji.
 
 ## Dane (wejście)
-- Wybrany sport (krok 1) — decyduje o dostępnych regułach punktacji (np. koszykówka bez remisów).
+- Wybrany sport (krok 1): decyduje o dostępnych regułach punktacji (np. koszykówka bez remisów).
 - Wybrany format (krok 2): liga każdy z każdym, puchar (drabinka), grupy + playoff.
 - Ustawienia ligi: `mecz i rewanż` (bool), `auto-harmonogram dat` (bool), `punkty za zwycięstwo` (liczba, domyślnie 3), `punkty za remis` (liczba, domyślnie 1).
 
 ## Reguły
 - Kroki ukończone mają znacznik Check i pełne tło primary; krok aktywny jest wyróżniony obwódką primary; kroki przyszłe są muted i nieklikalne.
 - Nawigacja tylko w przód potwierdza wybór; powrót do wcześniejszego kroku pozwala go zmienić.
-- Sekcja „Ustawienia ligi" pojawia się tylko dla formatu ligowego (dla pucharu/grup — inny zestaw opcji, TODO).
+- Sekcja „Ustawienia ligi" pojawia się tylko dla formatu ligowego (dla pucharu/grup: inny zestaw opcji, TODO).
 - Punkty za remis są nieaktywne, gdy sport nie dopuszcza remisów (TODO).
 
 ## Stany
-- **Krok 2 — Format** — domyślny (powyżej); zaznaczona karta „Liga każdy z każdym".
-- **Krok 1 — Sport** — wybór dyscypliny (`Krok1Sport`); zaznaczona „Piłka nożna".
-- **Krok 3 — Drużyny** — dodawanie/import drużyn (TODO).
-- **Krok 4 — Terminarz** — generowanie i podgląd kolejek (TODO).
+- **Format (krok 2)**: domyślny (powyżej); zaznaczona karta „Liga każdy z każdym".
+- **Sport (krok 1)**: wybór dyscypliny (`Krok1Sport`); zaznaczona „Piłka nożna".
+- **Drużyny (krok 3)**: dodawanie/import drużyn (TODO).
+- **Terminarz (krok 4)**: generowanie i podgląd kolejek (TODO).
 
 ## Zachowanie
 - Przycisk „Dalej" prowadzi do kolejnego kroku; „Anuluj" porzuca kreator (z potwierdzeniem, TODO).

@@ -3,7 +3,7 @@ import * as Stories from './admin-teams.stories'
 
 <Meta of={Stories} />
 
-# Admin · Drużyny — specyfikacja
+# Drużyny (Admin): specyfikacja
 
 Ekran zarządzania drużynami i ich składami w obrębie jednego turnieju.
 
@@ -13,9 +13,9 @@ Ekran zarządzania drużynami i ich składami w obrębie jednego turnieju.
 Umożliwić organizatorowi przegląd wszystkich drużyn turnieju oraz zarządzanie każdą drużyną i jej zawodnikami z jednego miejsca.
 
 ## Dane (wejście)
-- `tournament` — nazwa turnieju i liczba drużyn (w podtytule).
-- `teams` — lista drużyn: skrót (`abbr`), nazwa (`name`), liczba zawodników (`players`).
-- `players` — zawodnicy przypisani do drużyny przez `teamId`: numer, imię i nazwisko, pozycja.
+- `tournament`: nazwa turnieju i liczba drużyn (w podtytule).
+- `teams` to lista drużyn: skrót (`abbr`), nazwa (`name`), liczba zawodników (`players`).
+- `players` to zawodnicy przypisani do drużyny przez `teamId`: numer, imię i nazwisko, pozycja.
 
 ## Reguły
 - Skład drużyny to zawodnicy z `players` odfiltrowani po `teamId`.
@@ -23,10 +23,10 @@ Umożliwić organizatorowi przegląd wszystkich drużyn turnieju oraz zarządzan
 - Podtytuł łączy nazwę turnieju z liczbą drużyn liczoną z `teams`.
 
 ## Stany
-- **Pełna lista** — domyślny (powyżej): 8 kart drużyn w siatce dwukolumnowej.
-- **Drużyna z realnym składem** — lista zawodników z numerem, imieniem i pozycją.
-- **Drużyna bez składu** — pozycje przykładowe z numerem „—".
-- **Pusta lista drużyn** — komunikat zachęcający do dodania pierwszej drużyny (TODO).
+- **Pełna lista** (domyślny, powyżej): 8 kart drużyn w siatce dwukolumnowej.
+- **Drużyna z realnym składem**: lista zawodników z numerem, imieniem i pozycją.
+- **Drużyna bez składu**: pozycje przykładowe z numerem „–".
+- **Pusta lista drużyn**: komunikat zachęcający do dodania pierwszej drużyny (TODO).
 
 ## Zachowanie
 - Przycisk „Dodaj drużynę" (nagłówek) otwiera formularz nowej drużyny (TODO: dialog).

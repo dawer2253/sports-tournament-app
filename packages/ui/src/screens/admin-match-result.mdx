@@ -3,14 +3,14 @@ import * as Stories from './admin-match-result.stories'
 
 <Meta of={Stories} />
 
-# Admin · Wynik meczu — specyfikacja
+# Wynik meczu (Admin): specyfikacja
 
 Ekran wpisywania i edycji wyniku pojedynczego meczu wraz z listą zdarzeń.
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Umożliwić organizatorowi szybkie wprowadzenie wyniku meczu, ustawienie jego statusu i rejestrację zdarzeń (gole, kartki) — z jednego ekranu.
+Umożliwić organizatorowi szybkie wprowadzenie wyniku meczu, ustawienie jego statusu i rejestrację zdarzeń (gole, kartki), z jednego ekranu.
 
 ## Dane (wejście)
 - Pojedynczy mecz (`Match`): drużyny gospodarza i gościa, `homeScore`/`awayScore`, `status`, `round`, `date`, `kickoff`, `venue`.
@@ -20,12 +20,12 @@ Umożliwić organizatorowi szybkie wprowadzenie wyniku meczu, ustawienie jego st
 ## Reguły
 - Wynik: dwie liczby całkowite ≥ 0, rozdzielone dwukropkiem; puste = mecz jeszcze bez wyniku.
 - Status: dokładnie jeden z trzech (`Zakończony`, `Trwa`, `Zaplanowany`); aktywny wyróżniony wariantem plakietki.
-- Typy zdarzeń zależą od sportu (piłka: gol, kartka; kosz: punkty, faul) — lista dostępnych typów pochodzi z konfiguracji dyscypliny.
+- Typy zdarzeń zależą od sportu (piłka: gol, kartka; kosz: punkty, faul). Lista dostępnych typów pochodzi z konfiguracji dyscypliny.
 
 ## Stany
-- **Edycja wyniku** — domyślny (powyżej), wynik i zdarzenia z meczu.
-- **Bez wyniku** — pola wyniku puste, status `Zaplanowany`, brak zdarzeń (TODO).
-- **Zapisywanie** — przycisk `Zapisz` w stanie ładowania, formularz zablokowany (TODO).
+- **Edycja wyniku** (domyślny, powyżej): wynik i zdarzenia z meczu.
+- **Bez wyniku**: pola wyniku puste, status `Zaplanowany`, brak zdarzeń (TODO).
+- **Zapisywanie**: przycisk `Zapisz` w stanie ładowania, formularz zablokowany (TODO).
 
 ## Zachowanie
 - Kliknięcie plakietki statusu zmienia status meczu (jeden aktywny naraz).
@@ -36,4 +36,4 @@ Umożliwić organizatorowi szybkie wprowadzenie wyniku meczu, ustawienie jego st
 ## Otwarte pytania
 - Czy status `Zakończony` wymaga wypełnionego wyniku przed zapisem?
 - Czy suma goli w zdarzeniach musi zgadzać się z wpisanym wynikiem?
-- Edycja/usuwanie istniejących zdarzeń — inline czy w osobnym oknie?
+- Edycja/usuwanie istniejących zdarzeń: inline czy w osobnym oknie?

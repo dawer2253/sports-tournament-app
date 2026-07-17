@@ -1,0 +1,99 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+import { Palette, RadiusScale } from './palette'
+
+<Meta title="Fundamenty/Design system" />
+
+<div className="font-sans">
+
+# Fundamenty
+
+Reguły, na których stoi cały interfejs TournamentApp. Trzymając się ich, każdy nowy ekran
+wygląda tak, jakby powstał razem z resztą: **spójnie, prosto, funkcjonalnie**.
+
+---
+
+## Trzy zasady spójności
+
+**1. Jeden kolor marki.** Zieleń (`primary` / `brand`) to jedyny nasycony kolor w chromie
+interfejsu: akcje główne, aktywne stany, linki i focus. Nie dokładamy drugiego „kolystycznego"
+akcentu. Dzięki temu uwaga trafia tam, gdzie coś się dzieje.
+
+**2. Reszta to jedna neutralna rampa.** Tła, karty, obrysy, `muted`, `secondary` i `accent`
+należą do wspólnej, lekko chłodnej rodziny szarości. Nic nie „gryzie się" z zielenią.
+
+**3. Wielobarwność tylko w danych.** Kolory `chart-1…5` istnieją wyłącznie na wykresach
+i w statystykach. W zwykłym UI ich nie używamy.
+
+> Zmieniasz motyw albo dodajesz token? Sprawdź, czy nie łamiesz którejś z trzech zasad.
+
+---
+
+## Kolory
+
+Kolory bierzemy **wyłącznie z tokenów** (`bg-primary`, `text-muted-foreground`, `border-border`…),
+nigdy jako surowe kolory Tailwinda (`bg-green-500`). Poniższe próbki są żywe. Przełącz **Motyw**
+(pasek u góry) na ciemny, żeby zobaczyć drugi zestaw. „Aa" pokazuje parę `*-foreground`.
+
+<div className="my-6">
+  <Palette />
+</div>
+
+---
+
+## Promień (radius)
+
+Estetyka jest **kanciasta, nie zaokrąglona**. Bazowy `--radius` to `0.375rem`: przyciski,
+pola i karty współdzielą tę samą wartość (`rounded-lg`), znaczniki są jeszcze ostrzejsze.
+
+<div className="my-6">
+  <RadiusScale />
+</div>
+
+---
+
+## Typografia
+
+Font: **Inter** (`--font-sans`), czysty, neutralny, pełne polskie znaki. Hierarchia nagłówków
+żyje w jednym komponencie **`Heading`** (zob. „UI / Heading"):
+
+- `level="page"`: tytuł strony (H1), **zawsze WERSALIKAMI**.
+- `level="section"`: nagłówek sekcji (H2).
+- `level="card"`: tytuł karty (H3).
+
+Nie używamy surowego `<h1>` ani ręcznego `uppercase` na ekranach. Regułę wersalików trzyma `Heading`.
+
+---
+
+## Jak zbudować nowy ekran
+
+Ekran = **layout (shell) + `Heading` + karty na treść**. Kolory i nagłówki zawsze przez tokeny/komponenty.
+
+```tsx
+import { AdminShell } from '@/components/layout/admin-shell'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+
+export function AdminExample() {
+  return (
+    <AdminShell
+      active="teams"                       // podświetla pozycję w nawigacji
+      title="Drużyny"                      // renderowane wersalikami przez <Heading>
+      subtitle="Liga Osiedlowa 2026"
+      actions={<Button><Plus className="size-4" /> Dodaj drużynę</Button>}
+    >
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="p-4">…</Card>
+      </div>
+    </AdminShell>
+  )
+}
+```
+
+Zasady kciuka:
+- **Admin** → `AdminShell`, **Public** → `PublicShell`. Nie budujemy własnych ramek.
+- Treść układamy w `Card` i siatce `grid gap-4`: jeden rytm odstępów na wszystkich ekranach.
+- Dane bierzemy z `@/lib/demo-data` (spójne między ekranami).
+- Obok `*.stories.tsx` twórz spec `*.mdx`: **Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania**.
+
+</div>

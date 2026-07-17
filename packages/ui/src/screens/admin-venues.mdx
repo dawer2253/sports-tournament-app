@@ -3,14 +3,14 @@ import * as Stories from './admin-venues.stories'
 
 <Meta of={Stories} />
 
-# Admin · Obiekty — specyfikacja
+# Obiekty (Admin): specyfikacja
 
 Ekran administracyjny z listą obiektów (boisk, hal), na których rozgrywane są mecze turnieju.
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek — dodawanie, edycję i usuwanie obiektów przypisywanych później do meczów w terminarzu.
+Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek: dodawanie, edycję i usuwanie obiektów przypisywanych później do meczów w terminarzu.
 
 ## Dane (wejście)
 - Lista obiektów: `name` (nazwa), `address` (adres), `matches` (liczba przypisanych meczów).
@@ -22,9 +22,9 @@ Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek — 
 - Akcje wiersza (edycja, usunięcie) wyrównane do prawej, ikonograficzne.
 
 ## Stany
-- **Lista obiektów** — domyślny (powyżej).
-- **Brak obiektów** — pusta tabela z zachętą „Dodaj obiekt" (TODO).
-- **Usuwanie z przypisanymi meczami** — potwierdzenie z ostrzeżeniem, gdy `matches > 0` (TODO).
+- **Lista obiektów**: domyślny (powyżej).
+- **Brak obiektów**: pusta tabela z zachętą „Dodaj obiekt" (TODO).
+- **Usuwanie z przypisanymi meczami**: potwierdzenie z ostrzeżeniem, gdy `matches > 0` (TODO).
 
 ## Zachowanie
 - Przycisk „Dodaj obiekt" (ikona `Plus`) w nagłówku otwiera formularz dodawania (TODO: dialog).

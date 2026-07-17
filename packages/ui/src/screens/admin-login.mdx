@@ -3,10 +3,10 @@ import * as Stories from './admin-login.stories'
 
 <Meta of={Stories} />
 
-# Admin · Logowanie — specyfikacja
+# Logowanie (Admin): specyfikacja
 
 Pełnoekranowy widok uwierzytelniania organizatora (poza `AdminShell`). Bramka do panelu
-zarządzania rozgrywkami — obejmuje logowanie i rejestrację nowego konta.
+zarządzania rozgrywkami: obejmuje logowanie i rejestrację nowego konta.
 
 <Canvas of={Stories.Domyslny} />
 
@@ -21,13 +21,13 @@ przekazem marketingowym o produkcie.
 
 ## Reguły
 - E-mail musi mieć poprawny format; hasło jest wymagane.
-- Rejestracja: oba hasła muszą być identyczne, minimalna długość hasła (TODO — do ustalenia).
+- Rejestracja: oba hasła muszą być identyczne, minimalna długość hasła (TODO: do ustalenia).
 - Link „Nie pamiętasz hasła?" prowadzi do osobnego przepływu resetu (TODO).
 
 ## Stany
-- **Logowanie** — domyślny (powyżej).
-- **Rejestracja** — formularz zakładania konta (`Rejestracja`).
-- **Błąd / ładowanie / walidacja pól** — TODO (blokada przycisku, `aria-invalid`, komunikat).
+- **Logowanie**: domyślny (powyżej).
+- **Rejestracja**: formularz zakładania konta (`Rejestracja`).
+- **Błąd / ładowanie / walidacja pól**: TODO (blokada przycisku, `aria-invalid`, komunikat).
 
 ## Zachowanie
 - Layout dwukolumnowy na `md+`: lewa kolumna brandowa (`bg-primary`), prawa formularz.
@@ -37,5 +37,5 @@ przekazem marketingowym o produkcie.
 
 ## Otwarte pytania
 - Logowanie przez dostawców zewnętrznych (Google / Apple)?
-- Weryfikacja e-mail po rejestracji — wymagana na MVP?
+- Weryfikacja e-mail po rejestracji: wymagana na MVP?
 - Zapamiętywanie sesji („Zapamiętaj mnie")?

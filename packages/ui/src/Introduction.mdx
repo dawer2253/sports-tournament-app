@@ -2,47 +2,66 @@ import { Meta } from '@storybook/addon-docs/blocks'
 
 <Meta title="Wprowadzenie" />
 
-# TournamentApp — Design System
+<div className="font-sans">
 
-Biblioteka komponentów i żywa specyfikacja UI dla aplikacji do organizowania lig/turniejów.
-Komponenty (shadcn/ui na Radix, Tailwind v4) + kompletne ekrany + **specki pisane jako strony MDX** obok stories.
+# TournamentApp: Design System
 
-Motyw: **northern-lights** (tweakcn) — zielony `primary`, błękit/cyan jako akcenty. Tryb jasny/ciemny przełącznikiem **Motyw** (góra).
+Biblioteka komponentów i żywa specyfikacja UI dla aplikacji do organizowania lig i turniejów.
+Komponenty (shadcn/ui na Radix, Tailwind v4) + kompletne ekrany + **specyfikacje pisane jako
+strony MDX** obok stories.
+
+Nadrzędne wartości: **prostota, spójność, funkcjonalność.** Interfejs jest kanciasty, neutralny
+i oszczędny w kolorze: jedynym nasyconym akcentem jest zieleń marki.
 
 ## Struktura
-- **UI** — komponenty atomowe (Button, Badge, Card, Table, Tabs, Input…). Każdy ma stories + autodocs.
-- **Ekrany** — złożone widoki panelu admina i strony publicznej. Każdy ekran ma stronę specyfikacji (`.mdx`).
 
-### Ekrany — Admin (panel/CMS)
-Logowanie · Dashboard · Kreator turnieju · Drużyny · Terminarz · Wynik meczu · Drabinka · Obiekty · Statystyki · Branding i ustawienia.
+- **Fundamenty**: reguły systemu (kolory/tokeny, promień, typografia oraz przepis „jak zbudować ekran"). **Zacznij tutaj.**
+- **UI**: komponenty atomowe (Button, Badge, Card, Table, Tabs, Input…). Każdy ma stories + autodocs.
+- **Ekrany**: złożone widoki panelu admina i strony publicznej. Każdy ekran ma stronę specyfikacji (`.mdx`).
 
-### Ekrany — Public (strona rozgrywek)
-Przegląd · Tabela · Terminarz · Wyniki · Drabinka · Strzelcy.
+### Ekrany / Admin (panel/CMS)
+Logowanie, Dashboard, Kreator turnieju, Drużyny, Terminarz, Wynik meczu, Drabinka, Obiekty, Statystyki, Branding i ustawienia.
 
-Wspólne layouty: `AdminShell` (sidebar + topbar) i `PublicShell` (brandowany nagłówek + zakładki). Dane demo w `src/lib/demo-data.ts` (spójne między ekranami).
+### Ekrany / Public (strona rozgrywek)
+Przegląd, Tabela, Terminarz, Wyniki, Drabinka, Strzelcy.
 
-## Tokeny motywu
-Kolory jako zmienne CSS w przestrzeni **oklch** (Tailwind v4, `@theme inline`), z obsługą trybu jasny/ciemny i koloru `--brand` per turniej.
+Wspólne layouty: **`AdminShell`** (sidebar + topbar) i **`PublicShell`** (brandowany nagłówek + zakładki).
+Dane demo w `src/lib/demo-data.ts` (spójne między ekranami).
+
+## Motyw
+
+Motyw **„pitch"**: zieleń boiska jako marka, na chłodnej, neutralnej rampie szarości.
+Kolory to zmienne CSS w przestrzeni **oklch** (Tailwind v4, `@theme inline`), z trybem jasny/ciemny
+(przełącznik **Motyw** u góry) i konfigurowalnym `--brand` per turniej.
+
+Pełna paleta z żywymi próbkami i regułami: **„Fundamenty / Design system".**
 
 | Token | Rola |
 |---|---|
-| `--background` / `--foreground` | tło / tekst |
-| `--primary` | akcja główna (zieleń marki) |
-| `--secondary` / `--accent` | akcenty (błękit / cyan) |
+| `--background` / `--foreground` | tło treści / tekst |
+| `--card` / `--popover` | karty, menu, elementy wyniesione |
+| `--primary` | akcja główna, aktywne stany, linki, focus (zieleń) |
+| `--secondary` / `--accent` | neutralne tła drugorzędne i stany hover |
 | `--muted` / `--muted-foreground` | tła pomocnicze / tekst drugorzędny |
-| `--destructive` | błędy, ostrzeżenia, kolizje |
+| `--destructive` | błędy, usuwanie, kolizje |
 | `--border` / `--input` / `--ring` | obrysy i focus |
-| `--brand` | kolor publicznej strony turnieju (konfigurowalny per turniej) |
+| `--chart-1…5` | serie danych (**kolor tylko na wykresach**) |
+| `--brand` | kolor publicznej strony turnieju (konfigurowalny) |
 
-Zmiana motywu = podmiana bloków `:root` / `.dark` w `src/index.css` (np. eksport z tweakcn).
+## Decyzje projektowe
 
-## Decyzje projektowe (design)
-Ustalenia obowiązujące w całym UI — realizowane komponentami, nie kopiowaniem klas:
-- **Font główny: Inter** (`--font-sans`). Czysty, neutralny, bardzo dobra czytelność i polskie znaki.
-- **Tytuł strony (H1) zawsze WERSALIKAMI** — przez komponent `Heading` (poziom `page`). Nie używamy surowego `<h1>` ani ręcznego `uppercase` na ekranach. Zob. „UI · Heading".
-- **Badge kanciaste** — `rounded-[3px]`, równa wysokość, `font-semibold` + `tracking-wide` (bez „pigułek"). Zob. „UI · Badge".
-- **Kolory tylko z tokenów** motywu northern-lights (oklch); akcent publiczny przez `--brand`.
+Ustalenia obowiązujące w całym UI, realizowane komponentami, nie kopiowaniem klas:
 
-## Jak pisać specki
-Dla każdego ekranu twórz plik `*.mdx` obok `*.stories.tsx` i opisz: **Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania**.
-Wzór: „Ekrany · Public · Tabela" lub „Ekrany · Admin · Drabinka".
+- **Jeden kolor marki (zieleń).** Bez drugiego nasyconego akcentu; kolor wielobarwny tylko w danych.
+- **Font Inter** (`--font-sans`): czysty, neutralny, pełne polskie znaki.
+- **Tytuł strony (H1) zawsze WERSALIKAMI**: przez komponent `Heading` (poziom `page`). Bez surowego `<h1>` i ręcznego `uppercase`. Zob. „UI / Heading".
+- **Kanciasto, nie zaokrąglone**: bazowy `--radius: 0.375rem`; badge jeszcze ostrzejsze.
+- **Kolory wyłącznie z tokenów** (oklch), nigdy surowe kolory Tailwinda.
+
+## Jak pisać specyfikacje
+
+Dla każdego ekranu twórz plik `*.mdx` obok `*.stories.tsx` i opisz:
+**Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania.**
+Wzór: „Ekrany / Public / Tabela" lub „Ekrany / Admin / Drabinka".
+
+</div>

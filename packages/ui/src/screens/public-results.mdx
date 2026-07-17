@@ -3,19 +3,19 @@ import * as Stories from './public-results.stories'
 
 <Meta of={Stories} />
 
-# Public · Wyniki — specyfikacja
+# Wyniki (Public): specyfikacja
 
 Publiczny, read-only widok wyników meczów rozegranych i trwających (dostępny po `slug`, np. `/t/liga-osiedlowa`).
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Pokazać kibicom i zawodnikom aktualne rezultaty — bez logowania, na żywo i z historią.
+Pokazać kibicom i zawodnikom aktualne rezultaty, bez logowania, na żywo i z historią.
 
 ## Dane (wejście)
 - Mecze o statusie `finished` lub `live` (mecze `scheduled` należą do terminarza, nie tutaj).
 - Dla każdego meczu: gospodarz, gość, wynik (`homeScore:awayScore`), status, data.
-- Zdarzenia meczu (`events`) — do wypisania strzelców z minutami (typ `goal`).
+- Zdarzenia meczu (`events`): do wypisania strzelców z minutami (typ `goal`).
 
 ## Reguły
 - Filtr: pokazujemy wyłącznie `finished` i `live`.
@@ -25,14 +25,14 @@ Pokazać kibicom i zawodnikom aktualne rezultaty — bez logowania, na żywo i z
 - Strzelcy: nazwiska z minutami w jednej drobnej linijce pod wynikiem.
 
 ## Stany
-- **Lista wyników** — domyślny (powyżej).
-- **Mecz na żywo** — plakietka „Na żywo" z pulsującą kropką pod wynikiem oraz wskaźnik „Na żywo" w nagłówku.
-- **Brak rozegranych meczów** — pusty stan z komunikatem.
+- **Lista wyników**: domyślny (powyżej).
+- **Mecz na żywo**: plakietka „Na żywo" z pulsującą kropką pod wynikiem oraz wskaźnik „Na żywo" w nagłówku.
+- **Brak rozegranych meczów**: pusty stan z komunikatem.
 
 ## Zachowanie
-- Auto-odświeżanie (polling) co X s — aktualizacja wyników live.
+- Auto-odświeżanie (polling) co X s: aktualizacja wyników live.
 - Responsywność: układ wierszowy skaluje się w obrębie `max-w-5xl`.
-- Read-only — brak akcji edycji.
+- Read-only: brak akcji edycji.
 
 ## Otwarte pytania
 - Czy pokazywać kartki (żółte/czerwone) obok strzelców?

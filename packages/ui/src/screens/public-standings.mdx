@@ -3,34 +3,34 @@ import * as Stories from './public-standings.stories'
 
 <Meta of={Stories} />
 
-# Public · Tabela ligowa — specyfikacja
+# Tabela ligowa (Public): specyfikacja
 
 Publiczny, read-only widok tabeli rozgrywek (dostępny po `slug`, np. `/t/liga-osiedlowa`).
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Pokazać aktualną klasyfikację ligi zawodnikom, kibicom i sponsorom — bez logowania.
+Pokazać aktualną klasyfikację ligi zawodnikom, kibicom i sponsorom, bez logowania.
 
 ## Dane (wejście)
 - Lista drużyn z agregatami liczonymi **on-read** z meczów: `M, W, R, P, bramki+/−, pkt`.
-- `form` — wyniki ostatnich 5 meczów (W/R/P) jako kropki.
+- `form`: wyniki ostatnich 5 meczów (W/R/P) jako kropki.
 - Branding turnieju: kolor wiodący (`--brand`), logo, nazwa.
 
 ## Reguły
 - Sortowanie wg konfigurowalnej listy tiebreaków turnieju (domyślnie: pkt → bezpośredni mecz → różnica bramek → bramki zdobyte).
 - Pozycja 1 wyróżniona (tło + plakietka).
-- Strefy awansu/spadku: kolor lewej krawędzi wiersza (TODO — do ustalenia per turniej).
+- Strefy awansu/spadku: kolor lewej krawędzi wiersza (TODO: do ustalenia per turniej).
 
 ## Stany
-- **Pełna tabela** — domyślny (powyżej).
-- **Brak rozegranych meczów** — wszystkie zera, kolejność wg nazwy (TODO).
-- **Faza grupowa** — osobna tabela na grupę (TODO: wariant `Grupy`).
+- **Pełna tabela**: domyślny (powyżej).
+- **Brak rozegranych meczów**: wszystkie zera, kolejność wg nazwy (TODO).
+- **Faza grupowa**: osobna tabela na grupę (TODO: wariant `Grupy`).
 
 ## Zachowanie
-- Auto-odświeżanie (polling) co X s — wskaźnik „Na żywo".
+- Auto-odświeżanie (polling) co X s: wskaźnik „Na żywo".
 - Responsywność: na mobile chowamy kolumnę „Forma".
 
 ## Otwarte pytania
 - Czy pokazywać kolumnę „Forma" na MVP?
-- Strefy awansu/spadku — konfigurowalne czy stałe?
+- Strefy awansu/spadku: konfigurowalne czy stałe?

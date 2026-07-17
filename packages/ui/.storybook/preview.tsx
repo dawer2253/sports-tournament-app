@@ -6,7 +6,7 @@ const preview: Preview = {
     controls: { matchers: { color: /(background|color)$/i, date: /Date$/i } },
     a11y: { test: 'todo' },
     options: {
-      storySort: { order: ['Wprowadzenie', 'UI', 'Ekrany'] },
+      storySort: { order: ['Wprowadzenie', 'Fundamenty', 'UI', 'Ekrany'] },
     },
   },
   globalTypes: {

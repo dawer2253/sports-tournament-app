@@ -3,9 +3,9 @@ import * as Stories from './typography.stories'
 
 <Meta of={Stories} />
 
-# Heading — nagłówki
+# Heading: nagłówki
 
-Komponent typografii nagłówków. Reguły stylu nagłówków żyją w jednym miejscu (`components/ui/typography.tsx`), żeby żaden ekran nie mógł ich złamać przypadkiem — nie używamy surowych `<h1>`/`<h2>` w ekranach.
+Komponent typografii nagłówków. Reguły stylu nagłówków żyją w jednym miejscu (`components/ui/typography.tsx`), żeby żaden ekran nie mógł ich złamać przypadkiem. Nie używamy surowych `<h1>`/`<h2>` w ekranach.
 
 <Canvas of={Stories.Wszystkie} />
 
@@ -17,7 +17,7 @@ Komponent typografii nagłówków. Reguły stylu nagłówków żyją w jednym mi
 | `card` | `h3` | tytuł karty | `text-base font-semibold` |
 
 ## Zasady
-- **Tytuł strony (H1) jest zawsze pisany wersalikami** — to decyzja projektowa, wymuszona w wariancie `page`. Nie ustawiaj `uppercase` ręcznie na ekranach.
+- **Tytuł strony (H1) jest zawsze pisany wersalikami**: to decyzja projektowa, wymuszona w wariancie `page`. Nie ustawiaj `uppercase` ręcznie na ekranach.
 - Używaj `Heading`, nie surowego `<h1>`/`<h2>`. Do zmiany samego znacznika (semantyka) bez zmiany wyglądu użyj `as` (np. `<Heading level="page" as="h2">`).
 - Nagłówki dziedziczą font główny **Inter** (`--font-sans`).
 

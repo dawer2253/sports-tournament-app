@@ -3,36 +3,36 @@ import * as Stories from './public-bracket.stories'
 
 <Meta of={Stories} />
 
-# Public · Drabinka — specyfikacja
+# Drabinka (Public): specyfikacja
 
 Publiczny, read-only widok fazy pucharowej (dostępny po `slug`, np. `/t/liga-osiedlowa`).
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Pokazać przebieg fazy pucharowej — od półfinałów po mistrza — kibicom i sponsorom, bez logowania.
+Pokazać przebieg fazy pucharowej (od półfinałów po mistrza) kibicom i sponsorom, bez logowania.
 
 ## Dane (wejście)
-- `bracket` — lista rund (`Półfinały`, `Finał`), każda z listą meczów.
+- `bracket`: lista rund (`Półfinały`, `Finał`), każda z listą meczów.
 - Mecz: para drużyn (`home`, `away`), wynik (`homeScore`, `awayScore`) oraz `winner` (`home` / `away`).
-- `bracketWinner` — drużyna, która wygrała finał (mistrz).
+- `bracketWinner`: drużyna, która wygrała finał (mistrz).
 - Branding turnieju: kolor wiodący (`--brand`), logo, nazwa.
 
 ## Reguły
 - Rundy renderowane poziomo, od lewej do prawej, w kolejności rozgrywania.
 - Zwycięzca meczu wyróżniony (`font-medium`), przegrany wyszarzony (`text-muted-foreground`).
 - Finał wyróżniony ramką `ring-2 ring-primary`.
-- Kolumna „Zwycięzca" na końcu — karta w kolorze marki z ikoną i podpisem „Mistrz 2026".
-- Brak drużyny (mecz nierozstrzygnięty) — placeholder „Do ustalenia" i wynik `–`.
+- Kolumna „Zwycięzca" na końcu: karta w kolorze marki z ikoną i podpisem „Mistrz 2026".
+- Brak drużyny (mecz nierozstrzygnięty): placeholder „Do ustalenia" i wynik `–`.
 
 ## Stany
-- **Rozstrzygnięta drabinka** — domyślny (powyżej): wszystkie mecze mają wynik i mistrza.
-- **W toku** — część rund bez wyników; kolumna „Zwycięzca" ukryta do finału (TODO).
-- **Więcej rund** — ćwierćfinały i dalej; kontener przewijany poziomo (TODO).
+- **Rozstrzygnięta drabinka** (domyślny, powyżej): wszystkie mecze mają wynik i mistrza.
+- **W toku**: część rund bez wyników; kolumna „Zwycięzca" ukryta do finału (TODO).
+- **Więcej rund**: ćwierćfinały i dalej; kontener przewijany poziomo (TODO).
 
 ## Zachowanie
-- Kontener `overflow-x-auto` — na wąskich ekranach drabinka przewijana w poziomie.
-- Auto-odświeżanie (polling) — wskaźnik „Na żywo" w nagłówku.
+- Kontener `overflow-x-auto`: na wąskich ekranach drabinka przewijana w poziomie.
+- Auto-odświeżanie (polling): wskaźnik „Na żywo" w nagłówku.
 
 ## Otwarte pytania
 - Czy rysować łączniki (linie) między rundami?
