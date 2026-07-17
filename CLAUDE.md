@@ -20,6 +20,14 @@ Na razie istnieje **tylko design system + statyczne ekrany w Storybooku**
 Root nie ma jeszcze `package.json` ani workspaces — każdy pakiet jest
 samodzielny. Polecenia npm uruchamiaj po `cd packages/ui`.
 
+## CI/CD
+
+- **Chromatic** (regresja wizualna Storybooka) w
+  [`.github/workflows/chromatic.yml`](.github/workflows/chromatic.yml). Odpala
+  się na każdym PR-ze i po merge do `main`; buduje Storybooka w `packages/ui`
+  (`build-storybook`) i publikuje snapshoty. Wymaga sekretu repo
+  `CHROMATIC_PROJECT_TOKEN` (Settings → Secrets and variables → Actions).
+
 ## Zasady globalne
 
 - **Menedżer pakietów: npm** (jest `package-lock.json`; nie pnpm/yarn).
