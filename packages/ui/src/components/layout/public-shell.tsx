@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Heading } from '@/components/ui/typography'
 import { tournament } from '@/lib/demo-data'
+import heroDay from '@/assets/public/hero-day.webp'
+import heroNight from '@/assets/public/hero-night.webp'
 
 export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'bracket' | 'scorers'
 
@@ -19,26 +20,47 @@ const TABS: { key: PublicNavKey; label: string }[] = [
 export interface PublicShellProps {
   active: PublicNavKey
   children: React.ReactNode
-  live?: boolean
 }
 
-export function PublicShell({ active, children, live = true }: PublicShellProps) {
+export function PublicShell({ active, children }: PublicShellProps) {
   return (
     <div className="min-h-screen bg-muted/40 text-foreground">
-      <header className="bg-brand text-brand-foreground">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 pb-5 pt-8">
-          <div className="grid size-14 place-items-center rounded-xl bg-white/15 text-3xl backdrop-blur">⚽</div>
+      <header className="relative isolate overflow-hidden bg-brand text-brand-foreground">
+        {/* Zdjęcie tła — motywozależne: jasne boisko (dzień) / nocny mecz pod jupiterami */}
+        <img
+          src={heroDay}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 -z-20 size-full object-cover object-[center_30%] dark:hidden"
+        />
+        <img
+          src={heroNight}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 -z-20 hidden size-full object-cover object-[center_82%] dark:block"
+        />
+        {/* Nakładka marki: tożsamość „pitch" + kontrast dla białego tekstu.
+            Jasny motyw — zieleń dominuje (jasne, energetyczne boisko).
+            Ciemny motyw — nakładka słabnie, a ciemny scrim od dołu wydobywa
+            nocny mecz pod jupiterami (efekt „floodlights"). */}
+        <div aria-hidden className="absolute inset-0 -z-10 bg-brand/75 dark:bg-brand/30" />
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-t from-brand via-brand/50 to-brand/10 dark:from-background dark:via-background/55 dark:to-transparent"
+        />
+
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 pb-5 pt-9">
+          <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-white/15 text-3xl shadow-sm ring-1 ring-white/25 backdrop-blur">
+            ⚽
+          </div>
           <div className="min-w-0">
-            <Heading className="truncate font-extrabold text-current">{tournament.name}</Heading>
-            <p className="text-sm text-brand-foreground/80">
+            <Heading className="truncate font-extrabold text-current drop-shadow-sm">
+              {tournament.name}
+            </Heading>
+            <p className="text-sm text-brand-foreground/85 drop-shadow-sm">
               {tournament.season} · {tournament.teamsCount} drużyn · {tournament.sport}
             </p>
           </div>
-          {live && (
-            <Badge className="ml-auto shrink-0 border-transparent bg-white/15 text-brand-foreground">
-              <span className="mr-1 size-2 animate-pulse rounded-full bg-white" /> Na żywo
-            </Badge>
-          )}
         </div>
         <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-6 text-sm">
           {TABS.map((t) => (
@@ -47,8 +69,8 @@ export function PublicShell({ active, children, live = true }: PublicShellProps)
               className={cn(
                 'cursor-pointer whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-colors',
                 t.key === active
-                  ? 'bg-muted/40 font-medium text-foreground'
-                  : 'text-brand-foreground/75 hover:text-brand-foreground',
+                  ? 'bg-muted font-medium text-foreground shadow-sm'
+                  : 'text-brand-foreground/80 hover:bg-white/10 hover:text-brand-foreground',
               )}
             >
               {t.label}

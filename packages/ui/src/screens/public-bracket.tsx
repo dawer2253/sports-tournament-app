@@ -1,8 +1,10 @@
 import { Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PublicShell } from '@/components/layout/public-shell'
+import { PhotoPanel } from '@/components/layout/photo-panel'
 import { bracket, bracketWinner } from '@/lib/demo-data'
 import type { BracketMatch, Team } from '@/lib/demo-data'
+import fieldImg from '@/assets/public/field.webp'
 
 function TeamRow({
   team,
@@ -68,11 +70,16 @@ export function PublicBracket() {
           <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Zwycięzca
           </h2>
-          <div className="w-56 rounded-xl bg-brand px-5 py-8 text-center text-brand-foreground">
-            <Trophy className="mx-auto mb-3 size-8" />
-            <p className="text-lg font-bold">{bracketWinner.name}</p>
-            <p className="mt-1 text-sm text-brand-foreground/80">Mistrz 2026</p>
-          </div>
+          <PhotoPanel
+            src={fieldImg}
+            focus="center 45%"
+            overlay="soft"
+            className="w-56 rounded-xl px-5 py-8 text-center"
+          >
+            <Trophy className="mx-auto mb-3 size-8 drop-shadow-sm" />
+            <p className="text-lg font-bold drop-shadow-sm">{bracketWinner.name}</p>
+            <p className="mt-1 text-sm text-brand-foreground/85 drop-shadow-sm">Mistrz 2026</p>
+          </PhotoPanel>
         </div>
       </div>
 

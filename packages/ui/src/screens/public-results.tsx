@@ -57,10 +57,9 @@ function ResultRow({ match }: { match: Match }) {
 
 export function PublicResults() {
   const groups = groupByDate(results)
-  const hasLive = results.some((m) => m.status === 'live')
 
   return (
-    <PublicShell active="results" live={hasLive}>
+    <PublicShell active="results">
       {groups.length === 0 ? (
         <div className="rounded-xl border bg-card py-16 text-center text-sm text-muted-foreground shadow-sm">
           Brak rozegranych meczów.

@@ -1,10 +1,24 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PublicShell } from '@/components/layout/public-shell'
+import { PhotoPanel } from '@/components/layout/photo-panel'
+import { Heading } from '@/components/ui/typography'
 import { standings, formColor } from '@/lib/demo-data'
+import fieldImg from '@/assets/public/field.webp'
+
+const promoted = standings.filter((r) => r.pos <= 4).length
 
 export function PublicStandings() {
   return (
     <PublicShell active="standings">
+      <PhotoPanel src={fieldImg} focus="center 60%" className="mb-5 rounded-xl px-5 py-4">
+        <Heading level="section" className="text-current drop-shadow-sm">
+          Tabela ligowa
+        </Heading>
+        <p className="mt-0.5 text-sm text-brand-foreground/85 drop-shadow-sm">
+          {standings.length} drużyn · {promoted} awansuje do fazy pucharowej
+        </p>
+      </PhotoPanel>
+
       <div className="rounded-xl border bg-card shadow-sm">
         <Table>
           <TableHeader className="[&_th]:h-9 [&_th]:text-xs [&_th]:font-medium [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">

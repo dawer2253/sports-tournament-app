@@ -1,12 +1,18 @@
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { PublicShell } from '@/components/layout/public-shell'
+import { PhotoPanel } from '@/components/layout/photo-panel'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { fixtures } from '@/lib/demo-data'
 import type { Match } from '@/lib/demo-data'
+import fieldImg from '@/assets/public/field.webp'
 
 const round = fixtures.length > 0 ? fixtures[0].round : 1
 const roundDate = fixtures.length > 0 ? fixtures[0].date : ''
+
+// Strzałki kolejki siedzą na zdjęciu — ghost musi być biały, nie neutralny.
+const navButton =
+  'text-brand-foreground hover:bg-white/15 hover:text-brand-foreground dark:hover:bg-white/15'
 
 function StatusBadge({ status }: { status: Match['status'] }) {
   if (status === 'finished') return <Badge variant="default">Zakończony</Badge>
@@ -37,16 +43,20 @@ function ScoreCell({ match }: { match: Match }) {
 export function PublicFixtures() {
   return (
     <PublicShell active="fixtures">
-      <div className="mb-5 flex items-center gap-3">
-        <Button variant="ghost" size="icon" aria-label="Poprzednia kolejka">
-          <ChevronLeft />
-        </Button>
-        <span className="text-lg font-semibold">Kolejka {round}</span>
-        <Button variant="ghost" size="icon" aria-label="Następna kolejka">
-          <ChevronRight />
-        </Button>
-        <span className="ml-auto text-sm text-muted-foreground">{roundDate}</span>
-      </div>
+      <PhotoPanel src={fieldImg} focus="center 35%" className="mb-5 rounded-xl px-3 py-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" aria-label="Poprzednia kolejka" className={navButton}>
+            <ChevronLeft />
+          </Button>
+          <span className="text-lg font-semibold drop-shadow-sm">Kolejka {round}</span>
+          <Button variant="ghost" size="icon" aria-label="Następna kolejka" className={navButton}>
+            <ChevronRight />
+          </Button>
+          <span className="ml-auto pr-2 text-sm text-brand-foreground/85 drop-shadow-sm">
+            {roundDate}
+          </span>
+        </div>
+      </PhotoPanel>
 
       <div className="divide-y rounded-xl border bg-card shadow-sm">
         {fixtures.map((m) => (

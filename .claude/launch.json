@@ -4,7 +4,7 @@
     {
       "name": "storybook",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "storybook", "--", "--no-open", "--quiet"],
+      "runtimeArgs": ["--prefix", "packages/ui", "run", "storybook", "--", "--no-open", "--quiet"],
       "port": 6006
     }
   ]

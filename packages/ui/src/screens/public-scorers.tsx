@@ -1,17 +1,27 @@
 import { Goal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardHeader } from '@/components/ui/card'
+import { Heading } from '@/components/ui/typography'
 import { PublicShell } from '@/components/layout/public-shell'
+import { PhotoPanel } from '@/components/layout/photo-panel'
 import { scorers } from '@/lib/demo-data'
+import fieldImg from '@/assets/public/field.webp'
 
 export function PublicScorers() {
   return (
     <PublicShell active="scorers">
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
-        <div className="flex items-center gap-2 border-b px-5 py-4">
-          <Goal className="size-5 text-primary" />
-          <h2 className="text-base font-semibold">Klasyfikacja strzelców</h2>
-        </div>
+      <Card className="gap-0 overflow-hidden py-0">
+        <PhotoPanel src={fieldImg} focus="center 25%">
+          <CardHeader className="flex-row items-center gap-2 space-y-0 px-5 py-4">
+            <Goal className="size-5 drop-shadow-sm" />
+            {/* Heading, nie CardTitle — CardTitle to <div>, a ta karta jest
+                jedyną sekcją ekranu i musi zostać nagłówkiem h2. */}
+            <Heading level="card" as="h2" className="text-current drop-shadow-sm">
+              Klasyfikacja strzelców
+            </Heading>
+          </CardHeader>
+        </PhotoPanel>
         <ul className="divide-y">
           {scorers.map((s) => (
             <li key={s.pos} className="flex items-center gap-3 px-5 py-3">
@@ -33,7 +43,7 @@ export function PublicScorers() {
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
       <p className="mt-3 text-xs text-muted-foreground">
         Klasyfikacja obejmuje wszystkie rozegrane mecze turnieju. Przy równej liczbie goli decyduje mniejsza liczba
         rozegranych spotkań.
