@@ -21,13 +21,18 @@ export interface PhotoPanelProps
   extends React.ComponentProps<'div'>,
     VariantProps<typeof overlayVariants> {
   src: string
-  /** Kadrowanie zdjęcia (CSS object-position), np. 'center 70%'. */
+  /**
+   * Kadrowanie zdjęcia (CSS object-position). Domyślnie dolna część kadru:
+   * w niskim pasie (~60 px) każdy obiekt na zdjęciu jest wyższy niż sam pas,
+   * więc kadr przez niego daje bezsensowny plaster. Sama murawa czyta się
+   * jako faktura przy dowolnej wysokości.
+   */
   focus?: string
 }
 
 export function PhotoPanel({
   src,
-  focus = 'center',
+  focus = '50% 82%',
   overlay,
   className,
   children,

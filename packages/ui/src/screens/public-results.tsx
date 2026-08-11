@@ -1,5 +1,6 @@
-import { Badge } from '@/components/ui/badge'
+import { Goal } from 'lucide-react'
 import { PublicShell } from '@/components/layout/public-shell'
+import { LiveMarker } from '@/components/layout/live-marker'
 import { fixtures } from '@/lib/demo-data'
 import type { Match } from '@/lib/demo-data'
 
@@ -17,18 +18,28 @@ function groupByDate(matches: Match[]): { date: string; matches: Match[] }[] {
   return groups
 }
 
-function ScorerLine({ match }: { match: Match }) {
+// Strzelcy ustawieni pod swoją drużyną. Jedna lista sklejona kropkami gubiła
+// informację, dla kogo padł gol — układ odtwarza ją bez ani jednego znaku.
+function ScorerLists({ match }: { match: Match }) {
   const goals = (match.events ?? []).filter((e) => e.type === 'goal')
   if (goals.length === 0) return null
+  const side = (teamId: number) =>
+    goals.filter((g) => g.teamId === teamId).map((g) => `${g.playerName} ${g.minute}'`)
+
   return (
-    <p className="mt-1 text-center text-xs text-muted-foreground">
-      {goals.map((g, i) => (
-        <span key={i}>
-          {i > 0 && ' · '}
-          {g.playerName} {g.minute}&apos;
-        </span>
-      ))}
-    </p>
+    <div className="mt-1.5 grid grid-cols-[1fr_auto_1fr] gap-3 text-xs text-muted-foreground">
+      <ul className="space-y-0.5 text-right">
+        {side(match.home.id).map((g) => (
+          <li key={g}>{g}</li>
+        ))}
+      </ul>
+      <Goal className="size-3.5 shrink-0 justify-self-center text-muted-foreground/60" aria-hidden />
+      <ul className="space-y-0.5">
+        {side(match.away.id).map((g) => (
+          <li key={g}>{g}</li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -43,13 +54,9 @@ function ResultRow({ match }: { match: Match }) {
         </span>
         <span className="flex-1 font-medium">{match.away.name}</span>
       </div>
-      <ScorerLine match={match} />
+      <ScorerLists match={match} />
       {live && (
-        <div className="mt-1.5 flex justify-center">
-          <Badge variant="destructive" className="gap-1">
-            <span className="size-2 animate-pulse rounded-full bg-destructive" /> Na żywo
-          </Badge>
-        </div>
+        <LiveMarker className="mt-1.5 justify-center" />
       )}
     </li>
   )

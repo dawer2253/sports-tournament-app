@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Trophy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Heading } from '@/components/ui/typography'
+import { MetaList } from '@/components/layout/meta-list'
 import { tournament } from '@/lib/demo-data'
 import heroDay from '@/assets/public/hero-day.webp'
 import heroNight from '@/assets/public/hero-night.webp'
@@ -57,9 +58,11 @@ export function PublicShell({ active, children }: PublicShellProps) {
             <Heading className="truncate font-extrabold text-current drop-shadow-sm">
               {tournament.name}
             </Heading>
-            <p className="text-sm text-brand-foreground/85 drop-shadow-sm">
-              {tournament.season} · {tournament.teamsCount} drużyn · {tournament.sport}
-            </p>
+            <MetaList className="text-sm text-brand-foreground/85 drop-shadow-sm">
+              <>{tournament.season}</>
+              <>{tournament.teamsCount} drużyn</>
+              <>{tournament.sport}</>
+            </MetaList>
           </div>
         </div>
         <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-6 text-sm">
@@ -81,8 +84,13 @@ export function PublicShell({ active, children }: PublicShellProps) {
 
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
 
-      <footer className="mx-auto flex max-w-5xl items-center justify-center gap-1.5 px-6 py-8 text-center text-xs text-muted-foreground">
-        <Trophy className="size-3.5" /> Powered by TournamentApp · /t/{tournament.slug}
+      <footer className="mx-auto flex max-w-5xl items-center justify-center px-6 py-8 text-xs text-muted-foreground">
+        <MetaList>
+          <span className="flex items-center gap-1.5">
+            <Trophy className="size-3.5" /> Powered by TournamentApp
+          </span>
+          <>/t/{tournament.slug}</>
+        </MetaList>
       </footer>
     </div>
   )

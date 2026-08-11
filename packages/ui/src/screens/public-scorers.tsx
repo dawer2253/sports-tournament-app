@@ -1,6 +1,5 @@
 import { Goal } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader } from '@/components/ui/card'
 import { Heading } from '@/components/ui/typography'
 import { PublicShell } from '@/components/layout/public-shell'
@@ -12,7 +11,7 @@ export function PublicScorers() {
   return (
     <PublicShell active="scorers">
       <Card className="gap-0 overflow-hidden py-0">
-        <PhotoPanel src={fieldImg} focus="center 25%">
+        <PhotoPanel src={fieldImg}>
           <CardHeader className="flex-row items-center gap-2 space-y-0 px-5 py-4">
             <Goal className="size-5 drop-shadow-sm" />
             {/* Heading, nie CardTitle — CardTitle to <div>, a ta karta jest
@@ -24,22 +23,27 @@ export function PublicScorers() {
         </PhotoPanel>
         <ul className="divide-y">
           {scorers.map((s) => (
-            <li key={s.pos} className="flex items-center gap-3 px-5 py-3">
+            <li key={s.pos} className="flex items-center gap-4 px-5 py-3">
+              {/* Pozycja to liczba, nie odznaczenie — samo miejsce w tabeli
+                  nie jest wyróżnieniem, które trzeba oprawiać w tło. */}
               <span
                 className={cn(
-                  'grid size-7 shrink-0 place-items-center rounded-full text-sm',
-                  s.pos === 1 ? 'bg-primary/10 font-bold text-primary' : 'bg-muted text-muted-foreground',
+                  'w-5 shrink-0 text-right text-sm tabular-nums',
+                  s.pos === 1 ? 'font-bold text-primary' : 'text-muted-foreground',
                 )}
               >
                 {s.pos}
               </span>
-              <span className="min-w-0 flex-1 truncate">
-                <span className="font-medium">{s.player}</span>{' '}
-                <span className="text-muted-foreground">· {s.team.name}</span>
+              <span className="min-w-0 flex-1">
+                {/* Zawodnik i klub to hierarchia, nie równorzędna para —
+                    niesie ją układ i kontrast, nie znak między nimi. */}
+                <span className="block truncate font-medium leading-tight">{s.player}</span>
+                <span className="block truncate text-xs text-muted-foreground">{s.team.name}</span>
               </span>
-              <Badge variant="secondary" className="shrink-0 tabular-nums">
-                {s.goals} {golsLabel(s.goals)}
-              </Badge>
+              <span className="shrink-0 text-right leading-tight">
+                <span className="text-lg font-bold tabular-nums">{s.goals}</span>{' '}
+                <span className="text-xs text-muted-foreground">{golsLabel(s.goals)}</span>
+              </span>
             </li>
           ))}
         </ul>

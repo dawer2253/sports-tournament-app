@@ -1,9 +1,9 @@
 import { CalendarClock, ChevronRight, MapPin, Radio, Trophy } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PublicShell } from '@/components/layout/public-shell'
 import { PhotoPanel } from '@/components/layout/photo-panel'
+import { LiveMarker } from '@/components/layout/live-marker'
 import { fixtures, scorers, standings } from '@/lib/demo-data'
 import type { Match } from '@/lib/demo-data'
 import scorersImg from '@/assets/public/scorers.webp'
@@ -14,7 +14,7 @@ const topStandings = standings.slice(0, 5)
 const [leader, ...chasers] = scorers
 const topChasers = chasers.slice(0, 3)
 
-function TeamBadge({ abbr }: { abbr: string }) {
+function TeamCrest({ abbr }: { abbr: string }) {
   return (
     <span className="grid size-6 shrink-0 place-items-center rounded bg-muted text-[10px] font-bold">
       {abbr}
@@ -26,20 +26,22 @@ function TeamBadge({ abbr }: { abbr: string }) {
 function FeaturedMatch({ match }: { match: Match }) {
   return (
     <div className="rounded-lg border border-primary/25 bg-primary/5 p-4">
+      {/* Kolejka to kontekst całego meczu, miejsce to jeden z jego faktów —
+          różna ranga, więc różne miejsce w układzie, a nie kropka między nimi. */}
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        Kolejka {match.round}
+      </p>
       <div className="mb-3 flex items-center justify-between gap-2">
-        <Badge variant="destructive">
-          <span className="mr-1 size-2 animate-pulse rounded-full bg-destructive-foreground" />
-          Na żywo
-        </Badge>
+        <LiveMarker />
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <MapPin className="size-3" />
-          {match.venue} · Kolejka {match.round}
+          {match.venue}
         </span>
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex min-w-0 items-center justify-end gap-2 text-right">
           <span className="truncate font-semibold">{match.home.name}</span>
-          <TeamBadge abbr={match.home.abbr} />
+          <TeamCrest abbr={match.home.abbr} />
         </div>
         <div className="flex items-center gap-2 rounded-md bg-background px-3 py-1.5 text-2xl font-extrabold tabular-nums shadow-sm">
           <span>{match.homeScore}</span>
@@ -47,7 +49,7 @@ function FeaturedMatch({ match }: { match: Match }) {
           <span>{match.awayScore}</span>
         </div>
         <div className="flex min-w-0 items-center gap-2">
-          <TeamBadge abbr={match.away.abbr} />
+          <TeamCrest abbr={match.away.abbr} />
           <span className="truncate font-semibold">{match.away.name}</span>
         </div>
       </div>
@@ -64,11 +66,11 @@ function MatchCard({ match }: { match: Match }) {
     <div className="flex items-center gap-4 rounded-lg border bg-background p-4">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 font-medium">
-          <TeamBadge abbr={match.home.abbr} />
+          <TeamCrest abbr={match.home.abbr} />
           <span className="truncate">{match.home.name}</span>
         </div>
         <div className="mt-1.5 flex items-center gap-2 font-medium">
-          <TeamBadge abbr={match.away.abbr} />
+          <TeamCrest abbr={match.away.abbr} />
           <span className="truncate">{match.away.name}</span>
         </div>
       </div>
@@ -121,7 +123,7 @@ export function PublicHome() {
                 <span className="w-4 shrink-0 text-center font-semibold tabular-nums text-muted-foreground">
                   {r.pos}
                 </span>
-                <TeamBadge abbr={r.team.abbr} />
+                <TeamCrest abbr={r.team.abbr} />
                 <span className="min-w-0 flex-1 truncate font-medium">{r.team.name}</span>
                 <span className="shrink-0 font-bold tabular-nums">{r.pts}</span>
               </div>
@@ -166,9 +168,7 @@ export function PublicHome() {
                   </span>
                   <span className="min-w-0 flex-1 truncate font-medium">{s.player}</span>
                   <span className="truncate text-xs text-muted-foreground">{s.team.name}</span>
-                  <Badge variant="secondary" className="shrink-0 tabular-nums">
-                    {s.goals}
-                  </Badge>
+                  <span className="w-5 shrink-0 text-right font-bold tabular-nums">{s.goals}</span>
                 </div>
               ))}
             </div>

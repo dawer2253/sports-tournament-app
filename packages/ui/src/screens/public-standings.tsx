@@ -1,22 +1,26 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PublicShell } from '@/components/layout/public-shell'
 import { PhotoPanel } from '@/components/layout/photo-panel'
+import { MetaList } from '@/components/layout/meta-list'
 import { Heading } from '@/components/ui/typography'
+import { cn } from '@/lib/utils'
 import { standings, formColor } from '@/lib/demo-data'
 import fieldImg from '@/assets/public/field.webp'
 
-const promoted = standings.filter((r) => r.pos <= 4).length
+// Ile miejsc premiuje awansem — docelowo z ustawień turnieju.
+const PROMOTED = 4
 
 export function PublicStandings() {
   return (
     <PublicShell active="standings">
-      <PhotoPanel src={fieldImg} focus="center 60%" className="mb-5 rounded-xl px-5 py-4">
+      <PhotoPanel src={fieldImg} className="mb-5 rounded-xl px-5 py-4">
         <Heading level="section" className="text-current drop-shadow-sm">
           Tabela ligowa
         </Heading>
-        <p className="mt-0.5 text-sm text-brand-foreground/85 drop-shadow-sm">
-          {standings.length} drużyn · {promoted} awansuje do fazy pucharowej
-        </p>
+        <MetaList className="mt-0.5 text-sm text-brand-foreground/85 drop-shadow-sm">
+          <>{standings.length} drużyn</>
+          <>{PROMOTED} awansuje do fazy pucharowej</>
+        </MetaList>
       </PhotoPanel>
 
       <div className="rounded-xl border bg-card shadow-sm">
@@ -36,15 +40,18 @@ export function PublicStandings() {
           </TableHeader>
           <TableBody>
             {standings.map((r) => (
-              <TableRow key={r.team.id} className={r.pos === 1 ? 'bg-primary/5' : ''}>
-                <TableCell>
-                  {r.pos <= 3 ? (
-                    <span className="grid size-6 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
-                      {r.pos}
-                    </span>
-                  ) : (
-                    <span className="pl-2 font-semibold">{r.pos}</span>
+              <TableRow key={r.team.id}>
+                {/* Strefa awansu to pasmo, nie cecha pojedynczego wiersza —
+                    ciągła kreska na krawędzi czyta się jak klamra obejmująca
+                    miejsca 1–{PROMOTED}, plakietka przy każdej liczbie nie. */}
+                <TableCell
+                  className={cn(
+                    'relative font-semibold tabular-nums',
+                    r.pos <= PROMOTED &&
+                      'before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary',
                   )}
+                >
+                  <span className="pl-2">{r.pos}</span>
                 </TableCell>
                 <TableCell className="font-medium">
                   <span className="flex items-center gap-2">
@@ -75,7 +82,7 @@ export function PublicStandings() {
         </Table>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Sortowanie: pkt → bezpośredni mecz → różnica bramek → bramki zdobyte. Zielone pozycje — strefa awansu do fazy pucharowej.
+        Sortowanie: pkt → bezpośredni mecz → różnica bramek → bramki zdobyte. Zielona kreska przy pozycji oznacza strefę awansu do fazy pucharowej.
       </p>
     </PublicShell>
   )
