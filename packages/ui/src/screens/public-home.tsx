@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PublicShell } from '@/components/layout/public-shell'
 import { PhotoPanel } from '@/components/layout/photo-panel'
 import { LiveMarker } from '@/components/layout/live-marker'
+import { TeamCrest } from '@/components/layout/team-crest'
 import { fixtures, scorers, standings } from '@/lib/demo-data'
 import type { Match } from '@/lib/demo-data'
 import scorersImg from '@/assets/public/scorers.webp'
@@ -13,14 +14,6 @@ const scheduled = fixtures.filter((m) => m.status === 'scheduled')
 const topStandings = standings.slice(0, 5)
 const [leader, ...chasers] = scorers
 const topChasers = chasers.slice(0, 3)
-
-function TeamCrest({ abbr }: { abbr: string }) {
-  return (
-    <span className="grid size-6 shrink-0 place-items-center rounded bg-muted text-[10px] font-bold">
-      {abbr}
-    </span>
-  )
-}
 
 /** Wyróżniony mecz na żywo — bohater sekcji na Przeglądzie. */
 function FeaturedMatch({ match }: { match: Match }) {
@@ -145,6 +138,7 @@ export function PublicHome() {
           <CardContent className="grid gap-6 sm:grid-cols-[1fr_2fr] sm:items-center">
             <PhotoPanel
               src={scorersImg}
+              overlay="strong"
               className="flex items-center justify-between gap-4 rounded-lg p-4"
             >
               <div className="min-w-0">

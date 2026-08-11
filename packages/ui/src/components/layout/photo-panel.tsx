@@ -8,13 +8,20 @@ import { cn } from '@/lib/utils'
 const overlayVariants = cva('absolute inset-0 -z-10', {
   variants: {
     overlay: {
-      /** Tekst na zdjęciu (nagłówki, nawigacja) — zieleń mocno kryje. */
+      /**
+       * Zdjęcie z wyraźnym jasnym motywem (piłka, zawodnik) pod tekstem —
+       * zieleń musi mocno kryć, inaczej litery siadają na jasnej plamie.
+       */
       strong: 'bg-brand/85',
-      /** Duża plama z pojedynczą liczbą lub ikoną — zdjęcie prześwituje. */
-      soft: 'bg-brand/70',
+      /**
+       * Sama murawa pod tekstem. Trawa ma zbliżoną jasność do zieleni marki,
+       * więc słabsza nakładka nie rusza kontrastu liter, a dopiero przy niej
+       * widać, że to zdjęcie, a nie płaskie tło.
+       */
+      texture: 'bg-brand/75',
     },
   },
-  defaultVariants: { overlay: 'strong' },
+  defaultVariants: { overlay: 'texture' },
 })
 
 export interface PhotoPanelProps

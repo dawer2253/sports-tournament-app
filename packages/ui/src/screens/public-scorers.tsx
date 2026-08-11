@@ -12,13 +12,17 @@ export function PublicScorers() {
     <PublicShell active="scorers">
       <Card className="gap-0 overflow-hidden py-0">
         <PhotoPanel src={fieldImg}>
-          <CardHeader className="flex-row items-center gap-2 space-y-0 px-5 py-4">
-            <Goal className="size-5 drop-shadow-sm" />
-            {/* Heading, nie CardTitle — CardTitle to <div>, a ta karta jest
-                jedyną sekcją ekranu i musi zostać nagłówkiem h2. */}
-            <Heading level="card" as="h2" className="text-current drop-shadow-sm">
-              Klasyfikacja strzelców
-            </Heading>
+          {/* CardHeader jest gridem, więc ikona i tytuł idą we własny flex —
+              inaczej lądują jeden pod drugim. */}
+          <CardHeader className="px-5 py-4">
+            <span className="flex items-center gap-2">
+              <Goal className="size-5 shrink-0 drop-shadow-sm" />
+              {/* Heading, nie CardTitle — CardTitle to <div>, a ta karta jest
+                  jedyną sekcją ekranu i musi zostać nagłówkiem h2. */}
+              <Heading level="card" as="h2" className="text-current drop-shadow-sm">
+                Klasyfikacja strzelców
+              </Heading>
+            </span>
           </CardHeader>
         </PhotoPanel>
         <ul className="divide-y">

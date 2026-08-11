@@ -2,6 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PublicShell } from '@/components/layout/public-shell'
 import { PhotoPanel } from '@/components/layout/photo-panel'
 import { MetaList } from '@/components/layout/meta-list'
+import { TeamCrest } from '@/components/layout/team-crest'
 import { Heading } from '@/components/ui/typography'
 import { cn } from '@/lib/utils'
 import { standings, formColor } from '@/lib/demo-data'
@@ -55,9 +56,7 @@ export function PublicStandings() {
                 </TableCell>
                 <TableCell className="font-medium">
                   <span className="flex items-center gap-2">
-                    <span className="grid size-6 place-items-center rounded bg-muted text-[10px] font-bold">
-                      {r.team.abbr}
-                    </span>
+                    <TeamCrest abbr={r.team.abbr} />
                     {r.team.name}
                   </span>
                 </TableCell>

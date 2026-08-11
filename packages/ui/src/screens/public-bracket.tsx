@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PublicShell } from '@/components/layout/public-shell'
 import { PhotoPanel } from '@/components/layout/photo-panel'
+import { TeamCrest } from '@/components/layout/team-crest'
 import { bracket, bracketWinner } from '@/lib/demo-data'
 import type { BracketMatch, BracketRound, Team } from '@/lib/demo-data'
 import fieldImg from '@/assets/public/field.webp'
@@ -32,9 +33,7 @@ function TeamRow({
         isWinner ? 'font-medium' : 'text-muted-foreground',
       )}
     >
-      <span className="grid size-5 shrink-0 place-items-center rounded bg-muted text-[10px] font-bold text-foreground">
-        {team?.abbr ?? '?'}
-      </span>
+      <TeamCrest abbr={team?.abbr ?? '?'} className="h-5 w-4" />
       <span className="min-w-0 flex-1 truncate">{team?.name ?? 'Do ustalenia'}</span>
       <span className="tabular-nums">{score ?? '–'}</span>
     </div>
@@ -49,7 +48,12 @@ function MatchCard({ match, final }: { match: BracketMatch; final?: boolean }) {
         final && 'ring-2 ring-primary',
       )}
     >
-      <TeamRow team={match.home} score={match.homeScore} isWinner={match.winner === 'home'} border />
+      <TeamRow
+        team={match.home}
+        score={match.homeScore}
+        isWinner={match.winner === 'home'}
+        border
+      />
       <TeamRow
         team={match.away}
         score={match.awayScore}
@@ -67,46 +71,57 @@ function RoundColumn({ round, last }: { round: BracketRound; last: boolean }) {
   for (let i = 0; i < round.matches.length; i += 2) pairs.push(round.matches.slice(i, i + 2))
 
   return (
-    <div className="flex shrink-0 flex-col justify-around gap-6">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="flex shrink-0 flex-col">
+      {/* Nagłówek poza strumieniem rozkładania meczów — inaczej justify-around
+          rozjeżdża etykiety rund na różne wysokości. */}
+      <h3 className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         {round.name}
       </h3>
-      {pairs.map((pair, i) => (
-        <div
-          key={i}
-          className={cn(
-            'relative flex w-56 flex-col justify-around gap-6',
-            // Klamra do następnej rundy — tylko gdy para faktycznie się schodzi.
-            !last &&
-              pair.length === 2 &&
-              'after:pointer-events-none after:absolute after:-right-4 after:top-1/4 after:h-1/2 after:w-4 after:rounded-r-md after:border-y after:border-r after:border-border',
-            !last &&
-              pair.length === 1 &&
-              'after:pointer-events-none after:absolute after:-right-4 after:top-1/2 after:w-4 after:border-t after:border-border',
-          )}
-        >
-          {pair.map((match, j) => (
-            <MatchCard key={j} match={match} final={last && round.matches.length === 1} />
-          ))}
-        </div>
-      ))}
+      <div className="flex flex-1 flex-col justify-around gap-6">
+        {pairs.map((pair, i) => (
+          <div
+            key={i}
+            className={cn(
+              'relative flex w-56 flex-col justify-around gap-6',
+              // Klamra do następnej rundy — tylko gdy para faktycznie się schodzi.
+              !last &&
+                pair.length === 2 &&
+                'after:pointer-events-none after:absolute after:-right-4 after:top-1/4 after:h-1/2 after:w-4 after:rounded-r-md after:border-y after:border-r after:border-border',
+              !last &&
+                pair.length === 1 &&
+                'after:pointer-events-none after:absolute after:-right-4 after:top-1/2 after:w-4 after:border-t after:border-border',
+            )}
+          >
+            {pair.map((match, j) => (
+              <MatchCard key={j} match={match} final={last && round.matches.length === 1} />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
 function WinnerCard({ team }: { team: Team }) {
   return (
-    <div className="flex shrink-0 flex-col justify-center gap-4">
-      <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="flex shrink-0 flex-col">
+      <h3 className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Zwycięzca
       </h3>
-      {/* Mocna nakładka, nie „soft" — na tej karcie zdjęcie jest tłem dla trzech
-          elementów tekstu, więc kontrast wygrywa z widocznością murawy. */}
-      <PhotoPanel src={fieldImg} focus="50% 45%" className="w-56 rounded-xl px-5 py-8 text-center">
-        <Trophy className="mx-auto mb-3 size-8 drop-shadow" />
-        <p className="text-lg font-bold drop-shadow">{team.name}</p>
-        <p className="mt-1 text-sm text-brand-foreground/90 drop-shadow">Mistrz 2026</p>
-      </PhotoPanel>
+      <div className="flex flex-1 flex-col justify-center">
+        {/* Mocna nakładka, nie „texture" — na tej karcie zdjęcie jest tłem dla
+            trzech elementów tekstu, więc kontrast wygrywa z widocznością murawy. */}
+        <PhotoPanel
+          src={fieldImg}
+          focus="50% 45%"
+          overlay="strong"
+          className="w-56 rounded-xl px-5 py-8 text-center"
+        >
+          <Trophy className="mx-auto mb-3 size-8 drop-shadow" />
+          <p className="text-lg font-bold drop-shadow">{team.name}</p>
+          <p className="mt-1 text-sm text-brand-foreground/90 drop-shadow">Mistrz 2026</p>
+        </PhotoPanel>
+      </div>
     </div>
   )
 }
