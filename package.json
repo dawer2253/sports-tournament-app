@@ -1,0 +1,29 @@
+{
+  "name": "sports-tournament-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "~6.0.2"
+    }
+  },
+  "scripts": {
+    "dev:admin": "npm run dev -w @tournament/admin",
+    "dev:public": "npm run dev -w @tournament/public",
+    "storybook": "npm run storybook -w @tournament/ui",
+    "mock": "npm run mock -w @tournament/api-contract",
+    "contract:validate": "npm run validate -w @tournament/api-contract",
+    "contract:generate": "npm run generate -w @tournament/api-client",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present"
+  }
+}

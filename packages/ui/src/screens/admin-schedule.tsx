@@ -1,16 +1,16 @@
 import {
   SlidersHorizontal, RefreshCw, ChevronLeft, ChevronRight, Clock, Check, AlertTriangle,
 } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { Badge } from '../components/ui/badge'
+import { Card, CardContent } from '../components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from '@/components/ui/table'
-import { tournament, fixtures, standings, scorers } from '@/lib/demo-data'
-import type { Match } from '@/lib/demo-data'
+} from '../components/ui/table'
+import { tournament, fixtures, standings, scorers } from '../lib/demo-data'
+import type { Match } from '../lib/demo-data'
 
 function StatusBadge({ status }: { status: Match['status'] }) {
   if (status === 'finished') {

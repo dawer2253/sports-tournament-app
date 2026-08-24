@@ -1,13 +1,13 @@
 import { CalendarClock, ChevronRight, MapPin, Radio, Trophy } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { PublicShell } from '@/components/layout/public-shell'
-import { PhotoPanel } from '@/components/layout/photo-panel'
-import { LiveMarker } from '@/components/layout/live-marker'
-import { TeamCrest } from '@/components/layout/team-crest'
-import { fixtures, scorers, standings } from '@/lib/demo-data'
-import type { Match } from '@/lib/demo-data'
-import scorersImg from '@/assets/public/scorers.webp'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { PublicShell } from '../components/layout/public-shell'
+import { PhotoPanel } from '../components/layout/photo-panel'
+import { LiveMarker } from '../components/layout/live-marker'
+import { TeamCrest } from '../components/layout/team-crest'
+import { fixtures, scorers, standings } from '../lib/demo-data'
+import type { Match } from '../lib/demo-data'
+import scorersImg from '../assets/public/scorers.webp'
 
 const liveMatch = fixtures.find((m) => m.status === 'live')
 const scheduled = fixtures.filter((m) => m.status === 'scheduled')

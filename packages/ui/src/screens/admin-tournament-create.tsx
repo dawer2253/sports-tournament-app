@@ -2,15 +2,15 @@ import type { ElementType } from 'react'
 import {
   Check, CheckCircle2, ListOrdered, GitFork, Trophy, ArrowRight,
 } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent,
-} from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/utils'
+} from '../components/ui/card'
+import { Switch } from '../components/ui/switch'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { cn } from '../lib/utils'
 
 type StepState = 'done' | 'active' | 'todo'
 

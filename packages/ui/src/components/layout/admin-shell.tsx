@@ -3,15 +3,15 @@ import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Palette, Settings,
   Trophy, Search, Bell, LogOut, GitFork,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Heading } from '@/components/ui/typography'
+import { cn } from '../../lib/utils'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
+import { Avatar, AvatarFallback } from '../ui/avatar'
+import { Heading } from '../ui/typography'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '../ui/dropdown-menu'
 
 export type AdminNavKey =
   | 'dashboard' | 'teams' | 'schedule' | 'bracket' | 'venues' | 'stats' | 'branding' | 'settings'

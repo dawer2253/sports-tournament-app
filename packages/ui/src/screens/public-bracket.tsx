@@ -1,12 +1,12 @@
 import { Trophy } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { PublicShell } from '@/components/layout/public-shell'
-import { PhotoPanel } from '@/components/layout/photo-panel'
-import { TeamCrest } from '@/components/layout/team-crest'
-import { bracket, bracketWinner } from '@/lib/demo-data'
-import type { BracketMatch, BracketRound, Team } from '@/lib/demo-data'
-import fieldImg from '@/assets/public/field.webp'
+import { cn } from '../lib/utils'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { PublicShell } from '../components/layout/public-shell'
+import { PhotoPanel } from '../components/layout/photo-panel'
+import { TeamCrest } from '../components/layout/team-crest'
+import { bracket, bracketWinner } from '../lib/demo-data'
+import type { BracketMatch, BracketRound, Team } from '../lib/demo-data'
+import fieldImg from '../assets/public/field.webp'
 
 // Drzewo pokazuje najwyżej tyle ostatnich rund. Przy 64 drużynach pierwsza
 // runda to 32 mecze — narysowana w drzewie daje kolumnę wysoką na kilka

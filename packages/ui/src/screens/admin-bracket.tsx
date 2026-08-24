@@ -1,9 +1,9 @@
 import { Shuffle, RefreshCw, Trophy, AlertTriangle } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import { bracket, bracketWinner } from '@/lib/demo-data'
-import type { BracketMatch, BracketRound } from '@/lib/demo-data'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { cn } from '../lib/utils'
+import { bracket, bracketWinner } from '../lib/demo-data'
+import type { BracketMatch, BracketRound } from '../lib/demo-data'
 
 function TeamRow({
   name,

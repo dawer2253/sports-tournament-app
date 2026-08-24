@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/utils'
 
 /**
  * Żywe próbki kolorów — renderują się z realnych zmiennych motywu (`var(--…)`),

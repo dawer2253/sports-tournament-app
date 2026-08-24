@@ -1,7 +1,8 @@
 name: Chromatic
 
 # Regresja wizualna Storybooka: na każdym PR-ze oraz baseline po merge do main.
-# Monorepo bez roota — cały build leci w packages/ui (tam jest package-lock.json).
+# Zależności instalujemy w rootcie (npm workspaces, jeden package-lock.json),
+# a sam build Storybooka leci w packages/ui.
 on:
   push:
     branches: [main]
@@ -19,9 +20,6 @@ jobs:
   chromatic:
     name: Regresja wizualna (Chromatic)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/ui
     steps:
       # fetch-depth: 0 — Chromatic potrzebuje pełnej historii git do wyliczenia baseline.
       - name: Checkout (pełna historia)
@@ -34,7 +32,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: packages/ui/package-lock.json
 
       - name: Instalacja zależności
         run: npm ci

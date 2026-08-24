@@ -1,9 +1,9 @@
 import { Plus, Trophy, ArrowUpRight } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { Badge } from '../components/ui/badge'
+import { Card } from '../components/ui/card'
+import { Progress } from '../components/ui/progress'
 
 const stats = [
   { label: 'Aktywne turnieje', value: '2' },

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@/lib/utils'
+import { cn } from '../../lib/utils'
 
 // Wspólny „pas fotograficzny" ekranów public: zdjęcie w tle + nakładka marki,
 // żeby biały tekst zawsze miał kontrast, a zieleń „pitch" pozostała dominantą.

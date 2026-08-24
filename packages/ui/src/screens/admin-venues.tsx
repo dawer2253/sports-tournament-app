@@ -1,9 +1,9 @@
 import { Plus, MapPin, Pencil, Trash2 } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { venues } from '@/lib/demo-data'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { Card } from '../components/ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
+import { venues } from '../lib/demo-data'
 
 export function AdminVenues() {
   return (

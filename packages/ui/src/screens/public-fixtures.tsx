@@ -1,11 +1,11 @@
 import { ChevronLeft, ChevronRight, Clock, MapPin } from 'lucide-react'
-import { PublicShell } from '@/components/layout/public-shell'
-import { PhotoPanel } from '@/components/layout/photo-panel'
-import { LiveMarker } from '@/components/layout/live-marker'
-import { Button } from '@/components/ui/button'
-import { fixtures } from '@/lib/demo-data'
-import type { Match } from '@/lib/demo-data'
-import fieldImg from '@/assets/public/field.webp'
+import { PublicShell } from '../components/layout/public-shell'
+import { PhotoPanel } from '../components/layout/photo-panel'
+import { LiveMarker } from '../components/layout/live-marker'
+import { Button } from '../components/ui/button'
+import { fixtures } from '../lib/demo-data'
+import type { Match } from '../lib/demo-data'
+import fieldImg from '../assets/public/field.webp'
 
 const round = fixtures.length > 0 ? fixtures[0].round : 1
 const roundDate = fixtures.length > 0 ? fixtures[0].date : ''

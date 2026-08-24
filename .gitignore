@@ -5,8 +5,13 @@ storybook-static/
 .DS_Store
 .env
 .env.*
+!.env.example
 vendor/
 /backend/.env
+
+# Skille agenta instaluje każdy u siebie, nie są częścią projektu.
+# Patrz docs/AGENTS-SETUP.md. Jeśli twój instalator pisze gdzie indziej, dopisz tu.
+.claude/skills/
 
 # Ciężkie oryginały zdjęć (zoptymalizowane webp trafiają do src/assets/public/)
 packages/ui/resources/

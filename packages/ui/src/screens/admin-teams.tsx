@@ -1,9 +1,9 @@
 import { Plus, Pencil } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { tournament, teams, players } from '@/lib/demo-data'
-import type { Team, Player } from '@/lib/demo-data'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { tournament, teams, players } from '../lib/demo-data'
+import type { Team, Player } from '../lib/demo-data'
 
 const placeholderPositions = ['Bramkarz', 'Napastnik']
 

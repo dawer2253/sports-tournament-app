@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '../../lib/utils'
 
 // Jeden zapis stanu „na żywo" na wszystkich ekranach public: pulsująca kropka
 // + etykieta w kolorze destructive. Nie Badge — plakietka to oprawa dla treści,

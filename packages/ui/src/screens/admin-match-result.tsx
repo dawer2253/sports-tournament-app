@@ -1,11 +1,11 @@
 import { Plus, Save } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardHeader, CardTitle, CardAction, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { fixtures } from '@/lib/demo-data'
-import type { MatchEvent, MatchStatus } from '@/lib/demo-data'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { Badge } from '../components/ui/badge'
+import { Card, CardHeader, CardTitle, CardAction, CardContent } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { fixtures } from '../lib/demo-data'
+import type { MatchEvent, MatchStatus } from '../lib/demo-data'
 
 const match = fixtures[0]
 

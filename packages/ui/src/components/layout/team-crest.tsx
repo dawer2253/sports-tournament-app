@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn } from '../../lib/utils'
 
 // Herb zastępczy — jeden kształt i jeden kolor dla wszystkich drużyn, dopóki
 // klub nie wgra własnego logo. Skrót w środku zostaje: gdyby go zabrać,

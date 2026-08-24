@@ -1,11 +1,11 @@
 import * as React from 'react'
 import { Trophy } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Heading } from '@/components/ui/typography'
-import { MetaList } from '@/components/layout/meta-list'
-import { tournament } from '@/lib/demo-data'
-import heroDay from '@/assets/public/hero-day.webp'
-import heroNight from '@/assets/public/hero-night.webp'
+import { cn } from '../../lib/utils'
+import { Heading } from '../ui/typography'
+import { MetaList } from './meta-list'
+import { tournament } from '../../lib/demo-data'
+import heroDay from '../../assets/public/hero-day.webp'
+import heroNight from '../../assets/public/hero-night.webp'
 
 export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'bracket' | 'scorers'
 

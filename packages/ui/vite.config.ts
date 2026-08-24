@@ -13,9 +13,8 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  resolve: {
-    alias: { '@': path.resolve(dirname, './src') },
-  },
+  // Bez aliasu '@': wewnątrz pakietu obowiązują ścieżki względne, żeby te same
+  // pliki dało się zaimportować z aplikacji. Patrz scripts/fix-imports.mjs.
   test: {
     projects: [{
       extends: true,

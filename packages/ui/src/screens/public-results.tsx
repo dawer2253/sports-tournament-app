@@ -1,8 +1,8 @@
 import { Goal } from 'lucide-react'
-import { PublicShell } from '@/components/layout/public-shell'
-import { LiveMarker } from '@/components/layout/live-marker'
-import { fixtures } from '@/lib/demo-data'
-import type { Match } from '@/lib/demo-data'
+import { PublicShell } from '../components/layout/public-shell'
+import { LiveMarker } from '../components/layout/live-marker'
+import { fixtures } from '../lib/demo-data'
+import type { Match } from '../lib/demo-data'
 
 // Tylko mecze rozegrane lub trwające, najnowsze u góry.
 const results = fixtures.filter((m) => m.status === 'finished' || m.status === 'live')

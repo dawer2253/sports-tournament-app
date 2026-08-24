@@ -1,0 +1,1468 @@
+openapi: 3.1.0
+
+info:
+  title: Sports Tournament API
+  version: 0.1.0
+  description: |
+    Kontrakt REST API aplikacji do prowadzenia turniejów sportowych.
+
+    Ten plik jest jedynym źródłem prawdy o kształcie API. Typy TypeScript
+    (`packages/api-client`) są z niego generowane, backend dowodzi zgodności
+    testami, a mock dla frontendu stoi na przykładach zapisanych niżej.
+    Nie opisuj tu zachowań, których backend nie realizuje: spec nie jest
+    listą życzeń.
+
+    ## Zakres v0.1
+
+    Warstwa platformy (konta, turnieje, drużyny, zawodnicy, obiekty, sporty)
+    oraz odczyt meczów, tabel i strony publicznej. Endpointy silnika rozgrywek
+    (generowanie terminarza, wpisywanie wyniku, zdarzenia meczowe, drabinka)
+    wchodzą w v0.2, ale kształty `Match`, `StandingRow` i `Round` są już
+    zamrożone, żeby ich dołożenie nie było zmianą łamiącą.
+
+    ## Konwencje
+
+    - Pola w `camelCase`.
+    - Odpowiedź zawsze w kopercie: `{ "data": ... }`, listy stronicowane
+      dodatkowo `{ "meta": ... }`.
+    - Błąd walidacji: `422` z `{ "message": ..., "errors": { pole: [...] } }`.
+      Pozostałe błędy: `{ "message": ... }`.
+    - Daty w ISO 8601 z offsetem.
+    - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
+      `/public/*` są bez autoryzacji.
+    - Stronicowana jest wyłącznie lista turniejów. Kolekcje w obrębie jednego
+      turnieju (drużyny, zawodnicy, obiekty, mecze) wracają w całości.
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Lokalny backend (Sail)
+  - url: http://localhost:4010
+    description: Mock kontraktu (Prism)
+
+tags:
+  - name: Auth
+    description: Rejestracja, logowanie, sesja organizera.
+  - name: Sports
+    description: Predefiniowane sporty i ich konfiguracja.
+  - name: Tournaments
+    description: Turnieje organizera.
+  - name: Teams
+    description: Drużyny w turnieju.
+  - name: Players
+    description: Zawodnicy drużyny.
+  - name: Venues
+    description: Obiekty w turnieju.
+  - name: Reads
+    description: Odczyt meczów i tabel po stronie panelu.
+  - name: Public
+    description: Publiczna strona turnieju, bez autoryzacji.
+
+security:
+  - bearerAuth: []
+
+paths:
+  /register:
+    post:
+      tags: [Auth]
+      summary: Załóż konto organizera
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, passwordConfirmation]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 120 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                passwordConfirmation: { type: string, minLength: 8 }
+            example:
+              name: Dawid Patko
+              email: dawid@example.com
+              password: tajnehaslo123
+              passwordConfirmation: tajnehaslo123
+      responses:
+        '201':
+          description: Konto założone, token wydany
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/AuthPayload' }
+              example:
+                data:
+                  token: 1|4bT9xQkR7fN2wUhLpVmZ
+                  user:
+                    id: 1
+                    name: Dawid Patko
+                    email: dawid@example.com
+                    createdAt: '2026-09-01T10:00:00+02:00'
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: Zaloguj się
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+            example:
+              email: dawid@example.com
+              password: tajnehaslo123
+      responses:
+        '200':
+          description: Token wydany
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/AuthPayload' }
+              example:
+                data:
+                  token: 1|4bT9xQkR7fN2wUhLpVmZ
+                  user:
+                    id: 1
+                    name: Dawid Patko
+                    email: dawid@example.com
+                    createdAt: '2026-09-01T10:00:00+02:00'
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /logout:
+    post:
+      tags: [Auth]
+      summary: Unieważnij bieżący token
+      responses:
+        '204': { description: Wylogowano }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Zalogowany organizer
+      description: Używane przy starcie panelu do odtworzenia sesji z zapisanego tokenu.
+      responses:
+        '200':
+          description: Dane konta
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+              example:
+                data:
+                  id: 1
+                  name: Dawid Patko
+                  email: dawid@example.com
+                  createdAt: '2026-09-01T10:00:00+02:00'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /sports:
+    get:
+      tags: [Sports]
+      summary: Lista sportów wraz z konfiguracją
+      description: |
+        Panel korzysta z `config`, żeby wiedzieć, jakie rodzaje zdarzeń, tiebreaki
+        i statystyki są dopuszczalne dla danego sportu. Backend waliduje to samo
+        po swojej stronie: lista na froncie jest wygodą, nie zabezpieczeniem.
+      responses:
+        '200':
+          description: Sporty predefiniowane w systemie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Sport' }
+              example:
+                data:
+                  - id: 1
+                    code: football
+                    name: Piłka nożna
+                    config:
+                      allowsDraw: true
+                      defaultPoints: { win: 3, draw: 1, loss: 0 }
+                      eventTypes:
+                        - { code: goal, label: Bramka, hasPlayer: true, stat: goals }
+                        - { code: own_goal, label: Bramka samobójcza, hasPlayer: true, stat: null }
+                        - { code: yellow_card, label: Żółta kartka, hasPlayer: true, stat: yellowCards }
+                        - { code: red_card, label: Czerwona kartka, hasPlayer: true, stat: redCards }
+                      availableTiebreakers: [points, head_to_head, goal_diff, goals_for, wins]
+                      availableStats: [goals, yellowCards, redCards]
+                  - id: 2
+                    code: basketball
+                    name: Koszykówka
+                    config:
+                      allowsDraw: false
+                      defaultPoints: { win: 2, draw: 0, loss: 1 }
+                      eventTypes:
+                        - { code: points, label: Punkty, hasPlayer: true, stat: points }
+                        - { code: foul, label: Faul, hasPlayer: true, stat: fouls }
+                      availableTiebreakers: [points, head_to_head, goal_diff, goals_for, wins]
+                      availableStats: [points, fouls]
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /tournaments:
+    get:
+      tags: [Tournaments]
+      summary: Turnieje zalogowanego organizera
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: perPage, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        '200':
+          description: Stronicowana lista turniejów
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Tournament' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
+              example:
+                data:
+                  - id: 1
+                    name: Liga Osiedlowa 2026
+                    slug: liga-osiedlowa-2026
+                    status: active
+                    sport: { id: 1, code: football, name: Piłka nożna }
+                    branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                    points: { win: 3, draw: 1, loss: 0 }
+                    tiebreakers: [points, head_to_head, goal_diff, goals_for]
+                    teamsCount: 10
+                    createdAt: '2026-09-01T10:00:00+02:00'
+                    updatedAt: '2026-09-14T18:30:00+02:00'
+                  - id: 2
+                    name: Puchar Zimowy
+                    slug: puchar-zimowy
+                    status: draft
+                    sport: { id: 2, code: basketball, name: Koszykówka }
+                    branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                    points: { win: 2, draw: 0, loss: 1 }
+                    tiebreakers: [points, head_to_head, goal_diff]
+                    teamsCount: 8
+                    createdAt: '2026-09-10T09:00:00+02:00'
+                    updatedAt: '2026-09-10T09:00:00+02:00'
+                meta: { currentPage: 1, lastPage: 1, perPage: 20, total: 2 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Tournaments]
+      summary: Załóż turniej
+      description: |
+        `format` nie jest zapisywanym polem turnieju, tylko wskazówką, jakie fazy
+        (`Stage`) utworzyć przy zakładaniu. Po utworzeniu prawdą o strukturze
+        turnieju są wyłącznie jego fazy.
+
+        `slug` jest generowany z nazwy i można go później zmienić.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TournamentCreate' }
+            example:
+              name: Liga Osiedlowa 2026
+              sportId: 1
+              format: league
+      responses:
+        '201':
+          description: Turniej założony
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Tournament' }
+              example:
+                data:
+                  id: 1
+                  name: Liga Osiedlowa 2026
+                  slug: liga-osiedlowa-2026
+                  status: draft
+                  sport: { id: 1, code: football, name: Piłka nożna }
+                  branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                  points: { win: 3, draw: 1, loss: 0 }
+                  tiebreakers: [points, head_to_head, goal_diff, goals_for]
+                  teamsCount: 0
+                  createdAt: '2026-09-01T10:00:00+02:00'
+                  updatedAt: '2026-09-01T10:00:00+02:00'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /tournaments/{tournament}:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Tournaments]
+      summary: Szczegóły turnieju
+      responses:
+        '200':
+          description: Turniej
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Tournament' }
+              example:
+                data:
+                  id: 1
+                  name: Liga Osiedlowa 2026
+                  slug: liga-osiedlowa-2026
+                  status: active
+                  sport: { id: 1, code: football, name: Piłka nożna }
+                  branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                  points: { win: 3, draw: 1, loss: 0 }
+                  tiebreakers: [points, head_to_head, goal_diff, goals_for]
+                  teamsCount: 10
+                  createdAt: '2026-09-01T10:00:00+02:00'
+                  updatedAt: '2026-09-14T18:30:00+02:00'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Tournaments]
+      summary: Zmień ustawienia turnieju
+      description: |
+        Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
+        `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
+        panel musi o tym ostrzec przed zapisem.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TournamentUpdate' }
+            example:
+              name: Liga Osiedlowa 2026/27
+              tiebreakers: [points, goal_diff, head_to_head, goals_for]
+      responses:
+        '200':
+          description: Turniej po zmianie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Tournament' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Tournaments]
+      summary: Usuń turniej
+      responses:
+        '204': { description: Usunięto }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /tournaments/{tournament}/logo:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    post:
+      tags: [Tournaments]
+      summary: Wgraj logo turnieju
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [logo]
+              properties:
+                logo: { type: string, format: binary }
+      responses:
+        '200':
+          description: Turniej z nowym logo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Tournament' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /tournaments/{tournament}/stages:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Tournaments]
+      summary: Fazy turnieju
+      description: |
+        Turniej ma zawsze co najmniej jedną fazę, także gdy jest zwykłą ligą.
+        Endpointy zapisu dla faz wchodzą w v0.2 razem z silnikiem rozgrywek.
+      responses:
+        '200':
+          description: Fazy wraz z grupami
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Stage' }
+              example:
+                data:
+                  - id: 1
+                    type: league
+                    name: Faza zasadnicza
+                    order: 1
+                    groups: []
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /tournaments/{tournament}/teams:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Teams]
+      summary: Drużyny w turnieju
+      responses:
+        '200':
+          description: Pełna lista drużyn, bez stronicowania
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Team' }
+              example:
+                data:
+                  - { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
+                  - { id: 2, tournamentId: 1, name: Sokoły Ursus, logoUrl: null, groupId: null }
+                  - { id: 3, tournamentId: 1, name: Orły Bielany, logoUrl: null, groupId: null }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Teams]
+      summary: Dodaj drużynę
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                groupId: { type: [integer, 'null'], format: int64 }
+            example:
+              name: Wilki Bemowo
+      responses:
+        '201':
+          description: Drużyna dodana
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Team' }
+              example:
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /teams/{team}:
+    parameters:
+      - { $ref: '#/components/parameters/TeamId' }
+    get:
+      tags: [Teams]
+      summary: Szczegóły drużyny
+      responses:
+        '200':
+          description: Drużyna
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Team' }
+              example:
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Teams]
+      summary: Zmień drużynę
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                groupId: { type: [integer, 'null'], format: int64 }
+      responses:
+        '200':
+          description: Drużyna po zmianie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Team' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Teams]
+      summary: Usuń drużynę
+      description: |
+        Odrzucane z kodem `422`, jeżeli drużyna wystąpiła w rozegranym meczu:
+        usunięcie zmieniłoby tabelę wstecz.
+      responses:
+        '204': { description: Usunięto }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /teams/{team}/logo:
+    parameters:
+      - { $ref: '#/components/parameters/TeamId' }
+    post:
+      tags: [Teams]
+      summary: Wgraj herb drużyny
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [logo]
+              properties:
+                logo: { type: string, format: binary }
+      responses:
+        '200':
+          description: Drużyna z nowym herbem
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Team' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /teams/{team}/players:
+    parameters:
+      - { $ref: '#/components/parameters/TeamId' }
+    get:
+      tags: [Players]
+      summary: Zawodnicy drużyny
+      responses:
+        '200':
+          description: Pełna lista zawodników, bez stronicowania
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Player' }
+              example:
+                data:
+                  - { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
+                  - { id: 2, teamId: 1, name: Piotr Kowal, number: 1, position: bramkarz }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Players]
+      summary: Dodaj zawodnika
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                number: { type: [integer, 'null'], minimum: 0, maximum: 999 }
+                position: { type: [string, 'null'], maxLength: 60 }
+            example:
+              name: Marek Nowak
+              number: 9
+              position: napastnik
+      responses:
+        '201':
+          description: Zawodnik dodany
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Player' }
+              example:
+                data: { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /players/{player}:
+    parameters:
+      - { $ref: '#/components/parameters/PlayerId' }
+    patch:
+      tags: [Players]
+      summary: Zmień zawodnika
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                number: { type: [integer, 'null'], minimum: 0, maximum: 999 }
+                position: { type: [string, 'null'], maxLength: 60 }
+      responses:
+        '200':
+          description: Zawodnik po zmianie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Player' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Players]
+      summary: Usuń zawodnika
+      responses:
+        '204': { description: Usunięto }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /tournaments/{tournament}/venues:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Venues]
+      summary: Obiekty w turnieju
+      responses:
+        '200':
+          description: Pełna lista obiektów, bez stronicowania
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Venue' }
+              example:
+                data:
+                  - { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa' }
+                  - { id: 2, tournamentId: 1, name: Hala Ursus, address: 'ul. Sosnkowskiego 3, Warszawa' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Venues]
+      summary: Dodaj obiekt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                address: { type: [string, 'null'], maxLength: 255 }
+            example:
+              name: Boisko Bemowo
+              address: 'ul. Powstańców Śląskich 1, Warszawa'
+      responses:
+        '201':
+          description: Obiekt dodany
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Venue' }
+              example:
+                data: { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /venues/{venue}:
+    parameters:
+      - { $ref: '#/components/parameters/VenueId' }
+    patch:
+      tags: [Venues]
+      summary: Zmień obiekt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                address: { type: [string, 'null'], maxLength: 255 }
+      responses:
+        '200':
+          description: Obiekt po zmianie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Venue' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Venues]
+      summary: Usuń obiekt
+      responses:
+        '204': { description: Usunięto }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /tournaments/{tournament}/matches:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+      - { name: stageId, in: query, schema: { type: integer, format: int64 } }
+      - { name: roundId, in: query, schema: { type: integer, format: int64 } }
+      - name: status
+        in: query
+        schema: { $ref: '#/components/schemas/MatchStatus' }
+    get:
+      tags: [Reads]
+      summary: Mecze turnieju
+      description: |
+        Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
+        `Match` jest już zamrożony.
+      responses:
+        '200':
+          description: Mecze, opcjonalnie zawężone parametrami
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Match' }
+              example:
+                data:
+                  - id: 1
+                    stageId: 1
+                    groupId: null
+                    round: { id: 1, name: Kolejka 1, order: 1 }
+                    homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                    awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                    homeScore: 2
+                    awayScore: 1
+                    status: finished
+                    kickoffAt: '2026-09-06T12:00:00+02:00'
+                    venue: { id: 1, name: Boisko Bemowo }
+                    nextMatchId: null
+                    bracketSlot: null
+                  - id: 2
+                    stageId: 1
+                    groupId: null
+                    round: { id: 2, name: Kolejka 2, order: 2 }
+                    homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                    homeScore: null
+                    awayScore: null
+                    status: scheduled
+                    kickoffAt: '2026-09-13T12:00:00+02:00'
+                    venue: null
+                    nextMatchId: null
+                    bracketSlot: null
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /tournaments/{tournament}/standings:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Reads]
+      summary: Tabele turnieju
+      description: |
+        Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
+        z zakończonych meczów. Jedna pozycja na fazę `league` i jedna na każdą
+        grupę w fazie `group`. Faza `knockout` nie ma tabeli.
+      responses:
+        '200':
+          description: Tabele w kolejności faz
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/StandingTable' }
+              example:
+                data:
+                  - stageId: 1
+                    stageName: Faza zasadnicza
+                    groupId: null
+                    groupName: null
+                    rows:
+                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, goalsFor: 5, goalsAgainst: 1, goalDifference: 4, points: 6 }
+                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, goalsFor: 3, goalsAgainst: 3, goalDifference: 0, points: 3 }
+                      - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, goalsFor: 1, goalsAgainst: 5, goalDifference: -4, points: 0 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /public/t/{slug}:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+    get:
+      tags: [Public]
+      summary: Publiczna strona turnieju
+      security: []
+      responses:
+        '200':
+          description: Turniej w wersji publicznej
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/PublicTournament' }
+              example:
+                data:
+                  name: Liga Osiedlowa 2026
+                  slug: liga-osiedlowa-2026
+                  status: active
+                  sport: { id: 1, code: football, name: Piłka nożna }
+                  branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                  stages:
+                    - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /public/t/{slug}/standings:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+    get:
+      tags: [Public]
+      summary: Tabele turnieju
+      security: []
+      responses:
+        '200':
+          description: Tabele
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/StandingTable' }
+              example:
+                data:
+                  - stageId: 1
+                    stageName: Faza zasadnicza
+                    groupId: null
+                    groupName: null
+                    rows:
+                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, goalsFor: 5, goalsAgainst: 1, goalDifference: 4, points: 6 }
+                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, goalsFor: 3, goalsAgainst: 3, goalDifference: 0, points: 3 }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /public/t/{slug}/fixtures:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+    get:
+      tags: [Public]
+      summary: Terminarz (mecze jeszcze nierozegrane)
+      security: []
+      responses:
+        '200':
+          description: Mecze o stanie innym niż zakończony, rosnąco po terminie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Match' }
+              example:
+                data:
+                  - id: 2
+                    stageId: 1
+                    groupId: null
+                    round: { id: 2, name: Kolejka 2, order: 2 }
+                    homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                    homeScore: null
+                    awayScore: null
+                    status: scheduled
+                    kickoffAt: '2026-09-13T12:00:00+02:00'
+                    venue: null
+                    nextMatchId: null
+                    bracketSlot: null
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /public/t/{slug}/results:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+    get:
+      tags: [Public]
+      summary: Wyniki (mecze zakończone)
+      security: []
+      responses:
+        '200':
+          description: Mecze zakończone, malejąco po terminie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Match' }
+              example:
+                data:
+                  - id: 1
+                    stageId: 1
+                    groupId: null
+                    round: { id: 1, name: Kolejka 1, order: 1 }
+                    homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                    awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                    homeScore: 2
+                    awayScore: 1
+                    status: finished
+                    kickoffAt: '2026-09-06T12:00:00+02:00'
+                    venue: { id: 1, name: Boisko Bemowo }
+                    nextMatchId: null
+                    bracketSlot: null
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /public/t/{slug}/top-scorers:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+    get:
+      tags: [Public]
+      summary: Klasyfikacja indywidualna
+      description: |
+        Statystyka, według której budowana jest klasyfikacja, zależy od sportu
+        (bramki w piłce, punkty w koszykówce), dlatego odpowiedź niesie jej kod
+        i etykietę zamiast zakładać, że chodzi o bramki.
+      security: []
+      responses:
+        '200':
+          description: Klasyfikacja zawodników
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/StatLeaderboard' }
+              example:
+                data:
+                  stat: goals
+                  label: Bramki
+                  rows:
+                    - { position: 1, player: { id: 1, name: Marek Nowak }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 4 }
+                    - { position: 2, player: { id: 5, name: Adam Zieliński }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 2 }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token wydany przez `/login` lub `/register`, bez daty wygaśnięcia.
+
+  parameters:
+    TournamentId:
+      name: tournament
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    TeamId:
+      name: team
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    PlayerId:
+      name: player
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    VenueId:
+      name: venue
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    Slug:
+      name: slug
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
+
+  responses:
+    Unauthenticated:
+      description: Brak lub nieważny token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Unauthenticated. }
+    Forbidden:
+      description: Zasób należy do innego organizera
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: This action is unauthorized. }
+    NotFound:
+      description: Zasób nie istnieje
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Nie znaleziono zasobu. }
+    ValidationError:
+      description: Dane nie przeszły walidacji
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+          example:
+            message: Podane dane są nieprawidłowe.
+            errors:
+              name: [Pole nazwa jest wymagane.]
+
+  schemas:
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    PaginationMeta:
+      type: object
+      required: [currentPage, lastPage, perPage, total]
+      properties:
+        currentPage: { type: integer, minimum: 1 }
+        lastPage: { type: integer, minimum: 1 }
+        perPage: { type: integer, minimum: 1 }
+        total: { type: integer, minimum: 0 }
+
+    User:
+      type: object
+      required: [id, name, email, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        email: { type: string, format: email }
+        createdAt: { type: string, format: date-time }
+
+    AuthPayload:
+      type: object
+      required: [token, user]
+      properties:
+        token: { type: string }
+        user: { $ref: '#/components/schemas/User' }
+
+    SportCode:
+      type: string
+      enum: [football, basketball]
+
+    Points:
+      type: object
+      required: [win, draw, loss]
+      properties:
+        win: { type: integer }
+        draw: { type: integer }
+        loss: { type: integer }
+
+    SportEventType:
+      type: object
+      required: [code, label, hasPlayer, stat]
+      properties:
+        code: { type: string }
+        label: { type: string }
+        hasPlayer:
+          type: boolean
+          description: Czy zdarzenie wymaga wskazania zawodnika.
+        stat:
+          type: [string, 'null']
+          description: Kod statystyki, do której zdarzenie się wlicza. `null` oznacza zdarzenie bez wpływu na statystyki.
+
+    SportConfig:
+      type: object
+      required: [allowsDraw, defaultPoints, eventTypes, availableTiebreakers, availableStats]
+      properties:
+        allowsDraw:
+          type: boolean
+          description: Czy w tym sporcie mecz może zakończyć się remisem.
+        defaultPoints: { $ref: '#/components/schemas/Points' }
+        eventTypes:
+          type: array
+          items: { $ref: '#/components/schemas/SportEventType' }
+        availableTiebreakers:
+          type: array
+          items: { $ref: '#/components/schemas/TiebreakerCode' }
+        availableStats:
+          type: array
+          items: { type: string }
+
+    Sport:
+      type: object
+      required: [id, code, name, config]
+      properties:
+        id: { type: integer, format: int64 }
+        code: { $ref: '#/components/schemas/SportCode' }
+        name: { type: string }
+        config: { $ref: '#/components/schemas/SportConfig' }
+
+    SportSummary:
+      type: object
+      required: [id, code, name]
+      properties:
+        id: { type: integer, format: int64 }
+        code: { $ref: '#/components/schemas/SportCode' }
+        name: { type: string }
+
+    TiebreakerCode:
+      type: string
+      description: |
+        Kryterium rozstrzygające o kolejności w tabeli. `points` jest zawsze
+        pierwsze na liście turnieju. `head_to_head` porównuje wyłącznie mecze
+        między remisującymi drużynami i nie zagłębia się rekurencyjnie: gdy nie
+        rozstrzyga, stosowane jest następne kryterium z listy.
+      enum: [points, head_to_head, goal_diff, goals_for, goals_against, wins]
+
+    TournamentStatus:
+      type: string
+      enum: [draft, active, finished]
+
+    TournamentFormat:
+      type: string
+      description: |
+        Używane wyłącznie przy zakładaniu turnieju, żeby wiedzieć jakie fazy
+        utworzyć. Nie jest polem turnieju: strukturę opisują fazy.
+      enum: [league, groups_playoff, knockout]
+
+    Branding:
+      type: object
+      required: [logoUrl, primaryColor]
+      properties:
+        logoUrl: { type: [string, 'null'], format: uri }
+        primaryColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+
+    Tournament:
+      type: object
+      required: [id, name, slug, status, sport, branding, points, tiebreakers, teamsCount, createdAt, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        slug: { type: string }
+        status: { $ref: '#/components/schemas/TournamentStatus' }
+        sport: { $ref: '#/components/schemas/SportSummary' }
+        branding: { $ref: '#/components/schemas/Branding' }
+        points:
+          allOf:
+            - $ref: '#/components/schemas/Points'
+          description: Punktacja obowiązująca w tym turnieju, wyjściowo skopiowana z domyślnej dla sportu.
+        tiebreakers:
+          type: array
+          items: { $ref: '#/components/schemas/TiebreakerCode' }
+          description: Uporządkowana lista kryteriów, stosowanych po kolei.
+        teamsCount: { type: integer, minimum: 0 }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    TournamentCreate:
+      type: object
+      required: [name, sportId, format]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        sportId: { type: integer, format: int64 }
+        format: { $ref: '#/components/schemas/TournamentFormat' }
+
+    TournamentUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        slug: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', minLength: 3, maxLength: 80 }
+        status: { $ref: '#/components/schemas/TournamentStatus' }
+        primaryColor: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }
+        points: { $ref: '#/components/schemas/Points' }
+        tiebreakers:
+          type: array
+          items: { $ref: '#/components/schemas/TiebreakerCode' }
+
+    StageType:
+      type: string
+      description: |
+        `league` to jedna tabela, `group` to kilka niezależnych tabel,
+        `knockout` to drabinka. Turniej ma zawsze co najmniej jedną fazę.
+      enum: [league, group, knockout]
+
+    Group:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+
+    Stage:
+      type: object
+      required: [id, type, name, order, groups]
+      properties:
+        id: { type: integer, format: int64 }
+        type: { $ref: '#/components/schemas/StageType' }
+        name: { type: string }
+        order: { type: integer, minimum: 1 }
+        groups:
+          type: array
+          description: Niepuste wyłącznie dla fazy `group`.
+          items: { $ref: '#/components/schemas/Group' }
+
+    RoundSummary:
+      type: object
+      description: |
+        Uporządkowany zbiór meczów rozgrywanych razem. W fazie `league` i `group`
+        nazywany w interfejsie kolejką, w fazie `knockout` rundą. W API to jeden byt.
+      required: [id, name, order]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        order: { type: integer, minimum: 1 }
+
+    Team:
+      type: object
+      required: [id, tournamentId, name, logoUrl, groupId]
+      properties:
+        id: { type: integer, format: int64 }
+        tournamentId: { type: integer, format: int64 }
+        name: { type: string }
+        logoUrl: { type: [string, 'null'], format: uri }
+        groupId:
+          type: [integer, 'null']
+          format: int64
+          description: Grupa w fazie `group`. `null`, gdy turniej nie ma fazy grupowej.
+
+    TeamSummary:
+      type: object
+      required: [id, name, logoUrl]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        logoUrl: { type: [string, 'null'], format: uri }
+
+    Player:
+      type: object
+      required: [id, teamId, name, number, position]
+      properties:
+        id: { type: integer, format: int64 }
+        teamId: { type: integer, format: int64 }
+        name: { type: string }
+        number: { type: [integer, 'null'] }
+        position: { type: [string, 'null'] }
+
+    PlayerSummary:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+
+    Venue:
+      type: object
+      required: [id, tournamentId, name, address]
+      properties:
+        id: { type: integer, format: int64 }
+        tournamentId: { type: integer, format: int64 }
+        name: { type: string }
+        address: { type: [string, 'null'] }
+
+    VenueSummary:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+
+    MatchStatus:
+      type: string
+      description: Tylko mecz `finished` wpływa na tabelę i statystyki.
+      enum: [scheduled, live, finished]
+
+    Match:
+      type: object
+      required: [id, stageId, groupId, round, homeTeam, awayTeam, homeScore, awayScore, status, kickoffAt, venue, nextMatchId, bracketSlot]
+      properties:
+        id: { type: integer, format: int64 }
+        stageId: { type: integer, format: int64 }
+        groupId:
+          type: [integer, 'null']
+          format: int64
+          description: Grupa, w ramach której mecz się liczy. `null` poza fazą `group`. Nie istnieje mecz międzygrupowy.
+        round: { $ref: '#/components/schemas/RoundSummary' }
+        homeTeam:
+          oneOf:
+            - $ref: '#/components/schemas/TeamSummary'
+            - type: 'null'
+          description: '`null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte albo gdy jest to pauza.'
+        awayTeam:
+          oneOf:
+            - $ref: '#/components/schemas/TeamSummary'
+            - type: 'null'
+        homeScore: { type: [integer, 'null'], minimum: 0 }
+        awayScore: { type: [integer, 'null'], minimum: 0 }
+        status: { $ref: '#/components/schemas/MatchStatus' }
+        kickoffAt: { type: [string, 'null'], format: date-time }
+        venue:
+          oneOf:
+            - $ref: '#/components/schemas/VenueSummary'
+            - type: 'null'
+        nextMatchId:
+          type: [integer, 'null']
+          format: int64
+          description: Mecz, do którego awansuje zwycięzca. Tylko w fazie `knockout`.
+        bracketSlot:
+          type: [string, 'null']
+          description: Pozycja w drabince, na przykład `SF1-home`. Tylko w fazie `knockout`.
+
+    StandingRow:
+      type: object
+      required: [position, team, played, won, drawn, lost, goalsFor, goalsAgainst, goalDifference, points]
+      properties:
+        position: { type: integer, minimum: 1 }
+        team: { $ref: '#/components/schemas/TeamSummary' }
+        played: { type: integer, minimum: 0 }
+        won: { type: integer, minimum: 0 }
+        drawn: { type: integer, minimum: 0 }
+        lost: { type: integer, minimum: 0 }
+        goalsFor: { type: integer, minimum: 0 }
+        goalsAgainst: { type: integer, minimum: 0 }
+        goalDifference: { type: integer }
+        points: { type: integer }
+
+    StandingTable:
+      type: object
+      required: [stageId, stageName, groupId, groupName, rows]
+      properties:
+        stageId: { type: integer, format: int64 }
+        stageName: { type: string }
+        groupId: { type: [integer, 'null'], format: int64 }
+        groupName: { type: [string, 'null'] }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/StandingRow' }
+
+    StatLeaderboardRow:
+      type: object
+      required: [position, player, team, value]
+      properties:
+        position: { type: integer, minimum: 1 }
+        player: { $ref: '#/components/schemas/PlayerSummary' }
+        team: { $ref: '#/components/schemas/TeamSummary' }
+        value: { type: integer, minimum: 0 }
+
+    StatLeaderboard:
+      type: object
+      required: [stat, label, rows]
+      properties:
+        stat:
+          type: string
+          description: Kod statystyki, zgodny z `availableStats` sportu.
+        label: { type: string }
+        rows:
+          type: array
+          items: { $ref: '#/components/schemas/StatLeaderboardRow' }
+
+    PublicTournament:
+      type: object
+      required: [name, slug, status, sport, branding, stages]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        status: { $ref: '#/components/schemas/TournamentStatus' }
+        sport: { $ref: '#/components/schemas/SportSummary' }
+        branding: { $ref: '#/components/schemas/Branding' }
+        stages:
+          type: array
+          items: { $ref: '#/components/schemas/Stage' }

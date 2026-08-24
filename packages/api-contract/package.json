@@ -1,0 +1,20 @@
+{
+  "name": "@tournament/api-contract",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Kontrakt REST API jako OpenAPI. Jedyne źródło prawdy dla frontendu i backendu.",
+  "files": [
+    "openapi.yaml"
+  ],
+  "scripts": {
+    "validate": "redocly lint openapi.yaml",
+    "mock": "prism mock openapi.yaml --port 4010 --host 127.0.0.1 --cors",
+    "mock:strict": "prism mock openapi.yaml --port 4010 --host 127.0.0.1 --cors --errors",
+    "preview": "redocly preview-docs openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.47.0",
+    "@stoplight/prism-cli": "^5.16.0"
+  }
+}
