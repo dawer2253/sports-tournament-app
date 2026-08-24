@@ -2,52 +2,101 @@
 
 Aplikacja do zarządzania turniejami sportowymi (liga / puchar): panel **admin**
 + widoki **public**. Domena po polsku (drużyny, mecze, tabela, strzelcy,
-terminarz, drabinka).
+terminarz, drabinka), nazwy w kodzie po angielsku.
 
-## Stan projektu (lipiec 2026)
+Słownik pojęć: [`CONTEXT.md`](CONTEXT.md). Decyzje trudne do odwrócenia:
+[`docs/adr/`](docs/adr/).
 
-Na razie istnieje **tylko design system + statyczne ekrany w Storybooku**
-(`packages/ui`). Reszta (backend, API, baza, właściwy frontend) jest
-**planowana** — `.gitignore` rezerwuje już `/backend/`.
+## Stan projektu (sierpień 2026)
+
+Stoi fundament: monorepo, kontrakt API i dwie aplikacje React pracujące na mocku
+kontraktu. **Backend nie istnieje** — jego pierwsze uruchomienie opisuje
+[`docs/BACKEND.md`](docs/BACKEND.md).
 
 ## Monorepo
 
-- **`packages/ui/`** — design system (shadcn/ui) + ekrany w Storybooku.
-  **Cała dzisiejsza praca dzieje się tutaj** → szczegóły w
-  [`packages/ui/CLAUDE.md`](packages/ui/CLAUDE.md).
-- _(przyszłość)_ `backend/`, `apps/…` — jeszcze nie istnieją.
+npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 
-Root nie ma jeszcze `package.json` ani workspaces — każdy pakiet jest
-samodzielny. Polecenia npm uruchamiaj po `cd packages/ui`.
+| Katalog | Zawartość |
+|---|---|
+| `packages/api-contract/` | `openapi.yaml` — **jedyne źródło prawdy o API** |
+| `packages/api-client/` | typy i klient TS generowane z kontraktu |
+| `packages/ui/` | design system + ekrany w Storybooku |
+| `apps/admin/` | panel organizera (logowanie, port 5173) |
+| `apps/public/` | strona turnieju (bez logowania, port 5174) |
+| `backend/` | Laravel, jeszcze nie zainstalowany |
 
-## CI/CD
+## Kontrakt API
 
-- **Chromatic** (regresja wizualna Storybooka) w
-  [`.github/workflows/chromatic.yml`](.github/workflows/chromatic.yml). Odpala
-  się na każdym PR-ze i po merge do `main`; buduje Storybooka w `packages/ui`
-  (`build-storybook`) i publikuje snapshoty. Wymaga sekretu repo
-  `CHROMATIC_PROJECT_TOKEN` (Settings → Secrets and variables → Actions).
+Zmiana API idzie zawsze w tej kolejności:
+
+1. zmieniasz `packages/api-contract/openapi.yaml`,
+2. `npm run contract:generate` (klient jest commitowany, nie generowany przy instalacji),
+3. dopiero teraz kod backendu i frontendu.
+
+CI odrzuca pull requesta, w którym wygenerowany klient nie odpowiada specyfikacji.
+Uzasadnienie: [`docs/adr/0001`](docs/adr/0001-kontrakt-openapi-jako-zrodlo-prawdy.md).
+
+Zakres v0.1 to warstwa platformy i odczyt. Endpointy silnika rozgrywek
+(generowanie terminarza, wpisywanie wyniku, zdarzenia, drabinka) wchodzą w v0.2.
+
+## Uruchamianie
+
+```bash
+npm install
+npm run mock          # mock kontraktu na :4010
+npm run dev:admin     # panel na :5173
+npm run dev:public    # strona publiczna na :5174, np. /t/liga-osiedlowa-2026
+npm run storybook     # design system na :6006
+```
+
+Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
+`.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.
+
+Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
+
+Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
+`typecheck`, `build`.
 
 ## Zasady globalne
 
-- **Menedżer pakietów: npm** (jest `package-lock.json`; nie pnpm/yarn).
-- Treść UI, komentarze i commity: **po polsku**; nazwy kodu (zmienne, typy,
-  API) po angielsku.
-- Commity: krótki tytuł po polsku z prefiksem obszaru — jak w historii
-  (`DS:`, `Font:`, `Design:`, `Init:`).
+- **Menedżer pakietów: npm.** Instaluj z roota, nie z podkatalogów.
+- Treść UI, komentarze i commity: **po polsku**; nazwy kodu (zmienne, typy, API)
+  po angielsku.
+- Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `API:`, `CI:`,
+  `Design:`, `Init:`).
+- Nazywając byt domenowy, użyj terminu z [`CONTEXT.md`](CONTEXT.md). Jeżeli go tam
+  nie ma, to sygnał: albo wymyślasz język, którego projekt nie używa, albo słownik
+  ma lukę.
+
+### `packages/ui`
+
+Konsumowany ze **źródeł**, bez kroku builda. Wewnątrz pakietu obowiązują ścieżki
+względne: alias `@/` należy do aplikacji i wskazuje ich własne `src`. Generator
+shadcn nadal wypisuje `@/`, więc po `npx shadcn add ...` uruchom
+`npm run fix-imports -w @tournament/ui`.
+
+Komponent importujący własne assety (zdjęcia) nie trafia do barrel-a `src/index.ts`,
+bo Vite emituje takie pliki niezależnie od tree-shakingu. Wyjątki są opisane w tym
+pliku przy odpowiednim eksporcie.
+
+## CI/CD
+
+- [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
+  lint, typy, build. Job backendu dochodzi razem z Laravelem.
+- [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
+  Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
 
 ## Setup dla nowych osób
 
-Konfiguracja skilli (`docs/agents/`, sekcja niżej) jest w repo — nie trzeba jej
-odtwarzać. Dwie rzeczy trzeba jednak zrobić lokalnie u siebie:
+Konfiguracja skilli (`docs/agents/`) jest w repo. Lokalnie trzeba dołożyć:
 
-1. **Wtyczka `mattpocock-skills`** w Claude Code (`/plugin`) — bez niej komendy
-   `/triage`, `/to-tickets`, `/to-spec`, `/wayfinder` po prostu nie istnieją.
-   Pliki w `docs/agents/` mówią skillom _jak_ działać, ale ich nie dostarczają.
-2. **`gh` CLI** zainstalowany i zalogowany (`gh auth login`) — na nim opiera się
-   cała obsługa issues.
+1. **Docker** (backend chodzi na Sailu; PHP i Composer nie są instalowane na hoście).
+2. **Wtyczka `mattpocock-skills`** w Claude Code (`/plugin`) — bez niej komendy
+   `/triage`, `/to-tickets`, `/to-spec`, `/wayfinder` nie istnieją.
+3. **`gh` CLI** zalogowany (`gh auth login`) — na nim opiera się obsługa issues.
 
-Etykiety triage są już założone po stronie GitHuba — nic z nimi nie robisz.
+Etykiety triage są już założone po stronie GitHuba.
 
 ## Agent skills
 
@@ -58,9 +107,8 @@ Zobacz [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
 
 ### Triage labels
 
-Domyślne, kanoniczne etykiety (`needs-triage`, `needs-info`,
-`ready-for-agent`, `ready-for-human`, `wontfix`). Zobacz
-[`docs/agents/triage-labels.md`](docs/agents/triage-labels.md).
+Domyślne, kanoniczne etykiety (`needs-triage`, `needs-info`, `ready-for-agent`,
+`ready-for-human`, `wontfix`). Zobacz [`docs/agents/triage-labels.md`](docs/agents/triage-labels.md).
 
 ### Domain docs
 

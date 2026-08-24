@@ -8,10 +8,10 @@ Storybook (`packages/ui`) publikujemy na Chromatic — daje stały link dla zesp
 3. Skopiuj **project token** (postać `chpt_xxxxxxxxxxxx`).
 
 ## Publikacja
-Z katalogu `packages/ui`:
+Zależności instalujesz w rootcie, samego Chromatica odpalasz na pakiecie `ui`:
 ```bash
-cd packages/ui
-npx chromatic --project-token=<TWÓJ_TOKEN>
+npm install
+npm run chromatic -w @tournament/ui -- --project-token=<TWÓJ_TOKEN>
 ```
 Po zakończeniu Chromatic wypisze **link do opublikowanego Storybooka** — ten wysyłasz współpracownikom.
 

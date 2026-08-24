@@ -38,7 +38,7 @@ Każdy ekran to trzy pliki o wspólnej nazwie w `src/screens/`
 
 1. **`admin-teams.tsx`** — komponent. Eksport nazwany PascalCase
    (`export function AdminTeams()`), opakowany w `AdminShell`/`PublicShell`,
-   dane z `@/lib/demo-data`.
+   dane z `../lib/demo-data`.
 2. **`admin-teams.stories.tsx`** — story:
    ```tsx
    const meta = {
@@ -70,7 +70,8 @@ Kolejność w sidebarze: `Wprowadzenie → Fundamenty → UI → Ekrany`.
   `class-variance-authority`, nie warunkowe stringi inline.
 - **Ikony `lucide-react`**, rozmiar przez `className="size-4"`.
 - **Dostępność** — `aria-label` na przyciskach ikonowych (jest `addon-a11y`).
-- Alias `@/` → `src/`. Font **Inter**. `--radius: 0.375rem`.
+- Importy **względne** wewnątrz pakietu (alias `@/` należy do `apps/*`).
+  Font **Inter**. `--radius: 0.375rem`.
 
 ## Dodawanie komponentu shadcn
 

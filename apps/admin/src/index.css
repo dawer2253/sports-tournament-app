@@ -1,0 +1,8 @@
+@import "@tournament/ui/styles.css";
+
+/*
+  Tailwind 4 sam wykrywa źródła klas, ale pomija node_modules, a @tournament/ui
+  jest tam dowiązaniem do packages/ui. Bez tej linijki klasy użyte w komponentach
+  design systemu nie trafiłyby do arkusza.
+*/
+@source "../../../packages/ui/src";

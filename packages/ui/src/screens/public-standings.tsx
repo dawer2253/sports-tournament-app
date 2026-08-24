@@ -1,12 +1,12 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { PublicShell } from '@/components/layout/public-shell'
-import { PhotoPanel } from '@/components/layout/photo-panel'
-import { MetaList } from '@/components/layout/meta-list'
-import { TeamCrest } from '@/components/layout/team-crest'
-import { Heading } from '@/components/ui/typography'
-import { cn } from '@/lib/utils'
-import { standings, formColor } from '@/lib/demo-data'
-import fieldImg from '@/assets/public/field.webp'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
+import { PublicShell } from '../components/layout/public-shell'
+import { PhotoPanel } from '../components/layout/photo-panel'
+import { MetaList } from '../components/layout/meta-list'
+import { TeamCrest } from '../components/layout/team-crest'
+import { Heading } from '../components/ui/typography'
+import { cn } from '../lib/utils'
+import { standings, formColor } from '../lib/demo-data'
+import fieldImg from '../assets/public/field.webp'
 
 // Ile miejsc premiuje awansem — docelowo z ustawień turnieju.
 const PROMOTED = 4

@@ -3,15 +3,26 @@
 Oznaczenia: **D**=Dawid, **W**=Wojtek, **J**=Julka, **(zespół)**=parowanie.
 
 ## S0 — Fundament (zespół)
-- [ ] Monorepo: `/backend`, `/apps/admin`, `/apps/public`, `/packages/{ui,api-client}` (zespół)
-- [ ] Docker compose (PHP, MySQL, node) + `make up` (W)
-- [ ] Laravel + Sanctum (Bearer) + szkielet `/api/v1` (J)
-- [ ] Migracje bazowe: users, tournaments, teams, players, venues, stages, rounds, matches, match_events, sports (zespół)
-- [ ] Scaffolding 2× React/Vite + shadcn + react-router (D)
-- [ ] `packages/ui` + Storybook + motyw/tokens (J)
-- [ ] `packages/api-client` (typowany fetch) (D)
-- [ ] CI: GitHub Actions (Pint, Pest, ESLint) (W)
-- Kamień: login end-to-end
+
+Kolejność jest tu istotna: kontrakt API powstaje **przed** kodem, żeby trzy osoby
+mogły ruszyć równolegle. Szczegóły w [`docs/adr/0001`](adr/0001-kontrakt-openapi-jako-zrodlo-prawdy.md).
+
+Zrobione:
+- [x] Monorepo na npm workspaces: `/apps/{admin,public}`, `/packages/{ui,api-contract,api-client}` (D)
+- [x] Kontrakt `openapi.yaml` v0.1 + mock (Prism) + generowany klient TS (D)
+- [x] `packages/ui` jako pakiet workspace, konsumowany ze źródeł (D)
+- [x] Scaffolding 2× React/Vite + react-router + TanStack Query, podpięte pod mock (D)
+- [x] CI: walidacja kontraktu, lint, typy, build frontendu (D)
+
+Do zrobienia:
+- [ ] **Wspólny przegląd `openapi.yaml`** przed pisaniem kodu przeciw niemu (zespół)
+- [ ] Laravel + Sail (`make up` działa u wszystkich trzech) — [`docs/BACKEND.md`](BACKEND.md) (W)
+- [ ] Sanctum (Bearer) + prefiks `/api/v1` + Spectator wpięty w Pest (W)
+- [ ] CI: dołożyć joba backendu (Pint, Pest, asercje zgodności z kontraktem) (W)
+- [ ] Migracje bazowe: users, sports, tournaments, stages, groups, rounds, teams, players, venues, matches, match_events (zespół)
+- [ ] Seed sportów + dane demo pod mock i pod testy (zespół)
+- [ ] `apps/admin`: layout panelu i ekran listy turniejów na mocku (J)
+- Kamień: login end-to-end (najpierw przeciw mockowi, potem przeciw Laravelowi)
 
 ## S1 — Dane podstawowe (J prowadzi)
 - [ ] CRUD turnieje (+ slug, branding, format, sport) — BE+admin (J)

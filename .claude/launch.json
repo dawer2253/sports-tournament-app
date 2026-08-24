@@ -6,6 +6,24 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "packages/ui", "run", "storybook", "--", "--no-open", "--quiet"],
       "port": 6006
+    },
+    {
+      "name": "mock",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "mock"],
+      "port": 4010
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:admin"],
+      "port": 5173
+    },
+    {
+      "name": "public",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:public"],
+      "port": 5174
     }
   ]
 }

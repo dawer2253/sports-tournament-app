@@ -69,9 +69,9 @@ Nie używamy surowego `<h1>` ani ręcznego `uppercase` na ekranach. Regułę wer
 Ekran = **layout (shell) + `Heading` + karty na treść**. Kolory i nagłówki zawsze przez tokeny/komponenty.
 
 ```tsx
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Card } from '../components/ui/card'
+import { Button } from '../components/ui/button'
 import { Plus } from 'lucide-react'
 
 export function AdminExample() {
@@ -93,7 +93,7 @@ export function AdminExample() {
 Zasady kciuka:
 - **Admin** → `AdminShell`, **Public** → `PublicShell`. Nie budujemy własnych ramek.
 - Treść układamy w `Card` i siatce `grid gap-4`: jeden rytm odstępów na wszystkich ekranach.
-- Dane bierzemy z `@/lib/demo-data` (spójne między ekranami).
+- Dane bierzemy z `src/lib/demo-data` (spójne między ekranami).
 - Obok `*.stories.tsx` twórz spec `*.mdx`: **Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania**.
 
 </div>

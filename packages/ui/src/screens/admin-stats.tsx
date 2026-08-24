@@ -1,8 +1,8 @@
 import { Goal, Trophy } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { tournament, standings, scorers } from '@/lib/demo-data'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Badge } from '../components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { tournament, standings, scorers } from '../lib/demo-data'
 
 // Agregaty liczone on-read z istniejących danych demo.
 const totalGoals = standings.reduce((sum, r) => sum + r.gf, 0)

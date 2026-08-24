@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    name: Kontrakt API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Walidacja specyfikacji
+        run: npm run contract:validate
+
+      # Wygenerowany klient jest commitowany, żeby zmiana kontraktu była widoczna
+      # w diffie PR-a. Ten krok pilnuje, że nikt nie zapomniał go przegenerować.
+      - name: Klient zgodny ze specyfikacją
+        run: |
+          npm run contract:generate
+          git diff --exit-code -- packages/api-client/src/schema.d.ts \
+            || (echo "::error::openapi.yaml zmieniony bez przegenerowania klienta. Uruchom: npm run contract:generate" && exit 1)
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typy
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build

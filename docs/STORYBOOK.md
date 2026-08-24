@@ -10,8 +10,8 @@ Biblioteka komponentów, ekrany (makiety) i specyfikacje UI aplikacji Tournament
 - Motyw: **pitch** — zieleń marki na neutralnej, chłodnej rampie (oklch)
 
 ## Uruchomienie
+Z katalogu głównego repo (npm workspaces, instalacja jest wspólna):
 ```bash
-cd packages/ui
 npm install
 npm run storybook   # http://localhost:6006
 ```
@@ -19,8 +19,8 @@ Przełącznik **Motyw** (pasek narzędzi u góry) zmienia tryb jasny/ciemny.
 
 Inne komendy:
 ```bash
-npm run build-storybook   # statyczny build (storybook-static/)
-npx tsc -b                # type-check
+npm run build-storybook -w @tournament/ui   # statyczny build (storybook-static/)
+npm run typecheck -w @tournament/ui        # type-check
 ```
 
 ## Struktura
@@ -47,7 +47,7 @@ Kolejność w Storybooku: **Wprowadzenie → Fundamenty → UI → Ekrany**.
 Każdy ekran ma stronę specyfikacji (`.mdx`) w formacie: Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania.
 
 ## Konwencje
-- Importy przez alias `@/` (`@/components/ui/...`, `@/lib/...`).
+- Wewnątrz pakietu importy względne (`../ui/button`, `../../lib/utils`). Alias `@/` należy do aplikacji w `apps/*` i nie działa tutaj; po `npx shadcn add ...` uruchom `npm run fix-imports -w @tournament/ui`.
 - Kolory wyłącznie przez tokeny motywu (`bg-primary`, `text-muted-foreground`, `bg-brand`…), nie surowe kolory Tailwind.
 - Typy importowane przez `import type` (verbatimModuleSyntax).
 - Ekrany admina owinięte w `AdminShell`, publiczne w `PublicShell`.

@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@/lib/utils'
+import { cn } from '../../lib/utils'
 
 // Jedno źródło prawdy dla nagłówków. Reguła "H1 = wersaliki" żyje TUTAJ,
 // więc żaden ekran nie może jej złamać przypadkiem.

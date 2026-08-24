@@ -1,0 +1,14 @@
+extends:
+  - recommended
+
+rules:
+  # Klient TS generuje nazwy ze ścieżek, a nie z operationId.
+  operation-operationId: off
+  operation-operationId-unique: off
+  # Projekt niepubliczny, brak licencji w spec jest zamierzony.
+  info-license: off
+  info-license-strict: off
+  # Odpowiedzi 4xx opisujemy przez wspólne komponenty, nie per operacja.
+  operation-4xx-response: off
+  # Serwery to celowo localhost: backend na Sailu i mock Prisma.
+  no-server-example.com: off

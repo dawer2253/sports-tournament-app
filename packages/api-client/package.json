@@ -1,0 +1,23 @@
+{
+  "name": "@tournament/api-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Typowany klient HTTP wygenerowany z kontraktu OpenAPI.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "openapi-typescript ../api-contract/openapi.yaml --output src/schema.d.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~6.0.2"
+  }
+}

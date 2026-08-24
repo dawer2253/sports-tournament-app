@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { cn } from '@/lib/utils'
-import { Separator } from '@/components/ui/separator'
+import { cn } from '../../lib/utils'
+import { Separator } from '../ui/separator'
 
 // Ciąg niezależnych faktów o tym samym obiekcie (sezon / liczba drużyn / sport).
 // Rozdziela je prawdziwa kreska (Separator), nie znak interpunkcyjny — kropka

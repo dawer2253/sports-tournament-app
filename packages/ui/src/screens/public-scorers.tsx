@@ -1,11 +1,11 @@
 import { Goal } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Card, CardHeader } from '@/components/ui/card'
-import { Heading } from '@/components/ui/typography'
-import { PublicShell } from '@/components/layout/public-shell'
-import { PhotoPanel } from '@/components/layout/photo-panel'
-import { scorers } from '@/lib/demo-data'
-import fieldImg from '@/assets/public/field.webp'
+import { cn } from '../lib/utils'
+import { Card, CardHeader } from '../components/ui/card'
+import { Heading } from '../components/ui/typography'
+import { PublicShell } from '../components/layout/public-shell'
+import { PhotoPanel } from '../components/layout/photo-panel'
+import { scorers } from '../lib/demo-data'
+import fieldImg from '../assets/public/field.webp'
 
 export function PublicScorers() {
   return (

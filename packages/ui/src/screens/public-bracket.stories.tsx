@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PublicBracket } from './public-bracket'
-import { bracketLarge, bracketLargeWinner } from '@/lib/demo-data'
+import { bracketLarge, bracketLargeWinner } from '../lib/demo-data'
 
 const meta = {
   title: 'Ekrany/Public · Drabinka',

@@ -1,10 +1,10 @@
 import { Upload, GripVertical } from 'lucide-react'
-import { AdminShell } from '@/components/layout/admin-shell'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { tournament, tiebreakers } from '@/lib/demo-data'
+import { AdminShell } from '../components/layout/admin-shell'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
+import { tournament, tiebreakers } from '../lib/demo-data'
 
 const brandSwatches = [
   { key: 'primary', className: 'bg-primary', selected: true },
