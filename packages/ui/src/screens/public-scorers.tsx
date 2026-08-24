@@ -1,39 +1,57 @@
 import { Goal } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardHeader } from '@/components/ui/card'
+import { Heading } from '@/components/ui/typography'
 import { PublicShell } from '@/components/layout/public-shell'
+import { PhotoPanel } from '@/components/layout/photo-panel'
 import { scorers } from '@/lib/demo-data'
+import fieldImg from '@/assets/public/field.webp'
 
 export function PublicScorers() {
   return (
     <PublicShell active="scorers">
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
-        <div className="flex items-center gap-2 border-b px-5 py-4">
-          <Goal className="size-5 text-primary" />
-          <h2 className="text-base font-semibold">Klasyfikacja strzelców</h2>
-        </div>
+      <Card className="gap-0 overflow-hidden py-0">
+        <PhotoPanel src={fieldImg}>
+          {/* CardHeader jest gridem, więc ikona i tytuł idą we własny flex —
+              inaczej lądują jeden pod drugim. */}
+          <CardHeader className="px-5 py-4">
+            <span className="flex items-center gap-2">
+              <Goal className="size-5 shrink-0 drop-shadow-sm" />
+              {/* Heading, nie CardTitle — CardTitle to <div>, a ta karta jest
+                  jedyną sekcją ekranu i musi zostać nagłówkiem h2. */}
+              <Heading level="card" as="h2" className="text-current drop-shadow-sm">
+                Klasyfikacja strzelców
+              </Heading>
+            </span>
+          </CardHeader>
+        </PhotoPanel>
         <ul className="divide-y">
           {scorers.map((s) => (
-            <li key={s.pos} className="flex items-center gap-3 px-5 py-3">
+            <li key={s.pos} className="flex items-center gap-4 px-5 py-3">
+              {/* Pozycja to liczba, nie odznaczenie — samo miejsce w tabeli
+                  nie jest wyróżnieniem, które trzeba oprawiać w tło. */}
               <span
                 className={cn(
-                  'grid size-7 shrink-0 place-items-center rounded-full text-sm',
-                  s.pos === 1 ? 'bg-primary/10 font-bold text-primary' : 'bg-muted text-muted-foreground',
+                  'w-5 shrink-0 text-right text-sm tabular-nums',
+                  s.pos === 1 ? 'font-bold text-primary' : 'text-muted-foreground',
                 )}
               >
                 {s.pos}
               </span>
-              <span className="min-w-0 flex-1 truncate">
-                <span className="font-medium">{s.player}</span>{' '}
-                <span className="text-muted-foreground">· {s.team.name}</span>
+              <span className="min-w-0 flex-1">
+                {/* Zawodnik i klub to hierarchia, nie równorzędna para —
+                    niesie ją układ i kontrast, nie znak między nimi. */}
+                <span className="block truncate font-medium leading-tight">{s.player}</span>
+                <span className="block truncate text-xs text-muted-foreground">{s.team.name}</span>
               </span>
-              <Badge variant="secondary" className="shrink-0 tabular-nums">
-                {s.goals} {golsLabel(s.goals)}
-              </Badge>
+              <span className="shrink-0 text-right leading-tight">
+                <span className="text-lg font-bold tabular-nums">{s.goals}</span>{' '}
+                <span className="text-xs text-muted-foreground">{golsLabel(s.goals)}</span>
+              </span>
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
       <p className="mt-3 text-xs text-muted-foreground">
         Klasyfikacja obejmuje wszystkie rozegrane mecze turnieju. Przy równej liczbie goli decyduje mniejsza liczba
         rozegranych spotkań.

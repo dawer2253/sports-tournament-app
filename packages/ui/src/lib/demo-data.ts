@@ -130,6 +130,51 @@ export const bracket: BracketRound[] = [
 
 export const bracketWinner = teams[0]
 
+// Duży turniej pucharowy — 32 drużyny, 5 rund. Trzymamy go w danych demo,
+// bo drabinka na 4 drużyny nie udowadnia niczego o układzie: dopiero tutaj
+// widać selektor rund i to, że drzewo nie rozjeżdża ekranu.
+const cupTeams: Team[] = Array.from({ length: 32 }, (_, i) => ({
+  id: 1000 + i,
+  name: `${['FC', 'KS', 'LKS', 'MKS'][i % 4]} ${
+    ['Górka', 'Sparta', 'Orły', 'Dragons', 'Wilki', 'Tygrysy', 'Huragan', 'Burza'][i % 8]
+  } ${Math.floor(i / 8) + 1}`,
+  abbr: `${['FG', 'SP', 'OR', 'DR', 'WI', 'TY', 'HU', 'BU'][i % 8]}${Math.floor(i / 8) + 1}`,
+  players: 11,
+}))
+
+function buildCupBracket(entrants: Team[]): BracketRound[] {
+  const names: Record<number, string> = { 16: '1/16 finału', 8: '1/8 finału', 4: 'Ćwierćfinały', 2: 'Półfinały', 1: 'Finał' }
+  const rounds: BracketRound[] = []
+  let alive = entrants
+  while (alive.length > 1) {
+    const matches: BracketMatch[] = []
+    const winners: Team[] = []
+    for (let i = 0; i < alive.length; i += 2) {
+      const home = alive[i]
+      const away = alive[i + 1]
+      // Deterministyczny wynik — snapshoty Chromatica muszą być powtarzalne.
+      const homeWins = (home.id + away.id) % 3 !== 0
+      matches.push({
+        home,
+        away,
+        homeScore: homeWins ? 2 : 1,
+        awayScore: homeWins ? 1 : 3,
+        winner: homeWins ? 'home' : 'away',
+      })
+      winners.push(homeWins ? home : away)
+    }
+    rounds.push({ name: names[matches.length] ?? `Runda ${rounds.length + 1}`, matches })
+    alive = winners
+  }
+  return rounds
+}
+
+export const bracketLarge = buildCupBracket(cupTeams)
+export const bracketLargeWinner =
+  bracketLarge.at(-1)!.matches[0].winner === 'home'
+    ? bracketLarge.at(-1)!.matches[0].home!
+    : bracketLarge.at(-1)!.matches[0].away!
+
 export type Venue = { id: number; name: string; address: string; matches: number }
 
 export const venues: Venue[] = [
