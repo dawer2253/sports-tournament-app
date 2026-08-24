@@ -45,6 +45,11 @@ jobs:
           buildScriptName: build-storybook
           # Zmiany wizualne nie wywalają joba — akceptujesz je w UI Chromatic (lub przez GitHub App).
           exitZeroOnChanges: true
+          # Zmiany oglądamy i akceptujemy na PR-ze. Po merge'u build na main sam staje się
+          # nowym baseline'em — bez tego baseline nie przesuwa się do czasu ręcznej akceptacji
+          # i ta sama zmiana wraca do zaakceptowania przy każdym kolejnym buildzie.
+          autoAcceptChanges: main
           # TurboSnap — snapshotuje tylko stories dotknięte zmianą (mocno oszczędza limit).
-          # Odkomentuj, gdy potwierdzisz, że działa (Vite/Storybook): przy niepewności robi pełny build.
-          # onlyChanged: true
+          # Wymaga fetch-depth: 0 powyżej. Przy niepewności (zmiana w configu, lockfile,
+          # brak danych o poprzednim buildzie) sam robi pełny build, więc nie gubi regresji.
+          onlyChanged: true
