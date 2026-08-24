@@ -31,6 +31,9 @@
 | 20 | Testy/CI | Pest (silnik + feature API) + GitHub Actions (lint+test na PR); front lekko | E2E = future work |
 | 21 | API | `/api/v1`, API Resources, paginacja, spójny format błędów | |
 | 22 | Język UI | Polski (stringi gotowe pod ewentualne EN) | |
+| 23 | Seeding drabinki (grupy+playoff) | **Automatyczny krzyżowy** (1A–2B, 1B–2A…) jako domyślny, z **ręczną korektą par** przed startem fazy | Domyślnie organizator nic nie klika; przy nietypowym regulaminie nie jest zablokowany. Po starcie fazy pary zamraża kaskada (#15) |
+| 24 | „Pauza" (bye) w lidze nieparzystej | **Nie pokazywana jawnie** w terminarzu; kolejka ma po prostu o jeden mecz mniej | Bye to artefakt circle method, nie informacja dla kibica. Wewnętrznie generator dalej go używa |
+| 25 | Domyślna punktacja i tiebreaki per sport | **Odłożone do wdrażania sportów** (S1: `SportRules` + seed) | To wartości w seedzie, nie architektura. Silnik jest na nie obojętny (#10, #11), więc decyzja teraz byłaby zgadywaniem |
 
 ---
 
@@ -112,10 +115,12 @@ Algorytm (on-read):
 ## 6. Generator terminarza
 
 - **Round-robin (circle method)**: każdy z każdym; nieparzysta liczba drużyn → „pauza" (bye); 1 lub 2 rundy (rewanż = odwrócenie gospodarza).
+- **Bye zostaje wewnątrz generatora** (decyzja #24): w terminarzu i na stronie publicznej pauzująca drużyna nie ma żadnego wiersza, kolejka ma po prostu o jeden mecz mniej. Standings liczy się z meczów rozegranych, więc pauza nie wymaga obsługi w tabeli.
 - **Daty**: `start_date` + `interval` (np. 7 dni) → kolejki rozkładane automatycznie; korekty ręczne.
 - **Venue**: przypisanie ręczne + **ostrzeżenie o kolizji** (ta sama drużyna/miejsce w nakładającym się oknie). Brak automatycznego solvera.
-- **Drabinka (single-elimination)**: seeding (z rang grup w grupy+playoff albo manualny/losowy), pary, `next_match_id` do propagacji.
-- **Grupy + playoff**: tabele grup → kwalifikacja N najlepszych → zasilenie drabinki (np. 1A vs 2B).
+- **Drabinka (single-elimination)**: seeding, pary, `next_match_id` do propagacji.
+- **Grupy + playoff** (decyzja #23): tabele grup → kwalifikacja N najlepszych → **automatyczne rozstawienie krzyżowe** (1A–2B, 1B–2A itd.) jako punkt wyjścia. Organizator widzi wygenerowane pary i **może je ręcznie poprawić**, dopóki faza nie wystartowała; w drabince bez grup seeding jest manualny albo losowy.
+  - Jedna ścieżka kodu: automat wypełnia sloty, korekta ręczna je nadpisuje. Po rozegraniu pierwszego meczu fazy zmiana par wchodzi w kaskadę z §7 i wymaga tego samego ostrzeżenia.
 
 ---
 
@@ -218,8 +223,15 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 
 ---
 
-## 15. Do potwierdzenia z zespołem
+## 15. Pytania otwarte
 
-1. Seeding drabinki w grupy+playoff: krzyżowy (1A–2B) automatyczny vs manualny.
-2. Czy „pauza" (bye) w lidze nieparzystej pokazywana jawnie w terminarzu.
-3. Dokładne domyślne reguły punktacji i tiebreaków per sport.
+Trzy pytania, które wisiały tu wcześniej, są rozstrzygnięte i przeniesione do
+decision logu: seeding drabinki → **#23**, jawność „pauzy" → **#24**, domyślna
+punktacja i tiebreaki per sport → **#25**.
+
+Zostaje jedno, świadomie odłożone:
+
+1. **Domyślne reguły punktacji i tiebreaków per sport** (#25). Ustalamy je przy
+   wdrażaniu każdego sportu w S1, razem z klasą `SportRules` i seedem. Silnik jest
+   na te wartości obojętny (są konfiguracją, nie kodem), więc odłożenie nie blokuje
+   ani generatora, ani klasyfikacji — blokowałoby tylko seed sportów.

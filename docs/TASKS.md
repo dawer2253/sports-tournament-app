@@ -28,11 +28,11 @@ Do zrobienia:
 - [ ] CRUD turnieje (+ slug, branding, format, sport) — BE+admin (J)
 - [ ] CRUD drużyny + zawodnicy — BE+admin (J)
 - [ ] CRUD venues — BE+admin (W)
-- [ ] Seed sportów (piłka, kosz) + `SportRules` (D)
+- [ ] Seed sportów (piłka, kosz) + `SportRules` (D) — tu ustalamy domyślną punktację i kolejność tiebreaków per sport (decyzja #25)
 - [ ] Policies + nested route binding (autoryzacja przez Tournament.user_id) (J)
 
 ## S2 — Liga (D prowadzi) → Demo #1
-- [ ] Generator round-robin (circle method + bye + 1/2 rundy) (D)
+- [ ] Generator round-robin (circle method + bye + 1/2 rundy) (D) — bye zostaje wewnątrz generatora, nie trafia do terminarza (decyzja #24)
 - [ ] Auto-rozkład dat (start + interwał) + ostrzeżenia kolizji (W)
 - [ ] StandingsCalculator on-read (D)
 - [ ] Tiebreaki + rejestr komparatorów + head-to-head mini-tabela (D)
@@ -56,7 +56,8 @@ Do zrobienia:
 
 ## S5 — Grupy + playoff + dopięcie (W prowadzi)
 - [ ] Faza grupowa (round-robin per grupa) (W)
-- [ ] Kwalifikacja N najlepszych → zasilenie drabinki (W)
+- [ ] Kwalifikacja N najlepszych → automatyczne rozstawienie krzyżowe drabinki (W)
+- [ ] Ręczna korekta par przed startem fazy (nadpisuje automat, decyzja #23) (W)
 - [ ] Dopracowanie strzelców + brandingu (J)
 - Kamień: pełny zakres formatów
 

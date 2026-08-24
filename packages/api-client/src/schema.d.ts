@@ -2342,7 +2342,7 @@ export interface components {
              */
             groupId: number | null;
             round: components["schemas"]["RoundSummary"];
-            /** @description `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte albo gdy jest to pauza. */
+            /** @description `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte. Pauza (bye) w lidze nieparzystej **nie** tworzy meczu — kolejka ma po prostu o jeden mecz mniej. */
             homeTeam: components["schemas"]["TeamSummary"] | null;
             awayTeam: components["schemas"]["TeamSummary"] | null;
             homeScore: number | null;
