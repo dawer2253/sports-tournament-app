@@ -86,10 +86,11 @@ Jeżeli endpoint ma zwracać coś, czego nie ma w spec, **najpierw zmienia się 
 potem regeneruje klienta (`npm run contract:generate`) i dopiero wtedy pisze kod.
 Odwrotna kolejność kończy się rozjazdem, przed którym cały ten mechanizm ma chronić.
 
-## Do potwierdzenia z zespołem
+## Wersja Laravela
 
-[`docs/PLAN.md`](PLAN.md) w decyzji #1 mówi o **Laravel 11**. Aktualną wersją jest
-**Laravel 13**, a `laravel.build` instaluje zawsze najnowszą. Do rozstrzygnięcia:
-czy aktualizujemy decyzję #1 do wersji 13, czy jest powód, żeby trzymać się 11.
-Ta sama uwaga dotyczy Laravel Boost z decyzji #1: sprawdź, czy jest kompatybilny
-z wybraną wersją, zanim wejdzie do `composer.json`.
+Bierzemy **najnowszą**, czyli Laravel 13. `laravel.build` instaluje ją domyślnie,
+więc nic nie przypinasz. Decyzja #1 w [`docs/PLAN.md`](PLAN.md) jest zaktualizowana
+(pierwotnie planowano wersję 11).
+
+Jedno zostaje do sprawdzenia przy instalacji: czy **Laravel Boost** z decyzji #1
+wspiera tę wersję. Jeżeli nie, wchodzi bez niego i odnotowujemy to w planie.
