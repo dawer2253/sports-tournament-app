@@ -50,6 +50,9 @@ npm run dev:public    # strona publiczna na :5174, np. /t/liga-osiedlowa-2026
 npm run storybook     # design system na :6006
 ```
 
+Mecze mają w kontrakcie dwa przykłady: ligowy (domyślny) i pucharowy. Żeby mock
+oddał drabinkę, dołóż do żądania nagłówek `Prefer: example=puchar`.
+
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.
 

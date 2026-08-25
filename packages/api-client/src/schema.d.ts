@@ -1522,6 +1522,9 @@ export interface paths {
          *     meczów fazy, żeby zbudować odwrotny indeks krawędzi — zawęża więc
          *     odpowiedź przez `stageId`, bo faza pucharowa nawet przy szesnastu
          *     drużynach mieści się w jednej stronie.
+         *
+         *     Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
+         *     wysłaniu nagłówka `Prefer: example=puchar`.
          */
         get: {
             parameters: {
@@ -1546,83 +1549,6 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": [
-                         *         {
-                         *           "id": 1,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 1,
-                         *             "name": "Kolejka 1",
-                         *             "order": 1
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 1,
-                         *             "name": "Wilki Bemowo",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 2,
-                         *             "name": "Sokoły Ursus",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": 2,
-                         *           "awayScore": 1,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "finished",
-                         *           "kickoffAt": "2026-09-06T12:00:00+02:00",
-                         *           "venue": {
-                         *             "id": 1,
-                         *             "name": "Boisko Bemowo"
-                         *           },
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         },
-                         *         {
-                         *           "id": 2,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 2,
-                         *             "name": "Kolejka 2",
-                         *             "order": 2
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 3,
-                         *             "name": "Orły Bielany",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 1,
-                         *             "name": "Wilki Bemowo",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": null,
-                         *           "awayScore": null,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "scheduled",
-                         *           "kickoffAt": "2026-09-13T12:00:00+02:00",
-                         *           "venue": null,
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         }
-                         *       ],
-                         *       "meta": {
-                         *         "currentPage": 1,
-                         *         "lastPage": 1,
-                         *         "perPage": 50,
-                         *         "total": 2
-                         *       }
-                         *     }
-                         */
                         "application/json": {
                             data: components["schemas"]["Match"][];
                             meta: components["schemas"]["PaginationMeta"];
