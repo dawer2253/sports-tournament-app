@@ -93,8 +93,35 @@ termin, opcjonalny obiekt i stan.
 Stan meczu: zaplanowany, trwający, zakończony. Tylko mecz zakończony wpływa na
 tabelę i na statystyki.
 
-W drabince mecz wskazuje mecz, do którego awansuje zwycięzca. Zmiana wyniku
-meczu, który już wypełnił dalszą część drabinki, unieważnia mecze zależne.
+Mecz ma pozycję własną: numer w obrębie swojej kolejki (`matchNumber`). W lidze
+porządkuje kolejkę, w drabince razem z numerem rundy wyznacza miejsce meczu
+w choince i pozwala widokowi wyliczyć jego etykietę ("1/2 finału", "Finał").
+Etykiety nie przechowujemy, bo zależy od rozmiaru drabinki. Pozycja własna to
+co innego niż to, dokąd awansują uczestnicy meczu — te dwie rzeczy nie mieszczą
+się w jednym pojęciu.
+
+W drabince mecz wskazuje, dokąd trafiają jego uczestnicy po rozstrzygnięciu:
+osobno zwycięzca, osobno przegrany (ten drugi tylko wtedy, gdy turniej ma mecz
+o 3. miejsce). Strona, na którą wchodzą, jest wspólna dla obu, bo wynika
+z pozycji meczu źródłowego, a nie z tego, kto awansuje. Zmiana wyniku meczu,
+który już wypełnił dalszą część drabinki, unieważnia mecze zależne.
+
+Mecz w drabince musi mieć zwycięzcę, a w sportach dopuszczających remis sam
+wynik go nie wyłania. Rozstrzyga wtedy seria rzutów karnych
+(`homePenalties`, `awayPenalties`), notowana obok wyniku i wyłącznie wtedy, gdy
+wynik jest remisowy. Karne nie są
+zdobyczami: nie wchodzą do tabeli ani do statystyk, służą tylko wskazaniu, kto
+awansuje.
+
+## Bye (pauza)
+
+Awans bez gry, gdy liczba drużyn nie pozwala obsadzić pełnej kolejki albo pełnej
+rundy. Pauza nigdy nie jest meczem: nie ma terminu, wyniku ani wiersza
+w terminarzu.
+
+W lidze nie zostawia po sobie śladu — kolejka ma po prostu o jeden mecz mniej.
+W drabince widać ją w jej kształcie: drużyna stoi w rundzie, do której nie
+prowadzi żaden mecz.
 
 ## MatchEvent (zdarzenie meczowe)
 
@@ -105,6 +132,19 @@ Zbiór dopuszczalnych rodzajów zdarzeń wynika ze sportu turnieju. Zdarzenia s�
 źródłem statystyk indywidualnych (na przykład klasyfikacji strzelców), a nie
 źródłem wyniku meczu: wynik jest wpisywany osobno.
 
+## Score (zdobycze)
+
+To, co drużyna zdobywa w meczu i z czego wynika jego rozstrzygnięcie: bramki
+w piłce, punkty w koszykówce. Nazwa kanoniczna jest jedna dla wszystkich sportów,
+bo tabela i kryteria rozstrzygające mają ten sam kształt niezależnie od dyscypliny.
+
+Nie mylić z punktami w tabeli, które drużyna dostaje za wynik meczu (patrz
+`Standing`). To dwie różne wielkości i w koszykówce obie nazywają się w UI
+"punkty".
+
+_Unikaj_: goals i bramki jako nazwa kanoniczna (to etykieta UI dla piłki),
+points (zajęte przez punkty w tabeli).
+
 ## Standing (tabela)
 
 Klasyfikacja drużyn w obrębie fazy `league` albo pojedynczej grupy. Nie jest
@@ -112,7 +152,9 @@ bytem, który ktokolwiek tworzy ani zapisuje: to zawsze aktualny wniosek
 z zakończonych meczów.
 
 Pojedynczy wiersz tabeli (`StandingRow`) opisuje jedną drużynę: rozegrane mecze,
-bilans, punkty i pozycję.
+bilans zdobyczy (`scoreFor`, `scoreAgainst`, `scoreDifference`), punkty
+i pozycję. `points` w wierszu tabeli to zawsze punkty za wyniki meczów, nigdy
+zdobycze.
 
 ## Tiebreaker (kryterium rozstrzygające)
 
@@ -122,3 +164,6 @@ uporządkowaną listę takich kryteriów, stosowanych po kolei aż do rozstrzygn
 `head_to_head` (bezpośredni bój) jest szczególnym kryterium: porównuje wyłącznie
 mecze rozegrane między remisującymi drużynami. Jeżeli nie rozstrzyga, stosuje się
 kolejne kryterium z listy, bez ponownego zagłębiania się w bezpośredni bój.
+
+Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
+`score_for`, `score_against`.
