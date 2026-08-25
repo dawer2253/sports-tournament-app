@@ -36,7 +36,7 @@ info:
     - Daty w ISO 8601 z offsetem.
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
-    - Stronicowane są lista turniejów i lista meczów turnieju. Pozostałe
+    - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
       kolekcje w obrębie jednego turnieju (drużyny, zawodnicy, obiekty) oraz
       wszystkie endpointy publiczne wracają w całości.
 
@@ -1084,12 +1084,220 @@ paths:
                       - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /public/t/{slug}/matches:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+      - name: stageId
+        in: query
+        required: true
+        description: |
+          Wymagane, bo to ono trzyma odpowiedź w rozmiarze, który wolno oddać
+          bez stronicowania. Faza nienależąca do turnieju daje puste `data`,
+          nie `404`: `404` jest tu odpowiedzią o turnieju.
+        schema: { type: integer, format: int64 }
+    get:
+      tags: [Public]
+      summary: Mecze fazy, bez filtrowania po stanie
+      description: |
+        Komplet meczów jednej fazy, rosnąco po terminie. W odróżnieniu od
+        `fixtures` i `results` nie filtruje po stanie meczu, bo widok drabinki
+        potrzebuje kompletu naraz: rozegranych i nierozegranych, żeby zbudować
+        odwrotny indeks krawędzi — tak przewiduje
+        [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
+        Sklejanie tego z dwóch odpowiedzi po stronie klienta byłoby obejściem.
+
+        `fixtures` i `results` zostają: obsługują terminarz i wyniki, czyli
+        widoki chronologiczne przez całość turnieju, dla których podział po
+        stanie jest właśnie tym, czego ekran potrzebuje.
+
+        Niestronicowane, jak wszystkie endpointy publiczne — i dlatego `stageId`
+        jest wymagane. Faza pucharowa nawet przy szesnastu drużynach to
+        piętnaście meczów, podczas gdy liga dwudziestu drużyn to sto
+        dziewięćdziesiąt, czyli dokładnie ten rozmiar, dla którego panelowy
+        odpowiednik ma strony.
+
+        Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
+        wysłaniu nagłówka `Prefer: example=puchar`.
+      security: []
+      responses:
+        '200':
+          description: Mecze fazy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Match' }
+              examples:
+                liga:
+                  summary: Faza ligowa — pola drabinkowe puste
+                  value:
+                    data:
+                      - id: 1
+                        stageId: 1
+                        groupId: null
+                        round: { id: 1, name: Kolejka 1, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-06T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 2
+                        stageId: 1
+                        groupId: null
+                        round: { id: 2, name: Kolejka 2, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        venue: null
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                puchar:
+                  summary: Faza pucharowa — komplet meczów drabinki sześciodrużynowej
+                  description: |
+                    Odpowiedź zawężona przez `stageId=2`, czyli tyle, ile widok
+                    drabinki potrzebuje do zbudowania odwrotnego indeksu
+                    krawędzi. Drabinka ma sześć drużyn, więc dwie wchodzą do
+                    półfinału z pauzy: sloty `202.homeTeam` i `201.awayTeam` są
+                    obsadzone, ale żaden mecz nie wskazuje ich przez
+                    `winnerToMatchId` ani `loserToMatchId`. Mecz `302` jest
+                    meczem o 3. miejsce — poznaje się go po tym, że oba jego
+                    wejścia są krawędziami przegranego. Obie rzeczy wyprowadza
+                    się z danych, bo pól na nie nie ma; tak przewiduje
+                    [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
+                  value:
+                    data:
+                      - id: 101
+                        stageId: 2
+                        groupId: null
+                        round: { id: 10, name: Ćwierćfinały, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 2
+                        homePenalties: 4
+                        awayPenalties: 3
+                        status: finished
+                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 201
+                        loserToMatchId: null
+                        advancesToSlot: home
+                      - id: 102
+                        stageId: 2
+                        groupId: null
+                        round: { id: 10, name: Ćwierćfinały, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-10-04T14:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 202
+                        loserToMatchId: null
+                        advancesToSlot: away
+                      - id: 201
+                        stageId: 2
+                        groupId: null
+                        round: { id: 11, name: Półfinały, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-10-11T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 301
+                        loserToMatchId: 302
+                        advancesToSlot: home
+                      - id: 202
+                        stageId: 2
+                        groupId: null
+                        round: { id: 11, name: Półfinały, order: 2 }
+                        matchNumber: 2
+                        homeTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-11T14:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 301
+                        loserToMatchId: 302
+                        advancesToSlot: away
+                      - id: 302
+                        stageId: 2
+                        groupId: null
+                        round: { id: 12, name: Runda finałowa, order: 3 }
+                        matchNumber: 2
+                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: null
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-18T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 301
+                        stageId: 2
+                        groupId: null
+                        round: { id: 12, name: Runda finałowa, order: 3 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: null
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-18T14:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /public/t/{slug}/fixtures:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
     get:
       tags: [Public]
       summary: Terminarz (mecze jeszcze nierozegrane)
+      description: |
+        Widok chronologiczny przez całość turnieju. Komplet meczów jednej fazy,
+        bez podziału po stanie, daje `/public/t/{slug}/matches`.
       security: []
       responses:
         '200':
@@ -1130,6 +1338,9 @@ paths:
     get:
       tags: [Public]
       summary: Wyniki (mecze zakończone)
+      description: |
+        Widok chronologiczny przez całość turnieju. Komplet meczów jednej fazy,
+        bez podziału po stanie, daje `/public/t/{slug}/matches`.
       security: []
       responses:
         '200':

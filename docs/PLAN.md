@@ -149,6 +149,7 @@ PATCH /tournaments/{t}/tiebreakers   (kolejność drag&drop)
 # public (bez auth, po slug)
 GET /public/t/{slug}
 GET /public/t/{slug}/standings | /fixtures | /results | /top-scorers
+GET /public/t/{slug}/matches?stageId=   (komplet meczów fazy, dla drabinki)
 ```
 
 Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO), paginacja, spójny format błędów.
