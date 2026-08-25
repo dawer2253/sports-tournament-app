@@ -1839,6 +1839,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/t/{slug}/matches": {
+        parameters: {
+            query: {
+                /**
+                 * @description Wymagane, bo to ono trzyma odpowiedź w rozmiarze, który wolno oddać
+                 *     bez stronicowania. Faza nienależąca do turnieju daje puste `data`,
+                 *     nie `404`: `404` jest tu odpowiedzią o turnieju.
+                 */
+                stageId: number;
+            };
+            header?: never;
+            path: {
+                slug: components["parameters"]["Slug"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Mecze fazy, bez filtrowania po stanie
+         * @description Komplet meczów jednej fazy, rosnąco po terminie. W odróżnieniu od
+         *     `fixtures` i `results` nie filtruje po stanie meczu, bo widok drabinki
+         *     potrzebuje kompletu naraz: rozegranych i nierozegranych, żeby zbudować
+         *     odwrotny indeks krawędzi — tak przewiduje
+         *     [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
+         *     Sklejanie tego z dwóch odpowiedzi po stronie klienta byłoby obejściem.
+         *
+         *     `fixtures` i `results` zostają: obsługują terminarz i wyniki, czyli
+         *     widoki chronologiczne przez całość turnieju, dla których podział po
+         *     stanie jest właśnie tym, czego ekran potrzebuje.
+         *
+         *     Niestronicowane, jak wszystkie endpointy publiczne — i dlatego `stageId`
+         *     jest wymagane. Faza pucharowa nawet przy szesnastu drużynach to
+         *     piętnaście meczów, podczas gdy liga dwudziestu drużyn to sto
+         *     dziewięćdziesiąt, czyli dokładnie ten rozmiar, dla którego panelowy
+         *     odpowiednik ma strony.
+         *
+         *     Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
+         *     wysłaniu nagłówka `Prefer: example=puchar`.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /**
+                     * @description Wymagane, bo to ono trzyma odpowiedź w rozmiarze, który wolno oddać
+                     *     bez stronicowania. Faza nienależąca do turnieju daje puste `data`,
+                     *     nie `404`: `404` jest tu odpowiedzią o turnieju.
+                     */
+                    stageId: number;
+                };
+                header?: never;
+                path: {
+                    slug: components["parameters"]["Slug"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Mecze fazy */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["Match"][];
+                        };
+                    };
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/t/{slug}/fixtures": {
         parameters: {
             query?: never;
@@ -1848,7 +1926,11 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Terminarz (mecze jeszcze nierozegrane) */
+        /**
+         * Terminarz (mecze jeszcze nierozegrane)
+         * @description Widok chronologiczny przez całość turnieju. Komplet meczów jednej fazy,
+         *     bez podziału po stanie, daje `/public/t/{slug}/matches`.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1928,7 +2010,11 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Wyniki (mecze zakończone) */
+        /**
+         * Wyniki (mecze zakończone)
+         * @description Widok chronologiczny przez całość turnieju. Komplet meczów jednej fazy,
+         *     bez podziału po stanie, daje `/public/t/{slug}/matches`.
+         */
         get: {
             parameters: {
                 query?: never;
