@@ -10,6 +10,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
+- **Close from a PR**: write `Closes #<number>` in the pull request body. This English keyword is a deliberate exception to the Polish-everywhere rule in [`AGENTS.md`](../../AGENTS.md): GitHub auto-closes only on `close`/`fix`/`resolve` and their inflections, so a Polish `Zamyka #16` renders as a plain cross-reference and leaves the issue open. The rest of the body stays Polish.
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 

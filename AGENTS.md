@@ -65,7 +65,9 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 
 - **Menedżer pakietów: npm.** Instaluj z roota, nie z podkatalogów.
 - Treść UI, komentarze i commity: **po polsku**; nazwy kodu (zmienne, typy, API)
-  po angielsku.
+  po angielsku. Jedyny wyjątek to słowo zamykające issue w opisie PR-a —
+  `Closes #16`, bo GitHub nie rozpoznaje polskiego (patrz
+  [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)).
 - Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `API:`, `CI:`,
   `Design:`, `Init:`).
 - Nazywając byt domenowy, użyj terminu z [`CONTEXT.md`](CONTEXT.md). Jeżeli go tam
