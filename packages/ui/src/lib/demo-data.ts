@@ -186,8 +186,8 @@ export const venues: Venue[] = [
 export const tiebreakers = [
   { key: 'points', label: 'Punkty' },
   { key: 'head_to_head', label: 'Bezpośredni mecz' },
-  { key: 'goal_diff', label: 'Różnica bramek' },
-  { key: 'goals_for', label: 'Bramki zdobyte' },
+  { key: 'score_diff', label: 'Różnica bramek' },
+  { key: 'score_for', label: 'Bramki zdobyte' },
 ]
 
 export const formColor: Record<FormResult, string> = {

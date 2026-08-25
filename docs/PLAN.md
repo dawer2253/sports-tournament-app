@@ -100,8 +100,8 @@ Uwagi:
 ## 5. Klasyfikacja (standings) i tiebreaki
 
 Algorytm (on-read):
-1. Zbierz zakończone mecze w fazie/grupie → agreguj per drużyna (M, W, R, P, bramki+/−, pkt).
-2. Sortuj wg **uporządkowanej listy tiebreaków** turnieju, np. `["points","head_to_head","goal_diff","goals_for"]`.
+1. Zbierz zakończone mecze w fazie/grupie → agreguj per drużyna (M, W, R, P, zdobycze+/−, pkt).
+2. Sortuj wg **uporządkowanej listy tiebreaków** turnieju, np. `["points","head_to_head","score_diff","score_for"]`.
 3. Każdy tiebreak = komparator z rejestru.
 
 **Head-to-head (decyzja #11):**

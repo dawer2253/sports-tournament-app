@@ -298,8 +298,8 @@ export interface paths {
                          *             "availableTiebreakers": [
                          *               "points",
                          *               "head_to_head",
-                         *               "goal_diff",
-                         *               "goals_for",
+                         *               "score_diff",
+                         *               "score_for",
                          *               "wins"
                          *             ],
                          *             "availableStats": [
@@ -337,8 +337,8 @@ export interface paths {
                          *             "availableTiebreakers": [
                          *               "points",
                          *               "head_to_head",
-                         *               "goal_diff",
-                         *               "goals_for",
+                         *               "score_diff",
+                         *               "score_for",
                          *               "wins"
                          *             ],
                          *             "availableStats": [
@@ -417,8 +417,8 @@ export interface paths {
                          *           "tiebreakers": [
                          *             "points",
                          *             "head_to_head",
-                         *             "goal_diff",
-                         *             "goals_for"
+                         *             "score_diff",
+                         *             "score_for"
                          *           ],
                          *           "teamsCount": 10,
                          *           "createdAt": "2026-09-01T10:00:00+02:00",
@@ -446,7 +446,7 @@ export interface paths {
                          *           "tiebreakers": [
                          *             "points",
                          *             "head_to_head",
-                         *             "goal_diff"
+                         *             "score_diff"
                          *           ],
                          *           "teamsCount": 8,
                          *           "createdAt": "2026-09-10T09:00:00+02:00",
@@ -529,8 +529,8 @@ export interface paths {
                          *         "tiebreakers": [
                          *           "points",
                          *           "head_to_head",
-                         *           "goal_diff",
-                         *           "goals_for"
+                         *           "score_diff",
+                         *           "score_for"
                          *         ],
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T10:00:00+02:00",
@@ -604,8 +604,8 @@ export interface paths {
                          *         "tiebreakers": [
                          *           "points",
                          *           "head_to_head",
-                         *           "goal_diff",
-                         *           "goals_for"
+                         *           "score_diff",
+                         *           "score_for"
                          *         ],
                          *         "teamsCount": 10,
                          *         "createdAt": "2026-09-01T10:00:00+02:00",
@@ -673,9 +673,9 @@ export interface paths {
                      *       "name": "Liga Osiedlowa 2026/27",
                      *       "tiebreakers": [
                      *         "points",
-                     *         "goal_diff",
+                     *         "score_diff",
                      *         "head_to_head",
-                     *         "goals_for"
+                     *         "score_for"
                      *       ]
                      *     }
                      */
@@ -900,8 +900,6 @@ export interface paths {
                      */
                     "application/json": {
                         name: string;
-                        /** Format: int64 */
-                        groupId?: number | null;
                     };
                 };
             };
@@ -1020,7 +1018,11 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Zmień drużynę */
+        /**
+         * Zmień drużynę
+         * @description Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
+         *     tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -1034,8 +1036,6 @@ export interface paths {
                 content: {
                     "application/json": {
                         name?: string;
-                        /** Format: int64 */
-                        groupId?: number | null;
                     };
                 };
             };
@@ -1503,6 +1503,8 @@ export interface paths {
                 stageId?: number;
                 roundId?: number;
                 status?: components["schemas"]["MatchStatus"];
+                page?: number;
+                perPage?: number;
             };
             header?: never;
             path: {
@@ -1514,6 +1516,12 @@ export interface paths {
          * Mecze turnieju
          * @description Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
          *     `Match` jest już zamrożony.
+         *
+         *     Stronicowane: liga dwudziestu drużyn to sto dziewięćdziesiąt meczów,
+         *     każdy z zagnieżdżonymi drużynami. Widok drabinki potrzebuje kompletu
+         *     meczów fazy, żeby zbudować odwrotny indeks krawędzi — zawęża więc
+         *     odpowiedź przez `stageId`, bo faza pucharowa nawet przy szesnastu
+         *     drużynach mieści się w jednej stronie.
          */
         get: {
             parameters: {
@@ -1521,6 +1529,8 @@ export interface paths {
                     stageId?: number;
                     roundId?: number;
                     status?: components["schemas"]["MatchStatus"];
+                    page?: number;
+                    perPage?: number;
                 };
                 header?: never;
                 path: {
@@ -1530,7 +1540,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Mecze, opcjonalnie zawężone parametrami */
+                /** @description Stronicowane mecze, opcjonalnie zawężone parametrami */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1548,6 +1558,7 @@ export interface paths {
                          *             "name": "Kolejka 1",
                          *             "order": 1
                          *           },
+                         *           "matchNumber": 1,
                          *           "homeTeam": {
                          *             "id": 1,
                          *             "name": "Wilki Bemowo",
@@ -1560,14 +1571,17 @@ export interface paths {
                          *           },
                          *           "homeScore": 2,
                          *           "awayScore": 1,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
                          *           "status": "finished",
                          *           "kickoffAt": "2026-09-06T12:00:00+02:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
                          *           },
-                         *           "nextMatchId": null,
-                         *           "bracketSlot": null
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
                          *         },
                          *         {
                          *           "id": 2,
@@ -1578,6 +1592,7 @@ export interface paths {
                          *             "name": "Kolejka 2",
                          *             "order": 2
                          *           },
+                         *           "matchNumber": 1,
                          *           "homeTeam": {
                          *             "id": 3,
                          *             "name": "Orły Bielany",
@@ -1590,17 +1605,27 @@ export interface paths {
                          *           },
                          *           "homeScore": null,
                          *           "awayScore": null,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
                          *           "status": "scheduled",
                          *           "kickoffAt": "2026-09-13T12:00:00+02:00",
                          *           "venue": null,
-                         *           "nextMatchId": null,
-                         *           "bracketSlot": null
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
                          *         }
-                         *       ]
+                         *       ],
+                         *       "meta": {
+                         *         "currentPage": 1,
+                         *         "lastPage": 1,
+                         *         "perPage": 50,
+                         *         "total": 2
+                         *       }
                          *     }
                          */
                         "application/json": {
                             data: components["schemas"]["Match"][];
+                            meta: components["schemas"]["PaginationMeta"];
                         };
                     };
                 };
@@ -1669,9 +1694,9 @@ export interface paths {
                          *               "won": 2,
                          *               "drawn": 0,
                          *               "lost": 0,
-                         *               "goalsFor": 5,
-                         *               "goalsAgainst": 1,
-                         *               "goalDifference": 4,
+                         *               "scoreFor": 5,
+                         *               "scoreAgainst": 1,
+                         *               "scoreDifference": 4,
                          *               "points": 6
                          *             },
                          *             {
@@ -1685,9 +1710,9 @@ export interface paths {
                          *               "won": 1,
                          *               "drawn": 0,
                          *               "lost": 1,
-                         *               "goalsFor": 3,
-                         *               "goalsAgainst": 3,
-                         *               "goalDifference": 0,
+                         *               "scoreFor": 3,
+                         *               "scoreAgainst": 3,
+                         *               "scoreDifference": 0,
                          *               "points": 3
                          *             },
                          *             {
@@ -1701,9 +1726,9 @@ export interface paths {
                          *               "won": 0,
                          *               "drawn": 0,
                          *               "lost": 2,
-                         *               "goalsFor": 1,
-                         *               "goalsAgainst": 5,
-                         *               "goalDifference": -4,
+                         *               "scoreFor": 1,
+                         *               "scoreAgainst": 5,
+                         *               "scoreDifference": -4,
                          *               "points": 0
                          *             }
                          *           ]
@@ -1846,9 +1871,9 @@ export interface paths {
                          *               "won": 2,
                          *               "drawn": 0,
                          *               "lost": 0,
-                         *               "goalsFor": 5,
-                         *               "goalsAgainst": 1,
-                         *               "goalDifference": 4,
+                         *               "scoreFor": 5,
+                         *               "scoreAgainst": 1,
+                         *               "scoreDifference": 4,
                          *               "points": 6
                          *             },
                          *             {
@@ -1862,9 +1887,9 @@ export interface paths {
                          *               "won": 1,
                          *               "drawn": 0,
                          *               "lost": 1,
-                         *               "goalsFor": 3,
-                         *               "goalsAgainst": 3,
-                         *               "goalDifference": 0,
+                         *               "scoreFor": 3,
+                         *               "scoreAgainst": 3,
+                         *               "scoreDifference": 0,
                          *               "points": 3
                          *             }
                          *           ]
@@ -1927,6 +1952,7 @@ export interface paths {
                          *             "name": "Kolejka 2",
                          *             "order": 2
                          *           },
+                         *           "matchNumber": 1,
                          *           "homeTeam": {
                          *             "id": 3,
                          *             "name": "Orły Bielany",
@@ -1939,11 +1965,14 @@ export interface paths {
                          *           },
                          *           "homeScore": null,
                          *           "awayScore": null,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
                          *           "status": "scheduled",
                          *           "kickoffAt": "2026-09-13T12:00:00+02:00",
                          *           "venue": null,
-                         *           "nextMatchId": null,
-                         *           "bracketSlot": null
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
                          *         }
                          *       ]
                          *     }
@@ -2003,6 +2032,7 @@ export interface paths {
                          *             "name": "Kolejka 1",
                          *             "order": 1
                          *           },
+                         *           "matchNumber": 1,
                          *           "homeTeam": {
                          *             "id": 1,
                          *             "name": "Wilki Bemowo",
@@ -2015,14 +2045,17 @@ export interface paths {
                          *           },
                          *           "homeScore": 2,
                          *           "awayScore": 1,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
                          *           "status": "finished",
                          *           "kickoffAt": "2026-09-06T12:00:00+02:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
                          *           },
-                         *           "nextMatchId": null,
-                         *           "bracketSlot": null
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
                          *         }
                          *       ]
                          *     }
@@ -2163,6 +2196,10 @@ export interface components {
         SportCode: "football" | "basketball";
         Points: {
             win: number;
+            /**
+             * @description Punkty za remis. W sporcie z `allowsDraw: false` remis nie może
+             *     wystąpić, więc wartość jest bez znaczenia i backend zwraca zero.
+             */
             draw: number;
             loss: number;
         };
@@ -2202,7 +2239,7 @@ export interface components {
          *     rozstrzyga, stosowane jest następne kryterium z listy.
          * @enum {string}
          */
-        TiebreakerCode: "points" | "head_to_head" | "goal_diff" | "goals_for" | "goals_against" | "wins";
+        TiebreakerCode: "points" | "head_to_head" | "score_diff" | "score_for" | "score_against" | "wins";
         /** @enum {string} */
         TournamentStatus: "draft" | "active" | "finished";
         /**
@@ -2244,7 +2281,17 @@ export interface components {
             name?: string;
             slug?: string;
             status?: components["schemas"]["TournamentStatus"];
-            primaryColor?: string;
+            /**
+             * @description Branding jest zagnieżdżony tak samo jak w odczycie
+             *     (`Tournament.branding`), żeby formularz panelu nie musiał go
+             *     spłaszczać i rozwijać z powrotem. Zapisywalne jest tu wyłącznie
+             *     `primaryColor`: logo wgrywa się przez
+             *     `POST /tournaments/{tournament}/logo`, więc `logoUrl` w tym kształcie
+             *     nie występuje.
+             */
+            branding?: {
+                primaryColor?: string;
+            };
             points?: components["schemas"]["Points"];
             tiebreakers?: components["schemas"]["TiebreakerCode"][];
         };
@@ -2331,6 +2378,11 @@ export interface components {
          * @enum {string}
          */
         MatchStatus: "scheduled" | "live" | "finished";
+        /**
+         * @description Kształt zamrożony w v0.1. Pola drabinkowe (`winnerToMatchId`,
+         *     `loserToMatchId`, `advancesToSlot`) opisuje
+         *     [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
+         */
         Match: {
             /** Format: int64 */
             id: number;
@@ -2342,33 +2394,81 @@ export interface components {
              */
             groupId: number | null;
             round: components["schemas"]["RoundSummary"];
-            /** @description `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte. Pauza (bye) w lidze nieparzystej **nie** tworzy meczu — kolejka ma po prostu o jeden mecz mniej. */
+            /**
+             * @description Numer meczu w obrębie rundy, liczony od jedynki. W drabince razem
+             *     z `round.order` tworzy pozycję własną meczu, z której widok wylicza
+             *     etykietę ("1/2 finału", "Finał") — etykiety nie ma w danych, bo
+             *     zależy od rozmiaru drabinki. W lidze daje stabilną kolejność meczów
+             *     w kolejce.
+             */
+            matchNumber: number;
+            /**
+             * @description `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte.
+             *
+             *     Pauza (bye) **nie** tworzy meczu. W lidze nieparzystej kolejka ma po
+             *     prostu o jeden mecz mniej. W drabince pauza objawia się tym, że slot
+             *     poza pierwszą rundą jest obsadzony drużyną, a nie prowadzi do niego
+             *     żadna krawędź: żaden mecz nie wskazuje go przez `winnerToMatchId`
+             *     ani `loserToMatchId`. Osobnego pola na pauzę nie ma — tak przewiduje
+             *     [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
+             */
             homeTeam: components["schemas"]["TeamSummary"] | null;
             awayTeam: components["schemas"]["TeamSummary"] | null;
             homeScore: number | null;
             awayScore: number | null;
+            /**
+             * @description Rzuty karne gospodarza. Niepuste wyłącznie wtedy, gdy mecz jest
+             *     w fazie `knockout`, jest zakończony i `homeScore` równa się
+             *     `awayScore` — mecz pucharowy musi mieć zwycięzcę, a w sporcie
+             *     dopuszczającym remis sam wynik go nie wyłania. Karne nie są
+             *     zdobyczami: nie wchodzą do tabeli ani do statystyk.
+             */
+            homePenalties: number | null;
+            /** @description Rzuty karne gościa. Niepuste dokładnie wtedy, gdy niepuste jest `homePenalties`. */
+            awayPenalties: number | null;
             status: components["schemas"]["MatchStatus"];
             /** Format: date-time */
             kickoffAt: string | null;
             venue: components["schemas"]["VenueSummary"] | null;
             /**
              * Format: int64
-             * @description Mecz, do którego awansuje zwycięzca. Tylko w fazie `knockout`.
+             * @description Mecz, do którego wchodzi zwycięzca. Tylko w fazie `knockout`.
              */
-            nextMatchId: number | null;
-            /** @description Pozycja w drabince, na przykład `SF1-home`. Tylko w fazie `knockout`. */
-            bracketSlot: string | null;
+            winnerToMatchId: number | null;
+            /**
+             * Format: int64
+             * @description Mecz, do którego wchodzi przegrany. Tylko w fazie `knockout`
+             *     i w praktyce tylko w półfinałach turnieju z meczem o 3. miejsce.
+             *
+             *     Sam mecz o 3. miejsce rozpoznaje się po tym, że oba jego wejścia są
+             *     krawędziami przegranego. Nie ma na to osobnej flagi.
+             */
+            loserToMatchId: number | null;
+            /**
+             * @description Strona, na którą uczestnicy tego meczu wchodzą w meczu docelowym.
+             *     Wspólna dla obu krawędzi: strona wynika z pozycji meczu źródłowego,
+             *     a nie z tego, kto awansuje, bo turniej pocieszenia jest lustrem
+             *     drabinki głównej.
+             *
+             *     Niepuste dokładnie wtedy, gdy niepuste jest co najmniej jedno
+             *     z `winnerToMatchId` i `loserToMatchId`.
+             * @enum {string|null}
+             */
+            advancesToSlot: "home" | "away" | null;
         };
         StandingRow: {
             position: number;
             team: components["schemas"]["TeamSummary"];
             played: number;
             won: number;
+            /** @description Zawsze zero w sporcie z `allowsDraw: false`, bo remis nie może w nim wystąpić. */
             drawn: number;
             lost: number;
-            goalsFor: number;
-            goalsAgainst: number;
-            goalDifference: number;
+            /** @description Zdobycze drużyny: bramki w piłce, punkty w koszykówce. Nie mylić z `points`. */
+            scoreFor: number;
+            scoreAgainst: number;
+            scoreDifference: number;
+            /** @description Punkty za wyniki meczów, zgodnie z `Tournament.points`. Nigdy zdobycze. */
             points: number;
         };
         StandingTable: {

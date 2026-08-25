@@ -84,7 +84,7 @@ export function TournamentPage() {
                   <TableCell className="text-right">{row.drawn}</TableCell>
                   <TableCell className="text-right">{row.lost}</TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {row.goalsFor}:{row.goalsAgainst}
+                    {row.scoreFor}:{row.scoreAgainst}
                   </TableCell>
                   <TableCell className="text-right font-semibold">{row.points}</TableCell>
                 </TableRow>

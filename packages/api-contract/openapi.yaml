@@ -20,6 +20,12 @@ info:
     wchodzą w v0.2, ale kształty `Match`, `StandingRow` i `Round` są już
     zamrożone, żeby ich dołożenie nie było zmianą łamiącą.
 
+    Grupy są poza zakresem v0.1: nie ma czym utworzyć grupy, więc `groupId`
+    występuje wyłącznie w odczycie i zawsze jest `null`. Kształty, które je
+    niosą (`Stage.groups`, `Team.groupId`, `Match.groupId`,
+    `StandingTable.groupId`), zostają nietknięte — tak przewiduje
+    [ADR-0002](../../docs/adr/0002-faza-istnieje-zawsze.md).
+
     ## Konwencje
 
     - Pola w `camelCase`.
@@ -30,8 +36,9 @@ info:
     - Daty w ISO 8601 z offsetem.
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
-    - Stronicowana jest wyłącznie lista turniejów. Kolekcje w obrębie jednego
-      turnieju (drużyny, zawodnicy, obiekty, mecze) wracają w całości.
+    - Stronicowane są lista turniejów i lista meczów turnieju. Pozostałe
+      kolekcje w obrębie jednego turnieju (drużyny, zawodnicy, obiekty) oraz
+      wszystkie endpointy publiczne wracają w całości.
 
 servers:
   - url: http://localhost:8000/api/v1
@@ -205,7 +212,7 @@ paths:
                         - { code: own_goal, label: Bramka samobójcza, hasPlayer: true, stat: null }
                         - { code: yellow_card, label: Żółta kartka, hasPlayer: true, stat: yellowCards }
                         - { code: red_card, label: Czerwona kartka, hasPlayer: true, stat: redCards }
-                      availableTiebreakers: [points, head_to_head, goal_diff, goals_for, wins]
+                      availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
                       availableStats: [goals, yellowCards, redCards]
                   - id: 2
                     code: basketball
@@ -216,7 +223,7 @@ paths:
                       eventTypes:
                         - { code: points, label: Punkty, hasPlayer: true, stat: points }
                         - { code: foul, label: Faul, hasPlayer: true, stat: fouls }
-                      availableTiebreakers: [points, head_to_head, goal_diff, goals_for, wins]
+                      availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
                       availableStats: [points, fouls]
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
@@ -249,7 +256,7 @@ paths:
                     sport: { id: 1, code: football, name: Piłka nożna }
                     branding: { logoUrl: null, primaryColor: '#1F7A45' }
                     points: { win: 3, draw: 1, loss: 0 }
-                    tiebreakers: [points, head_to_head, goal_diff, goals_for]
+                    tiebreakers: [points, head_to_head, score_diff, score_for]
                     teamsCount: 10
                     createdAt: '2026-09-01T10:00:00+02:00'
                     updatedAt: '2026-09-14T18:30:00+02:00'
@@ -260,7 +267,7 @@ paths:
                     sport: { id: 2, code: basketball, name: Koszykówka }
                     branding: { logoUrl: null, primaryColor: '#1F7A45' }
                     points: { win: 2, draw: 0, loss: 1 }
-                    tiebreakers: [points, head_to_head, goal_diff]
+                    tiebreakers: [points, head_to_head, score_diff]
                     teamsCount: 8
                     createdAt: '2026-09-10T09:00:00+02:00'
                     updatedAt: '2026-09-10T09:00:00+02:00'
@@ -303,7 +310,7 @@ paths:
                   sport: { id: 1, code: football, name: Piłka nożna }
                   branding: { logoUrl: null, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
-                  tiebreakers: [points, head_to_head, goal_diff, goals_for]
+                  tiebreakers: [points, head_to_head, score_diff, score_for]
                   teamsCount: 0
                   createdAt: '2026-09-01T10:00:00+02:00'
                   updatedAt: '2026-09-01T10:00:00+02:00'
@@ -335,7 +342,7 @@ paths:
                   sport: { id: 1, code: football, name: Piłka nożna }
                   branding: { logoUrl: null, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
-                  tiebreakers: [points, head_to_head, goal_diff, goals_for]
+                  tiebreakers: [points, head_to_head, score_diff, score_for]
                   teamsCount: 10
                   createdAt: '2026-09-01T10:00:00+02:00'
                   updatedAt: '2026-09-14T18:30:00+02:00'
@@ -356,7 +363,7 @@ paths:
             schema: { $ref: '#/components/schemas/TournamentUpdate' }
             example:
               name: Liga Osiedlowa 2026/27
-              tiebreakers: [points, goal_diff, head_to_head, goals_for]
+              tiebreakers: [points, score_diff, head_to_head, score_for]
       responses:
         '200':
           description: Turniej po zmianie
@@ -479,7 +486,6 @@ paths:
               required: [name]
               properties:
                 name: { type: string, minLength: 1, maxLength: 120 }
-                groupId: { type: [integer, 'null'], format: int64 }
             example:
               name: Wilki Bemowo
       responses:
@@ -522,6 +528,9 @@ paths:
     patch:
       tags: [Teams]
       summary: Zmień drużynę
+      description: |
+        Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
+        tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
       requestBody:
         required: true
         content:
@@ -530,7 +539,6 @@ paths:
               type: object
               properties:
                 name: { type: string, minLength: 1, maxLength: 120 }
-                groupId: { type: [integer, 'null'], format: int64 }
       responses:
         '200':
           description: Drużyna po zmianie
@@ -790,52 +798,70 @@ paths:
       - name: status
         in: query
         schema: { $ref: '#/components/schemas/MatchStatus' }
+      - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+      - { name: perPage, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
     get:
       tags: [Reads]
       summary: Mecze turnieju
       description: |
         Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
         `Match` jest już zamrożony.
+
+        Stronicowane: liga dwudziestu drużyn to sto dziewięćdziesiąt meczów,
+        każdy z zagnieżdżonymi drużynami. Widok drabinki potrzebuje kompletu
+        meczów fazy, żeby zbudować odwrotny indeks krawędzi — zawęża więc
+        odpowiedź przez `stageId`, bo faza pucharowa nawet przy szesnastu
+        drużynach mieści się w jednej stronie.
       responses:
         '200':
-          description: Mecze, opcjonalnie zawężone parametrami
+          description: Stronicowane mecze, opcjonalnie zawężone parametrami
           content:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, meta]
                 properties:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/Match' }
+                  meta: { $ref: '#/components/schemas/PaginationMeta' }
               example:
                 data:
                   - id: 1
                     stageId: 1
                     groupId: null
                     round: { id: 1, name: Kolejka 1, order: 1 }
+                    matchNumber: 1
                     homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                     awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
                     homeScore: 2
                     awayScore: 1
+                    homePenalties: null
+                    awayPenalties: null
                     status: finished
                     kickoffAt: '2026-09-06T12:00:00+02:00'
                     venue: { id: 1, name: Boisko Bemowo }
-                    nextMatchId: null
-                    bracketSlot: null
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
                   - id: 2
                     stageId: 1
                     groupId: null
                     round: { id: 2, name: Kolejka 2, order: 2 }
+                    matchNumber: 1
                     homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
                     awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                     homeScore: null
                     awayScore: null
+                    homePenalties: null
+                    awayPenalties: null
                     status: scheduled
                     kickoffAt: '2026-09-13T12:00:00+02:00'
                     venue: null
-                    nextMatchId: null
-                    bracketSlot: null
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
+                meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -869,9 +895,9 @@ paths:
                     groupId: null
                     groupName: null
                     rows:
-                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, goalsFor: 5, goalsAgainst: 1, goalDifference: 4, points: 6 }
-                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, goalsFor: 3, goalsAgainst: 3, goalDifference: 0, points: 3 }
-                      - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, goalsFor: 1, goalsAgainst: 5, goalDifference: -4, points: 0 }
+                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
+                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
+                      - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -930,8 +956,8 @@ paths:
                     groupId: null
                     groupName: null
                     rows:
-                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, goalsFor: 5, goalsAgainst: 1, goalDifference: 4, points: 6 }
-                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, goalsFor: 3, goalsAgainst: 3, goalDifference: 0, points: 3 }
+                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
+                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/fixtures:
@@ -959,15 +985,19 @@ paths:
                     stageId: 1
                     groupId: null
                     round: { id: 2, name: Kolejka 2, order: 2 }
+                    matchNumber: 1
                     homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
                     awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                     homeScore: null
                     awayScore: null
+                    homePenalties: null
+                    awayPenalties: null
                     status: scheduled
                     kickoffAt: '2026-09-13T12:00:00+02:00'
                     venue: null
-                    nextMatchId: null
-                    bracketSlot: null
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/results:
@@ -995,15 +1025,19 @@ paths:
                     stageId: 1
                     groupId: null
                     round: { id: 1, name: Kolejka 1, order: 1 }
+                    matchNumber: 1
                     homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                     awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
                     homeScore: 2
                     awayScore: 1
+                    homePenalties: null
+                    awayPenalties: null
                     status: finished
                     kickoffAt: '2026-09-06T12:00:00+02:00'
                     venue: { id: 1, name: Boisko Bemowo }
-                    nextMatchId: null
-                    bracketSlot: null
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/top-scorers:
@@ -1151,7 +1185,11 @@ components:
       required: [win, draw, loss]
       properties:
         win: { type: integer }
-        draw: { type: integer }
+        draw:
+          type: integer
+          description: |
+            Punkty za remis. W sporcie z `allowsDraw: false` remis nie może
+            wystąpić, więc wartość jest bez znaczenia i backend zwraca zero.
         loss: { type: integer }
 
     SportEventType:
@@ -1209,7 +1247,7 @@ components:
         pierwsze na liście turnieju. `head_to_head` porównuje wyłącznie mecze
         między remisującymi drużynami i nie zagłębia się rekurencyjnie: gdy nie
         rozstrzyga, stosowane jest następne kryterium z listy.
-      enum: [points, head_to_head, goal_diff, goals_for, goals_against, wins]
+      enum: [points, head_to_head, score_diff, score_for, score_against, wins]
 
     TournamentStatus:
       type: string
@@ -1267,7 +1305,18 @@ components:
         name: { type: string, minLength: 1, maxLength: 160 }
         slug: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', minLength: 3, maxLength: 80 }
         status: { $ref: '#/components/schemas/TournamentStatus' }
-        primaryColor: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }
+        branding:
+          type: object
+          additionalProperties: false
+          description: |
+            Branding jest zagnieżdżony tak samo jak w odczycie
+            (`Tournament.branding`), żeby formularz panelu nie musiał go
+            spłaszczać i rozwijać z powrotem. Zapisywalne jest tu wyłącznie
+            `primaryColor`: logo wgrywa się przez
+            `POST /tournaments/{tournament}/logo`, więc `logoUrl` w tym kształcie
+            nie występuje.
+          properties:
+            primaryColor: { type: string, pattern: '^#[0-9A-Fa-f]{6}$' }
         points: { $ref: '#/components/schemas/Points' }
         tiebreakers:
           type: array
@@ -1372,7 +1421,11 @@ components:
 
     Match:
       type: object
-      required: [id, stageId, groupId, round, homeTeam, awayTeam, homeScore, awayScore, status, kickoffAt, venue, nextMatchId, bracketSlot]
+      description: |
+        Kształt zamrożony w v0.1. Pola drabinkowe (`winnerToMatchId`,
+        `loserToMatchId`, `advancesToSlot`) opisuje
+        [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
+      required: [id, stageId, groupId, round, matchNumber, homeTeam, awayTeam, homeScore, awayScore, homePenalties, awayPenalties, status, kickoffAt, venue, winnerToMatchId, loserToMatchId, advancesToSlot]
       properties:
         id: { type: integer, format: int64 }
         stageId: { type: integer, format: int64 }
@@ -1381,45 +1434,100 @@ components:
           format: int64
           description: Grupa, w ramach której mecz się liczy. `null` poza fazą `group`. Nie istnieje mecz międzygrupowy.
         round: { $ref: '#/components/schemas/RoundSummary' }
+        matchNumber:
+          type: integer
+          minimum: 1
+          description: |
+            Numer meczu w obrębie rundy, liczony od jedynki. W drabince razem
+            z `round.order` tworzy pozycję własną meczu, z której widok wylicza
+            etykietę ("1/2 finału", "Finał") — etykiety nie ma w danych, bo
+            zależy od rozmiaru drabinki. W lidze daje stabilną kolejność meczów
+            w kolejce.
         homeTeam:
           oneOf:
             - $ref: '#/components/schemas/TeamSummary'
             - type: 'null'
-          description: '`null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte. Pauza (bye) w lidze nieparzystej **nie** tworzy meczu — kolejka ma po prostu o jeden mecz mniej.'
+          description: |
+            `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte.
+
+            Pauza (bye) **nie** tworzy meczu. W lidze nieparzystej kolejka ma po
+            prostu o jeden mecz mniej. W drabince pauza objawia się tym, że slot
+            poza pierwszą rundą jest obsadzony drużyną, a nie prowadzi do niego
+            żadna krawędź: żaden mecz nie wskazuje go przez `winnerToMatchId`
+            ani `loserToMatchId`. Osobnego pola na pauzę nie ma — tak przewiduje
+            [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
         awayTeam:
           oneOf:
             - $ref: '#/components/schemas/TeamSummary'
             - type: 'null'
         homeScore: { type: [integer, 'null'], minimum: 0 }
         awayScore: { type: [integer, 'null'], minimum: 0 }
+        homePenalties:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Rzuty karne gospodarza. Niepuste wyłącznie wtedy, gdy mecz jest
+            w fazie `knockout`, jest zakończony i `homeScore` równa się
+            `awayScore` — mecz pucharowy musi mieć zwycięzcę, a w sporcie
+            dopuszczającym remis sam wynik go nie wyłania. Karne nie są
+            zdobyczami: nie wchodzą do tabeli ani do statystyk.
+        awayPenalties:
+          type: [integer, 'null']
+          minimum: 0
+          description: Rzuty karne gościa. Niepuste dokładnie wtedy, gdy niepuste jest `homePenalties`.
         status: { $ref: '#/components/schemas/MatchStatus' }
         kickoffAt: { type: [string, 'null'], format: date-time }
         venue:
           oneOf:
             - $ref: '#/components/schemas/VenueSummary'
             - type: 'null'
-        nextMatchId:
+        winnerToMatchId:
           type: [integer, 'null']
           format: int64
-          description: Mecz, do którego awansuje zwycięzca. Tylko w fazie `knockout`.
-        bracketSlot:
+          description: Mecz, do którego wchodzi zwycięzca. Tylko w fazie `knockout`.
+        loserToMatchId:
+          type: [integer, 'null']
+          format: int64
+          description: |
+            Mecz, do którego wchodzi przegrany. Tylko w fazie `knockout`
+            i w praktyce tylko w półfinałach turnieju z meczem o 3. miejsce.
+
+            Sam mecz o 3. miejsce rozpoznaje się po tym, że oba jego wejścia są
+            krawędziami przegranego. Nie ma na to osobnej flagi.
+        advancesToSlot:
           type: [string, 'null']
-          description: Pozycja w drabince, na przykład `SF1-home`. Tylko w fazie `knockout`.
+          enum: [home, away, null]
+          description: |
+            Strona, na którą uczestnicy tego meczu wchodzą w meczu docelowym.
+            Wspólna dla obu krawędzi: strona wynika z pozycji meczu źródłowego,
+            a nie z tego, kto awansuje, bo turniej pocieszenia jest lustrem
+            drabinki głównej.
+
+            Niepuste dokładnie wtedy, gdy niepuste jest co najmniej jedno
+            z `winnerToMatchId` i `loserToMatchId`.
 
     StandingRow:
       type: object
-      required: [position, team, played, won, drawn, lost, goalsFor, goalsAgainst, goalDifference, points]
+      required: [position, team, played, won, drawn, lost, scoreFor, scoreAgainst, scoreDifference, points]
       properties:
         position: { type: integer, minimum: 1 }
         team: { $ref: '#/components/schemas/TeamSummary' }
         played: { type: integer, minimum: 0 }
         won: { type: integer, minimum: 0 }
-        drawn: { type: integer, minimum: 0 }
+        drawn:
+          type: integer
+          minimum: 0
+          description: 'Zawsze zero w sporcie z `allowsDraw: false`, bo remis nie może w nim wystąpić.'
         lost: { type: integer, minimum: 0 }
-        goalsFor: { type: integer, minimum: 0 }
-        goalsAgainst: { type: integer, minimum: 0 }
-        goalDifference: { type: integer }
-        points: { type: integer }
+        scoreFor:
+          type: integer
+          minimum: 0
+          description: 'Zdobycze drużyny: bramki w piłce, punkty w koszykówce. Nie mylić z `points`.'
+        scoreAgainst: { type: integer, minimum: 0 }
+        scoreDifference: { type: integer }
+        points:
+          type: integer
+          description: Punkty za wyniki meczów, zgodnie z `Tournament.points`. Nigdy zdobycze.
 
     StandingTable:
       type: object
