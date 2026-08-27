@@ -4,8 +4,9 @@ Backend stoi w `backend/` — Laravel 13 na Sailu, z MySQL-em w kontenerze.
 Ten dokument opisuje, jak podnieść go na czystym klonie.
 
 > **Przetestowane** na Windows 11 + Docker Desktop 29.7.2 (sierpień 2026).
-> Kroki instalacyjne z sekcji „Instalacja szkieletu" są już wykonane i
-> zacommitowane — nie powtarzaj ich. Zostają tu jako zapis tego, co powstało.
+> Szkielet jest już zainstalowany i zacommitowany — tu opisujemy tylko
+> uruchamianie. Zapis tego, co i jak powstało przy instalacji:
+> [`BACKEND-INSTALACJA.md`](BACKEND-INSTALACJA.md).
 
 ## Wymagania
 
@@ -33,17 +34,26 @@ w kontenerze `laravelsail/php84-composer` (na hoście nie ma PHP) i generuje
 `APP_KEY`. Cel jest plikowy, więc powtórne wywołanie nic nie robi, a `make up`
 ma go w zależnościach — samo `make up` na czystym klonie też zadziała.
 
-Aplikacja odpowiada pod `http://localhost:8000`. Frontend celuje w
-`http://localhost:8000/api/v1`, patrz `.env.example` w `apps/admin` i `apps/public`.
+`make up` kończy się migracjami i nie jest to ozdobnik: sesje siedzą w bazie
+(`SESSION_DRIVER=database`), a baza żyje w wolumenie Dockera, którego na czystym
+klonie nie ma. Bez tabel aplikacja zwraca **500 na każdym żądaniu**. `migrate`
+jest idempotentne, więc przy kolejnych `make up` tylko przelatuje.
+
+Aplikacja odpowiada pod `http://localhost:8000` — `/` to health check zwracający
+`{"status":"ok"}`. Backend oddaje wyłącznie JSON, bez warstwy widoków (szkieletowy
+front na Vite został usunięty, patrz [`BACKEND-INSTALACJA.md`](BACKEND-INSTALACJA.md)).
+Frontend celuje w `http://localhost:8000/api/v1`, patrz `.env.example`
+w `apps/admin` i `apps/public`.
 
 Sail domyślnie wystawia aplikację na porcie **80**, nie 8000. Port podnosi
 `APP_PORT=8000` z `.env` — dlatego ta zmienna jest w `.env.example` i nie należy
 jej usuwać, bo rozjedzie się z kontraktem.
 
-Pozostałe cele: `make down`, `make shell`, `make migrate`, `make fresh`,
-`make test`, `make lint`. Wszystkie są cienkim opakowaniem na
-`./vendor/bin/sail`, który wymaga katalogu roboczego `backend/` (czyta stamtąd
-`.env` i `compose.yaml`) — Makefile wchodzi tam sam.
+Pozostałe cele wypisuje `make help` (opisy trzymają się komentarzy `##` przy
+celach w [`Makefile`](../Makefile), więc lista nie rozjeżdża się z dokumentacją).
+Wszystkie są cienkim opakowaniem na `./vendor/bin/sail`, który wymaga katalogu
+roboczego `backend/` (czyta stamtąd `.env` i `compose.yaml`) — Makefile wchodzi
+tam sam.
 
 ### Windows: uprawnienia do `storage/`
 
@@ -61,54 +71,6 @@ Na macOS i Linuksie zostaw to zakomentowane: tam mount przejmuje UID hosta,
 który zgadza się z `sail`. Problem znika też, gdy repo leży w systemie plików
 WSL2 zamiast na `C:` — to zresztą wariant zalecany przez Laravela, bo jest
 znacznie szybszy.
-
-## Instalacja szkieletu (wykonane, zapis historyczny)
-
-```bash
-curl -s "https://laravel.build/backend?with=mysql" | bash
-```
-
-Skrypt kończy się `sudo chown -R $USER: .`, więc **poza Linuksem/macOS przerwie
-się na braku `sudo`** — właściwą pracę wykonuje wcześniej, w kontenerze
-`laravelsail/php84-composer`. Na tej maszynie uruchomiono więc sam krok
-kontenerowy, bez bloku `chown`.
-
-Co z tego wyszło:
-
-| Składnik | Wersja |
-|---|---|
-| `laravel/laravel` (szkielet) | v13.10.1 |
-| `laravel/framework` | v13.29.0 |
-| `laravel/sail` | v1.67.0 |
-| Runtime PHP w kontenerze | 8.5 |
-| MySQL | 8.4 |
-| `laravel/pint` | v1.30.5 (w szkielecie) |
-
-Plik Compose nazywa się `compose.yaml` (nie `docker-compose.yml`).
-
-### Pest
-
-Szkielet Laravela 13 przychodzi z PHPUnit-em, nie z Pestem — Pest dochodzi
-osobno. Komenda `php artisan pest:install` **nie istnieje** w Pest 4:
-
-```bash
-composer require pestphp/pest pestphp/pest-plugin-laravel --dev --with-all-dependencies
-./vendor/bin/pest --init
-```
-
-Testy funkcjonalne biegną na bazie `testing`, którą kontener MySQL zakłada sam
-przy pierwszym starcie. `tests/Pest.php` włącza `RefreshDatabase`, więc zestaw
-nie zależy od stanu bazy deweloperskiej.
-
-### Zmiany w `compose.yaml`
-
-Wygenerowany plik dostał dwie poprawki, obie z domyślnymi wartościami, więc
-zachowanie na macOS i Linuksie zostaje bez zmian:
-
-- `WWWUSER`/`WWWGROUP` mają domyślne `1000` — bez tego `docker compose`
-  uruchomiony z pominięciem skryptu `sail` sypie ostrzeżeniami o pustych zmiennych,
-- doszło `SUPERVISOR_PHP_USER: '${SUPERVISOR_PHP_USER:-sail}'`, żeby dało się
-  przełączyć użytkownika procesu PHP z `.env` (patrz wyżej, Windows).
 
 ## Warstwa API i autoryzacja
 
@@ -172,12 +134,6 @@ Bierzemy **najnowszą**, czyli Laravel 13. `laravel.build` instaluje ją domyśl
 więc nic nie przypinasz. Decyzja #1 w [`docs/PLAN.md`](PLAN.md) jest zaktualizowana
 (pierwotnie planowano wersję 11).
 
-**Laravel Boost działa na Laravelu 13** — `laravel/boost` v2.7.0 rozwiązuje się
-czysto na tym drzewie zależności (sprawdzone `composer require --dry-run`).
-Nie jest jeszcze zainstalowany: to narzędzie deweloperskie, nie element
-działającego środowiska, więc nie wchodziło w zakres S0.
-
-Uwaga przy ewentualnej instalacji: `php artisan boost:install` nadpisuje
-`backend/AGENTS.md` i `backend/CLAUDE.md` własnymi wytycznymi, które każą
-instalować PHP **na hoście**. Jest to sprzeczne z „tylko Docker" z tego dokumentu,
-więc po instalacji przywróć nagłówek z [`backend/AGENTS.md`](../backend/AGENTS.md).
+**Laravel Boost działa na Laravelu 13**, ale nie jest zainstalowany — sprawdzenie
+zgodności i ostrzeżenie przed `boost:install` opisuje
+[`BACKEND-INSTALACJA.md`](BACKEND-INSTALACJA.md).

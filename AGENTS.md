@@ -70,7 +70,7 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
   `Closes #16`, bo GitHub nie rozpoznaje polskiego (patrz
   [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)).
 - Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `API:`, `CI:`,
-  `Design:`, `Init:`).
+  `Design:`, `Init:`, `Backend:`, `Docs:`).
 - Nazywając byt domenowy, użyj terminu z [`CONTEXT.md`](CONTEXT.md). Jeżeli go tam
   nie ma, to sygnał: albo wymyślasz język, którego projekt nie używa, albo słownik
   ma lukę.
