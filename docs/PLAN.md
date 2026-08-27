@@ -56,8 +56,14 @@ packages/api-client — typowany klient HTTP + typy DTO
 
 ## 3. Model domeny (ERD — tekstowo)
 
-> Nazwy pól odpowiadają `packages/api-contract/openapi.yaml` (tu `snake_case`, tam
-> `camelCase`). Przy rozbieżności wygrywa kontrakt — [ADR 0001](adr/0001-kontrakt-openapi-jako-zrodlo-prawdy.md).
+> Nazwy pól odpowiadają `packages/api-contract/openapi.yaml`; kolumny są w `snake_case`,
+> pola kontraktu w `camelCase`. Przekład nie jest czysto literowy w trzech miejscach:
+> baza trzyma klucze obce (`venue_id`), gdzie kontrakt zwraca zagnieżdżony obiekt
+> (`venue`); `Tournament.branding` jest spłaszczone do `logo_url` i `primary_color`,
+> bo to dwie kolumny, a nie struktura; klucze w kolumnach JSON (`Sport.config`)
+> zostają w `camelCase`, bo API oddaje je dosłownie i mapowanie byłoby stratą.
+> Przy każdej innej rozbieżności wygrywa kontrakt —
+> [ADR 0001](adr/0001-kontrakt-openapi-jako-zrodlo-prawdy.md).
 
 ```
 User (owner)
@@ -79,7 +85,7 @@ Match  [round_id, stage_id, group_id?, match_number,
   └──< MatchEvent [match_id, team_id, player_id?, type, minute, meta(json)]
 
 Sport  [code: football|basketball, name,
-        config(json: allows_draw, default_points, event_types, available_tiebreakers, available_stats)]
+        config(json: allowsDraw, defaultPoints, eventTypes, availableTiebreakers, availableStats)]
 ```
 
 Uwagi:
@@ -88,12 +94,14 @@ Uwagi:
   z którego powstają fazy. Strukturę turnieju opisuje `Stage`, a faza istnieje zawsze,
   także w zwykłej lidze ([ADR 0002](adr/0002-faza-istnieje-zawsze.md)).
 - `Tournament.points` to punktacja tego turnieju, kopiowana przy zakładaniu
-  z `Sport.config.default_points`. Nie mylić z `points` w wierszu tabeli.
+  z `Sport.config.defaultPoints`. Nie mylić z `points` w wierszu tabeli.
 - Drabinka trzyma osobno pozycję własną meczu (`round.order` + `match_number`) i to,
   dokąd awansują jego uczestnicy (`winner_to_match_id`, `loser_to_match_id`).
   `advances_to_slot` jest wspólne dla obu krawędzi, bo strona wynika z pozycji meczu
   źródłowego, a nie z tego, kto awansuje ([ADR 0004](adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md)).
-  Etykiet rund ("Finał") nie przechowujemy — widok liczy je z rozmiaru drabinki.
+  `rounds.name` jest zwykłą kolumną i organizer może ją zmienić; nie przechowujemy
+  natomiast etykiety wyliczanej z pozycji meczu ("1/2 finału") — zależy od rozmiaru
+  drabinki, więc liczy ją widok.
 - Karne (`home_penalties`, `away_penalties`) wypełnione wyłącznie w fazie `knockout`,
   przy meczu zakończonym remisem. Nie są zdobyczami: nie wchodzą do tabeli ani do statystyk.
 - Pauza (bye) nie tworzy meczu i nie ma własnej kolumny (decyzja #24).
@@ -102,13 +110,19 @@ Uwagi:
   (poza zakresem MVP).
 - `Match.stage_id` jest zdenormalizowane — wyprowadzalne przez `round`, ale kontrakt
   eksponuje je wprost, a zapytania o fazę są najczęstsze. Utrzymywane spójnie z `round`.
-- `MatchEvent` generyczny; dozwolone `type` to kody z `Sport.config.event_types`.
+- `MatchEvent` generyczny; dozwolone `type` to kody z `Sport.config.eventTypes`.
+  Kontrakt v0.1 nie eksponuje tej encji (wchodzi w v0.2), więc jej kształt jest
+  zakotwiczony wyłącznie w `Sport.config` i w `CONTEXT.md`.
 - `slug` globalnie unikalny (publiczne URL-e).
-- Soft-deletes na bytach, które organizer kasuje ręcznie i które zostawiają ślad
-  w rozegranych meczach: `tournaments`, `teams`, `players`, `venues`. Bez soft-deletes
-  na `stages`, `groups`, `rounds`, `matches`, `match_events` — te są zarządzane przez
-  generator terminarza i kasowane kaskadowo. Guard niezależny od soft-deletes:
-  nie usuwamy bytu powiązanego z meczem o statusie `finished`.
+- **Guard: nie usuwamy bytu powiązanego z meczem o statusie `finished`** — ani na twardo,
+  ani na miękko. Rozegrany turniej zostaje w bazie na zawsze, bo jego publiczny adres
+  `/t/{slug}` ma dalej działać. Porządek w panelu robi filtr po `status`, nie kasowanie.
+- Soft-deletes na `teams`, `players`, `venues`: obsługują pomyłkę organizera, dopóki guard
+  nie zamknie sprawy. `tournaments` ich nie mają — turniej albo jeszcze nie ma rozegranych
+  meczów i kasuje się na twardo razem z poddrzewem (zwalniając `slug`), albo już je ma
+  i nie kasuje się wcale. Trzeciego stanu nie ma, więc znacznik „usunięty" nie miałby
+  czego obsługiwać. `stages`, `groups`, `rounds`, `matches`, `match_events` też są bez
+  soft-deletes: zarządza nimi generator terminarza i kasuje kaskadowo.
 
 ---
 
