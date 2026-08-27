@@ -9,7 +9,7 @@
 
 | # | Temat | Decyzja | Uzasadnienie / uwagi |
 |---|-------|---------|----------------------|
-| 1 | Stack | Laravel 13 (najnowszy) + Laravel Boost (REST API) · React 19 + shadcn/ui (Vite, react-router) · MySQL | Bez SSR. Pierwotnie planowano Laravel 11; przy zakładaniu backendu wersją bieżącą było 13 i to ją bierzemy. Kompatybilność Boosta do sprawdzenia przy instalacji |
+| 1 | Stack | Laravel 13 (najnowszy) + Laravel Boost (REST API) · React 19 + shadcn/ui (Vite, react-router) · MySQL | Bez SSR. Pierwotnie planowano Laravel 11; przy zakładaniu backendu wersją bieżącą było 13 i to ją bierzemy. Boost sprawdzony przy S0: v2.7.0 rozwiązuje się czysto na Laravelu 13, ale nie jest jeszcze zainstalowany (narzędzie deweloperskie, poza zakresem S0) — patrz `docs/BACKEND.md` |
 | 2 | Integracja FE/BE | **Osobne REST API + 2 osobne aplikacje React**: `admin` (CMS) i `public` | Czyste rozdzielenie |
 | 3 | Repo | **Monorepo**: `/backend`, `/apps/admin`, `/apps/public`, `/packages/*` | Jeden setup dla 3 osób |
 | 4 | Multi-tenancy | **Jedna baza**, izolacja przez właściciela | patrz #5 |
