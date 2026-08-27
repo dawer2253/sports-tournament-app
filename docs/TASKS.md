@@ -48,7 +48,7 @@ Do zrobienia:
 - Kamień: publiczny link do pokazania
 
 ## S4 — Puchar (W prowadzi)
-- [ ] BracketService (seeding, pary, `next_match_id`) (W)
+- [ ] BracketService (seeding, pary, `winner_to_match_id` / `loser_to_match_id`) (W)
 - [ ] Cykl życia meczu + kaskada propagacji zwycięzcy (W)
 - [ ] Admin: kreator/podgląd drabinki (W)
 - [ ] Public: widok drabinki (W)
