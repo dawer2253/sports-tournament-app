@@ -56,32 +56,59 @@ packages/api-client — typowany klient HTTP + typy DTO
 
 ## 3. Model domeny (ERD — tekstowo)
 
+> Nazwy pól odpowiadają `packages/api-contract/openapi.yaml` (tu `snake_case`, tam
+> `camelCase`). Przy rozbieżności wygrywa kontrakt — [ADR 0001](adr/0001-kontrakt-openapi-jako-zrodlo-prawdy.md).
+
 ```
 User (owner)
-  └──< Tournament  [user_id, sport_id, slug, name, branding(logo,color), format, tiebreakers(json), status]
-         ├──< Team          [tournament_id, name, logo]
-         │      └──< Player [team_id, name, number, position]
-         ├──< Venue         [tournament_id, name, address]
-         └──< Stage         [tournament_id, type: group_phase|knockout, order]
-                ├──< Group   [stage_id, name]            (faza grupowa)
-                │     └──< GroupTeam [group_id, team_id]
-                ├──< Round   [stage_id, name, order]     (kolejka ligi / runda drabinki)
-                │     └──< Match
-                └──  (knockout: Round = runda drabinki)
+  └──< Tournament  [user_id, sport_id, slug, name, logo_url, primary_color,
+                    points(json: win/draw/loss), tiebreakers(json), status: draft|active|finished]
+         ├──< Team          [tournament_id, group_id?, name, logo_url]
+         │      └──< Player [team_id, name, number?, position?]
+         ├──< Venue         [tournament_id, name, address?]
+         └──< Stage         [tournament_id, type: league|group|knockout, name, order]
+                ├──< Group   [stage_id, name]            (tylko faza group)
+                └──< Round   [stage_id, name, order]     (kolejka ligi / runda drabinki)
+                      └──< Match
 
-Match  [round_id, home_team_id, away_team_id, home_score, away_score,
-        status: scheduled|live|finished, kickoff_at, venue_id,
-        next_match_id (drabinka), bracket_slot]
-  └──< MatchEvent [match_id, team_id, player_id, type, minute, meta(json)]
+Match  [round_id, stage_id, group_id?, match_number,
+        home_team_id?, away_team_id?, home_score?, away_score?,
+        home_penalties?, away_penalties?,
+        status: scheduled|live|finished, kickoff_at?, venue_id?,
+        winner_to_match_id?, loser_to_match_id?, advances_to_slot?: home|away]
+  └──< MatchEvent [match_id, team_id, player_id?, type, minute, meta(json)]
 
-Sport  [code, name, config(json: event_types, default_points, allowed_tiebreakers, stats)]
+Sport  [code: football|basketball, name,
+        config(json: allows_draw, default_points, event_types, available_tiebreakers, available_stats)]
 ```
 
 Uwagi:
 - `Standing` **nie** jest tabelą — liczony on-read z `Match`.
-- `MatchEvent` generyczny; dozwolone `type` zależą od `Sport.config`.
+- `Tournament` nie ma kolumny `format`: to wyłącznie wejście przy zakładaniu turnieju,
+  z którego powstają fazy. Strukturę turnieju opisuje `Stage`, a faza istnieje zawsze,
+  także w zwykłej lidze ([ADR 0002](adr/0002-faza-istnieje-zawsze.md)).
+- `Tournament.points` to punktacja tego turnieju, kopiowana przy zakładaniu
+  z `Sport.config.default_points`. Nie mylić z `points` w wierszu tabeli.
+- Drabinka trzyma osobno pozycję własną meczu (`round.order` + `match_number`) i to,
+  dokąd awansują jego uczestnicy (`winner_to_match_id`, `loser_to_match_id`).
+  `advances_to_slot` jest wspólne dla obu krawędzi, bo strona wynika z pozycji meczu
+  źródłowego, a nie z tego, kto awansuje ([ADR 0004](adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md)).
+  Etykiet rund ("Finał") nie przechowujemy — widok liczy je z rozmiaru drabinki.
+- Karne (`home_penalties`, `away_penalties`) wypełnione wyłącznie w fazie `knockout`,
+  przy meczu zakończonym remisem. Nie są zdobyczami: nie wchodzą do tabeli ani do statystyk.
+- Pauza (bye) nie tworzy meczu i nie ma własnej kolumny (decyzja #24).
+- `Team.group_id` jest kolumną, nie tabelą pośrednią: drużyna należy do co najwyżej
+  jednej grupy. Trade-off: nie zagra w dwóch fazach grupowych jednego turnieju
+  (poza zakresem MVP).
+- `Match.stage_id` jest zdenormalizowane — wyprowadzalne przez `round`, ale kontrakt
+  eksponuje je wprost, a zapytania o fazę są najczęstsze. Utrzymywane spójnie z `round`.
+- `MatchEvent` generyczny; dozwolone `type` to kody z `Sport.config.event_types`.
 - `slug` globalnie unikalny (publiczne URL-e).
-- Soft-deletes + guard: nie usuwamy bytów powiązanych z rozegranymi meczami.
+- Soft-deletes na bytach, które organizer kasuje ręcznie i które zostawiają ślad
+  w rozegranych meczach: `tournaments`, `teams`, `players`, `venues`. Bez soft-deletes
+  na `stages`, `groups`, `rounds`, `matches`, `match_events` — te są zarządzane przez
+  generator terminarza i kasowane kaskadowo. Guard niezależny od soft-deletes:
+  nie usuwamy bytu powiązanego z meczem o statusie `finished`.
 
 ---
 
@@ -118,7 +145,7 @@ Algorytm (on-read):
 - **Bye zostaje wewnątrz generatora** (decyzja #24): w terminarzu i na stronie publicznej pauzująca drużyna nie ma żadnego wiersza, kolejka ma po prostu o jeden mecz mniej. Standings liczy się z meczów rozegranych, więc pauza nie wymaga obsługi w tabeli.
 - **Daty**: `start_date` + `interval` (np. 7 dni) → kolejki rozkładane automatycznie; korekty ręczne.
 - **Venue**: przypisanie ręczne + **ostrzeżenie o kolizji** (ta sama drużyna/miejsce w nakładającym się oknie). Brak automatycznego solvera.
-- **Drabinka (single-elimination)**: seeding, pary, `next_match_id` do propagacji.
+- **Drabinka (single-elimination)**: seeding, pary, `winner_to_match_id` / `loser_to_match_id` do propagacji.
 - **Grupy + playoff** (decyzja #23): tabele grup → kwalifikacja N najlepszych → **automatyczne rozstawienie krzyżowe** (1A–2B, 1B–2A itd.) jako punkt wyjścia. Organizator widzi wygenerowane pary i **może je ręcznie poprawić**, dopóki faza nie wystartowała; w drabince bez grup seeding jest manualny albo losowy.
   - Jedna ścieżka kodu: automat wypełnia sloty, korekta ręczna je nadpisuje. Po rozegraniu pierwszego meczu fazy zmiana par wchodzi w kaskadę z §7 i wymaga tego samego ostrzeżenia.
 
@@ -128,7 +155,8 @@ Algorytm (on-read):
 
 - Status: `scheduled → (live) → finished`.
 - Wpisanie/edycja wyniku przelicza tabelę on-read (liga) automatycznie.
-- **Drabinka**: jeśli edycja zmienia zwycięzcę, kolejne rundy zależne zostają **wyczyszczone/zresetowane** z wyraźnym ostrzeżeniem dla admina (propagacja przez `next_match_id`).
+- **Drabinka**: jeśli edycja zmienia zwycięzcę, kolejne rundy zależne zostają **wyczyszczone/zresetowane** z wyraźnym ostrzeżeniem dla admina (propagacja przez
+  `winner_to_match_id` / `loser_to_match_id`).
 
 ---
 
