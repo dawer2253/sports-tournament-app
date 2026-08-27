@@ -1,29 +1,32 @@
-import {
-  Badge,
-  Button,
-  Heading,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@tournament/ui';
 import { useQuery } from '@tanstack/react-query';
+import { AdminShell, TournamentsTable, type AdminNavKey } from '@tournament/ui';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
 import { clearToken } from '../lib/session';
 
-const STATUS_LABEL = {
-  draft: 'Szkic',
-  active: 'W trakcie',
-  finished: 'Zakończony',
-} as const;
+/**
+ * Pozycje nawigacji, które mają już swój ekran. Reszta zostaje nieczynna,
+ * dopóki nie powstanie odpowiedni widok.
+ */
+const NAV_ROUTES: Partial<Record<AdminNavKey, string>> = {
+  dashboard: '/',
+};
 
 export function TournamentsPage() {
   const navigate = useNavigate();
 
-  const { data, isPending, error } = useQuery({
+  const me = useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const { data, error } = await api.GET('/me');
+      if (error) throw new Error(error.message);
+      return data.data;
+    },
+  });
+
+  // Kontrakt stronicuje listę (domyślnie 20 na stronę). Panel pokazuje na
+  // razie pierwszą stronę i mówi wprost, ile turniejów jest w sumie.
+  const tournaments = useQuery({
     queryKey: ['tournaments'],
     queryFn: async () => {
       const { data, error } = await api.GET('/tournaments');
@@ -37,44 +40,37 @@ export function TournamentsPage() {
     void navigate('/login');
   }
 
+  const rows = tournaments.data?.data ?? [];
+  const total = tournaments.data?.meta.total ?? 0;
+
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-8">
-      <div className="flex items-center justify-between">
-        <Heading>Turnieje</Heading>
-        <Button variant="outline" onClick={handleLogout}>
-          Wyloguj
-        </Button>
-      </div>
+    <AdminShell
+      active="dashboard"
+      title="Twoje turnieje"
+      subtitle="Zarządzaj ligami i turniejami"
+      user={{
+        name: me.data?.name ?? (me.isError ? 'Nieznane konto' : 'Wczytywanie…'),
+        email: me.data?.email ?? '',
+      }}
+      navHref={(key) => NAV_ROUTES[key]}
+      onNavigate={(key) => {
+        const route = NAV_ROUTES[key];
+        if (route) void navigate(route);
+      }}
+      onLogout={handleLogout}
+    >
+      <TournamentsTable
+        status={tournaments.status}
+        tournaments={rows}
+        errorMessage={tournaments.error?.message}
+        onRetry={() => void tournaments.refetch()}
+      />
 
-      {isPending ? <p className="text-muted-foreground">Wczytywanie...</p> : null}
-      {error ? <p className="text-destructive">{error.message}</p> : null}
-
-      {data ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nazwa</TableHead>
-              <TableHead>Sport</TableHead>
-              <TableHead>Drużyny</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Adres publiczny</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.data.map((tournament) => (
-              <TableRow key={tournament.id}>
-                <TableCell className="font-medium">{tournament.name}</TableCell>
-                <TableCell>{tournament.sport.name}</TableCell>
-                <TableCell>{tournament.teamsCount}</TableCell>
-                <TableCell>
-                  <Badge>{STATUS_LABEL[tournament.status]}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">/t/{tournament.slug}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {rows.length > 0 && rows.length < total ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Pokazano {rows.length} z {total} turniejów.
+        </p>
       ) : null}
-    </main>
+    </AdminShell>
   );
 }

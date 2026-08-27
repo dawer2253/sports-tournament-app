@@ -3,6 +3,7 @@ import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Palette, Settings,
   Trophy, Search, Bell, LogOut, GitFork,
 } from 'lucide-react'
+import { organizer } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
@@ -27,15 +28,50 @@ const NAV: { key: AdminNavKey; label: string; icon: React.ElementType }[] = [
   { key: 'settings', label: 'Ustawienia', icon: Settings },
 ]
 
+/** Zalogowany organizer pokazywany w sidebarze i w headerze. */
+export interface AdminShellUser {
+  name: string
+  email: string
+}
+
 export interface AdminShellProps {
   active: AdminNavKey
   title: string
   subtitle?: string
   actions?: React.ReactNode
   children: React.ReactNode
+  /** Bez tego shell pokazuje konto demo z `lib/demo-data` (Storybook). */
+  user?: AdminShellUser
+  /** Adres pozycji nawigacji. Domyślnie pozycje są martwe (Storybook). */
+  navHref?: (key: AdminNavKey) => string | undefined
+  /** Przejęcie kliknięcia w nawigację, np. przez router. */
+  onNavigate?: (key: AdminNavKey) => void
+  onLogout?: () => void
 }
 
-export function AdminShell({ active, title, subtitle, actions, children }: AdminShellProps) {
+/** Inicjały do awatara: „Klub Sportowy" → „KS". */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+export function AdminShell({
+  active,
+  title,
+  subtitle,
+  actions,
+  children,
+  user = organizer,
+  navHref,
+  onNavigate,
+  onLogout,
+}: AdminShellProps) {
+  const avatar = initials(user.name)
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Sidebar */}
@@ -55,16 +91,31 @@ export function AdminShell({ active, title, subtitle, actions, children }: Admin
           </div>
           {NAV.map(({ key, label, icon: Icon }) => {
             const isActive = key === active
+            const href = navHref?.(key)
+            // Aplikacja podaje adresy tylko dla ekranów, które już istnieją.
+            // Pozycja bez adresu nie udaje odnośnika: nie da się w nią wejść
+            // z klawiatury i widać po niej, że jest nieczynna. W Storybooku
+            // (bez `navHref`) cała nawigacja zostaje dekoracją.
+            const isDisabled = navHref !== undefined && href === undefined
             return (
               <a
                 key={key}
+                href={href}
+                onClick={(event) => {
+                  if (!onNavigate) return
+                  event.preventDefault()
+                  if (!isDisabled) onNavigate(key)
+                }}
                 aria-current={isActive ? 'page' : undefined}
+                aria-disabled={isDisabled || undefined}
+                tabIndex={isDisabled ? -1 : undefined}
                 className={cn(
                   'relative flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                   'before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity',
                   isActive
                     ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground before:opacity-100'
                     : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+                  isDisabled && 'cursor-default opacity-50 hover:bg-transparent',
                 )}
               >
                 <Icon className={cn('size-4 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} />
@@ -77,11 +128,11 @@ export function AdminShell({ active, title, subtitle, actions, children }: Admin
         <div className="border-t border-sidebar-border p-2">
           <div className="flex items-center gap-2.5 rounded-md p-2 transition-colors hover:bg-sidebar-accent/50">
             <Avatar className="size-8">
-              <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">KS</AvatarFallback>
+              <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 text-xs leading-tight">
-              <div className="truncate font-medium">Klub Sportowy</div>
-              <div className="truncate text-muted-foreground">organizator@klub.pl</div>
+              <div className="truncate font-medium">{user.name}</div>
+              <div className="truncate text-muted-foreground">{user.email}</div>
             </div>
           </div>
         </div>
@@ -99,14 +150,14 @@ export function AdminShell({ active, title, subtitle, actions, children }: Admin
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="size-8 cursor-pointer">
-                  <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">KS</AvatarFallback>
+                  <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Klub Sportowy</DropdownMenuLabel>
+                <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem><Settings className="size-4" /> Ustawienia konta</DropdownMenuItem>
-                <DropdownMenuItem variant="destructive"><LogOut className="size-4" /> Wyloguj</DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={onLogout}><LogOut className="size-4" /> Wyloguj</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

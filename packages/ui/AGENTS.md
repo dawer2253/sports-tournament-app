@@ -23,6 +23,9 @@ Storybook na `:6006`), więc podgląd działa bez konfiguracji.
 
 - `components/ui/` — prymitywy shadcn (Button, Card, Dialog, Table…). Tutaj
   trafiają komponenty z `npx shadcn add`.
+- `components/data/` — komponenty prezentujące dane z API (np.
+  `tournaments-table.tsx` na TanStack Table). Same przyjmują dane propsami:
+  pakiet nie zna klienta API ani TanStack Query.
 - `components/layout/` — `admin-shell.tsx` (panel z sidebarem) i
   `public-shell.tsx`. Każdy ekran opakowuje się w jeden z tych shelli.
 - `screens/` — ekrany aplikacji (wzorzec niżej).

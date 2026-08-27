@@ -1,5 +1,7 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
+import type { TournamentRow } from '../components/data/tournaments-table'
+
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type FormResult = 'W' | 'D' | 'L'
 
@@ -9,6 +11,9 @@ export type Team = {
   abbr: string
   players: number
 }
+
+// Konto organizera pokazywane w panelu, dopóki aplikacja nie poda prawdziwego.
+export const organizer = { name: 'Klub Sportowy', email: 'organizator@klub.pl' }
 
 export const tournament = {
   name: 'Liga Osiedlowa 2026',
@@ -195,3 +200,32 @@ export const formColor: Record<FormResult, string> = {
   D: 'bg-muted-foreground',
   L: 'bg-destructive',
 }
+
+// Lista turniejów organizera (ekran startowy panelu). Kształt zgodny
+// z `Tournament` z kontraktu, ograniczony do pól, które pokazuje tabela.
+export const tournamentList: TournamentRow[] = [
+  {
+    id: 1,
+    name: 'Liga Osiedlowa 2026',
+    slug: 'liga-osiedlowa-2026',
+    status: 'active',
+    sport: { name: 'Piłka nożna' },
+    teamsCount: 10,
+  },
+  {
+    id: 2,
+    name: 'Puchar Zimowy',
+    slug: 'puchar-zimowy',
+    status: 'draft',
+    sport: { name: 'Koszykówka' },
+    teamsCount: 8,
+  },
+  {
+    id: 3,
+    name: 'Turniej Zimowy',
+    slug: 'turniej-zimowy',
+    status: 'finished',
+    sport: { name: 'Piłka nożna' },
+    teamsCount: 12,
+  },
+]
