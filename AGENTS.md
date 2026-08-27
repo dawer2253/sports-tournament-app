@@ -9,8 +9,9 @@ Słownik pojęć: [`CONTEXT.md`](CONTEXT.md). Decyzje trudne do odwrócenia:
 
 ## Stan projektu (sierpień 2026)
 
-Stoi fundament: monorepo, kontrakt API i dwie aplikacje React pracujące na mocku
-kontraktu. **Backend nie istnieje** — jego pierwsze uruchomienie opisuje
+Stoi fundament: monorepo, kontrakt API, dwie aplikacje React pracujące na mocku
+kontraktu oraz szkielet backendu. **Laravel 13 na Sailu już stoi**, ale nie ma
+jeszcze warstwy API — uruchomienie i stan środowiska opisuje
 [`docs/BACKEND.md`](docs/BACKEND.md).
 
 ## Monorepo
@@ -24,7 +25,7 @@ npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 | `packages/ui/` | design system + ekrany w Storybooku ([własny `AGENTS.md`](packages/ui/AGENTS.md)) |
 | `apps/admin/` | panel organizera (logowanie, port 5173) |
 | `apps/public/` | strona turnieju (bez logowania, port 5174) |
-| `backend/` | Laravel, jeszcze nie zainstalowany |
+| `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); API dochodzi w kolejnych ticketach |
 
 ## Kontrakt API
 
@@ -88,7 +89,7 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, build. Job backendu dochodzi razem z Laravelem.
+  lint, typy, build. Job backendu (Pint, Pest) jeszcze nie wchodzi w skład CI.
 - [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
   Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
 
