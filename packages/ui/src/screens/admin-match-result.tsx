@@ -1,5 +1,5 @@
 import { Plus, Save } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardHeader, CardTitle, CardAction, CardContent } from '../components/ui/card'
@@ -32,7 +32,7 @@ function TeamSide({ abbr, name }: { abbr: string; name: string }) {
 
 export function AdminMatchResult() {
   return (
-    <AdminShell
+    <ShellDemo
       active="schedule"
       title="Wynik meczu"
       subtitle={`Kolejka ${match.round} · ${match.date} · ${match.kickoff} · ${match.venue}`}
@@ -111,6 +111,6 @@ export function AdminMatchResult() {
           <Save /> Zapisz
         </Button>
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }

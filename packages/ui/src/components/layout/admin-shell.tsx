@@ -3,7 +3,6 @@ import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Palette, Settings,
   Trophy, Search, Bell, LogOut, GitFork,
 } from 'lucide-react'
-import { organizer } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
@@ -34,14 +33,26 @@ export interface AdminShellUser {
   email: string
 }
 
+/**
+ * Stan konta w headerze. Trzy jawne wartości zamiast pustego stringa jako
+ * sygnału: `'pending'` to „jeszcze nie wiem" (`/me` w drodze), `null` to
+ * „nie udało się ustalić". Zlanie ich w jedno gubi informację, że coś się
+ * jeszcze dzieje, a zgadnięta nazwa wygląda jak cudze konto.
+ */
+export type AdminShellAccount = AdminShellUser | 'pending' | null
+
 export interface AdminShellProps {
   active: AdminNavKey
   title: string
   subtitle?: string
   actions?: React.ReactNode
   children: React.ReactNode
-  /** Bez tego shell pokazuje konto demo z `lib/demo-data` (Storybook). */
-  user?: AdminShellUser
+  /**
+   * Wymagany: shell nie ma własnego konta zastępczego, bo fikcyjny organizer
+   * w headerze jest gorszy niż widoczny brak danych. Ekrany Storybooka podają
+   * je przez `ShellDemo` z `screens/`.
+   */
+  user: AdminShellAccount
   /** Adres pozycji nawigacji. Domyślnie pozycje są martwe (Storybook). */
   navHref?: (key: AdminNavKey) => string | undefined
   /** Przejęcie kliknięcia w nawigację, np. przez router. */
@@ -65,12 +76,17 @@ export function AdminShell({
   subtitle,
   actions,
   children,
-  user = organizer,
+  user,
   navHref,
   onNavigate,
   onLogout,
 }: AdminShellProps) {
-  const avatar = initials(user.name)
+  const isPending = user === 'pending'
+  // Nazwy ani inicjału nie zgadujemy: „W" od „Wczytywanie…" wyglądało jak
+  // inicjał prawdziwego konta, a nazwa zastępcza jak nazwa cudzego.
+  const accountName = user === null ? 'Konto nieustalone' : isPending ? 'Wczytywanie konta…' : user.name
+  const avatar = user === null || isPending ? '—' : initials(user.name)
+  const accountEmail = user === null || isPending ? '' : user.email
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -131,8 +147,13 @@ export function AdminShell({
               <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 text-xs leading-tight">
-              <div className="truncate font-medium">{user.name}</div>
-              <div className="truncate text-muted-foreground">{user.email}</div>
+              <div
+                className={cn('truncate font-medium', user === null && 'italic text-muted-foreground')}
+                aria-busy={isPending || undefined}
+              >
+                {accountName}
+              </div>
+              {accountEmail && <div className="truncate text-muted-foreground">{accountEmail}</div>}
             </div>
           </div>
         </div>
@@ -154,7 +175,7 @@ export function AdminShell({
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+                <DropdownMenuLabel>{accountName}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem><Settings className="size-4" /> Ustawienia konta</DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onClick={onLogout}><LogOut className="size-4" /> Wyloguj</DropdownMenuItem>

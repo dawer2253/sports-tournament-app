@@ -1,5 +1,5 @@
 import { Plus, MapPin, Pencil, Trash2 } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
@@ -7,7 +7,7 @@ import { venues } from '../lib/demo-data'
 
 export function AdminVenues() {
   return (
-    <AdminShell
+    <ShellDemo
       active="venues"
       title="Obiekty"
       subtitle="Miejsca rozgrywania meczów"
@@ -49,6 +49,6 @@ export function AdminVenues() {
           </TableBody>
         </Table>
       </Card>
-    </AdminShell>
+    </ShellDemo>
   )
 }

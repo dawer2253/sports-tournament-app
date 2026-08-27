@@ -1,7 +1,7 @@
 import {
   SlidersHorizontal, RefreshCw, ChevronLeft, ChevronRight, Clock, Check, AlertTriangle,
 } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent } from '../components/ui/card'
@@ -79,7 +79,7 @@ export function AdminSchedule() {
   const roundDate = roundFixtures[0]?.date ?? ''
 
   return (
-    <AdminShell
+    <ShellDemo
       active="schedule"
       title={tournament.name}
       subtitle={`${tournament.teamsCount} drużyn · ${tournament.rounds} kolejek · ${tournament.sport}`}
@@ -172,6 +172,6 @@ export function AdminSchedule() {
           </Card>
         </TabsContent>
       </Tabs>
-    </AdminShell>
+    </ShellDemo>
   )
 }

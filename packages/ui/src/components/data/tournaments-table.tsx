@@ -5,19 +5,9 @@ import { Button } from '../ui/button'
 import { EmptyState } from '../ui/empty-state'
 import { Skeleton } from '../ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
+import type { TournamentRow } from './tournament-row'
 
-/**
- * Wiersz listy turniejów. Podzbiór `Tournament` z kontraktu: pakiet UI nie zna
- * klienta API, więc bierze dokładnie te pola, które pokazuje.
- */
-export type TournamentRow = {
-  id: number
-  name: string
-  slug: string
-  status: 'draft' | 'active' | 'finished'
-  sport: { name: string }
-  teamsCount: number
-}
+export type { TournamentRow }
 
 /** Stan pobierania danych — nazwy jak `status` z TanStack Query. */
 export type TournamentsTableStatus = 'pending' | 'error' | 'success'
@@ -26,6 +16,12 @@ export interface TournamentsTableProps {
   tournaments: TournamentRow[]
   /** Domyślnie `success`: dane są już w ręku. */
   status?: TournamentsTableStatus
+  /**
+   * Liczba wszystkich turniejów z kontraktu. Kontrakt stronicuje listę, a panel
+   * pokazuje na razie jedną stronę, więc licznik pod tabelą mówi wprost, ile
+   * turniejów jest w sumie. Bez tego propsa licznika nie ma.
+   */
+  total?: number
   errorMessage?: string
   onRetry?: () => void
   /** Akcja w stanie pustym. Bez niej zostaje sam komunikat. */
@@ -69,6 +65,7 @@ const SKELETON_ROWS = 3
 export function TournamentsTable({
   tournaments,
   status = 'success',
+  total,
   errorMessage,
   onRetry,
   onCreate,
@@ -105,43 +102,53 @@ export function TournamentsTable({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                <table.FlexRender header={header} />
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {status === 'pending'
-          ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <TableRow key={index}>
-                <TableCell colSpan={columns.length}>
-                  {/* Tylko pierwszy pasek ogłasza ładowanie: trzy naraz czytnik
-                      ekranu przeczytałby trzy razy. */}
-                  <Skeleton
-                    role={index === 0 ? 'status' : undefined}
-                    aria-label={index === 0 ? 'Wczytywanie turniejów' : undefined}
-                    className="h-5 w-full"
-                  />
-                </TableCell>
-              </TableRow>
-            ))
-          : table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    <table.FlexRender cell={cell} />
+    <>
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  <table.FlexRender header={header} />
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {status === 'pending'
+            ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
+                <TableRow key={index}>
+                  <TableCell colSpan={columns.length}>
+                    {/* Tylko pierwszy pasek ogłasza ładowanie: trzy naraz czytnik
+                        ekranu przeczytałby trzy razy. */}
+                    <Skeleton
+                      role={index === 0 ? 'status' : undefined}
+                      aria-label={index === 0 ? 'Wczytywanie turniejów' : undefined}
+                      className="h-5 w-full"
+                    />
                   </TableCell>
-                ))}
-              </TableRow>
-            ))}
-      </TableBody>
-    </Table>
+                </TableRow>
+              ))
+            : table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getAllCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+        </TableBody>
+      </Table>
+
+      {/* Licznik nie czeka na to, aż lista zostanie ucięta: „2 z 2" to też
+          uczciwa informacja, a stronicowania jeszcze nie ma. */}
+      {status === 'success' && total !== undefined && total > 0 ? (
+        <p className="mt-3 text-sm text-muted-foreground">
+          Pokazano {tournaments.length} z {total} turniejów.
+        </p>
+      ) : null}
+    </>
   )
 }

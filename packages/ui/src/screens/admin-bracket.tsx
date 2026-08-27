@@ -1,5 +1,5 @@
 import { Shuffle, RefreshCw, Trophy, AlertTriangle } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { cn } from '../lib/utils'
 import { bracket, bracketWinner } from '../lib/demo-data'
@@ -76,7 +76,7 @@ function RoundColumn({ round }: { round: BracketRound }) {
 
 export function AdminBracket() {
   return (
-    <AdminShell
+    <ShellDemo
       active="bracket"
       title="Drabinka"
       subtitle="Faza pucharowa · single-elimination"
@@ -122,6 +122,6 @@ export function AdminBracket() {
           </p>
         </div>
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }

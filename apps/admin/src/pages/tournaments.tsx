@@ -48,10 +48,9 @@ export function TournamentsPage() {
       active="dashboard"
       title="Twoje turnieje"
       subtitle="Zarządzaj ligami i turniejami"
-      user={{
-        name: me.data?.name ?? (me.isError ? 'Nieznane konto' : 'Wczytywanie…'),
-        email: me.data?.email ?? '',
-      }}
+      // Trzy stany, nie dwa: `/me` w drodze to nie to samo co `/me` po błędzie.
+      // Nazwy zastępczej nie podstawiamy — wyglądałaby jak prawdziwe konto.
+      user={me.data ?? (me.isPending ? 'pending' : null)}
       navHref={(key) => NAV_ROUTES[key]}
       onNavigate={(key) => {
         const route = NAV_ROUTES[key];
@@ -62,15 +61,10 @@ export function TournamentsPage() {
       <TournamentsTable
         status={tournaments.status}
         tournaments={rows}
+        total={total}
         errorMessage={tournaments.error?.message}
         onRetry={() => void tournaments.refetch()}
       />
-
-      {rows.length > 0 && rows.length < total ? (
-        <p className="mt-3 text-sm text-muted-foreground">
-          Pokazano {rows.length} z {total} turniejów.
-        </p>
-      ) : null}
     </AdminShell>
   );
 }

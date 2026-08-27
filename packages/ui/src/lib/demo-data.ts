@@ -1,6 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
-import type { TournamentRow } from '../components/data/tournaments-table'
+import type { TournamentRow } from '../components/data/tournament-row'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type FormResult = 'W' | 'D' | 'L'
@@ -203,22 +203,28 @@ export const formColor: Record<FormResult, string> = {
 
 // Lista turniejów organizera (ekran startowy panelu). Kształt zgodny
 // z `Tournament` z kontraktu, ograniczony do pól, które pokazuje tabela.
+//
+// Te same trzy turnieje pokazuje `screens/admin-dashboard.tsx` — w innej formie
+// (kafle z postępem), więc kształt jest osobny, ale nazwy, sporty i liczby
+// drużyn muszą się zgadzać. Zmieniasz tutaj, poprawiasz tam.
 export const tournamentList: TournamentRow[] = [
   {
     id: 1,
-    name: 'Liga Osiedlowa 2026',
-    slug: 'liga-osiedlowa-2026',
+    // Pierwszy turniej to ten sam byt, który opisuje `tournament` wyżej —
+    // czerpie z niego, żeby nie dało się rozjechać liczby drużyn ani adresu.
+    name: tournament.name,
+    slug: tournament.slug,
     status: 'active',
-    sport: { name: 'Piłka nożna' },
-    teamsCount: 10,
+    sport: { name: tournament.sport },
+    teamsCount: tournament.teamsCount,
   },
   {
     id: 2,
-    name: 'Puchar Zimowy',
-    slug: 'puchar-zimowy',
+    name: 'Puchar Miasta — Kosz',
+    slug: 'puchar-miasta-kosz',
     status: 'draft',
     sport: { name: 'Koszykówka' },
-    teamsCount: 8,
+    teamsCount: 16,
   },
   {
     id: 3,

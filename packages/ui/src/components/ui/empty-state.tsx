@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
+import { headingVariants } from './typography'
 
 const emptyStateIconVariants = cva(
   'grid size-10 shrink-0 place-items-center rounded-full [&_svg]:size-5',
@@ -50,7 +51,11 @@ export function EmptyState({
     >
       {icon && <span className={cn(emptyStateIconVariants({ variant }))}>{icon}</span>}
       <div className="space-y-1">
-        <p className="font-medium">{title}</p>
+        {/* Styl nagłówka karty bierzemy z `headingVariants`, ale znacznik zostaje
+            nienagłówkowy: pusty stan siedzi wewnątrz karty i nie powinien
+            wstrzykiwać <h3> w outline strony. Komponent `Heading` renderuje
+            nagłówki — nie zmuszamy go do udawania akapitu. */}
+        <p className={cn(headingVariants({ level: 'card' }))}>{title}</p>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
       {action}

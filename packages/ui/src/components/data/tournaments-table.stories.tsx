@@ -7,7 +7,7 @@ const meta = {
   title: 'UI/Tabela turniejów',
   component: TournamentsTable,
   parameters: { layout: 'padded' },
-  args: { tournaments: tournamentList },
+  args: { tournaments: tournamentList, total: tournamentList.length },
 } satisfies Meta<typeof TournamentsTable>
 
 export default meta
@@ -20,8 +20,20 @@ export const Domyslny: Story = {
     // Każdy turniej ma wiersz z nazwą, sportem, liczbą drużyn i adresem.
     await expect(canvas.getByText('Liga Osiedlowa 2026')).toBeInTheDocument()
     await expect(canvas.getByText('Koszykówka')).toBeInTheDocument()
-    await expect(canvas.getByText('/t/liga-osiedlowa-2026')).toBeInTheDocument()
+    await expect(canvas.getByText('/t/liga-osiedlowa')).toBeInTheDocument()
     await expect(canvas.getAllByRole('row')).toHaveLength(tournamentList.length + 1)
+
+    // Licznik pokazuje się też wtedy, gdy lista nie jest ucięta.
+    await expect(canvas.getByText('Pokazano 3 z 3 turniejów.')).toBeInTheDocument()
+  },
+}
+
+/** Kontrakt stronicuje listę: pierwsza strona to nie wszystko, co jest. */
+export const UcietaLista: Story = {
+  args: { total: 12 },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Pokazano 3 z 12 turniejów.')).toBeInTheDocument()
   },
 }
 
