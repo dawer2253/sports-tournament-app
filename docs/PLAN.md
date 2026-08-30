@@ -33,7 +33,7 @@
 | 22 | Język UI | Polski (stringi gotowe pod ewentualne EN) | |
 | 23 | Seeding drabinki (grupy+playoff) | **Automatyczny krzyżowy** (1A–2B, 1B–2A…) jako domyślny, z **ręczną korektą par** przed startem fazy | Domyślnie organizator nic nie klika; przy nietypowym regulaminie nie jest zablokowany. Po starcie fazy pary zamraża kaskada (#15) |
 | 24 | „Pauza" (bye) w lidze nieparzystej | **Nie pokazywana jawnie** w terminarzu; kolejka ma po prostu o jeden mecz mniej | Bye to artefakt circle method, nie informacja dla kibica. Wewnętrznie generator dalej go używa |
-| 25 | Domyślna punktacja i tiebreaki per sport | **Odłożone do wdrażania sportów** (S1: `SportRules` + seed) | To wartości w seedzie, nie architektura. Silnik jest na nie obojętny (#10, #11), więc decyzja teraz byłaby zgadywaniem |
+| 25 | Domyślna punktacja i tiebreaki per sport | **Ustalone w kontrakcie v0.1**; odłożone zostaje wyłącznie strojenie punktacji per turniej w UI (S1) | Pierwotnie odłożone w całości jako zgadywanie. Przestało nim być, gdy kontrakt zaczął serwować komplet w przykładzie `GET /sports` — piłka `{win:3, draw:1, loss:0}`, kosz `{win:2, draw:0, loss:1}`, `allowsDraw`, `eventTypes`. Mock już to oddaje, a `apps/admin` przeciw temu stoi, więc migracja `sports` przepisuje te wartości dosłownie; rozjazd oznaczałby dwie różne prawdy o tym samym sporcie |
 
 ---
 

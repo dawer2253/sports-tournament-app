@@ -74,6 +74,12 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 - Nazywając byt domenowy, użyj terminu z [`CONTEXT.md`](CONTEXT.md). Jeżeli go tam
   nie ma, to sygnał: albo wymyślasz język, którego projekt nie używa, albo słownik
   ma lukę.
+- Dwie nazwy w schemacie kolidują ze słowami zarezerwowanymi i **zostają**, bo są
+  kanoniczne: tabela `groups` (`GROUPS` jest zarezerwowane w MySQL 8 od 8.0.2)
+  oraz kolumna `order` w `stages` i `rounds`. Query Builder i Eloquent cytują
+  identyfikatory backtickami, więc problem pojawia się wyłącznie w surowym SQL-u —
+  **w `DB::raw`, `whereRaw` i `selectRaw` cytuj je backtickami.** Dotyczy to
+  zwłaszcza `StandingsCalculator`.
 
 ### `packages/ui`
 
