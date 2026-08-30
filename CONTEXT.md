@@ -90,6 +90,11 @@ Miejsce rozegrania meczu. Należy do turnieju.
 Spotkanie dwóch drużyn w ramach kolejki. Ma gospodarza i gościa, planowany
 termin, opcjonalny obiekt i stan.
 
+Jedyny wyjątek od zasady „nazwa kanoniczna brzmi tak samo w kodzie, w bazie
+i w API": klasa modelu w backendzie nazywa się `GameMatch`, bo `match` jest
+słowem kluczowym PHP i `class Match` nie da się zadeklarować. Tabela (`matches`)
+i kontrakt (`Match`) trzymają nazwę kanoniczną.
+
 Stan meczu: zaplanowany, trwający, zakończony. Tylko mecz zakończony wpływa na
 tabelę i na statystyki.
 

@@ -39,6 +39,26 @@ Tailwindem i widokiem `welcome.blade.php` — zostały usunięte razem z
 `package.json` albo widok z `@vite`, usuń go. `/` zostaje health checkiem
 zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
+## Schemat i modele
+
+Kształt bazy wynika z ERD w [`docs/PLAN.md`](../docs/PLAN.md) §3. Cztery rzeczy,
+które łatwo cofnąć przez przypadek:
+
+- **Model meczu nazywa się `GameMatch`**, mimo że byt nazywa się `Match`.
+  `match` jest słowem kluczowym PHP od 8.0, więc `class Match` to błąd
+  parsowania. Tabela zostaje `matches` (przez `#[Table]`), kontrakt zostaje
+  przy `Match`. Nie „naprawiaj" tej niespójności.
+- **Nie dodawaj `RESTRICT` wewnątrz poddrzewa turnieju.** Usunięcie turnieju
+  kaskaduje w dół, a InnoDB nie gwarantuje kolejności kasowania rodzeństwa —
+  jeden `RESTRICT` po drodze robi z tego błąd zależny od kolejności wierszy.
+  Zakaz usuwania bytu z rozegranym meczem realizuje guard w modelach
+  (`GuardsFinishedMatches`), zwracający **409**, nie Policy i nie klucz obcy.
+- **Sporty wstawia migracja, nie seeder** — to dane systemowe, a ich `config`
+  musi zgadzać się z przykładem `GET /sports` w kontrakcie. `SportFactory`
+  celowo nie istnieje.
+- Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
+  robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
+
 ## Kontrakt API
 
 `packages/api-contract/openapi.yaml` jest jedynym źródłem prawdy o API. Backend
