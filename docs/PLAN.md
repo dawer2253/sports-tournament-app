@@ -33,7 +33,7 @@
 | 22 | Język UI | Polski (stringi gotowe pod ewentualne EN) | |
 | 23 | Seeding drabinki (grupy+playoff) | **Automatyczny krzyżowy** (1A–2B, 1B–2A…) jako domyślny, z **ręczną korektą par** przed startem fazy | Domyślnie organizator nic nie klika; przy nietypowym regulaminie nie jest zablokowany. Po starcie fazy pary zamraża kaskada (#15) |
 | 24 | „Pauza" (bye) w lidze nieparzystej | **Nie pokazywana jawnie** w terminarzu; kolejka ma po prostu o jeden mecz mniej | Bye to artefakt circle method, nie informacja dla kibica. Wewnętrznie generator dalej go używa |
-| 25 | Domyślna punktacja i tiebreaki per sport | **Odłożone do wdrażania sportów** (S1: `SportRules` + seed) | To wartości w seedzie, nie architektura. Silnik jest na nie obojętny (#10, #11), więc decyzja teraz byłaby zgadywaniem |
+| 25 | Domyślna punktacja i tiebreaki per sport | **Ustalone w kontrakcie v0.1**; odłożone zostaje wyłącznie strojenie punktacji per turniej w UI (S1) | Pierwotnie odłożone w całości jako zgadywanie. Przestało nim być, gdy kontrakt zaczął serwować komplet w przykładzie `GET /sports` — piłka `{win:3, draw:1, loss:0}`, kosz `{win:2, draw:0, loss:1}`, `allowsDraw`, `eventTypes`. Mock już to oddaje, a `apps/admin` przeciw temu stoi, więc migracja `sports` przepisuje te wartości dosłownie; rozjazd oznaczałby dwie różne prawdy o tym samym sporcie |
 
 ---
 
@@ -73,7 +73,7 @@ User (owner)
          │      └──< Player [team_id, name, number?, position?]
          ├──< Venue         [tournament_id, name, address?]
          └──< Stage         [tournament_id, type: league|group|knockout, name, order]
-                ├──< Group   [stage_id, name]            (tylko faza group)
+                ├──< Group   [stage_id, tournament_id, name]   (tylko faza group)
                 └──< Round   [stage_id, name, order]     (kolejka ligi / runda drabinki)
                       └──< Match
 
@@ -114,6 +114,16 @@ Uwagi:
   Kontrakt v0.1 nie eksponuje tej encji (wchodzi w v0.2), więc jej kształt jest
   zakotwiczony wyłącznie w `Sport.config` i w `CONTEXT.md`.
 - `slug` globalnie unikalny (publiczne URL-e).
+- `Group.tournament_id` jest zdenormalizowane (wynika ze `stage_id`) i służy do taniego
+  sprawdzenia, czy grupa i drużyna należą do tego samego turnieju, bez wspinania się
+  przez fazę.
+- Trzy ustalenia nie przetrwały zderzenia z PHP i MySQL-em i są opisane osobno
+  w [ADR 0005](adr/0005-schemat-ustepuje-ograniczeniom-php-i-mysql.md): model meczu
+  nazywa się `GameMatch`; wewnątrz poddrzewa turnieju żaden klucz obcy nie jest
+  `RESTRICT`; przynależność grupy do turnieju sprawdza aplikacja, nie baza.
+- `tournaments.user_id` jest `RESTRICT`, bo kaskada z `users` obchodziłaby guard.
+  Konsekwencja przyjęta świadomie: **konta z turniejami nie da się usunąć** —
+  zamyka się je anonimizacją, nie kasowaniem wiersza.
 - **Guard: nie usuwamy bytu powiązanego z meczem o statusie `finished`** — ani na twardo,
   ani na miękko. Rozegrany turniej zostaje w bazie na zawsze, bo jego publiczny adres
   `/t/{slug}` ma dalej działać. Porządek w panelu robi filtr po `status`, nie kasowanie.

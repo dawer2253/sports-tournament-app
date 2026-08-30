@@ -90,6 +90,10 @@ Miejsce rozegrania meczu. Należy do turnieju.
 Spotkanie dwóch drużyn w ramach kolejki. Ma gospodarza i gościa, planowany
 termin, opcjonalny obiekt i stan.
 
+Jedyny byt, którego nazwa kanoniczna nie brzmi tak samo wszędzie: klasa modelu
+w backendzie nazywa się `GameMatch`
+([ADR 0005](docs/adr/0005-schemat-ustepuje-ograniczeniom-php-i-mysql.md)).
+
 Stan meczu: zaplanowany, trwający, zakończony. Tylko mecz zakończony wpływa na
 tabelę i na statystyki.
 

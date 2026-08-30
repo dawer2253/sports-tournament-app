@@ -39,6 +39,29 @@ Tailwindem i widokiem `welcome.blade.php` — zostały usunięte razem z
 `package.json` albo widok z `@vite`, usuń go. `/` zostaje health checkiem
 zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
+## Schemat i modele
+
+Kształt bazy wynika z ERD w [`docs/PLAN.md`](../docs/PLAN.md) §3. Trzy miejsca
+wyglądają jak niedoróbka, a są wymuszone przez PHP i MySQL — powody opisuje
+[ADR 0005](../docs/adr/0005-schemat-ustepuje-ograniczeniom-php-i-mysql.md),
+przeczytaj go, zanim któreś z nich „naprawisz":
+
+- **Model meczu nazywa się `GameMatch`**, mimo że byt nazywa się `Match`.
+- **Nie dodawaj `RESTRICT` wewnątrz poddrzewa turnieju.** Zakaz usuwania bytu
+  z rozegranym meczem realizuje guard w modelach (`GuardsFinishedMatches`),
+  zwracający **422** (tak stanowi kontrakt), nie Policy i nie klucz obcy.
+  Obejmuje byty kasowane ręcznie, nie strukturę spod generatora.
+- **Przynależność grupy do turnieju sprawdzi Form Request**, nie klucz obcy —
+  predykat `Team::groupBelongsToSameTournament()` czeka na CRUD drużyn w S1.
+
+Poza tym:
+
+- **Sporty wstawia migracja, nie seeder** — to dane systemowe, a ich `config`
+  musi zgadzać się z przykładem `GET /sports` w kontrakcie. `SportFactory`
+  celowo nie istnieje.
+- Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
+  robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
+
 ## Kontrakt API
 
 `packages/api-contract/openapi.yaml` jest jedynym źródłem prawdy o API. Backend
