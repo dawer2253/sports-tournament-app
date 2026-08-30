@@ -120,9 +120,10 @@ Uwagi:
 - Trzy ustalenia nie przetrwały zderzenia z PHP i MySQL-em i są opisane osobno
   w [ADR 0005](adr/0005-schemat-ustepuje-ograniczeniom-php-i-mysql.md): model meczu
   nazywa się `GameMatch`; wewnątrz poddrzewa turnieju żaden klucz obcy nie jest
-  `RESTRICT` (poza `tournaments.user_id`, które leży poza poddrzewem); przynależność
-  grupy do turnieju sprawdza aplikacja, nie baza. Konsekwencja tego ostatniego wyjątku:
-  konta z turniejami nie da się usunąć — zamyka się je anonimizacją.
+  `RESTRICT`; przynależność grupy do turnieju sprawdza aplikacja, nie baza.
+- `tournaments.user_id` jest `RESTRICT`, bo kaskada z `users` obchodziłaby guard.
+  Konsekwencja przyjęta świadomie: **konta z turniejami nie da się usunąć** —
+  zamyka się je anonimizacją, nie kasowaniem wiersza.
 - **Guard: nie usuwamy bytu powiązanego z meczem o statusie `finished`** — ani na twardo,
   ani na miękko. Rozegrany turniej zostaje w bazie na zawsze, bo jego publiczny adres
   `/t/{slug}` ma dalej działać. Porządek w panelu robi filtr po `status`, nie kasowanie.

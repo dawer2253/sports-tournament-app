@@ -13,8 +13,15 @@ use App\Exceptions\FinishedMatchGuardException;
  * bo to jedyne miejsce, którego nie ominie ani seeder, ani przyszły kod
  * porządkujący. Policy odpowiada za własność, i tylko za nią.
  *
- * Kasowanie kaskadowe w bazie guarda nie uruchamia — i tak ma być: kaskada
- * odpala się wyłącznie przy usuwaniu turnieju, które sam guard sprawdza wyżej.
+ * **Zakres: byty, które organizer kasuje ręcznie** — `Tournament`, `Team`,
+ * `Player`, `Venue`. Struktura rozgrywek (`Stage`, `Round`, `Group`, `GameMatch`)
+ * guarda nie ma świadomie: zarządza nią generator terminarza, a regenerowanie
+ * fazy z rozegranymi meczami to nie pomyłka do zablokowania, tylko operacja
+ * z ostrzeżeniem i kaskadą (decyzja #15). Reguły dla niej powstają razem
+ * z generatorem w S2 i S4.
+ *
+ * Kasowanie kaskadowe w bazie guarda nie uruchamia — dlatego `tournaments.user_id`
+ * jest `RESTRICT`, żeby usunięcie konta nie obeszło go od góry (ADR-0005).
  */
 trait GuardsFinishedMatches
 {
@@ -22,7 +29,7 @@ trait GuardsFinishedMatches
     {
         static::deleting(function (self $model) {
             if ($model->hasFinishedMatches()) {
-                throw new FinishedMatchGuardException($model->guardLabel());
+                throw FinishedMatchGuardException::for($model->guardLabel());
             }
         });
     }

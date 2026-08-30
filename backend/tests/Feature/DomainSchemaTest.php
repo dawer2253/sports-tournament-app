@@ -165,17 +165,17 @@ it('ma sporty w bazie zaraz po migracji, zgodne z kontraktem', function () {
         ->and($basketball->eventTypeCodes())->toBe(['points', 'foul']);
 });
 
-it('trzyma punktację turnieju jako kopię, nie referencję do sportu', function () {
-    // Turniej ma własną punktację, żeby organizer mógł ją stroić bez ruszania
-    // sportu. Kopiowanie przy zakładaniu robi na razie factory; przeniesie się
-    // do serwisu razem z CRUD-em turniejów w S1.
-    $tournament = Tournament::factory()->basketball()->create();
-    expect($tournament->points)->toBe(['win' => 2, 'draw' => 0, 'loss' => 1]);
+it('zakłada turniej z punktacją sportu, a nie z pustą', function () {
+    // Punktacja turnieju startuje jako kopia domyślnej dla sportu i dopiero
+    // potem organizer ją stroi. Kopiowanie robi na razie factory; przy CRUD-zie
+    // turniejów w S1 przeniesie się do serwisu i wtedy ten test dostanie drugi
+    // przypadek — na razie pilnuje, że koszykówka nie dostaje punktacji piłki.
+    $koszykowka = Tournament::factory()->basketball()->create();
+    $pilka = Tournament::factory()->create();
 
-    $tournament->update(['points' => ['win' => 5, 'draw' => 2, 'loss' => 0]]);
-
-    // Strojenie turnieju nie może przestawić punktacji wszystkim innym.
-    expect($tournament->sport->fresh()->defaultPoints())->toBe(['win' => 2, 'draw' => 0, 'loss' => 1]);
+    expect($koszykowka->points)->toBe($koszykowka->sport->defaultPoints())
+        ->and($pilka->points)->toBe($pilka->sport->defaultPoints())
+        ->and($koszykowka->points)->not->toBe($pilka->points);
 });
 
 it('nie pozwala usunąć turnieju, w którym rozegrano mecz', function () {
@@ -189,24 +189,34 @@ it('nie pozwala usunąć turnieju, w którym rozegrano mecz', function () {
     $this->assertDatabaseHas('tournaments', ['id' => $tournament->id]);
 });
 
-it('nie pozwala skasować konta obejściem przez kaskadę', function () {
-    // Bez `restrict` na tournaments.user_id usunięcie konta kasowałoby na twardo
-    // turnieje z rozegranymi meczami, omijając guard (ADR-0005). Konto
+it('nie kasuje turniejów kaskadą przy usuwaniu konta właściciela', function () {
+    // `tournaments.user_id` jest RESTRICT, bo kaskada omijałaby guard: usunięcie
+    // konta kasowałoby na twardo turnieje z rozegranymi meczami (ADR-0005).
+    // Blokada dotyczy każdego turnieju, nie tylko rozegranego — konto
     // z turniejami zamyka się anonimizacją, nie usunięciem wiersza.
     $match = GameMatch::factory()->finished()->create();
     $owner = $match->stage->tournament->user;
 
     expect(fn () => $owner->delete())->toThrow(QueryException::class);
-
     $this->assertDatabaseHas('tournaments', ['id' => $match->stage->tournament_id]);
+
+    $bezMeczow = Tournament::factory()->create();
+    expect(fn () => $bezMeczow->user->delete())->toThrow(QueryException::class);
 });
 
-it('zgłasza blokadę guarda jako 409, nie jako brak uprawnień', function () {
-    // 403 byłoby kłamstwem: organizer ma prawo do tego turnieju, blokuje go
-    // stan danych. Kod odpowiedzi jest częścią kontraktu z frontendem.
-    $exception = new FinishedMatchGuardException('drużyna „Rezerwy”');
+it('zgłasza blokadę guarda kodem i kopertą, których żąda kontrakt', function () {
+    // openapi.yaml, DELETE /teams/{team}: „Odrzucane z kodem 422, jeżeli drużyna
+    // wystąpiła w rozegranym meczu". Kontrakt jest jedynym źródłem prawdy
+    // (ADR-0001), więc backend ma się do niego dostroić, a nie odwrotnie.
+    $team = GameMatch::factory()->finished()->create()->homeTeam;
 
-    expect($exception->getStatusCode())->toBe(409);
+    try {
+        $team->delete();
+        $this->fail('Guard nie zadziałał.');
+    } catch (FinishedMatchGuardException $exception) {
+        expect($exception->status)->toBe(422)
+            ->and($exception->errors())->toHaveKey('id');
+    }
 });
 
 it('pilnuje unikalności pozycji meczu w kolejce', function () {
