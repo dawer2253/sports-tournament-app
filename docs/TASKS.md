@@ -17,7 +17,7 @@ Zrobione:
 Do zrobienia:
 - [ ] **Wspólny przegląd `openapi.yaml`** przed pisaniem kodu przeciw niemu (zespół)
 - [ ] Laravel + Sail (`make up` działa u wszystkich trzech) — [`docs/BACKEND.md`](BACKEND.md) (W)
-- [ ] Sanctum (Bearer) + prefiks `/api/v1` + Spectator wpięty w Pest (W)
+- [x] Sanctum (Bearer) + prefiks `/api/v1` + Spectator wpięty w Pest (W)
 - [ ] CI: dołożyć joba backendu (Pint, Pest, asercje zgodności z kontraktem) (W)
 - [ ] Migracje bazowe: users, sports, tournaments, stages, groups, rounds, teams, players, venues, matches, match_events (zespół)
 - [ ] Seed sportów + dane demo pod mock i pod testy (zespół)

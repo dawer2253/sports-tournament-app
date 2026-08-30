@@ -10,9 +10,10 @@ Słownik pojęć: [`CONTEXT.md`](CONTEXT.md). Decyzje trudne do odwrócenia:
 ## Stan projektu (sierpień 2026)
 
 Stoi fundament: monorepo, kontrakt API, dwie aplikacje React pracujące na mocku
-kontraktu oraz szkielet backendu. **Laravel 13 na Sailu już stoi**, ale nie ma
-jeszcze warstwy API — uruchomienie i stan środowiska opisuje
-[`docs/BACKEND.md`](docs/BACKEND.md).
+kontraktu oraz backend. **Laravel 13 na Sailu stoi**, ma schemat bazy i warstwę
+autoryzacji (Sanctum, token Bearer, `/api/v1`), a testy backendu asertują
+zgodność z kontraktem. Endpointy domenowe dochodzą w kolejnych ticketach.
+Uruchomienie i stan środowiska opisuje [`docs/BACKEND.md`](docs/BACKEND.md).
 
 ## Monorepo
 
@@ -25,7 +26,7 @@ npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 | `packages/ui/` | design system + ekrany w Storybooku ([własny `AGENTS.md`](packages/ui/AGENTS.md)) |
 | `apps/admin/` | panel organizera (logowanie, port 5173) |
 | `apps/public/` | strona turnieju (bez logowania, port 5174) |
-| `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); API dochodzi w kolejnych ticketach |
+| `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); autoryzacja stoi, endpointy domenowe dochodzą w kolejnych ticketach |
 
 ## Kontrakt API
 
