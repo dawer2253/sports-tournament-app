@@ -62,6 +62,25 @@ Poza tym:
 - Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
   robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
 
+## Autoryzacja
+
+Sanctum w trybie tokenowym: token Bearer w nagłówku `Authorization`, bez daty
+wygaśnięcia, bez ciasteczek i bez stanu sesji. Trzy rzeczy wyglądają jak pomyłka,
+a wynikają wprost z kontraktu:
+
+- **Nieudane logowanie to 422, nie 401.** Kontrakt nie przewiduje przy `/login`
+  odpowiedzi 401, a komunikat wraca pod kluczem `email`. 401 zostaje wyłącznie
+  dla żądań do zasobów chronionych bez ważnego tokenu.
+- **`/logout` unieważnia tylko token użyty w tym żądaniu**, nie wszystkie tokeny
+  organizera.
+- **Powtórzone hasło sprawdza `same:passwordConfirmation`, nie `confirmed`.**
+  Reguła `confirmed` szuka pola `password_confirmation`, a kontrakt ma pola
+  w camelCase.
+
+Testy nie logują się przez `actingAs()`. Helper `actingAsOrganizer()`
+z `tests/Pest.php` wydaje prawdziwy token, żeby test przechodził tę samą drogę
+co panel.
+
 ## Kontrakt API
 
 `packages/api-contract/openapi.yaml` jest jedynym źródłem prawdy o API. Backend

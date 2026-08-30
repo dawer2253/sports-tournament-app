@@ -74,24 +74,27 @@ znacznie szybszy.
 
 ## Warstwa API i autoryzacja
 
-**Jeszcze nie zrobione — to zakres [#6](https://github.com/dawer2253/sports-tournament-app/issues/6).**
+Stoi. Endpointy `/register`, `/login`, `/logout` i `/me` są zaimplementowane,
+autoryzacja to token Bearer wydawany przez Sanctuma. Instalacja jest już w repo,
+poniższy opis jest po to, żeby wiadomo było, skąd wzięły się poszczególne
+ustawienia.
 
-```bash
-make shell
-```
+Sanctuma instaluje **sama** komenda `php artisan install:api`: ciągnie pakiet,
+publikuje migrację `personal_access_tokens` i `config/sanctum.php`, zakłada
+`routes/api.php` i dopisuje `api:` w `bootstrap/app.php`. Osobne
+`composer require laravel/sanctum` jest zbędne. Ręcznie zostaje tylko trait
+`HasApiTokens` na modelu `User`. `config/auth.php` nie wymaga zmian, bo guard
+`sanctum` rejestruje się sam.
 
-W kontenerze:
+`EnsureFrontendRequestsAreStateful` i `statefulApi()` **nas nie dotyczą**, to
+tryb SPA na ciasteczkach. Pracujemy wyłącznie na tokenach.
 
-```bash
-php artisan install:api
-composer require laravel/sanctum
-composer require --dev hotmeteor/spectator
-php artisan migrate
-```
-
-`install:api` zakłada `routes/api.php` i prefiks `/api`. Prefiks wersji (`/v1`)
-dokładamy w `bootstrap/app.php` albo w grupie tras: kontrakt zakłada
+Prefiks wersji ustawia `apiPrefix: 'api/v1'` w `withRouting()`
+w `bootstrap/app.php`, bo `install:api` daje samo `api`, a kontrakt zakłada
 `http://localhost:8000/api/v1`.
+
+CORS jest zawężony do origins panelu (5173) i strony publicznej (5174);
+lista siedzi w `config/cors.php`.
 
 ## Zgodność z kontraktem
 
@@ -99,30 +102,40 @@ Kontrakt leży w [`packages/api-contract/openapi.yaml`](../packages/api-contract
 i jest jedynym źródłem prawdy o kształcie API. Backend nie definiuje kontraktu,
 tylko dowodzi, że go spełnia.
 
-W `tests/Pest.php` wskaż spec Spectatorowi:
+Dowodzi tego Spectator, wpięty w testy Pest. Konfiguracja jest w
+`config/spectator.php` i ma dwa miejsca, które łatwo przeoczyć:
 
-```php
-// config/spectator.php
-'sources' => [
-    'local' => [
-        'source' => 'local',
-        'base_path' => base_path('../packages/api-contract'),
-    ],
-],
-```
+- `base_path` wskazuje `../packages/api-contract`, czyli poza katalog backendu.
+  Kontener tego katalogu **nie widziałby** z automatu, dlatego `compose.yaml`
+  montuje go read-only pod `/var/www/packages/api-contract`. Bez tego wszystkie
+  asercje padają na `Cannot resolve schema with missing or invalid spec`.
+- `path_prefix` to `api/v1`. Ścieżki w kontrakcie są bez prefiksu (`/login`), bo
+  prefiks siedzi w `servers[].url`, a Spectator `servers` w ogóle nie czyta:
+  porównuje URI trasy Laravela z kluczami `paths` doklejonymi do `path_prefix`.
+  Bez tego ustawienia każdy test kończy się
+  `Path [POST /api/v1/login] not found in spec`. README pakietu obiecuje tu
+  zmienną `SPECTATOR_PATH_PREFIX`, ale publikowany config jej nie czyta, więc
+  wartość jest wpisana w pliku. Szczegóły:
+  [`docs/research/sanctum-spectator-prefiks-api.md`](research/sanctum-spectator-prefiks-api.md).
 
 Każdy test funkcjonalny endpointu powinien kończyć się asercją zgodności:
 
 ```php
-it('zwraca listę turniejów zgodną z kontraktem', function () {
+beforeEach(function () {
     Spectator::using('openapi.yaml');
+});
 
+it('zwraca listę turniejów zgodną z kontraktem', function () {
     actingAsOrganizer()
         ->getJson('/api/v1/tournaments')
         ->assertValidRequest()
         ->assertValidResponse(200);
 });
 ```
+
+`actingAsOrganizer()` (helper z `tests/Pest.php`) zakłada konto i wydaje mu
+prawdziwy token, więc test idzie tą samą drogą co panel, a nie skrótem przez
+`actingAs()`.
 
 Jeżeli endpoint ma zwracać coś, czego nie ma w spec, **najpierw zmienia się spec**,
 potem regeneruje klienta (`npm run contract:generate`) i dopiero wtedy pisze kod.

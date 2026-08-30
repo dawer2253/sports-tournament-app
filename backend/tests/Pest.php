@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,3 +18,21 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
+
+/*
+|--------------------------------------------------------------------------
+| Helpery
+|--------------------------------------------------------------------------
+|
+| Autoryzacja to token Bearer w nagłówku (kontrakt, `securitySchemes`), więc
+| test nie używa `actingAs()` — przechodzi tą samą drogą co panel, przez
+| prawdziwy token Sanctuma.
+|
+*/
+
+function actingAsOrganizer(?User $user = null): TestCase
+{
+    $user ??= User::factory()->create();
+
+    return test()->withToken($user->createToken('test')->plainTextToken);
+}

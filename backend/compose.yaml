@@ -22,6 +22,13 @@ services:
             IGNITION_LOCAL_SITES_PATH: '${PWD}'
         volumes:
             - '.:/var/www/html'
+            # Kontrakt leży poza katalogiem backendu, więc bez tego montowania
+            # kontener go nie widzi, a Spectator w testach zgłasza
+            # „Cannot resolve schema with missing or invalid spec". Ścieżka w
+            # kontenerze odpowiada układowi repo (`backend/` obok `packages/`),
+            # dzięki czemu `base_path('../packages/api-contract')` działa tak
+            # samo w Sailu i w CI, gdzie Dockera nie ma.
+            - '../packages/api-contract:/var/www/packages/api-contract:ro'
         networks:
             - sail
         # Krótka forma (`- mysql`) pilnuje tylko kolejności startu, nie gotowości
