@@ -111,11 +111,16 @@ jobs:
           MYSQL_PASSWORD: password
         ports:
           - 3306:3306
+        # `start_period` jest tu z tego samego powodu co w compose'ie: pierwszy
+        # start MySQL-a to inicjalizacja katalogu danych, a próby sprzed tego
+        # okna nie liczą się do `retries`. Bez niego budżet to 50 sekund liczone
+        # od sekundy zero — dziś starcza, ale to zapas, nie gwarancja.
         options: >-
           --health-cmd="mysqladmin ping -ppassword"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=10
+          --health-start-period=60s
 
     # Laravel ładuje `.env` w trybie immutable, więc zmienne ustawione tutaj
     # wygrywają z plikiem. Nadpisujemy tylko to, co jest specyficzne dla Saila:
@@ -146,14 +151,20 @@ jobs:
           key: composer-${{ runner.os }}-php85-${{ hashFiles('backend/composer.lock') }}
           restore-keys: composer-${{ runner.os }}-php85-
 
+      # `.env` idzie przed instalacją, bo `composer install` odpala w
+      # post-autoload-dump `artisan package:discover`, czyli bootuje aplikację.
+      # Bez pliku działa to na domyślnych wartościach i milczy, ale wystarczy
+      # jeden pakiet czytający config przy odkrywaniu, żeby kolejność zaczęła
+      # mieć znaczenie. `key:generate` musi zostać po instalacji — potrzebuje
+      # vendora.
+      - name: Środowisko
+        run: cp .env.example .env
+
       - name: Zależności
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      # `.env` nie jest w repo, a `key:generate` bez niego nie ma czego zapisać.
-      - name: Środowisko
-        run: |
-          cp .env.example .env
-          php artisan key:generate
+      - name: Klucz aplikacji
+        run: php artisan key:generate
 
       - name: Pint
         run: ./vendor/bin/pint --test

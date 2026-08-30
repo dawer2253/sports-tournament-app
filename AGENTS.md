@@ -96,15 +96,13 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, build oraz job backendu (Pint w trybie `--test`, Pest).
-- Backend w CI chodzi **natywnie, bez Saila**: runner ma PHP i usługę MySQL-a,
-  więc Docker byłby tu tylko narzutem. Wersje muszą zgadzać się z
-  `backend/compose.yaml` (PHP 8.5, MySQL 8.4) — inaczej CI testuje inny stack niż
-  zespół. Testy Spectatora są bramką zgodności z `openapi.yaml`.
-- Job backendu odpala się tylko przy zmianach w `backend/**`, w kontrakcie i w
-  samym `ci.yml`. Filtr wyznacza osobny job `changes`, bo `paths:` w GitHub
-  Actions działa wyłącznie na poziomie całego workflow — w `on:` wyłączałby razem
-  z backendem także kontrakt i frontend.
+  lint, typy, build oraz job backendu (Pint w trybie `--test`, Pest; testy
+  Spectatora są bramką zgodności z `openapi.yaml`). Backend chodzi tam
+  **natywnie, bez Saila**, a jego job odpala się tylko przy zmianach w
+  `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki
+  (wersje PHP i MySQL-a muszą nadążać za `backend/compose.yaml`, a filtr ścieżek
+  wymaga osobnego joba) — powody siedzą w komentarzach przy odpowiednich jobach,
+  żeby nie rozjeżdżały się z konfiguracją.
 - [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
   Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
 
