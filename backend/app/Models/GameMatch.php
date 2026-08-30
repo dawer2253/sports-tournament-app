@@ -11,9 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Mecz. W `CONTEXT.md`, w API i w bazie (`matches`) byt nazywa się **Match** —
- * klasa nie może, bo `match` jest słowem kluczowym PHP od 8.0 i `class Match`
- * to błąd parsowania. Stąd `GameMatch`; to jedyne miejsce, gdzie nazwa kodu
- * rozjeżdża się ze słownikiem, i rozjeżdża się z przymusu.
+ * klasa nie może, bo `match` jest słowem kluczowym PHP (ADR-0005).
  *
  * Pola drabinkowe (`winner_to_match_id`, `loser_to_match_id`,
  * `advances_to_slot`) opisuje ADR-0004. Ich niezmienniki — niepuste wyłącznie

@@ -114,18 +114,15 @@ Uwagi:
   Kontrakt v0.1 nie eksponuje tej encji (wchodzi w v0.2), więc jej kształt jest
   zakotwiczony wyłącznie w `Sport.config` i w `CONTEXT.md`.
 - `slug` globalnie unikalny (publiczne URL-e).
-- **Wewnątrz poddrzewa turnieju żaden klucz obcy nie jest `RESTRICT`.** Usunięcie
-  turnieju kaskaduje w dół, a InnoDB nie gwarantuje kolejności kasowania rodzeństwa,
-  więc `RESTRICT` po drodze zamieniłby to w błąd zależny od kolejności wierszy.
-  Zamiast tego `SET NULL` tam, gdzie pusty slot ma sens (`venue_id`, `home_team_id`,
-  `away_team_id`, `teams.group_id`, krawędzie drabinki), i `CASCADE` w resztę.
 - `Group.tournament_id` jest zdenormalizowane (wynika ze `stage_id`) i służy do taniego
   sprawdzenia, czy grupa i drużyna należą do tego samego turnieju, bez wspinania się
   przez fazę.
-- **Przynależność grupy do tego samego turnieju sprawdza aplikacja, nie baza.**
-  Composite FK do `groups(id, tournament_id)` wymagałby kolumny-kopii, a MySQL 8
-  zabrania obłożyć taką kolumnę CHECK-iem (błąd 3823), więc gwarancja byłaby
-  pozorna. Walidacja żyje w warstwie aplikacji i jest przypięta testem.
+- Trzy ustalenia nie przetrwały zderzenia z PHP i MySQL-em i są opisane osobno
+  w [ADR 0005](adr/0005-schemat-ustepuje-ograniczeniom-php-i-mysql.md): model meczu
+  nazywa się `GameMatch`; wewnątrz poddrzewa turnieju żaden klucz obcy nie jest
+  `RESTRICT` (poza `tournaments.user_id`, które leży poza poddrzewem); przynależność
+  grupy do turnieju sprawdza aplikacja, nie baza. Konsekwencja tego ostatniego wyjątku:
+  konta z turniejami nie da się usunąć — zamyka się je anonimizacją.
 - **Guard: nie usuwamy bytu powiązanego z meczem o statusie `finished`** — ani na twardo,
   ani na miękko. Rozegrany turniej zostaje w bazie na zawsze, bo jego publiczny adres
   `/t/{slug}` ma dalej działać. Porządek w panelu robi filtr po `status`, nie kasowanie.

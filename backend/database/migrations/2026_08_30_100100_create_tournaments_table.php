@@ -19,7 +19,12 @@ return new class extends Migration
     {
         Schema::create('tournaments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            // `restrict`, nie `cascade`: kaskada z `users` obchodziłaby guard
+            // i kasowała turnieje z rozegranymi meczami. Konto z turniejami
+            // zamyka się anonimizacją, nie usunięciem wiersza — patrz ADR-0005.
+            // Nie łamie to zakazu `RESTRICT` z tego samego ADR-a, bo `users`
+            // leży poza poddrzewem turnieju i nie bierze udziału w jego kaskadzie.
+            $table->foreignId('user_id')->constrained()->restrictOnDelete();
 
             // Sport leży poza poddrzewem turnieju i nigdy nie jest kasowany,
             // więc restrict nie wejdzie w drogę kaskadzie usuwania turnieju.

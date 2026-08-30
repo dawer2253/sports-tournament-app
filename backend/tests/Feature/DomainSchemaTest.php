@@ -11,6 +11,7 @@ use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\Venue;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 
 /*
@@ -186,6 +187,18 @@ it('nie pozwala usunąć turnieju, w którym rozegrano mecz', function () {
     expect(fn () => $tournament->delete())->toThrow(FinishedMatchGuardException::class);
 
     $this->assertDatabaseHas('tournaments', ['id' => $tournament->id]);
+});
+
+it('nie pozwala skasować konta obejściem przez kaskadę', function () {
+    // Bez `restrict` na tournaments.user_id usunięcie konta kasowałoby na twardo
+    // turnieje z rozegranymi meczami, omijając guard (ADR-0005). Konto
+    // z turniejami zamyka się anonimizacją, nie usunięciem wiersza.
+    $match = GameMatch::factory()->finished()->create();
+    $owner = $match->stage->tournament->user;
+
+    expect(fn () => $owner->delete())->toThrow(QueryException::class);
+
+    $this->assertDatabaseHas('tournaments', ['id' => $match->stage->tournament_id]);
 });
 
 it('zgłasza blokadę guarda jako 409, nie jako brak uprawnień', function () {

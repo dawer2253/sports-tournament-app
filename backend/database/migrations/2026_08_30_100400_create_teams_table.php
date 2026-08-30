@@ -14,15 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * unikat liczyłby też usunięte wiersze.
  *
  * **Przynależność grupy do tego samego turnieju pilnuje aplikacja, nie baza.**
- * Próbowaliśmy w bazie: composite FK do `groups(id, tournament_id)` wymaga
- * kolumny-kopii `tournament_id` (bo `ON DELETE SET NULL` żąda nullowalności
- * wszystkich kolumn klucza), a MySQL 8 zabrania obłożyć taką kolumnę CHECK-iem
- * — „column cannot be used in a check constraint: needed in a foreign key
- * constraint referential action" (błąd 3823). Bez CHECK-a nic nie wymusza, żeby
- * kopia równała się właścicielowi, więc gwarancja jest pozorna. Wersja
- * z `RESTRICT` zamiast `SET NULL` przechodzi, ale kładzie kaskadowe usuwanie
- * turnieju, bo InnoDB nie gwarantuje kolejności kasowania rodzeństwa.
- * Zostaje walidacja w warstwie aplikacji, przypięta testem.
+ * Próbowaliśmy w bazie i się nie da — powód opisuje ADR-0005.
  */
 return new class extends Migration
 {

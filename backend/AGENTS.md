@@ -41,18 +41,19 @@ zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
 ## Schemat i modele
 
-Kształt bazy wynika z ERD w [`docs/PLAN.md`](../docs/PLAN.md) §3. Cztery rzeczy,
-które łatwo cofnąć przez przypadek:
+Kształt bazy wynika z ERD w [`docs/PLAN.md`](../docs/PLAN.md) §3. Trzy miejsca
+wyglądają jak niedoróbka, a są wymuszone przez PHP i MySQL — powody opisuje
+[ADR 0005](../docs/adr/0005-schemat-ustepuje-ograniczeniom-php-i-mysql.md),
+przeczytaj go, zanim któreś z nich „naprawisz":
 
 - **Model meczu nazywa się `GameMatch`**, mimo że byt nazywa się `Match`.
-  `match` jest słowem kluczowym PHP od 8.0, więc `class Match` to błąd
-  parsowania. Tabela zostaje `matches` (przez `#[Table]`), kontrakt zostaje
-  przy `Match`. Nie „naprawiaj" tej niespójności.
-- **Nie dodawaj `RESTRICT` wewnątrz poddrzewa turnieju.** Usunięcie turnieju
-  kaskaduje w dół, a InnoDB nie gwarantuje kolejności kasowania rodzeństwa —
-  jeden `RESTRICT` po drodze robi z tego błąd zależny od kolejności wierszy.
-  Zakaz usuwania bytu z rozegranym meczem realizuje guard w modelach
-  (`GuardsFinishedMatches`), zwracający **409**, nie Policy i nie klucz obcy.
+- **Nie dodawaj `RESTRICT` wewnątrz poddrzewa turnieju.** Zakaz usuwania bytu
+  z rozegranym meczem realizuje guard w modelach (`GuardsFinishedMatches`),
+  zwracający **409**, nie Policy i nie klucz obcy.
+- **Przynależność grupy do turnieju sprawdza Form Request**, nie klucz obcy.
+
+Poza tym:
+
 - **Sporty wstawia migracja, nie seeder** — to dane systemowe, a ich `config`
   musi zgadzać się z przykładem `GET /sports` w kontrakcie. `SportFactory`
   celowo nie istnieje.

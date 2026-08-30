@@ -10,12 +10,9 @@ use Illuminate\Support\Facades\Schema;
  * kaskadowo, a tombstone'y psułyby najgorętsze zapytanie w aplikacji
  * (tabela liczona on-read przy każdym odświeżeniu strony publicznej).
  *
- * Wewnątrz poddrzewa turnieju żaden klucz obcy nie jest `RESTRICT`. Powód jest
- * mechaniczny: usunięcie turnieju kaskaduje w dół, a InnoDB nie gwarantuje
- * kolejności, w jakiej kasuje rodzeństwo. Jeden `RESTRICT` po drodze zamieniłby
- * kasowanie turnieju w błąd zależny od kolejności wierszy. Zakaz usuwania bytu
- * powiązanego z meczem `finished` żyje w modelach (guard), gdzie widać, co
- * konkretnie blokuje.
+ * Wewnątrz poddrzewa turnieju żaden klucz obcy nie jest `RESTRICT` — powód
+ * (niedeterministyczna kolejność kaskady w InnoDB) opisuje ADR-0005. Zakaz
+ * usuwania bytu powiązanego z meczem `finished` żyje w modelach (guard).
  */
 return new class extends Migration
 {
