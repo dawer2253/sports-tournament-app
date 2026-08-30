@@ -96,7 +96,13 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, build. Job backendu (Pint, Pest) jeszcze nie wchodzi w skład CI.
+  lint, typy, build oraz job backendu (Pint w trybie `--test`, Pest; testy
+  Spectatora są bramką zgodności z `openapi.yaml`). Backend chodzi tam
+  **natywnie, bez Saila**, a jego job odpala się tylko przy zmianach w
+  `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki
+  (wersje PHP i MySQL-a muszą nadążać za `backend/compose.yaml`, a filtr ścieżek
+  wymaga osobnego joba) — powody siedzą w komentarzach przy odpowiednich jobach,
+  żeby nie rozjeżdżały się z konfiguracją.
 - [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
   Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
 

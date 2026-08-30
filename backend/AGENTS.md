@@ -13,6 +13,12 @@ PHP przez skrypt z sieci, `composer require laravel/boost`). Zostały świadomie
 usunięte, bo są sprzeczne z powyższym. Jeżeli `php artisan boost:install` kiedyś
 je tu z powrotem wygeneruje, przywróć ten nagłówek.
 
+**Jedyny wyjątek to CI**, gdzie backend chodzi na natywnym PHP i usłudze MySQL-a
+z runnera — Docker byłby tam tylko narzutem. Wersje w
+[`ci.yml`](../.github/workflows/ci.yml) muszą więc nadążać za
+[`compose.yaml`](compose.yaml), bo inaczej CI testuje inny stack niż zespół.
+Na maszynie dewelopera zakaz obowiązuje bez zmian.
+
 ## Komendy (uruchamiaj z rootu monorepo)
 
 Pełna lista celów z opisami: `make help`. Opisy żyją w komentarzach `##` przy
