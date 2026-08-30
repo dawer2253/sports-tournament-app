@@ -89,6 +89,7 @@ it('odrzuca logowanie na nieistniejące konto jako błąd walidacji', function (
         'email' => 'nikt@example.com',
         'password' => 'tajnehaslo123',
     ])
+        ->assertValidRequest()
         ->assertValidResponse(422)
         ->assertJsonValidationErrors('email');
 });
@@ -121,17 +122,18 @@ it('wylogowuje i unieważnia użyty token', function () {
 
     $this->withToken($token)
         ->getJson('/api/v1/me')
+        ->assertValidRequest()
         ->assertValidResponse(401);
 });
 
 it('unieważnia tylko token użyty do wylogowania', function () {
     $user = User::factory()->create();
     $laptop = $user->createToken('laptop')->plainTextToken;
-    $telefon = $user->createToken('telefon')->plainTextToken;
+    $phone = $user->createToken('phone')->plainTextToken;
 
     $this->withToken($laptop)->postJson('/api/v1/logout')->assertNoContent();
 
-    expect(PersonalAccessToken::findToken($telefon))->not->toBeNull();
+    expect(PersonalAccessToken::findToken($phone))->not->toBeNull();
 });
 
 it('odmawia dostępu do zasobu chronionego bez tokenu', function () {
@@ -143,5 +145,23 @@ it('odmawia dostępu do zasobu chronionego bez tokenu', function () {
 it('odmawia dostępu przy zmyślonym tokenie', function () {
     $this->withToken('1|nieistniejacytoken')
         ->getJson('/api/v1/me')
+        ->assertValidRequest()
         ->assertValidResponse(401);
+});
+
+it('odmawia wylogowania bez tokenu', function () {
+    $this->postJson('/api/v1/logout')
+        ->assertValidRequest()
+        ->assertValidResponse(401);
+});
+
+// Zakres #6 obejmuje spójny format błędów, nie tylko 422 i 401. Ścieżki spoza
+// kontraktu Spectator z definicji nie zwaliduje, więc sprawdzamy sam kształt:
+// backend oddaje wyłącznie JSON, nigdy strony błędu Laravela.
+// 403 dochodzi razem z pierwszą policy, czyli w S1 przy zasobach turnieju.
+it('oddaje 404 jako JSON w kształcie z kontraktu', function () {
+    $this->getJson('/api/v1/nie-ma-takiego-zasobu')
+        ->assertNotFound()
+        ->assertHeader('content-type', 'application/json')
+        ->assertJsonStructure(['message']);
 });

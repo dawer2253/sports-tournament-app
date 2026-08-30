@@ -20,7 +20,7 @@ class AuthController extends Controller
     {
         $user = User::create($request->safe()->only(['name', 'email', 'password']));
 
-        return $this->issueToken($user)->response()->setStatusCode(Response::HTTP_CREATED);
+        return $this->authPayloadFor($user)->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
     /**
@@ -38,7 +38,7 @@ class AuthController extends Controller
             ]);
         }
 
-        return $this->issueToken($user)->response();
+        return $this->authPayloadFor($user)->response();
     }
 
     /**
@@ -57,7 +57,7 @@ class AuthController extends Controller
         return new UserResource($request->user());
     }
 
-    private function issueToken(User $user): AuthPayloadResource
+    private function authPayloadFor(User $user): AuthPayloadResource
     {
         return new AuthPayloadResource($user, $user->createToken('api')->plainTextToken);
     }

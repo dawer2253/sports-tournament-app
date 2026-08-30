@@ -115,7 +115,8 @@ Dowodzi tego Spectator, wpięty w testy Pest. Konfiguracja jest w
   Bez tego ustawienia każdy test kończy się
   `Path [POST /api/v1/login] not found in spec`. README pakietu obiecuje tu
   zmienną `SPECTATOR_PATH_PREFIX`, ale publikowany config jej nie czyta, więc
-  wartość jest wpisana w pliku. Szczegóły:
+  `env()` jest dopisane u nas: zmienna działa, a wartość domyślna musi zgadzać
+  się z `apiPrefix` w `bootstrap/app.php`. Szczegóły:
   [`docs/research/sanctum-spectator-prefiks-api.md`](research/sanctum-spectator-prefiks-api.md).
 
 Każdy test funkcjonalny endpointu powinien kończyć się asercją zgodności:

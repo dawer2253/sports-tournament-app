@@ -396,11 +396,15 @@ modelu `User`, potem `auth:sanctum` na trasach.
   warunkiem ustawienia `path_prefix`. Wariant B z sekcji 2.5 (prefiks w kluczach)
   wymusiłby regenerację `packages/api-client` i przesunął ścieżki w mocku, przy
   zerowym zysku.
-- **`path_prefix` trzeba ustawić w configu, nie w `.env`.** Klucz nie czyta `env()`,
-  więc `SPECTATOR_PATH_PREFIX` w `.env` nic nie da. Miejsca do wyboru:
-  `config/spectator.php` po publikacji, albo `Spectator::withPathPrefix('api/v1')`
-  w `tests/Pest.php`. Pierwsze jest trwalsze, drugie łatwiej przeoczyć przy nowym
-  pliku testowym.
+- **`path_prefix` trzeba ustawić w configu, nie w `.env`.** Klucz w publikowanym
+  pliku nie czyta `env()`, więc sama zmienna `SPECTATOR_PATH_PREFIX` nic nie da.
+  Miejsca do wyboru: `config/spectator.php` po publikacji, albo
+  `Spectator::withPathPrefix('api/v1')` w `tests/Pest.php`. Pierwsze jest trwalsze,
+  drugie łatwiej przeoczyć przy nowym pliku testowym.
+
+  Wdrożone zostało pierwsze, z dopisanym `env('SPECTATOR_PATH_PREFIX', 'api/v1')`,
+  czyli w naszym repo zmienna środowiskowa **działa**, wbrew temu, co daje sam
+  pakiet. Domyślna wartość musi zgadzać się z `apiPrefix` w `bootstrap/app.php`.
 - **Wartość prefiksu musi się zgadzać z `apiPrefix` w `bootstrap/app.php`.** To są
   dwa niezależne miejsca opisujące ten sam fakt. Jeżeli kiedyś dojdzie `/api/v2`,
   rozjadą się po cichu: testy zaczną zgłaszać „Path not found in spec", a nie

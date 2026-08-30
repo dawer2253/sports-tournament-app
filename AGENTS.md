@@ -26,7 +26,7 @@ npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 | `packages/ui/` | design system + ekrany w Storybooku ([własny `AGENTS.md`](packages/ui/AGENTS.md)) |
 | `apps/admin/` | panel organizera (logowanie, port 5173) |
 | `apps/public/` | strona turnieju (bez logowania, port 5174) |
-| `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); API dochodzi w kolejnych ticketach |
+| `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); autoryzacja stoi, endpointy domenowe dochodzą w kolejnych ticketach |
 
 ## Kontrakt API
 
