@@ -9,10 +9,36 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# `pull-requests: read` jest dla dorny/paths-filter: na pull_requestach czyta listę
+# zmienionych plików z API, a nie z checkoutu.
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  # `paths:` w GitHub Actions działa wyłącznie na poziomie całego workflow, a joby
+  # przyjmują tylko `if:`, który listy zmienionych plików nie widzi. Filtr dla
+  # samego backendu musi więc powstać jako osobny job z outputem — gdyby siedział
+  # w `on:`, wyłączałby razem z backendem także kontrakt i frontend.
+  changes:
+    name: Zakres zmian
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          # Kontrakt jest w filtrze, bo testy Pest asertują zgodność z nim przez
+          # Spectatora — zmiana samej specyfikacji potrafi wywalić backend.
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'packages/api-contract/**'
+              - '.github/workflows/ci.yml'
+
   contract:
     name: Kontrakt API
     runs-on: ubuntu-latest
@@ -58,3 +84,82 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  backend:
+    name: Backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # Lokalnie backend chodzi na Sailu, ale runner ma PHP natywnie i własne
+    # kontenery usług — Docker w Dockerze byłby tu tylko narzutem. Wersje muszą
+    # się zgadzać z `backend/compose.yaml`, bo inaczej CI testuje inny stack niż
+    # zespół: runtime Saila to PHP 8.5, baza to MySQL 8.4.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          # Testy jadą na bazie `testing` (phpunit.xml), nie na `laravel`.
+          # W Sailu zakłada ją skrypt z entrypointa MySQL-a, tutaj robi to obraz.
+          MYSQL_DATABASE: testing
+          MYSQL_USER: sail
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ppassword"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    # Laravel ładuje `.env` w trybie immutable, więc zmienne ustawione tutaj
+    # wygrywają z plikiem. Nadpisujemy tylko to, co jest specyficzne dla Saila:
+    # `DB_HOST=mysql` to nazwa usługi z compose'a, na runnerze baza stoi na
+    # localhoście. Reszta poświadczeń zgadza się z `.env.example`.
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, mbstring, bcmath, intl
+          coverage: none
+
+      - name: Katalog cache'u Composera
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composera
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php85-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php85-
+
+      - name: Zależności
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # `.env` nie jest w repo, a `key:generate` bez niego nie ma czego zapisać.
+      - name: Środowisko
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Pint
+        run: ./vendor/bin/pint --test
+
+      # Bramka zgodności z kontraktem: testy funkcjonalne kończą się asercjami
+      # Spectatora, który czyta `packages/api-contract` obok `backend/` — układ
+      # checkoutu odpowiada temu, co compose montuje do kontenera.
+      - name: Pest
+        run: ./vendor/bin/pest
