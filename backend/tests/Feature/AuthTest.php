@@ -100,7 +100,7 @@ it('oddaje zalogowanego organizera', function () {
     actingAsOrganizer($user)
         ->getJson('/api/v1/me')
         ->assertValidRequest()
-        ->assertValidResponse(200)
+        ->assertValidResponse(201)
         ->assertJsonPath('data.email', 'dawid@example.com');
 });
 
