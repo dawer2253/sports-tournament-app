@@ -32,9 +32,9 @@ return new class extends Migration
             $table->json('meta')->nullable();
             $table->timestamps();
 
-            // Zdarzenia jednego meczu (widok meczu) i klasyfikacja strzelców
-            // (agregacja po zawodniku i rodzaju zdarzenia).
-            $table->index('match_id');
+            // Klasyfikacja strzelców: agregacja po zawodniku i rodzaju zdarzenia.
+            // Indeksu na samym `match_id` nie zakładamy — `foreignId()->constrained()`
+            // robi go już przy kluczu obcym.
             $table->index(['player_id', 'type']);
         });
     }

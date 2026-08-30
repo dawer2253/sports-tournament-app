@@ -52,7 +52,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('away_penalties')->nullable();
 
             $table->enum('status', ['scheduled', 'live', 'finished'])->default('scheduled');
-            $table->timestamp('kickoff_at')->nullable();
+            $table->dateTime('kickoff_at')->nullable();
             $table->foreignId('venue_id')->nullable()->constrained()->nullOnDelete();
 
             // Propagacja w drabince — dokąd wchodzą uczestnicy tego meczu.

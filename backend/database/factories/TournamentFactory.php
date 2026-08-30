@@ -45,9 +45,4 @@ class TournamentFactory extends Factory
             ];
         });
     }
-
-    public function active(): static
-    {
-        return $this->state(['status' => 'active']);
-    }
 }

@@ -73,7 +73,7 @@ User (owner)
          │      └──< Player [team_id, name, number?, position?]
          ├──< Venue         [tournament_id, name, address?]
          └──< Stage         [tournament_id, type: league|group|knockout, name, order]
-                ├──< Group   [stage_id, name]            (tylko faza group)
+                ├──< Group   [stage_id, tournament_id, name]   (tylko faza group)
                 └──< Round   [stage_id, name, order]     (kolejka ligi / runda drabinki)
                       └──< Match
 
@@ -119,6 +119,9 @@ Uwagi:
   więc `RESTRICT` po drodze zamieniłby to w błąd zależny od kolejności wierszy.
   Zamiast tego `SET NULL` tam, gdzie pusty slot ma sens (`venue_id`, `home_team_id`,
   `away_team_id`, `teams.group_id`, krawędzie drabinki), i `CASCADE` w resztę.
+- `Group.tournament_id` jest zdenormalizowane (wynika ze `stage_id`) i służy do taniego
+  sprawdzenia, czy grupa i drużyna należą do tego samego turnieju, bez wspinania się
+  przez fazę.
 - **Przynależność grupy do tego samego turnieju sprawdza aplikacja, nie baza.**
   Composite FK do `groups(id, tournament_id)` wymagałby kolumny-kopii, a MySQL 8
   zabrania obłożyć taką kolumnę CHECK-iem (błąd 3823), więc gwarancja byłaby

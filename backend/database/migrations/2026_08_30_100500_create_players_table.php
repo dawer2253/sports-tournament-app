@@ -19,7 +19,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('team_id')->constrained()->cascadeOnDelete();
             $table->string('name', 120);
-            $table->unsignedTinyInteger('number')->nullable();
+            $table->unsignedSmallInteger('number')->nullable();
             $table->string('position', 40)->nullable();
             $table->softDeletes();
             $table->timestamps();

@@ -41,8 +41,6 @@ return new class extends Migration
 
             $table->enum('status', ['draft', 'active', 'finished'])->default('draft');
             $table->timestamps();
-
-            $table->index('user_id');
         });
     }
 

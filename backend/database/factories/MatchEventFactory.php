@@ -32,10 +32,4 @@ class MatchEventFactory extends Factory
             'meta' => null,
         ];
     }
-
-    /** Zdarzenie bez zawodnika — np. kartka dla ławki. */
-    public function withoutPlayer(): static
-    {
-        return $this->state(['player_id' => null]);
-    }
 }

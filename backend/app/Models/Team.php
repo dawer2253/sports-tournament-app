@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\GuardsFinishedMatches;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,11 +37,24 @@ class Team extends Model
         return $this->hasMany(Player::class);
     }
 
+    public function homeMatches(): HasMany
+    {
+        return $this->hasMany(GameMatch::class, 'home_team_id');
+    }
+
+    public function awayMatches(): HasMany
+    {
+        return $this->hasMany(GameMatch::class, 'away_team_id');
+    }
+
     /**
-     * Mecze drużyny — po obu stronach, bo gospodarz i gość to ta sama drużyna
-     * widziana z dwóch stron terminarza.
+     * Mecze drużyny po obu stronach — gospodarz i gość to ta sama drużyna
+     * widziana z dwóch stron terminarza. Świadomie **nie** jest relacją:
+     * Eloquent nie umie zrobić `HasMany` po dwóch kluczach naraz, a metoda
+     * nazwana `matches()` i zwracająca Buildera wywalałaby się w `with()`
+     * i `withCount()`. Do eager loadingu są `homeMatches` i `awayMatches`.
      */
-    public function matches()
+    public function matchesQuery(): Builder
     {
         return GameMatch::query()
             ->where(fn ($query) => $query
@@ -61,7 +75,7 @@ class Team extends Model
 
     public function hasFinishedMatches(): bool
     {
-        return $this->matches()->where('status', 'finished')->exists();
+        return $this->matchesQuery()->where('status', 'finished')->exists();
     }
 
     protected function guardLabel(): string

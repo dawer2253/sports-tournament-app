@@ -46,9 +46,10 @@ it('trzyma zdenormalizowane stage_id meczu zgodne z jego kolejką', function () 
     expect($match->stage_id)->toBe($match->round->stage_id);
 });
 
-it('odrzuca drużynę przypisaną do grupy z cudzego turnieju', function () {
+it('rozpoznaje grupę z cudzego turnieju jako niedozwoloną dla drużyny', function () {
     // Baza tego nie egzekwuje (powód w migracji `teams`), więc pilnuje tego
-    // aplikacja — i właśnie dlatego musi być tu test.
+    // aplikacja — i właśnie dlatego musi być tu test. Wpięcie predykatu
+    // w Form Request wchodzi razem z CRUD-em drużyn w S1.
     $ourGroup = Group::factory()->create();
     $foreignGroup = Group::factory()->create();
 
@@ -163,10 +164,36 @@ it('ma sporty w bazie zaraz po migracji, zgodne z kontraktem', function () {
         ->and($basketball->eventTypeCodes())->toBe(['points', 'foul']);
 });
 
-it('kopiuje punktację sportu do turnieju przy zakładaniu', function () {
+it('trzyma punktację turnieju jako kopię, nie referencję do sportu', function () {
+    // Turniej ma własną punktację, żeby organizer mógł ją stroić bez ruszania
+    // sportu. Kopiowanie przy zakładaniu robi na razie factory; przeniesie się
+    // do serwisu razem z CRUD-em turniejów w S1.
     $tournament = Tournament::factory()->basketball()->create();
-
     expect($tournament->points)->toBe(['win' => 2, 'draw' => 0, 'loss' => 1]);
+
+    $tournament->update(['points' => ['win' => 5, 'draw' => 2, 'loss' => 0]]);
+
+    // Strojenie turnieju nie może przestawić punktacji wszystkim innym.
+    expect($tournament->sport->fresh()->defaultPoints())->toBe(['win' => 2, 'draw' => 0, 'loss' => 1]);
+});
+
+it('nie pozwala usunąć turnieju, w którym rozegrano mecz', function () {
+    // Przypadek sztandarowy guarda: publiczny adres /t/{slug} rozegranego
+    // turnieju ma działać dalej, więc turniej z historią nie znika.
+    $match = GameMatch::factory()->finished()->create();
+    $tournament = $match->stage->tournament;
+
+    expect(fn () => $tournament->delete())->toThrow(FinishedMatchGuardException::class);
+
+    $this->assertDatabaseHas('tournaments', ['id' => $tournament->id]);
+});
+
+it('zgłasza blokadę guarda jako 409, nie jako brak uprawnień', function () {
+    // 403 byłoby kłamstwem: organizer ma prawo do tego turnieju, blokuje go
+    // stan danych. Kod odpowiedzi jest częścią kontraktu z frontendem.
+    $exception = new FinishedMatchGuardException('drużyna „Rezerwy”');
+
+    expect($exception->getStatusCode())->toBe(409);
 });
 
 it('pilnuje unikalności pozycji meczu w kolejce', function () {
