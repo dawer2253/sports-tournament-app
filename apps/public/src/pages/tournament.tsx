@@ -70,7 +70,7 @@ export function TournamentPage() {
                 <TableHead className="text-right">Z</TableHead>
                 <TableHead className="text-right">R</TableHead>
                 <TableHead className="text-right">P</TableHead>
-                <TableHead className="text-right">Bramki</TableHead>
+                <TableHead className="text-right">{table.scoreLabel}</TableHead>
                 <TableHead className="text-right">Pkt</TableHead>
               </TableRow>
             </TableHeader>

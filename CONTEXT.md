@@ -160,6 +160,9 @@ bilans zdobyczy (`scoreFor`, `scoreAgainst`, `scoreDifference`), punkty
 i pozycję. `points` w wierszu tabeli to zawsze punkty za wyniki meczów, nigdy
 zdobycze.
 
+Tabela niesie ponadto `scoreLabel` — etykietę, pod jaką zdobycze występują
+w interfejsie tego turnieju.
+
 ## Tiebreaker (kryterium rozstrzygające)
 
 Reguła ustalająca kolejność drużyn, które mają tyle samo punktów. Turniej ma
