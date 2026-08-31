@@ -96,6 +96,32 @@ w `bootstrap/app.php`, bo `install:api` daje samo `api`, a kontrakt zakłada
 CORS jest zawężony do origins panelu (5173) i strony publicznej (5174);
 lista siedzi w `config/cors.php`.
 
+## Laravel Boost
+
+Zainstalowany jako zależność deweloperska. Stan instalacji trzyma
+`backend/boost.json`. Wytyczne dla agentów dopisuje do
+[`backend/CLAUDE.md`](../backend/CLAUDE.md), pod nagłówkiem repo, nie zamiast
+niego — i **są tam przycięte**, bo część z nich przeczy zasadom tego repo;
+powody wypisuje sam plik. Skille pisze do `backend/.claude/skills/`, czyli poza
+repo: są warsztatem każdego z osobna, więc ta ścieżka jest w `.gitignore`
+(patrz [`docs/AGENTS-SETUP.md`](AGENTS-SETUP.md)).
+
+Konfiguracja serwera MCP leży w **`.mcp.json` w korzeniu monorepo**, nie
+w `backend/`, bo stamtąd czytają ją narzędzia agentowe. Woła `docker compose`,
+a nie `vendor/bin/sail`, którym instalator obdziela ten plik domyślnie:
+
+```
+docker compose -f backend/compose.yaml --project-directory backend exec -T laravel.test php artisan boost:mcp
+```
+
+Powód jest ten sam co przy `make`: Sail odmawia startu poza WSL2, a narzędzie
+agentowe woła serwer MCP z powłoki, w której akurat chodzi — na Windowsie zwykle
+spoza WSL2, gdzie domyślna komenda nie wystartowałaby wcale. `docker compose`
+działa na każdym hoście, a `--project-directory backend` podstawia Sailowe
+`.env`. Flaga `-T` jest konieczna: MCP rozmawia po stdio, a alokacja TTY
+psułaby strumień. Kontenery muszą przy tym stać (`make up` albo
+`docker compose up -d`) — `exec` sam ich nie podniesie.
+
 ## Zgodność z kontraktem
 
 Kontrakt leży w [`packages/api-contract/openapi.yaml`](../packages/api-contract/openapi.yaml)

@@ -83,11 +83,15 @@ Wszystko to zostało usunięte, bo:
 
 ## Laravel Boost
 
-Nie instalowany w S0 — sprawdzona tylko zgodność: `laravel/boost` v2.7.0
+Nie instalowany w S0 — sprawdzona była tylko zgodność: `laravel/boost` v2.7.0
 rozwiązuje się czysto na Laravelu 13 (`composer require --dry-run`). Decyzja #1
-w [`PLAN.md`](PLAN.md).
+w [`PLAN.md`](PLAN.md). **Doinstalowany później**; jak jest wpięty i dlaczego
+serwer MCP nie chodzi na Sailu, opisuje [`BACKEND.md`](BACKEND.md).
 
-Uwaga przy ewentualnej instalacji: `php artisan boost:install` nadpisuje
-`backend/AGENTS.md` i `backend/CLAUDE.md` własnymi wytycznymi, które każą
-instalować PHP **na hoście**. Jest to sprzeczne z „tylko Docker", więc po
-instalacji przywróć nagłówek z [`backend/AGENTS.md`](../backend/AGENTS.md).
+Jak instalator zachował się naprawdę (v2.7): `backend/AGENTS.md` zostawił
+nietknięty, a do `backend/CLAUDE.md` **dopisał** swoje wytyczne pod nagłówkiem
+repo, w bloku `<laravel-boost-guidelines>`. Nagłówka nie trzeba więc odtwarzać,
+ale same wytyczne każą m.in. prefiksować komendy `vendor/bin/sail` i trzymać
+ustalenia w `.ai/rules` — to przeczy repo, więc blok jest przycięty, a powody
+stoją nad nim w tym samym pliku. Kolejne `boost:install` podmienia całą
+zawartość między znacznikami, więc przycięcie trzeba będzie powtórzyć.
