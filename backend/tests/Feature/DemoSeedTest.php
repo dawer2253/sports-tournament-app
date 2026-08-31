@@ -2,6 +2,7 @@
 
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
+use App\Models\Round;
 use App\Models\Tournament;
 
 /*
@@ -38,7 +39,8 @@ it('sieje kompletny turniej demo z organizerem, fazą i drużynami', function ()
         ->and($tournament->stages()->first()->type)->toBe('league')
         ->and($tournament->teams()->orderBy('id')->pluck('name')->all())
         ->toBe(['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany'])
-        ->and($tournament->venues()->pluck('name')->all())->toBe(['Boisko Bemowo']);
+        ->and($tournament->venues()->orderBy('id')->pluck('name')->all())
+        ->toBe(['Boisko Bemowo', 'Hala Ursus']);
 });
 
 it('sieje pierwszą rundę rozegraną i rewanże w terminarzu', function () {
@@ -86,22 +88,30 @@ it('sieje zdarzenia meczowe zgodne z wynikami', function () {
 });
 
 it('sieje klasyfikację strzelców zgodną z przykładem kontraktu', function () {
-    $topScorers = MatchEvent::query()
+    // Kalkulator klasyfikacji wchodzi w S1 — tu liczy się tylko to, że dane
+    // wejściowe dają dwóch czołowych strzelców z przykładu
+    // `GET /public/t/{slug}/top-scorers`.
+    $goals = MatchEvent::query()
         ->where('type', 'goal')
-        ->join('players', 'players.id', '=', 'match_events.player_id')
-        ->groupBy('players.id', 'players.name')
-        ->orderByDesc('value')
-        ->orderBy('players.name')
-        ->selectRaw('players.name as name, count(*) as value')
+        ->with('player')
         ->get()
-        ->take(2)
-        ->map(fn ($row) => [$row->name, (int) $row->value])
-        ->all();
+        ->countBy(fn (MatchEvent $event) => $event->player->name)
+        ->sortDesc();
 
-    expect($topScorers)->toBe([
-        ['Marek Nowak', 4],
-        ['Adam Zieliński', 2],
+    expect($goals->take(2)->all())->toBe([
+        'Marek Nowak' => 4,
+        'Adam Zieliński' => 2,
     ]);
+});
+
+it('sieje mecze o terminach zgodnych z kontraktem', function () {
+    // Aplikacja stoi na UTC, a kontrakt pisze terminy z offsetem `+02:00`.
+    // Test pilnuje chwili, nie zapisu: rozjazd o dwie godziny pokazywałby
+    // inną godzinę meczu na stronie niż na mocku.
+    $first = GameMatch::query()->orderBy('kickoff_at')->first();
+
+    expect($first->kickoff_at->toIso8601String())->toBe('2026-09-06T10:00:00+00:00')
+        ->and($first->kickoff_at->equalTo(new DateTimeImmutable('2026-09-06T12:00:00+02:00')))->toBeTrue();
 });
 
 it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
@@ -111,5 +121,10 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
     $this->seed();
 
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
-        ->and(GameMatch::query()->count())->toBe(6);
+        ->and(GameMatch::query()->count())->toBe(6)
+        // Id fazy, kolejek i meczów padają w przykładach kontraktu, więc nie
+        // wolno im uciec autoinkrementem przy powtórnym seedowaniu.
+        ->and(GameMatch::query()->orderBy('id')->pluck('id')->all())->toBe([1, 2, 3, 4, 5, 6])
+        ->and(GameMatch::query()->pluck('stage_id')->unique()->values()->all())->toBe([1])
+        ->and(Round::query()->orderBy('id')->pluck('id')->all())->toBe([1, 2, 3, 4, 5, 6]);
 });

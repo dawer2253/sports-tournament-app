@@ -619,6 +619,7 @@ paths:
                 data:
                   - { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
                   - { id: 2, teamId: 1, name: Piotr Kowal, number: 1, position: bramkarz }
+                  - { id: 3, teamId: 1, name: Jakub Wrona, number: 7, position: pomocnik }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }

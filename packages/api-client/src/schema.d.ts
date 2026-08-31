@@ -1165,6 +1165,13 @@ export interface paths {
                          *           "name": "Piotr Kowal",
                          *           "number": 1,
                          *           "position": "bramkarz"
+                         *         },
+                         *         {
+                         *           "id": 3,
+                         *           "teamId": 1,
+                         *           "name": "Jakub Wrona",
+                         *           "number": 7,
+                         *           "position": "pomocnik"
                          *         }
                          *       ]
                          *     }

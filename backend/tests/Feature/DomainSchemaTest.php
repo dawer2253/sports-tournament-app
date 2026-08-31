@@ -175,8 +175,8 @@ it('ma domyślną kolejność tiebreaków per sport, zgodną z kontraktem', func
 
     expect($football->defaultTiebreakers())->toBe(['points', 'head_to_head', 'score_diff', 'score_for'])
         ->and($basketball->defaultTiebreakers())->toBe(['points', 'head_to_head', 'score_diff'])
-        ->and(array_diff($football->defaultTiebreakers(), $football->config['availableTiebreakers']))->toBe([])
-        ->and(array_diff($basketball->defaultTiebreakers(), $basketball->config['availableTiebreakers']))->toBe([]);
+        ->and(array_diff($football->defaultTiebreakers(), $football->availableTiebreakers()))->toBe([])
+        ->and(array_diff($basketball->defaultTiebreakers(), $basketball->availableTiebreakers()))->toBe([]);
 });
 
 it('zakłada turniej z punktacją i tiebreakami sportu, a nie z pustymi', function () {

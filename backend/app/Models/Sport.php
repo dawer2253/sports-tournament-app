@@ -41,6 +41,12 @@ class Sport extends Model
         return $this->config['defaultTiebreakers'];
     }
 
+    /** Kryteria, spośród których organizer może układać kolejność w turnieju. */
+    public function availableTiebreakers(): array
+    {
+        return $this->config['availableTiebreakers'];
+    }
+
     /** Kody zdarzeń dopuszczalnych w tym sporcie. */
     public function eventTypeCodes(): array
     {

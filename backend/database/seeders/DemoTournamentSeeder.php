@@ -37,22 +37,33 @@ use Illuminate\Database\Seeder;
  */
 class DemoTournamentSeeder extends Seeder
 {
-    /** Rozegrana pierwsza runda: [kolejka, gospodarz, gość, bramki gospodarza, bramki gościa, termin]. */
+    /** Faza jest jedna i w kontrakcie ma `stageId: 1`. */
+    private const STAGE_ID = 1;
+
+    /**
+     * Rozegrana pierwsza runda: [kolejka, gospodarz, gość, bramki gospodarza,
+     * bramki gościa, termin].
+     *
+     * Terminy są **w UTC**, bo na UTC stoi aplikacja (`config/app.php`). Kontrakt
+     * pisze je z offsetem `+02:00` (czas polski), więc `10:00` tutaj i `12:00+02:00`
+     * w `openapi.yaml` to ta sama chwila. Zapisanie tu `12:00` przesunęłoby mecze
+     * o dwie godziny względem mocka.
+     */
     private const RESULTS = [
-        [1, 'Wilki Bemowo', 'Sokoły Ursus', 2, 1, '2026-09-06 12:00:00'],
-        [2, 'Orły Bielany', 'Wilki Bemowo', 0, 3, '2026-09-13 12:00:00'],
-        [3, 'Sokoły Ursus', 'Orły Bielany', 2, 1, '2026-09-20 12:00:00'],
+        [1, 'Wilki Bemowo', 'Sokoły Ursus', 2, 1, '2026-09-06 10:00:00'],
+        [2, 'Orły Bielany', 'Wilki Bemowo', 0, 3, '2026-09-13 10:00:00'],
+        [3, 'Sokoły Ursus', 'Orły Bielany', 2, 1, '2026-09-20 10:00:00'],
     ];
 
     /**
-     * Rewanże, jeszcze nierozegrane: [kolejka, gospodarz, gość, termin, obiekt].
+     * Rewanże, jeszcze nierozegrane: [kolejka, gospodarz, gość, termin (UTC), obiekt].
      * Ostatnia kolejka nie ma jeszcze obiektu — `venue` jest w kontrakcie polem
      * opcjonalnym i demo ma pokazywać także ten przypadek.
      */
     private const FIXTURES = [
-        [4, 'Sokoły Ursus', 'Wilki Bemowo', '2026-09-27 12:00:00', true],
-        [5, 'Wilki Bemowo', 'Orły Bielany', '2026-10-04 12:00:00', true],
-        [6, 'Orły Bielany', 'Sokoły Ursus', '2026-10-11 12:00:00', false],
+        [4, 'Sokoły Ursus', 'Wilki Bemowo', '2026-09-27 10:00:00', true],
+        [5, 'Wilki Bemowo', 'Orły Bielany', '2026-10-04 10:00:00', true],
+        [6, 'Orły Bielany', 'Sokoły Ursus', '2026-10-11 10:00:00', false],
     ];
 
     /**
@@ -72,6 +83,12 @@ class DemoTournamentSeeder extends Seeder
         [3, 'Adam Zieliński', 'goal', 15],
         [3, 'Tomasz Lis', 'goal', 70],
         [3, 'Rafał Duda', 'goal', 44],
+    ];
+
+    /** Obiekty: [nazwa, adres]. */
+    private const VENUES = [
+        ['Boisko Bemowo', 'ul. Powstańców Śląskich 1, Warszawa'],
+        ['Hala Ursus', 'ul. Sosnkowskiego 3, Warszawa'],
     ];
 
     /**
@@ -130,17 +147,32 @@ class DemoTournamentSeeder extends Seeder
         // czyszczenia nie dotyczy — leci kaskadą po fazie.
         $tournament->stages()->delete();
 
-        $stage = Stage::create([
+        // Id fazy, kolejek i meczów padają wprost w przykładach kontraktu
+        // (`stageId: 1`, `round.id: 1..6`, `id: 1..6`), więc seed nadaje je sam.
+        // Zdane na autoinkrement rozjechałyby się przy drugim `db:seed`, bo
+        // poddrzewo rozgrywek jest wtedy kasowane i wstawiane od nowa.
+        $stage = Stage::make([
             'tournament_id' => $tournament->id,
             'type' => 'league',
             'name' => 'Faza zasadnicza',
             'order' => 1,
         ]);
+        $stage->id = self::STAGE_ID;
+        $stage->save();
 
-        $venue = Venue::updateOrCreate(
-            ['tournament_id' => $tournament->id, 'name' => 'Boisko Bemowo'],
-            ['address' => 'ul. Obrońców Tobruku 40, Warszawa'],
-        );
+        // Obiekty są dwa, tak jak w przykładzie `GET /tournaments/{tournament}/venues`.
+        // Mecze demo toczą się na pierwszym; drugi istnieje, bo panel obiektów ma
+        // mieć na czym pokazać listę dłuższą niż jednoelementowa.
+        $venues = [];
+
+        foreach (self::VENUES as [$venueName, $address]) {
+            $venues[$venueName] = Venue::updateOrCreate(
+                ['tournament_id' => $tournament->id, 'name' => $venueName],
+                ['address' => $address],
+            );
+        }
+
+        $venue = $venues['Boisko Bemowo'];
 
         $teams = [];
         $players = [];
@@ -191,8 +223,9 @@ class DemoTournamentSeeder extends Seeder
 
     /**
      * Mecz razem z jego kolejką: w lidze demo każda kolejka ma dokładnie jeden
-     * mecz, więc jedno bez drugiego nie powstaje. Wynik podany oznacza mecz
-     * rozegrany — innego stanu to demo nie potrzebuje.
+     * mecz, więc jedno bez drugiego nie powstaje i numer kolejki jest zarazem
+     * id obu bytów. Wynik podany oznacza mecz rozegrany — innego stanu to demo
+     * nie potrzebuje.
      */
     private function createMatch(
         Stage $stage,
@@ -204,13 +237,15 @@ class DemoTournamentSeeder extends Seeder
         ?int $homeScore = null,
         ?int $awayScore = null,
     ): GameMatch {
-        $round = Round::create([
+        $round = Round::make([
             'stage_id' => $stage->id,
             'name' => "Kolejka {$roundNumber}",
             'order' => $roundNumber,
         ]);
+        $round->id = $roundNumber;
+        $round->save();
 
-        return GameMatch::create([
+        $match = GameMatch::make([
             'round_id' => $round->id,
             'stage_id' => $stage->id,
             'group_id' => null,
@@ -223,5 +258,9 @@ class DemoTournamentSeeder extends Seeder
             'kickoff_at' => $kickoff,
             'venue_id' => $venue?->id,
         ]);
+        $match->id = $roundNumber;
+        $match->save();
+
+        return $match;
     }
 }
