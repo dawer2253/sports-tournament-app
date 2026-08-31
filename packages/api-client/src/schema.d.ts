@@ -1626,6 +1626,7 @@ export interface paths {
                          *           "stageName": "Faza zasadnicza",
                          *           "groupId": null,
                          *           "groupName": null,
+                         *           "scoreLabel": "Bramki",
                          *           "rows": [
                          *             {
                          *               "position": 1,
@@ -1707,7 +1708,13 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Publiczna strona turnieju */
+        /**
+         * Publiczna strona turnieju
+         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+         *     Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
+         *     ten sam przełącznik obsługuje tabele, więc oba widoki mocka mówią o tym
+         *     samym sporcie.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1725,33 +1732,6 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": {
-                         *         "name": "Liga Osiedlowa 2026",
-                         *         "slug": "liga-osiedlowa-2026",
-                         *         "status": "active",
-                         *         "sport": {
-                         *           "id": 1,
-                         *           "code": "football",
-                         *           "name": "Piłka nożna"
-                         *         },
-                         *         "branding": {
-                         *           "logoUrl": null,
-                         *           "primaryColor": "#1F7A45"
-                         *         },
-                         *         "stages": [
-                         *           {
-                         *             "id": 1,
-                         *             "type": "league",
-                         *             "name": "Faza zasadnicza",
-                         *             "order": 1,
-                         *             "groups": []
-                         *           }
-                         *         ]
-                         *       }
-                         *     }
-                         */
                         "application/json": {
                             data: components["schemas"]["PublicTournament"];
                         };
@@ -1777,7 +1757,15 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Tabele turnieju */
+        /**
+         * Tabele turnieju
+         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny, zgodny
+         *     z seedem demo) i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+         *     `Prefer: example=koszykowka` — ten sam przełącznik obsługuje
+         *     `/public/t/{slug}`, więc oba widoki mówią o tym samym sporcie. Drugi
+         *     przykład jest tu po to, żeby dało się sprawdzić, czy widok bierze
+         *     nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1795,68 +1783,6 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": [
-                         *         {
-                         *           "stageId": 1,
-                         *           "stageName": "Faza zasadnicza",
-                         *           "groupId": null,
-                         *           "groupName": null,
-                         *           "rows": [
-                         *             {
-                         *               "position": 1,
-                         *               "team": {
-                         *                 "id": 1,
-                         *                 "name": "Wilki Bemowo",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 2,
-                         *               "drawn": 0,
-                         *               "lost": 0,
-                         *               "scoreFor": 5,
-                         *               "scoreAgainst": 1,
-                         *               "scoreDifference": 4,
-                         *               "points": 6
-                         *             },
-                         *             {
-                         *               "position": 2,
-                         *               "team": {
-                         *                 "id": 2,
-                         *                 "name": "Sokoły Ursus",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 1,
-                         *               "drawn": 0,
-                         *               "lost": 1,
-                         *               "scoreFor": 3,
-                         *               "scoreAgainst": 3,
-                         *               "scoreDifference": 0,
-                         *               "points": 3
-                         *             },
-                         *             {
-                         *               "position": 3,
-                         *               "team": {
-                         *                 "id": 3,
-                         *                 "name": "Orły Bielany",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 0,
-                         *               "drawn": 0,
-                         *               "lost": 2,
-                         *               "scoreFor": 1,
-                         *               "scoreAgainst": 5,
-                         *               "scoreDifference": -4,
-                         *               "points": 0
-                         *             }
-                         *           ]
-                         *         }
-                         *       ]
-                         *     }
-                         */
                         "application/json": {
                             data: components["schemas"]["StandingTable"][];
                         };
@@ -2705,6 +2631,16 @@ export interface components {
             /** Format: int64 */
             groupId: number | null;
             groupName: string | null;
+            /**
+             * @description Nagłówek kolumny `scoreFor`:`scoreAgainst`, wyprowadzony ze sportu
+             *     turnieju: „Bramki" w piłce nożnej, „Punkty" w koszykówce. Pola w API
+             *     nazywają się `score*` niezależnie od sportu — tak przewiduje
+             *     [ADR-0003](../../docs/adr/0003-zdobycze-nazywaja-sie-score-nie-goals.md).
+             *     To, że etykietę niesie odpowiedź, a nie mapowanie po stronie klienta,
+             *     ustala [ADR-0006](../../docs/adr/0006-etykiete-zdobyczy-niesie-odpowiedz-tabeli.md);
+             *     `StatLeaderboard.label` robi to samo dla klasyfikacji.
+             */
+            scoreLabel: string;
             rows: components["schemas"]["StandingRow"][];
         };
         StatLeaderboardRow: {
