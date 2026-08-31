@@ -171,3 +171,9 @@ kolejne kryterium z listy, bez ponownego zagłębiania się w bezpośredni bój.
 
 Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
 `score_for`, `score_against`.
+
+Sport rozstrzyga dwie rzeczy o kryteriach, i są to dwie różne listy.
+**Dopuszczalne** (`availableTiebreakers`) to zbiór, z którego organizer w ogóle
+może wybierać. **Domyślne** (`defaultTiebreakers`) to uporządkowana lista, którą
+turniej dostaje przy zakładaniu i którą organizer potem u siebie zmienia —
+w sporcie nie zmienia jej nikt (decyzja #25).

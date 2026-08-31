@@ -72,6 +72,18 @@ który zgadza się z `sail`. Problem znika też, gdy repo leży w systemie plik�
 WSL2 zamiast na `C:` — to zresztą wariant zalecany przez Laravela, bo jest
 znacznie szybszy.
 
+## Dane demo
+
+`make fresh` (`migrate:fresh --seed`) daje kompletny turniej do klikania:
+**Liga Osiedlowa 2026** pod `/t/liga-osiedlowa-2026`, trzy drużyny, rozegraną
+pierwszą rundę i rewanże w terminarzu. Organizer loguje się jako
+`dawid@example.com` / `tajnehaslo123`.
+
+Dane są przepisane z przykładów w kontrakcie, żeby `apps/public` pokazywało to
+samo na mocku i na Laravelu. Sporty seeder pomija — wstawia je migracja, bo są
+danymi systemowymi (decyzja #10). Sam seeder jest idempotentny: `db:seed` na
+stojącej bazie odświeża demo, zamiast wywalać się na unikacie sluga.
+
 ## Warstwa API i autoryzacja
 
 Stoi. Endpointy `/register`, `/login`, `/logout` i `/me` są zaimplementowane,
