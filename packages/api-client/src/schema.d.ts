@@ -1710,9 +1710,10 @@ export interface paths {
         };
         /**
          * Publiczna strona turnieju
-         * @description Przykłady są dwa: `liga` (domyślny) i `koszykowka`. Mock zwraca drugi
-         *     po wysłaniu nagłówka `Prefer: example=koszykowka` — ten sam przełącznik
-         *     obsługuje tabele, więc oba widoki mocka mówią o tym samym sporcie.
+         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+         *     Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
+         *     ten sam przełącznik obsługuje tabele, więc oba widoki mocka mówią o tym
+         *     samym sporcie.
          */
         get: {
             parameters: {
@@ -1758,7 +1759,7 @@ export interface paths {
         };
         /**
          * Tabele turnieju
-         * @description Przykłady są dwa: `liga` (domyślny, turniej piłkarski, zgodny
+         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny, zgodny
          *     z seedem demo) i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
          *     `Prefer: example=koszykowka` — ten sam przełącznik obsługuje
          *     `/public/t/{slug}`, więc oba widoki mówią o tym samym sporcie. Drugi

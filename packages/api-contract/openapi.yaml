@@ -1105,9 +1105,10 @@ paths:
       tags: [Public]
       summary: Publiczna strona turnieju
       description: |
-        Przykłady są dwa: `liga` (domyślny) i `koszykowka`. Mock zwraca drugi
-        po wysłaniu nagłówka `Prefer: example=koszykowka` — ten sam przełącznik
-        obsługuje tabele, więc oba widoki mocka mówią o tym samym sporcie.
+        Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+        Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
+        ten sam przełącznik obsługuje tabele, więc oba widoki mocka mówią o tym
+        samym sporcie.
       security: []
       responses:
         '200':
@@ -1120,7 +1121,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/PublicTournament' }
               examples:
-                liga:
+                pilka:
                   summary: Turniej piłkarski
                   value:
                     data:
@@ -1151,7 +1152,7 @@ paths:
       tags: [Public]
       summary: Tabele turnieju
       description: |
-        Przykłady są dwa: `liga` (domyślny, turniej piłkarski, zgodny
+        Przykłady są dwa, po jednym na sport: `pilka` (domyślny, zgodny
         z seedem demo) i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
         `Prefer: example=koszykowka` — ten sam przełącznik obsługuje
         `/public/t/{slug}`, więc oba widoki mówią o tym samym sporcie. Drugi
@@ -1171,7 +1172,7 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/StandingTable' }
               examples:
-                liga:
+                pilka:
                   summary: Turniej piłkarski — zdobycze to bramki
                   value:
                     data:

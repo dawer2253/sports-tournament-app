@@ -17,10 +17,11 @@ Odpowiedź `/public/t/{slug}/standings` (`StandingTable`) nie niosła ani sportu
 ani etykiety. Sport niesie osobna odpowiedź, `/public/t/{slug}`
 (`PublicTournament.sport.code`).
 
-Rozstrzygnięcie musiało zapaść przed zamrożeniem `StandingTable`, które
-[ADR-0001](0001-kontrakt-openapi-jako-zrodlo-prawdy.md) przewiduje w v0.1:
-`scoreLabel` jest polem wymaganym, więc dołożenie go później byłoby zmianą
-łamiącą.
+Rozstrzygnięcie było pilne, bo `scoreLabel` jest polem wymaganym, więc
+dołożenie go po wydaniu v0.1 byłoby zmianą łamiącą. Samego `StandingTable`
+[ADR-0001](0001-kontrakt-openapi-jako-zrodlo-prawdy.md) nie zamraża — zamraża
+`Match`, `Round` i `StandingRow` — ale wiersz tabeli jest zamrożony, a tabela
+go opakowuje, więc rozjazd między nimi kosztowałby tyle samo.
 
 ## Rozważane warianty
 
@@ -62,6 +63,11 @@ Płacimy: pole, które backend musi wypełnić w każdej odpowiedzi tabeli, i te
 prezentacyjny w kontrakcie, który poza tym opisuje wyłącznie dane. Kontrakt
 niesie odtąd polszczyznę, więc wersja wielojęzyczna byłaby zmianą tutaj, a nie
 w kliencie.
+
+Decyzja obejmuje konsumentów kontraktu. Makiety w `packages/ui` renderują
+`lib/demo-data.ts` i kontraktu nie znają, więc `public-standings.tsx` zostaje
+na razie ze sztywnym napisem „Bramki" — od tej zmiany makieta i realny ekran
+mówią o zdobyczach inaczej. Domknięcie tego jest osobnym ticketem (#38).
 
 Endpoint tabel po stronie backendu jeszcze nie istnieje — kiedy powstanie,
 `scoreLabel` wypełnia się ze sportu turnieju, a nie z pola w bazie: tabela nie

@@ -53,9 +53,10 @@ npm run storybook     # design system na :6006
 ```
 
 Mecze mają w kontrakcie dwa przykłady: ligowy (domyślny) i pucharowy. Żeby mock
-oddał drabinkę, dołóż do żądania nagłówek `Prefer: example=puchar`. Tak samo
-publiczne tabele: `Prefer: example=koszykowka` oddaje turniej koszykarski,
-w którym zdobycze nazywają się „Punkty", a nie „Bramki".
+oddał drabinkę, dołóż do żądania nagłówek `Prefer: example=puchar`. Osobny
+przełącznik, `Prefer: example=koszykowka`, oddaje turniej koszykarski —
+obsługują go publiczne tabele **i** `/public/t/{slug}`, więc oba widoki mówią
+o tym samym sporcie, a zdobycze nazywają się w nim „Punkty", a nie „Bramki".
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.
