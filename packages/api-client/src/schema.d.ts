@@ -2321,6 +2321,45 @@ export interface paths {
                          *               "logoUrl": null
                          *             },
                          *             "value": 2
+                         *           },
+                         *           {
+                         *             "position": 3,
+                         *             "player": {
+                         *               "id": 3,
+                         *               "name": "Jakub Wrona"
+                         *             },
+                         *             "team": {
+                         *               "id": 1,
+                         *               "name": "Wilki Bemowo",
+                         *               "logoUrl": null
+                         *             },
+                         *             "value": 1
+                         *           },
+                         *           {
+                         *             "position": 3,
+                         *             "player": {
+                         *               "id": 4,
+                         *               "name": "Tomasz Lis"
+                         *             },
+                         *             "team": {
+                         *               "id": 2,
+                         *               "name": "Sokoły Ursus",
+                         *               "logoUrl": null
+                         *             },
+                         *             "value": 1
+                         *           },
+                         *           {
+                         *             "position": 3,
+                         *             "player": {
+                         *               "id": 7,
+                         *               "name": "Rafał Duda"
+                         *             },
+                         *             "team": {
+                         *               "id": 3,
+                         *               "name": "Orły Bielany",
+                         *               "logoUrl": null
+                         *             },
+                         *             "value": 1
                          *           }
                          *         ]
                          *       }
@@ -2669,6 +2708,13 @@ export interface components {
             rows: components["schemas"]["StandingRow"][];
         };
         StatLeaderboardRow: {
+            /**
+             * @description Przy równej liczbie zdarzeń pozycja jest **dzielona**: trzech
+             *     zawodników z jedną bramką dostaje `position: 3` każdy, a kolejny
+             *     wynik zaczyna się od 6. Wiersze ex aequo idą po `player.id`
+             *     rosnąco — porządek ma być stabilny między odświeżeniami, a nie
+             *     wartościujący, bo tabela nie zna kryterium rozstrzygającego.
+             */
             position: number;
             player: components["schemas"]["PlayerSummary"];
             team: components["schemas"]["TeamSummary"];

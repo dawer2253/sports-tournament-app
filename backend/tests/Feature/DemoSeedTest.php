@@ -89,18 +89,35 @@ it('sieje zdarzenia meczowe zgodne z wynikami', function () {
 
 it('sieje klasyfikację strzelców zgodną z przykładem kontraktu', function () {
     // Kalkulator klasyfikacji wchodzi w S1 — tu liczy się tylko to, że dane
-    // wejściowe dają dwóch czołowych strzelców z przykładu
-    // `GET /public/t/{slug}/top-scorers`.
+    // wejściowe dają dokładnie tę klasyfikację, co przykład
+    // `GET /public/t/{slug}/top-scorers`. Endpoint nie ma parametru `limit`,
+    // więc porównujemy komplet strzelców, nie czołówkę: obcięcie do dwóch
+    // przepuściłoby bramkę dorzuconą komukolwiek dalej w stawce.
+    // Porządek jest ten z kontraktu (`StatLeaderboardRow.position`): malejąco
+    // po bramkach, a przy remisie rosnąco po `player.id`. Sortujemy tu sami,
+    // bo kolejność wierszy z bazy jest nieokreślona, a to właśnie ona odróżnia
+    // klasyfikację od worka liczb.
     $goals = MatchEvent::query()
         ->where('type', 'goal')
         ->with('player')
         ->get()
-        ->countBy(fn (MatchEvent $event) => $event->player->name)
-        ->sortDesc();
+        ->groupBy(fn (MatchEvent $event) => $event->player_id)
+        ->map(fn ($events, $playerId) => [
+            'name' => $events->first()->player->name,
+            'goals' => $events->count(),
+            'playerId' => $playerId,
+        ])
+        ->sortBy([['goals', 'desc'], ['playerId', 'asc']])
+        ->map(fn (array $row) => "{$row['name']} {$row['goals']}")
+        ->values()
+        ->all();
 
-    expect($goals->take(2)->all())->toBe([
-        'Marek Nowak' => 4,
-        'Adam Zieliński' => 2,
+    expect($goals)->toBe([
+        'Marek Nowak 4',
+        'Adam Zieliński 2',
+        'Jakub Wrona 1',
+        'Tomasz Lis 1',
+        'Rafał Duda 1',
     ]);
 });
 

@@ -34,6 +34,13 @@ use Illuminate\Database\Seeder;
  * Seeder jest idempotentny: wszystko wisi na turnieju o stałym slugu, więc
  * powtórne `db:seed` na stojącej bazie odświeża demo zamiast wywalać się na
  * unikacie.
+ *
+ * Idempotencja trzyma się jednak tylko dla bazy, w której demo jest jedynym
+ * turniejem. Id fazy, kolejek i meczów są nadawane wprost (patrz niżej), więc
+ * gdy w bazie stoi **inny** turniej, który zdążył zająć `stages.id = 1` albo
+ * `matches.id` z zakresu 1–6, `db:seed` padnie na duplikacie klucza. Dziś to
+ * niemożliwe — endpointy zakładania turnieju wchodzą z S1 — ale kto je doda,
+ * ten wraca tutaj i wiąże demo z id-kami przydzielanymi autoinkrementem.
  */
 class DemoTournamentSeeder extends Seeder
 {

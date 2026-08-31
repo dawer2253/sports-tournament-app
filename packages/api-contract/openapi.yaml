@@ -1611,6 +1611,9 @@ paths:
                   rows:
                     - { position: 1, player: { id: 1, name: Marek Nowak }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 4 }
                     - { position: 2, player: { id: 5, name: Adam Zieliński }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 2 }
+                    - { position: 3, player: { id: 3, name: Jakub Wrona }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 1 }
+                    - { position: 3, player: { id: 4, name: Tomasz Lis }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 1 }
+                    - { position: 3, player: { id: 7, name: Rafał Duda }, team: { id: 3, name: Orły Bielany, logoUrl: null }, value: 1 }
         '404': { $ref: '#/components/responses/NotFound' }
 
 components:
@@ -2095,7 +2098,15 @@ components:
       type: object
       required: [position, player, team, value]
       properties:
-        position: { type: integer, minimum: 1 }
+        position:
+          type: integer
+          minimum: 1
+          description: |
+            Przy równej liczbie zdarzeń pozycja jest **dzielona**: trzech
+            zawodników z jedną bramką dostaje `position: 3` każdy, a kolejny
+            wynik zaczyna się od 6. Wiersze ex aequo idą po `player.id`
+            rosnąco — porządek ma być stabilny między odświeżeniami, a nie
+            wartościujący, bo tabela nie zna kryterium rozstrzygającego.
         player: { $ref: '#/components/schemas/PlayerSummary' }
         team: { $ref: '#/components/schemas/TeamSummary' }
         value: { type: integer, minimum: 0 }
