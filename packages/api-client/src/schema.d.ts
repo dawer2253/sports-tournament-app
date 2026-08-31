@@ -295,6 +295,12 @@ export interface paths {
                          *                 "stat": "redCards"
                          *               }
                          *             ],
+                         *             "defaultTiebreakers": [
+                         *               "points",
+                         *               "head_to_head",
+                         *               "score_diff",
+                         *               "score_for"
+                         *             ],
                          *             "availableTiebreakers": [
                          *               "points",
                          *               "head_to_head",
@@ -333,6 +339,11 @@ export interface paths {
                          *                 "hasPlayer": true,
                          *                 "stat": "fouls"
                          *               }
+                         *             ],
+                         *             "defaultTiebreakers": [
+                         *               "points",
+                         *               "head_to_head",
+                         *               "score_diff"
                          *             ],
                          *             "availableTiebreakers": [
                          *               "points",
@@ -420,7 +431,7 @@ export interface paths {
                          *             "score_diff",
                          *             "score_for"
                          *           ],
-                         *           "teamsCount": 10,
+                         *           "teamsCount": 3,
                          *           "createdAt": "2026-09-01T10:00:00+02:00",
                          *           "updatedAt": "2026-09-14T18:30:00+02:00"
                          *         },
@@ -607,7 +618,7 @@ export interface paths {
                          *           "score_diff",
                          *           "score_for"
                          *         ],
-                         *         "teamsCount": 10,
+                         *         "teamsCount": 3,
                          *         "createdAt": "2026-09-01T10:00:00+02:00",
                          *         "updatedAt": "2026-09-14T18:30:00+02:00"
                          *       }
@@ -1154,6 +1165,13 @@ export interface paths {
                          *           "name": "Piotr Kowal",
                          *           "number": 1,
                          *           "position": "bramkarz"
+                         *         },
+                         *         {
+                         *           "id": 3,
+                         *           "teamId": 1,
+                         *           "name": "Jakub Wrona",
+                         *           "number": 7,
+                         *           "position": "pomocnik"
                          *         }
                          *       ]
                          *     }
@@ -1817,6 +1835,22 @@ export interface paths {
                          *               "scoreAgainst": 3,
                          *               "scoreDifference": 0,
                          *               "points": 3
+                         *             },
+                         *             {
+                         *               "position": 3,
+                         *               "team": {
+                         *                 "id": 3,
+                         *                 "name": "Orły Bielany",
+                         *                 "logoUrl": null
+                         *               },
+                         *               "played": 2,
+                         *               "won": 0,
+                         *               "drawn": 0,
+                         *               "lost": 2,
+                         *               "scoreFor": 1,
+                         *               "scoreAgainst": 5,
+                         *               "scoreDifference": -4,
+                         *               "points": 0
                          *             }
                          *           ]
                          *         }
@@ -1952,18 +1986,18 @@ export interface paths {
                          * @example {
                          *       "data": [
                          *         {
-                         *           "id": 2,
+                         *           "id": 4,
                          *           "stageId": 1,
                          *           "groupId": null,
                          *           "round": {
-                         *             "id": 2,
-                         *             "name": "Kolejka 2",
-                         *             "order": 2
+                         *             "id": 4,
+                         *             "name": "Kolejka 4",
+                         *             "order": 4
                          *           },
                          *           "matchNumber": 1,
                          *           "homeTeam": {
-                         *             "id": 3,
-                         *             "name": "Orły Bielany",
+                         *             "id": 2,
+                         *             "name": "Sokoły Ursus",
                          *             "logoUrl": null
                          *           },
                          *           "awayTeam": {
@@ -1976,7 +2010,75 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-09-13T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-27T12:00:00+02:00",
+                         *           "venue": {
+                         *             "id": 1,
+                         *             "name": "Boisko Bemowo"
+                         *           },
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
+                         *         },
+                         *         {
+                         *           "id": 5,
+                         *           "stageId": 1,
+                         *           "groupId": null,
+                         *           "round": {
+                         *             "id": 5,
+                         *             "name": "Kolejka 5",
+                         *             "order": 5
+                         *           },
+                         *           "matchNumber": 1,
+                         *           "homeTeam": {
+                         *             "id": 1,
+                         *             "name": "Wilki Bemowo",
+                         *             "logoUrl": null
+                         *           },
+                         *           "awayTeam": {
+                         *             "id": 3,
+                         *             "name": "Orły Bielany",
+                         *             "logoUrl": null
+                         *           },
+                         *           "homeScore": null,
+                         *           "awayScore": null,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
+                         *           "status": "scheduled",
+                         *           "kickoffAt": "2026-10-04T12:00:00+02:00",
+                         *           "venue": {
+                         *             "id": 1,
+                         *             "name": "Boisko Bemowo"
+                         *           },
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
+                         *         },
+                         *         {
+                         *           "id": 6,
+                         *           "stageId": 1,
+                         *           "groupId": null,
+                         *           "round": {
+                         *             "id": 6,
+                         *             "name": "Kolejka 6",
+                         *             "order": 6
+                         *           },
+                         *           "matchNumber": 1,
+                         *           "homeTeam": {
+                         *             "id": 3,
+                         *             "name": "Orły Bielany",
+                         *             "logoUrl": null
+                         *           },
+                         *           "awayTeam": {
+                         *             "id": 2,
+                         *             "name": "Sokoły Ursus",
+                         *             "logoUrl": null
+                         *           },
+                         *           "homeScore": null,
+                         *           "awayScore": null,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
+                         *           "status": "scheduled",
+                         *           "kickoffAt": "2026-10-11T12:00:00+02:00",
                          *           "venue": null,
                          *           "winnerToMatchId": null,
                          *           "loserToMatchId": null,
@@ -2035,6 +2137,74 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": [
+                         *         {
+                         *           "id": 3,
+                         *           "stageId": 1,
+                         *           "groupId": null,
+                         *           "round": {
+                         *             "id": 3,
+                         *             "name": "Kolejka 3",
+                         *             "order": 3
+                         *           },
+                         *           "matchNumber": 1,
+                         *           "homeTeam": {
+                         *             "id": 2,
+                         *             "name": "Sokoły Ursus",
+                         *             "logoUrl": null
+                         *           },
+                         *           "awayTeam": {
+                         *             "id": 3,
+                         *             "name": "Orły Bielany",
+                         *             "logoUrl": null
+                         *           },
+                         *           "homeScore": 2,
+                         *           "awayScore": 1,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
+                         *           "status": "finished",
+                         *           "kickoffAt": "2026-09-20T12:00:00+02:00",
+                         *           "venue": {
+                         *             "id": 1,
+                         *             "name": "Boisko Bemowo"
+                         *           },
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
+                         *         },
+                         *         {
+                         *           "id": 2,
+                         *           "stageId": 1,
+                         *           "groupId": null,
+                         *           "round": {
+                         *             "id": 2,
+                         *             "name": "Kolejka 2",
+                         *             "order": 2
+                         *           },
+                         *           "matchNumber": 1,
+                         *           "homeTeam": {
+                         *             "id": 3,
+                         *             "name": "Orły Bielany",
+                         *             "logoUrl": null
+                         *           },
+                         *           "awayTeam": {
+                         *             "id": 1,
+                         *             "name": "Wilki Bemowo",
+                         *             "logoUrl": null
+                         *           },
+                         *           "homeScore": 0,
+                         *           "awayScore": 3,
+                         *           "homePenalties": null,
+                         *           "awayPenalties": null,
+                         *           "status": "finished",
+                         *           "kickoffAt": "2026-09-13T12:00:00+02:00",
+                         *           "venue": {
+                         *             "id": 1,
+                         *             "name": "Boisko Bemowo"
+                         *           },
+                         *           "winnerToMatchId": null,
+                         *           "loserToMatchId": null,
+                         *           "advancesToSlot": null
+                         *         },
                          *         {
                          *           "id": 1,
                          *           "stageId": 1,
@@ -2151,6 +2321,45 @@ export interface paths {
                          *               "logoUrl": null
                          *             },
                          *             "value": 2
+                         *           },
+                         *           {
+                         *             "position": 3,
+                         *             "player": {
+                         *               "id": 3,
+                         *               "name": "Jakub Wrona"
+                         *             },
+                         *             "team": {
+                         *               "id": 1,
+                         *               "name": "Wilki Bemowo",
+                         *               "logoUrl": null
+                         *             },
+                         *             "value": 1
+                         *           },
+                         *           {
+                         *             "position": 3,
+                         *             "player": {
+                         *               "id": 4,
+                         *               "name": "Tomasz Lis"
+                         *             },
+                         *             "team": {
+                         *               "id": 2,
+                         *               "name": "Sokoły Ursus",
+                         *               "logoUrl": null
+                         *             },
+                         *             "value": 1
+                         *           },
+                         *           {
+                         *             "position": 3,
+                         *             "player": {
+                         *               "id": 7,
+                         *               "name": "Rafał Duda"
+                         *             },
+                         *             "team": {
+                         *               "id": 3,
+                         *               "name": "Orły Bielany",
+                         *               "logoUrl": null
+                         *             },
+                         *             "value": 1
                          *           }
                          *         ]
                          *       }
@@ -2228,6 +2437,12 @@ export interface components {
             allowsDraw: boolean;
             defaultPoints: components["schemas"]["Points"];
             eventTypes: components["schemas"]["SportEventType"][];
+            /**
+             * @description Kolejność tiebreaków, którą turniej dostaje przy zakładaniu.
+             *     Podzbiór `availableTiebreakers`; organizer zmienia ją potem
+             *     u siebie przez `PATCH /tournaments/{tournament}`.
+             */
+            defaultTiebreakers: components["schemas"]["TiebreakerCode"][];
             availableTiebreakers: components["schemas"]["TiebreakerCode"][];
             availableStats: string[];
         };
@@ -2493,6 +2708,13 @@ export interface components {
             rows: components["schemas"]["StandingRow"][];
         };
         StatLeaderboardRow: {
+            /**
+             * @description Przy równej liczbie zdarzeń pozycja jest **dzielona**: trzech
+             *     zawodników z jedną bramką dostaje `position: 3` każdy, a kolejny
+             *     wynik zaczyna się od 6. Wiersze ex aequo idą po `player.id`
+             *     rosnąco — porządek ma być stabilny między odświeżeniami, a nie
+             *     wartościujący, bo tabela nie zna kryterium rozstrzygającego.
+             */
             position: number;
             player: components["schemas"]["PlayerSummary"];
             team: components["schemas"]["TeamSummary"];

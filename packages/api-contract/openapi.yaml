@@ -212,6 +212,7 @@ paths:
                         - { code: own_goal, label: Bramka samobójcza, hasPlayer: true, stat: null }
                         - { code: yellow_card, label: Żółta kartka, hasPlayer: true, stat: yellowCards }
                         - { code: red_card, label: Czerwona kartka, hasPlayer: true, stat: redCards }
+                      defaultTiebreakers: [points, head_to_head, score_diff, score_for]
                       availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
                       availableStats: [goals, yellowCards, redCards]
                   - id: 2
@@ -223,6 +224,7 @@ paths:
                       eventTypes:
                         - { code: points, label: Punkty, hasPlayer: true, stat: points }
                         - { code: foul, label: Faul, hasPlayer: true, stat: fouls }
+                      defaultTiebreakers: [points, head_to_head, score_diff]
                       availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
                       availableStats: [points, fouls]
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -257,7 +259,7 @@ paths:
                     branding: { logoUrl: null, primaryColor: '#1F7A45' }
                     points: { win: 3, draw: 1, loss: 0 }
                     tiebreakers: [points, head_to_head, score_diff, score_for]
-                    teamsCount: 10
+                    teamsCount: 3
                     createdAt: '2026-09-01T10:00:00+02:00'
                     updatedAt: '2026-09-14T18:30:00+02:00'
                   - id: 2
@@ -343,7 +345,7 @@ paths:
                   branding: { logoUrl: null, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
-                  teamsCount: 10
+                  teamsCount: 3
                   createdAt: '2026-09-01T10:00:00+02:00'
                   updatedAt: '2026-09-14T18:30:00+02:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -617,6 +619,7 @@ paths:
                 data:
                   - { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
                   - { id: 2, teamId: 1, name: Piotr Kowal, number: 1, position: bramkarz }
+                  - { id: 3, teamId: 1, name: Jakub Wrona, number: 7, position: pomocnik }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -857,17 +860,85 @@ paths:
                         matchNumber: 1
                         homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
                         awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        homeScore: 0
+                        awayScore: 3
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 3
+                        stageId: 1
+                        groupId: null
+                        round: { id: 3, name: Kolejka 3, order: 3 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-20T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 4
+                        stageId: 1
+                        groupId: null
+                        round: { id: 4, name: Kolejka 4, order: 4 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                         homeScore: null
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        kickoffAt: '2026-09-27T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 5
+                        stageId: 1
+                        groupId: null
+                        round: { id: 5, name: Kolejka 5, order: 5 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 6
+                        stageId: 1
+                        groupId: null
+                        round: { id: 6, name: Kolejka 6, order: 6 }
+                        matchNumber: 1
+                        homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-11T12:00:00+02:00'
                         venue: null
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
-                    meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 2 }
+                    meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
                 puchar:
                   summary: Faza pucharowa — komplet meczów drabinki sześciodrużynowej
                   description: |
@@ -1082,6 +1153,7 @@ paths:
                     rows:
                       - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
                       - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
+                      - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0 }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/matches:
@@ -1160,12 +1232,80 @@ paths:
                         matchNumber: 1
                         homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
                         awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        homeScore: 0
+                        awayScore: 3
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 3
+                        stageId: 1
+                        groupId: null
+                        round: { id: 3, name: Kolejka 3, order: 3 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-20T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 4
+                        stageId: 1
+                        groupId: null
+                        round: { id: 4, name: Kolejka 4, order: 4 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                         homeScore: null
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        kickoffAt: '2026-09-27T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 5
+                        stageId: 1
+                        groupId: null
+                        round: { id: 5, name: Kolejka 5, order: 5 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 6
+                        stageId: 1
+                        groupId: null
+                        round: { id: 6, name: Kolejka 6, order: 6 }
+                        matchNumber: 1
+                        homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-11T12:00:00+02:00'
                         venue: null
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1313,19 +1453,53 @@ paths:
                     items: { $ref: '#/components/schemas/Match' }
               example:
                 data:
-                  - id: 2
+                  - id: 4
                     stageId: 1
                     groupId: null
-                    round: { id: 2, name: Kolejka 2, order: 2 }
+                    round: { id: 4, name: Kolejka 4, order: 4 }
                     matchNumber: 1
-                    homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
                     awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                     homeScore: null
                     awayScore: null
                     homePenalties: null
                     awayPenalties: null
                     status: scheduled
-                    kickoffAt: '2026-09-13T12:00:00+02:00'
+                    kickoffAt: '2026-09-27T12:00:00+02:00'
+                    venue: { id: 1, name: Boisko Bemowo }
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
+                  - id: 5
+                    stageId: 1
+                    groupId: null
+                    round: { id: 5, name: Kolejka 5, order: 5 }
+                    matchNumber: 1
+                    homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                    awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    homeScore: null
+                    awayScore: null
+                    homePenalties: null
+                    awayPenalties: null
+                    status: scheduled
+                    kickoffAt: '2026-10-04T12:00:00+02:00'
+                    venue: { id: 1, name: Boisko Bemowo }
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
+                  - id: 6
+                    stageId: 1
+                    groupId: null
+                    round: { id: 6, name: Kolejka 6, order: 6 }
+                    matchNumber: 1
+                    homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                    homeScore: null
+                    awayScore: null
+                    homePenalties: null
+                    awayPenalties: null
+                    status: scheduled
+                    kickoffAt: '2026-10-11T12:00:00+02:00'
                     venue: null
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1356,6 +1530,40 @@ paths:
                     items: { $ref: '#/components/schemas/Match' }
               example:
                 data:
+                  - id: 3
+                    stageId: 1
+                    groupId: null
+                    round: { id: 3, name: Kolejka 3, order: 3 }
+                    matchNumber: 1
+                    homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                    awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    homeScore: 2
+                    awayScore: 1
+                    homePenalties: null
+                    awayPenalties: null
+                    status: finished
+                    kickoffAt: '2026-09-20T12:00:00+02:00'
+                    venue: { id: 1, name: Boisko Bemowo }
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
+                  - id: 2
+                    stageId: 1
+                    groupId: null
+                    round: { id: 2, name: Kolejka 2, order: 2 }
+                    matchNumber: 1
+                    homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                    awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                    homeScore: 0
+                    awayScore: 3
+                    homePenalties: null
+                    awayPenalties: null
+                    status: finished
+                    kickoffAt: '2026-09-13T12:00:00+02:00'
+                    venue: { id: 1, name: Boisko Bemowo }
+                    winnerToMatchId: null
+                    loserToMatchId: null
+                    advancesToSlot: null
                   - id: 1
                     stageId: 1
                     groupId: null
@@ -1403,6 +1611,9 @@ paths:
                   rows:
                     - { position: 1, player: { id: 1, name: Marek Nowak }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 4 }
                     - { position: 2, player: { id: 5, name: Adam Zieliński }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 2 }
+                    - { position: 3, player: { id: 3, name: Jakub Wrona }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 1 }
+                    - { position: 3, player: { id: 4, name: Tomasz Lis }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 1 }
+                    - { position: 3, player: { id: 7, name: Rafał Duda }, team: { id: 3, name: Orły Bielany, logoUrl: null }, value: 1 }
         '404': { $ref: '#/components/responses/NotFound' }
 
 components:
@@ -1542,7 +1753,7 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, eventTypes, availableTiebreakers, availableStats]
+      required: [allowsDraw, defaultPoints, eventTypes, defaultTiebreakers, availableTiebreakers, availableStats]
       properties:
         allowsDraw:
           type: boolean
@@ -1551,6 +1762,13 @@ components:
         eventTypes:
           type: array
           items: { $ref: '#/components/schemas/SportEventType' }
+        defaultTiebreakers:
+          type: array
+          description: |
+            Kolejność tiebreaków, którą turniej dostaje przy zakładaniu.
+            Podzbiór `availableTiebreakers`; organizer zmienia ją potem
+            u siebie przez `PATCH /tournaments/{tournament}`.
+          items: { $ref: '#/components/schemas/TiebreakerCode' }
         availableTiebreakers:
           type: array
           items: { $ref: '#/components/schemas/TiebreakerCode' }
@@ -1880,7 +2098,15 @@ components:
       type: object
       required: [position, player, team, value]
       properties:
-        position: { type: integer, minimum: 1 }
+        position:
+          type: integer
+          minimum: 1
+          description: |
+            Przy równej liczbie zdarzeń pozycja jest **dzielona**: trzech
+            zawodników z jedną bramką dostaje `position: 3` każdy, a kolejny
+            wynik zaczyna się od 6. Wiersze ex aequo idą po `player.id`
+            rosnąco — porządek ma być stabilny między odświeżeniami, a nie
+            wartościujący, bo tabela nie zna kryterium rozstrzygającego.
         player: { $ref: '#/components/schemas/PlayerSummary' }
         team: { $ref: '#/components/schemas/TeamSummary' }
         value: { type: integer, minimum: 0 }

@@ -32,6 +32,21 @@ class Sport extends Model
         return $this->config['defaultPoints'];
     }
 
+    /**
+     * Domyślna kolejność tiebreaków, kopiowana do turnieju przy zakładaniu
+     * (decyzja #25). Organizer zmienia ją potem u siebie, nie w sporcie.
+     */
+    public function defaultTiebreakers(): array
+    {
+        return $this->config['defaultTiebreakers'];
+    }
+
+    /** Kryteria, spośród których organizer może układać kolejność w turnieju. */
+    public function availableTiebreakers(): array
+    {
+        return $this->config['availableTiebreakers'];
+    }
+
     /** Kody zdarzeń dopuszczalnych w tym sporcie. */
     public function eventTypeCodes(): array
     {

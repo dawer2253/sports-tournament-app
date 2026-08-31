@@ -165,7 +165,21 @@ it('ma sporty w bazie zaraz po migracji, zgodne z kontraktem', function () {
         ->and($basketball->eventTypeCodes())->toBe(['points', 'foul']);
 });
 
-it('zakłada turniej z punktacją sportu, a nie z pustą', function () {
+it('ma domyślną kolejność tiebreaków per sport, zgodną z kontraktem', function () {
+    // Decyzja #25: punktacja i kolejność tiebreaków to wartości ustalane przy
+    // seedowaniu sportu, nie architektura. Domyślna kolejność musi mieścić się
+    // w tym, co sport w ogóle dopuszcza — inaczej turniej startowałby
+    // z kryterium, którego panel nie pokaże na liście do wyboru.
+    $football = Sport::firstWhere('code', 'football');
+    $basketball = Sport::firstWhere('code', 'basketball');
+
+    expect($football->defaultTiebreakers())->toBe(['points', 'head_to_head', 'score_diff', 'score_for'])
+        ->and($basketball->defaultTiebreakers())->toBe(['points', 'head_to_head', 'score_diff'])
+        ->and(array_diff($football->defaultTiebreakers(), $football->availableTiebreakers()))->toBe([])
+        ->and(array_diff($basketball->defaultTiebreakers(), $basketball->availableTiebreakers()))->toBe([]);
+});
+
+it('zakłada turniej z punktacją i tiebreakami sportu, a nie z pustymi', function () {
     // Punktacja turnieju startuje jako kopia domyślnej dla sportu i dopiero
     // potem organizer ją stroi. Kopiowanie robi na razie factory; przy CRUD-zie
     // turniejów w S1 przeniesie się do serwisu i wtedy ten test dostanie drugi
@@ -175,7 +189,10 @@ it('zakłada turniej z punktacją sportu, a nie z pustą', function () {
 
     expect($koszykowka->points)->toBe($koszykowka->sport->defaultPoints())
         ->and($pilka->points)->toBe($pilka->sport->defaultPoints())
-        ->and($koszykowka->points)->not->toBe($pilka->points);
+        ->and($koszykowka->points)->not->toBe($pilka->points)
+        ->and($koszykowka->tiebreakers)->toBe($koszykowka->sport->defaultTiebreakers())
+        ->and($pilka->tiebreakers)->toBe($pilka->sport->defaultTiebreakers())
+        ->and($koszykowka->tiebreakers)->not->toBe($pilka->tiebreakers);
 });
 
 it('nie pozwala usunąć turnieju, w którym rozegrano mecz', function () {
