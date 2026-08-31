@@ -1,5 +1,5 @@
 import { Upload, GripVertical } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -16,7 +16,7 @@ const brandSwatches = [
 
 export function AdminSettingsBranding() {
   return (
-    <AdminShell
+    <ShellDemo
       active="branding"
       title="Branding i ustawienia"
       subtitle={tournament.name}
@@ -102,6 +102,6 @@ export function AdminSettingsBranding() {
           <Button>Zapisz zmiany</Button>
         </div>
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }

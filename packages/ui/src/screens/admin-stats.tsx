@@ -1,5 +1,5 @@
 import { Goal, Trophy } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { tournament, standings, scorers } from '../lib/demo-data'
@@ -23,7 +23,7 @@ const maxGf = Math.max(...topScoring.map((r) => r.gf))
 
 export function AdminStats() {
   return (
-    <AdminShell active="stats" title="Statystyki" subtitle={tournament.name}>
+    <ShellDemo active="stats" title="Statystyki" subtitle={tournament.name}>
       <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((m) => (
           <Card key={m.label} className="p-4">
@@ -91,6 +91,6 @@ export function AdminStats() {
           </CardContent>
         </Card>
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }

@@ -1,5 +1,5 @@
 import { Plus, Trophy, ArrowUpRight } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card } from '../components/ui/card'
@@ -12,15 +12,18 @@ const stats = [
   { label: 'Odsłony public', value: '1 204' },
 ]
 
+// Te same trzy turnieje co `tournamentList` w `lib/demo-data.ts`, tylko jako
+// kafle z postępem. Nazwy, sporty i liczby drużyn muszą się z tamtą listą
+// zgadzać — pola prezentacyjne (ikona, postęp, stopka) żyją tylko tutaj.
 const items = [
   { icon: '⚽', name: 'Liga Osiedlowa 2026', meta: 'Piłka nożna · Liga · 8 drużyn', status: 'Trwa', variant: 'default' as const, progress: 36, foot: 'Kolejka 5 / 14 · /t/liga-osiedlowa' },
   { icon: '🏀', name: 'Puchar Miasta — Kosz', meta: 'Koszykówka · Puchar · 16 drużyn', status: 'Szkic', variant: 'secondary' as const, progress: 0, foot: 'Terminarz niewygenerowany' },
-  { icon: '⚽', name: 'Turniej Zimowy', meta: 'Piłka nożna · Grupy + playoff', status: 'Zakończony', variant: 'outline' as const, progress: 100, foot: 'Zwycięzca: FC Górka' },
+  { icon: '⚽', name: 'Turniej Zimowy', meta: 'Piłka nożna · Grupy + playoff · 12 drużyn', status: 'Zakończony', variant: 'outline' as const, progress: 100, foot: 'Zwycięzca: FC Górka' },
 ]
 
 export function AdminDashboard() {
   return (
-    <AdminShell
+    <ShellDemo
       active="dashboard"
       title="Twoje turnieje"
       subtitle="Zarządzaj ligami i turniejami"
@@ -54,6 +57,6 @@ export function AdminDashboard() {
           </Card>
         ))}
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }

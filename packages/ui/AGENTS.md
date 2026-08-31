@@ -21,11 +21,27 @@ Storybook na `:6006`), więc podgląd działa bez konfiguracji.
 
 ## Struktura `src/`
 
-- `components/ui/` — prymitywy shadcn (Button, Card, Dialog, Table…). Tutaj
-  trafiają komponenty z `npx shadcn add`.
+- `components/ui/` — prymitywy interfejsu (Button, Card, Dialog, Table…). Tutaj
+  trafiają komponenty z `npx shadcn add`, ale też pisane ręcznie, gdy shadcn
+  nie ma odpowiednika (`empty-state.tsx`). Nie dzielimy prymitywów po tym,
+  skąd pochodzą.
+- `components/data/` — komponenty prezentujące dane z API (np.
+  `tournaments-table.tsx` na TanStack Table). Same przyjmują dane propsami:
+  pakiet nie zna klienta API ani TanStack Query. Typ wiersza mieszka w osobnym
+  pliku obok komponentu (`tournament-row.ts`), żeby `lib/demo-data.ts` mogło go
+  użyć bez importowania komponentu — inaczej dane demo i komponent zamykają się
+  w cyklu. Zgodność takiego typu z kontraktem pilnuje strażnik w aplikacji
+  (`apps/admin/src/lib/contract-guard.ts`), bo pakiet nie zna kontraktu.
 - `components/layout/` — `admin-shell.tsx` (panel z sidebarem) i
   `public-shell.tsx`. Każdy ekran opakowuje się w jeden z tych shelli.
-- `screens/` — ekrany aplikacji (wzorzec niżej).
+  **Komponenty z `components/` nie importują `lib/demo-data.ts`**: dane mock
+  należą do `screens/`. Dlatego `AdminShell` wymaga propsa `user`, a ekrany
+  Storybooka biorą `screens/shell-demo.tsx`, który dokłada konto demo. Fikcyjne
+  konto jako wartość domyślna trafiałoby do bundla panelu i przy pominiętym
+  propsie wyglądałoby jak prawdziwe.
+- `screens/` — ekrany aplikacji (wzorzec niżej) oraz wrappery dla nich. Wrapper
+  nie jest ekranem: nie bierze prefiksu `admin-`/`public-` i nie ma
+  `.stories.tsx` ani `.mdx` (`shell-demo.tsx`).
 - `foundations/` — dokumentacja fundamentów (paleta, tokeny) w Storybooku.
 - `lib/utils.ts` — `cn()` (clsx + tailwind-merge).
 - `lib/demo-data.ts` — **jedno źródło** danych mock dla wszystkich ekranów

@@ -2,7 +2,7 @@ import type { ElementType } from 'react'
 import {
   Check, CheckCircle2, ListOrdered, GitFork, Trophy, ArrowRight,
 } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import {
   Card, CardHeader, CardTitle, CardDescription, CardContent,
@@ -96,7 +96,7 @@ const FORMATS: FormatOption[] = [
 
 export function AdminTournamentCreate() {
   return (
-    <AdminShell
+    <ShellDemo
       active="dashboard"
       title="Nowy turniej"
       subtitle="Skonfiguruj rozgrywki w 4 krokach"
@@ -172,7 +172,7 @@ export function AdminTournamentCreate() {
           Dalej: drużyny <ArrowRight className="size-4" />
         </Button>
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }
 
@@ -183,7 +183,7 @@ const SPORTS: { key: string; emoji: string; title: string; description: string; 
 
 export function AdminTournamentCreateStep1() {
   return (
-    <AdminShell
+    <ShellDemo
       active="dashboard"
       title="Nowy turniej"
       subtitle="Skonfiguruj rozgrywki w 4 krokach"
@@ -219,6 +219,6 @@ export function AdminTournamentCreateStep1() {
           Dalej: format <ArrowRight className="size-4" />
         </Button>
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }

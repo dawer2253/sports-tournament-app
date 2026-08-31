@@ -70,8 +70,11 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
   po angielsku. Jedyny wyjątek to słowo zamykające issue w opisie PR-a —
   `Closes #16`, bo GitHub nie rozpoznaje polskiego (patrz
   [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)).
-- Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `API:`, `CI:`,
-  `Design:`, `Init:`, `Backend:`, `Docs:`).
+- Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `Admin:`,
+  `Public:`, `API:`, `CI:`, `Design:`, `Init:`, `Backend:`, `Docs:`).
+  `Admin:` i `Public:` to zmiany w `apps/admin` i `apps/public`; `DS:` zostaje
+  dla `packages/ui`. Zmiana obejmująca aplikację i design system bierze prefiks
+  tego obszaru, w którym leży jej sedno.
 - Nazywając byt domenowy, użyj terminu z [`CONTEXT.md`](CONTEXT.md). Jeżeli go tam
   nie ma, to sygnał: albo wymyślasz język, którego projekt nie używa, albo słownik
   ma lukę.

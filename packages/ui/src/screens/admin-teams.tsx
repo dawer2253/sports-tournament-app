@@ -1,5 +1,5 @@
 import { Plus, Pencil } from 'lucide-react'
-import { AdminShell } from '../components/layout/admin-shell'
+import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { tournament, teams, players } from '../lib/demo-data'
@@ -61,7 +61,7 @@ function TeamCard({ team }: { team: Team }) {
 
 export function AdminTeams() {
   return (
-    <AdminShell
+    <ShellDemo
       active="teams"
       title="Drużyny"
       subtitle={`${tournament.name} · ${teams.length} drużyn`}
@@ -76,6 +76,6 @@ export function AdminTeams() {
           <TeamCard key={team.id} team={team} />
         ))}
       </div>
-    </AdminShell>
+    </ShellDemo>
   )
 }
