@@ -92,6 +92,23 @@ Jak instalator zachował się naprawdę (v2.7): `backend/AGENTS.md` zostawił
 nietknięty, a do `backend/CLAUDE.md` **dopisał** swoje wytyczne pod nagłówkiem
 repo, w bloku `<laravel-boost-guidelines>`. Nagłówka nie trzeba więc odtwarzać,
 ale same wytyczne każą m.in. prefiksować komendy `vendor/bin/sail` i trzymać
-ustalenia w `.ai/rules` — to przeczy repo, więc blok jest przycięty, a powody
-stoją nad nim w tym samym pliku. Kolejne `boost:install` podmienia całą
-zawartość między znacznikami, więc przycięcie trzeba będzie powtórzyć.
+ustalenia w `.ai/rules` — to przeczy repo, więc blok jest przycięty. Co wypadło
+i dlaczego, wypisuje [`backend/AGENTS.md`](../backend/AGENTS.md).
+
+### Co zrobi kolejne `boost:install`
+
+`backend/boost.json` pamięta odpowiedzi z instalacji, więc kolejny przebieg jest
+w dużej mierze przewidywalny — trzy rzeczy trzeba jednak obejrzeć ręcznie:
+
+- **`"guidelines": true`** — blok w `backend/CLAUDE.md` wróci w pełnej wersji,
+  bo `GuidelineWriter` podmienia regexem całą zawartość między znacznikami.
+  Przytnij go ponownie zgodnie z listą w `backend/AGENTS.md`.
+- **`"mcp": true`** — instalator zapisze **`backend/.mcp.json`**, konkurencyjny
+  wobec tego w korzeniu monorepo. Skasuj go; obowiązuje korzeniowy (powody
+  w [`BACKEND.md`](BACKEND.md)).
+- **`"sail": false`** — ustawione ręcznie, po instalacji. Domyślne `true`
+  wygenerowało wariant z `vendor/bin/sail`, który poza WSL2 nie startuje.
+  Jeżeli instalator przestawi to z powrotem, przestaw ponownie.
+
+Skille (`"skills"`) lądują w `backend/.claude/skills/`, czyli poza repo — tak ma
+być, patrz [`AGENTS-SETUP.md`](AGENTS-SETUP.md).

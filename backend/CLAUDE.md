@@ -3,39 +3,10 @@ każde narzędzie, nie tylko Claude Code.
 
 **Przeczytaj teraz [`AGENTS.md`](AGENTS.md)** i stosuj się do niego.
 
-## Wytyczne Laravel Boost poniżej są przycięte
-
-Blok `<laravel-boost-guidelines>` generuje `php artisan boost:install`. Usunięto
-z niego fragmenty sprzeczne z tym repo, bo agent czytający dwie sprzeczne
-instrukcje wykona jedną z nich losowo. Wypadły:
-
-- **`vendor/bin/sail` jako prefiks każdej komendy** — komendy opisuje
-  [`AGENTS.md`](AGENTS.md) i [`Makefile`](../Makefile), a poza WSL2 Sail w ogóle
-  nie startuje (patrz [`docs/BACKEND.md`](../docs/BACKEND.md)).
-- **`.ai/rules` i `record-rule` jako miejsce na ustalenia** — to repo trzyma
-  decyzje w [`docs/adr/`](../docs/adr/) i [`CONTEXT.md`](../CONTEXT.md).
-- **Vite, frontend, deployment, `browser-logs` i `package.json`** — backend
-  oddaje wyłącznie JSON, nie ma tu npm ani przeglądarki.
-- **„twórz fabryki i seedery do nowych modeli"** — [`AGENTS.md`](AGENTS.md)
-  stanowi inaczej dla danych systemowych (sporty wstawia migracja,
-  `SportFactory` celowo nie istnieje).
-
-**Te uwagi stoją nad blokiem świadomie.** `GuidelineWriter` podmienia całą
-zawartość między znacznikami `<laravel-boost-guidelines>`, więc cokolwiek
-wpisanego do środka zniknie przy następnym `boost:install`. Wtedy przytnij blok
-ponownie, zamiast godzić się na sprzeczność. Sam tekst wytycznych zostaje po
-angielsku, bo pochodzi z pakietu.
-
-## Komendy
-
-Cele `make` z korzenia monorepo (`make up`, `make shell`, `make test`,
-`make lint`, `make migrate`, `make fresh`), a poza WSL2 — gdzie ani `make`, ani
-Sail nie działają — przez Compose. Obie drogi i jedyną pełną postać komendy
-opisuje [`docs/BACKEND.md`](../docs/BACKEND.md); nie powtarzamy jej tutaj, żeby
-nie rozjechała się w dwóch plikach.
-
-Wszędzie niżej, gdzie wytyczne mówią o `artisan`, `pint` czy `pest`, chodzi
-o uruchomienie ich w kontenerze.
+Blok `<laravel-boost-guidelines>` niżej dopisuje `php artisan boost:install`
+i **jest przycięty** — co z niego wypadło, dlaczego i jak przyciąć go ponownie
+po kolejnej instalacji, opisuje [`AGENTS.md`](AGENTS.md) (sekcja „Laravel
+Boost"). Ten plik nie trzyma własnych instrukcji.
 
 ===
 
@@ -51,10 +22,6 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 This application is a Laravel application running on PHP 8.5. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
 
 Before relying on a package's API, confirm its installed version: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
-
-## Skills Activation
-
-This project has domain-specific skills available in `**/skills/**`. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
 
 ## Conventions
 
@@ -133,7 +100,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Test every code change by adding or updating a test.
 - Run the affected tests and ensure they pass.
 - Test the changed behavior and its important failure modes, but do not add tests beyond them.
-- Read the `testing-best-practices` skill before writing tests.
 
 === laravel/core rules ===
 
@@ -170,7 +136,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - This project uses Pest. Create tests with `artisan make:test --pest {name}`.
 - Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
-- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
 - Do not delete tests or test files without approval. They are part of the application.
 
 ## Running Tests

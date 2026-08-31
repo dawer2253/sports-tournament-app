@@ -101,9 +101,11 @@ lista siedzi w `config/cors.php`.
 Zainstalowany jako zależność deweloperska. Stan instalacji trzyma
 `backend/boost.json`. Wytyczne dla agentów dopisuje do
 [`backend/CLAUDE.md`](../backend/CLAUDE.md), pod nagłówkiem repo, nie zamiast
-niego — i **są tam przycięte**, bo część z nich przeczy zasadom tego repo;
-powody wypisuje sam plik. Skille pisze do `backend/.claude/skills/`, czyli poza
-repo: są warsztatem każdego z osobna, więc ta ścieżka jest w `.gitignore`
+niego — i **są tam przycięte**, bo część z nich przeczy zasadom tego repo; co
+wypadło i dlaczego, wypisuje [`backend/AGENTS.md`](../backend/AGENTS.md). Czego
+pilnować przy kolejnej instalacji: [`BACKEND-INSTALACJA.md`](BACKEND-INSTALACJA.md).
+Skille pisze do `backend/.claude/skills/`, czyli poza repo: są warsztatem
+każdego z osobna, więc ta ścieżka jest w `.gitignore`
 (patrz [`docs/AGENTS-SETUP.md`](AGENTS-SETUP.md)).
 
 Konfiguracja serwera MCP leży w **`.mcp.json` w korzeniu monorepo**, nie
