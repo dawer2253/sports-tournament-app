@@ -83,11 +83,32 @@ Wszystko to zostało usunięte, bo:
 
 ## Laravel Boost
 
-Nie instalowany w S0 — sprawdzona tylko zgodność: `laravel/boost` v2.7.0
+Nie instalowany w S0 — sprawdzona była tylko zgodność: `laravel/boost` v2.7.0
 rozwiązuje się czysto na Laravelu 13 (`composer require --dry-run`). Decyzja #1
-w [`PLAN.md`](PLAN.md).
+w [`PLAN.md`](PLAN.md). **Doinstalowany później**; jak jest wpięty i dlaczego
+serwer MCP nie chodzi na Sailu, opisuje [`BACKEND.md`](BACKEND.md).
 
-Uwaga przy ewentualnej instalacji: `php artisan boost:install` nadpisuje
-`backend/AGENTS.md` i `backend/CLAUDE.md` własnymi wytycznymi, które każą
-instalować PHP **na hoście**. Jest to sprzeczne z „tylko Docker", więc po
-instalacji przywróć nagłówek z [`backend/AGENTS.md`](../backend/AGENTS.md).
+Jak instalator zachował się naprawdę (v2.7): `backend/AGENTS.md` zostawił
+nietknięty, a do `backend/CLAUDE.md` **dopisał** swoje wytyczne pod nagłówkiem
+repo, w bloku `<laravel-boost-guidelines>`. Nagłówka nie trzeba więc odtwarzać,
+ale same wytyczne każą m.in. prefiksować komendy `vendor/bin/sail` i trzymać
+ustalenia w `.ai/rules` — to przeczy repo, więc blok jest przycięty. Co wypadło
+i dlaczego, wypisuje [`backend/AGENTS.md`](../backend/AGENTS.md).
+
+### Co zrobi kolejne `boost:install`
+
+`backend/boost.json` pamięta odpowiedzi z instalacji, więc kolejny przebieg jest
+w dużej mierze przewidywalny — trzy rzeczy trzeba jednak obejrzeć ręcznie:
+
+- **`"guidelines": true`** — blok w `backend/CLAUDE.md` wróci w pełnej wersji,
+  bo `GuidelineWriter` podmienia regexem całą zawartość między znacznikami.
+  Przytnij go ponownie zgodnie z listą w `backend/AGENTS.md`.
+- **`"mcp": true`** — instalator zapisze **`backend/.mcp.json`**, konkurencyjny
+  wobec tego w korzeniu monorepo. Skasuj go; obowiązuje korzeniowy (powody
+  w [`BACKEND.md`](BACKEND.md)).
+- **`"sail": false`** — ustawione ręcznie, po instalacji. Domyślne `true`
+  wygenerowało wariant z `vendor/bin/sail`, który poza WSL2 nie startuje.
+  Jeżeli instalator przestawi to z powrotem, przestaw ponownie.
+
+Skille (`"skills"`) lądują w `backend/.claude/skills/`, czyli poza repo — tak ma
+być, patrz [`AGENTS-SETUP.md`](AGENTS-SETUP.md).

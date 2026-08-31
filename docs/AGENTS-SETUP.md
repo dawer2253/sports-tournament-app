@@ -18,6 +18,7 @@ u siebie nie odtwarza:
 | [`docs/adr/`](adr/) | decyzje trudne do odwrócenia i powody, dla których zapadły |
 | [`docs/agents/`](agents/) | konfiguracja skilli: gdzie żyją issues, jakich etykiet używamy, gdzie zapisywać dokumenty |
 | [`packages/ui/AGENTS.md`](../packages/ui/AGENTS.md) | zasady design systemu |
+| [`.mcp.json`](../.mcp.json) | serwery MCP projektu (dziś Laravel Boost, patrz [`docs/BACKEND.md`](BACKEND.md)) |
 
 **Twoje, instalujesz u siebie, nie commitujemy.** Skille to twój warsztat, nie
 część projektu. Gdyby trafiły do repo, każda aktualizacja u jednej osoby byłaby

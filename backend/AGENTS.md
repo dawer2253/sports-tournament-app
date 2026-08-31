@@ -10,8 +10,9 @@ lokalnie — nie są potrzebne i nie są częścią setupu zespołu.
 
 Domyślny szkielet Laravela wypełnia ten plik instrukcjami bootstrapu (instalacja
 PHP przez skrypt z sieci, `composer require laravel/boost`). Zostały świadomie
-usunięte, bo są sprzeczne z powyższym. Jeżeli `php artisan boost:install` kiedyś
-je tu z powrotem wygeneruje, przywróć ten nagłówek.
+usunięte, bo są sprzeczne z powyższym. Gdyby któryś generator wpisał je tu
+z powrotem, przywróć ten nagłówek — `boost:install` v2.7 tego pliku nie tyka
+(pisze do [`CLAUDE.md`](CLAUDE.md), patrz „Laravel Boost" niżej).
 
 **Jedyny wyjątek to CI**, gdzie backend chodzi na natywnym PHP i usłudze MySQL-a
 z runnera — Docker byłby tam tylko narzutem. Wersje w
@@ -28,6 +29,38 @@ nie wymagała edycji dwóch plików.
 Poza `install` cele `make` to cienkie opakowanie na `./vendor/bin/sail` — Sail wymaga
 katalogu roboczego `backend/`, dlatego Makefile sam tam wchodzi. `install` działa
 bez Saila (odtwarza dopiero jego binarkę), więc uruchamia Composera w kontenerze.
+
+## Laravel Boost
+
+Wpięty jako zależność deweloperska; serwer MCP i powody, dla których nie chodzi
+na Sailu, opisuje [`docs/BACKEND.md`](../docs/BACKEND.md). Stan instalacji trzyma
+[`boost.json`](boost.json).
+
+Wytyczne pakietu dopisuje do [`CLAUDE.md`](CLAUDE.md), w blok
+`<laravel-boost-guidelines>`. **Blok jest przycięty**, bo agent czytający dwie
+sprzeczne instrukcje wykona jedną z nich losowo. Wypadły:
+
+- **`vendor/bin/sail` jako prefiks każdej komendy** — komendy opisuje sekcja
+  „Komendy" wyżej, a poza WSL2 Sail w ogóle nie startuje.
+- **`.ai/rules` i `record-rule` jako miejsce na ustalenia** — to repo trzyma
+  decyzje w [`docs/adr/`](../docs/adr/) i [`CONTEXT.md`](../CONTEXT.md).
+- **Vite, frontend, deployment, `browser-logs` i `package.json`** — patrz
+  „Backend oddaje wyłącznie JSON" niżej.
+- **„twórz fabryki i seedery do nowych modeli"** — dla danych systemowych
+  stanowimy inaczej, patrz „Schemat i modele".
+- **„You MUST activate the relevant skill" i odwołania do
+  `testing-best-practices`** — skille są warsztatem każdego z osobna i leżą poza
+  repo ([`docs/AGENTS-SETUP.md`](../docs/AGENTS-SETUP.md)), więc wytyczne nie
+  mogą ich wymagać: na czystym klonie wskazywałyby w pustkę. Same skille zostają
+  w [`boost.json`](boost.json), bo instalują się lokalnie każdemu, kto chce.
+
+Gdziekolwiek wytyczne mówią o `artisan`, `pint` czy `pest`, chodzi o uruchomienie
+ich w kontenerze.
+
+**Przycięcie trzeba powtórzyć po każdym `boost:install`** — `GuidelineWriter`
+podmienia regexem całą zawartość między znacznikami, więc uwag nie da się
+zapisać w środku bloku; dlatego stoją tutaj, w pliku, którego instalator nie
+tyka. Sam tekst wytycznych zostaje po angielsku, bo pochodzi z pakietu.
 
 ## Backend oddaje wyłącznie JSON
 
