@@ -1702,7 +1702,17 @@ export interface paths {
     "/public/t/{slug}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
             path: {
                 slug: components["parameters"]["Slug"];
             };
@@ -1718,7 +1728,17 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
                 path: {
                     slug: components["parameters"]["Slug"];
                 };
@@ -1729,6 +1749,8 @@ export interface paths {
                 /** @description Turniej w wersji publicznej */
                 200: {
                     headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
                         [name: string]: unknown;
                     };
                     content: {
@@ -1737,6 +1759,7 @@ export interface paths {
                         };
                     };
                 };
+                304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -1751,7 +1774,17 @@ export interface paths {
     "/public/t/{slug}/standings": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
             path: {
                 slug: components["parameters"]["Slug"];
             };
@@ -1769,7 +1802,17 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
                 path: {
                     slug: components["parameters"]["Slug"];
                 };
@@ -1780,6 +1823,8 @@ export interface paths {
                 /** @description Tabele */
                 200: {
                     headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
                         [name: string]: unknown;
                     };
                     content: {
@@ -1788,6 +1833,7 @@ export interface paths {
                         };
                     };
                 };
+                304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -1809,7 +1855,17 @@ export interface paths {
                  */
                 stageId: number;
             };
-            header?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
             path: {
                 slug: components["parameters"]["Slug"];
             };
@@ -1847,7 +1903,17 @@ export interface paths {
                      */
                     stageId: number;
                 };
-                header?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
                 path: {
                     slug: components["parameters"]["Slug"];
                 };
@@ -1858,6 +1924,8 @@ export interface paths {
                 /** @description Mecze fazy */
                 200: {
                     headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
                         [name: string]: unknown;
                     };
                     content: {
@@ -1866,6 +1934,7 @@ export interface paths {
                         };
                     };
                 };
+                304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -1880,7 +1949,17 @@ export interface paths {
     "/public/t/{slug}/fixtures": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
             path: {
                 slug: components["parameters"]["Slug"];
             };
@@ -1894,7 +1973,17 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
                 path: {
                     slug: components["parameters"]["Slug"];
                 };
@@ -1905,6 +1994,8 @@ export interface paths {
                 /** @description Mecze o stanie innym niż zakończony, rosnąco po terminie */
                 200: {
                     headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
                         [name: string]: unknown;
                     };
                     content: {
@@ -2018,6 +2109,7 @@ export interface paths {
                         };
                     };
                 };
+                304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -2032,7 +2124,17 @@ export interface paths {
     "/public/t/{slug}/results": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
             path: {
                 slug: components["parameters"]["Slug"];
             };
@@ -2046,7 +2148,17 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
                 path: {
                     slug: components["parameters"]["Slug"];
                 };
@@ -2057,6 +2169,8 @@ export interface paths {
                 /** @description Mecze zakończone, malejąco po terminie */
                 200: {
                     headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
                         [name: string]: unknown;
                     };
                     content: {
@@ -2173,6 +2287,7 @@ export interface paths {
                         };
                     };
                 };
+                304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -2187,7 +2302,17 @@ export interface paths {
     "/public/t/{slug}/top-scorers": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
             path: {
                 slug: components["parameters"]["Slug"];
             };
@@ -2202,7 +2327,17 @@ export interface paths {
         get: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
                 path: {
                     slug: components["parameters"]["Slug"];
                 };
@@ -2213,6 +2348,8 @@ export interface paths {
                 /** @description Klasyfikacja zawodników */
                 200: {
                     headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
                         [name: string]: unknown;
                     };
                     content: {
@@ -2296,6 +2433,7 @@ export interface paths {
                         };
                     };
                 };
+                304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -2672,6 +2810,18 @@ export interface components {
         };
     };
     responses: {
+        /**
+         * @description Treść nie zmieniła się od walidatora podanego w `If-None-Match`.
+         *     Ciało jest puste — poprzednia odpowiedź pozostaje aktualna.
+         */
+        NotModified: {
+            headers: {
+                ETag: components["headers"]["ETag"];
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content?: never;
+        };
         /** @description Brak lub nieważny token */
         Unauthenticated: {
             headers: {
@@ -2740,9 +2890,37 @@ export interface components {
         PlayerId: number;
         VenueId: number;
         Slug: string;
+        /**
+         * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+         *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+         *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+         *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+         *     podręcznej: testy kontraktowe i integracje.
+         * @example "9f2b1c4e"
+         */
+        IfNoneMatch: string;
     };
     requestBodies: never;
-    headers: never;
+    headers: {
+        /**
+         * @description Walidator treści odpowiedzi, nieprzezroczysty dla klienta. Zmienia się
+         *     wtedy i tylko wtedy, gdy zmienia się `data`.
+         * @example "9f2b1c4e"
+         */
+        ETag: string;
+        /**
+         * @description Musi zawierać dyrektywę `no-cache`: przeglądarka może odpowiedź
+         *     zachować, ale przed każdym użyciem musi ją odświeżyć warunkowo. Bez
+         *     tego heurystyka pamięci podręcznej pokazałaby nieaktualną tabelę,
+         *     a walidator nigdy nie doszedłby do serwera.
+         *
+         *     Nagłówek jest listą dyrektyw, więc kontrakt wymaga obecności
+         *     `no-cache`, a nie konkretnego napisu — Laravel domyślnie oddaje
+         *     `no-cache, private` i to jest zgodne.
+         * @example no-cache, private
+         */
+        CacheControl: string;
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;

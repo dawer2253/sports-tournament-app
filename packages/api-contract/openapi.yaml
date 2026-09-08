@@ -39,6 +39,13 @@ info:
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
       kolekcje w obrębie jednego turnieju (drużyny, zawodnicy, obiekty) oraz
       wszystkie endpointy publiczne wracają w całości.
+    - Strona publiczna odpytuje część endpointów `/public/*` cyklicznie, więc
+      walidator niesie każdy z nich — jednakowo, żeby zachowanie nie zależało
+      od tego, który widok akurat go użyje. Odpowiedź ma `ETag` i
+      `Cache-Control` z `no-cache`, a na zgodny `If-None-Match` wraca `304`
+      z pustym ciałem. To jedyne miejsce w kontrakcie, które opisuje
+      nagłówki odpowiedzi — powód siedzi w
+      [ADR-0007](../../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 
 servers:
   - url: http://localhost:8000/api/v1
@@ -1101,6 +1108,7 @@ paths:
   /public/t/{slug}:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
     get:
       tags: [Public]
       summary: Publiczna strona turnieju
@@ -1113,6 +1121,9 @@ paths:
       responses:
         '200':
           description: Turniej w wersji publicznej
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
@@ -1143,11 +1154,13 @@ paths:
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/standings:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
     get:
       tags: [Public]
       summary: Tabele turnieju
@@ -1162,6 +1175,9 @@ paths:
       responses:
         '200':
           description: Tabele
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
@@ -1200,6 +1216,7 @@ paths:
                         rows:
                           - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4 }
                           - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2 }
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/matches:
@@ -1213,6 +1230,7 @@ paths:
           bez stronicowania. Faza nienależąca do turnieju daje puste `data`,
           nie `404`: `404` jest tu odpowiedzią o turnieju.
         schema: { type: integer, format: int64 }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
     get:
       tags: [Public]
       summary: Mecze fazy, bez filtrowania po stanie
@@ -1240,6 +1258,9 @@ paths:
       responses:
         '200':
           description: Mecze fazy
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
@@ -1473,11 +1494,13 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/fixtures:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
     get:
       tags: [Public]
       summary: Terminarz (mecze jeszcze nierozegrane)
@@ -1488,6 +1511,9 @@ paths:
       responses:
         '200':
           description: Mecze o stanie innym niż zakończony, rosnąco po terminie
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
@@ -1550,11 +1576,13 @@ paths:
                     winnerToMatchId: null
                     loserToMatchId: null
                     advancesToSlot: null
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/results:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
     get:
       tags: [Public]
       summary: Wyniki (mecze zakończone)
@@ -1565,6 +1593,9 @@ paths:
       responses:
         '200':
           description: Mecze zakończone, malejąco po terminie
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
@@ -1627,11 +1658,13 @@ paths:
                     winnerToMatchId: null
                     loserToMatchId: null
                     advancesToSlot: null
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
   /public/t/{slug}/top-scorers:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
     get:
       tags: [Public]
       summary: Klasyfikacja indywidualna
@@ -1643,6 +1676,9 @@ paths:
       responses:
         '200':
           description: Klasyfikacja zawodników
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
           content:
             application/json:
               schema:
@@ -1660,6 +1696,7 @@ paths:
                     - { position: 3, player: { id: 3, name: Jakub Wrona }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 1 }
                     - { position: 3, player: { id: 4, name: Tomasz Lis }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 1 }
                     - { position: 3, player: { id: 7, name: Rafał Duda }, team: { id: 3, name: Orły Bielany, logoUrl: null }, value: 1 }
+        '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
 components:
@@ -1695,8 +1732,51 @@ components:
       in: path
       required: true
       schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: |
+        Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+        zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+        pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+        frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+        podręcznej: testy kontraktowe i integracje.
+      schema: { type: string }
+      example: '"9f2b1c4e"'
+
+  headers:
+    ETag:
+      description: |
+        Walidator treści odpowiedzi, nieprzezroczysty dla klienta. Zmienia się
+        wtedy i tylko wtedy, gdy zmienia się `data`.
+      required: true
+      schema: { type: string }
+      example: '"9f2b1c4e"'
+    CacheControl:
+      description: |
+        Musi zawierać dyrektywę `no-cache`: przeglądarka może odpowiedź
+        zachować, ale przed każdym użyciem musi ją odświeżyć warunkowo. Bez
+        tego heurystyka pamięci podręcznej pokazałaby nieaktualną tabelę,
+        a walidator nigdy nie doszedłby do serwera.
+
+        Nagłówek jest listą dyrektyw, więc kontrakt wymaga obecności
+        `no-cache`, a nie konkretnego napisu — Laravel domyślnie oddaje
+        `no-cache, private` i to jest zgodne.
+      required: true
+      schema:
+        type: string
+        pattern: '(^|,)\s*no-cache\s*(,|$)'
+      example: no-cache, private
 
   responses:
+    NotModified:
+      description: |
+        Treść nie zmieniła się od walidatora podanego w `If-None-Match`.
+        Ciało jest puste — poprzednia odpowiedź pozostaje aktualna.
+      headers:
+        ETag: { $ref: '#/components/headers/ETag' }
+        Cache-Control: { $ref: '#/components/headers/CacheControl' }
     Unauthenticated:
       description: Brak lub nieważny token
       content:

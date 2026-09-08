@@ -125,3 +125,14 @@ co panel.
 `packages/api-contract/openapi.yaml` jest jedynym źródłem prawdy o API. Backend
 kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec →
 `npm run contract:generate` → kod. Szczegóły w [rootowym `AGENTS.md`](../AGENTS.md).
+
+**Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
+kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
+Dla backendu wynikają z tego dwie rzeczy. **Spectator asertuje samo ciało
+odpowiedzi**, więc walidator wymaga własnych asercji w Peście, pisanych razem
+z endpointem — to część jego definicji gotowości, nie osobny ticket. Oraz:
+**`If-None-Match` nie jest w CORS nagłówkiem bezpiecznym**, więc klient, który
+ustawia go jawnie z przeglądarki (a nie zostawia rewalidację pamięci
+podręcznej), wywoła preflight. Dziś przechodzi, bo `allowed_headers`
+w [`config/cors.php`](config/cors.php) to `['*']` — zawężając kiedyś tę listę,
+zostaw w niej `If-None-Match`.
