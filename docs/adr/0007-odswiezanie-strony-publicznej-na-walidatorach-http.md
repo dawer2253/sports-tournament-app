@@ -15,7 +15,9 @@ odczycie. Przy meczu oglądanym przez kilkadziesiąt osób to policzalny koszt z
 zero nowej informacji — i pasmo, i procesor.
 
 Kontrakt nie miał czym tego wyrazić. Do tej pory nie opisywał **żadnych**
-nagłówków odpowiedzi: v0.1 mówiła wyłącznie o kształcie ciała.
+nagłówków odpowiedzi: v0.1 mówiła wyłącznie o kształcie ciała. A skoro
+[ADR-0001](0001-kontrakt-openapi-jako-zrodlo-prawdy.md) czyni kontrakt jedynym
+źródłem prawdy o API, mechanizm nieopisany w kontrakcie po prostu nie istnieje.
 
 Temat wypłynął przy przeglądzie kontraktu v0.1 i został świadomie odłożony,
 żeby nie blokować pozostałych zmian (#14).
@@ -51,11 +53,16 @@ walidator, dopóki wynik przeliczenia jest ten sam, więc mecz bez zmiany wyniku
 nie unieważnia niczyjej pamięci podręcznej. Dla klienta walidator jest
 nieprzezroczysty — kontrakt nie obiecuje, jak jest liczony.
 
-**`Cache-Control: no-cache` jest częścią mechanizmu, nie ozdobą.**
-Bez niego przeglądarka stosuje heurystykę: albo poda nieaktualną tabelę
+**`Cache-Control` z `no-cache` jest częścią mechanizmu, nie ozdobą.**
+Bez tego przeglądarka stosuje heurystykę: albo poda nieaktualną tabelę
 z pamięci, albo w ogóle nie odpyta warunkowo. `no-cache` znaczy „przechowuj,
 ale przed każdym użyciem odśwież" i to jest dokładnie zachowanie, którego
 odpytywanie potrzebuje.
+
+Kontrakt wymaga **obecności dyrektywy**, nie konkretnego napisu: nagłówek jest
+listą, a Laravel domyślnie oddaje `no-cache, private`. Zapis przez `const`
+odrzuciłby poprawną odpowiedź frameworka i wywrócił się na pierwszym
+implementującym.
 
 **Frontend nie dotyka `If-None-Match`.** Przeglądarka wysyła go sama, ze swojej
 pamięci podręcznej, i sama zamienia `304` z powrotem na `200` z zachowanym

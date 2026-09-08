@@ -126,16 +126,8 @@ co panel.
 kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec →
 `npm run contract:generate` → kod. Szczegóły w [rootowym `AGENTS.md`](../AGENTS.md).
 
-**Endpointy `/public/*` niosą walidator HTTP.** Kontrakt wymaga przy `200`
-nagłówków `ETag` i `Cache-Control: no-cache` oraz odpowiedzi `304` na zgodny
-`If-None-Match` — strona publiczna odpytuje je cyklicznie. To część definicji
-gotowości tych endpointów, nie osobny ticket; powody opisuje
-[ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
-Spectator asertuje ciało odpowiedzi, więc nagłówki i `304` potrzebują własnych
-asercji w Peście.
-
-Sam mechanizm CORS-u nie dotyczy — odświeżanie warunkowe robi pamięć podręczna
-przeglądarki, nie JavaScript. Dopiero klient, który chciałby odczytać `ETag`
-z poziomu skryptu, potrzebuje go w `exposed_headers` w
-[`config/cors.php`](config/cors.php); dziś ta lista jest pusta i nie ma powodu,
-żeby to zmieniać.
+**Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
+kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
+Dla backendu wynika z tego jedno: **Spectator asertuje samo ciało odpowiedzi**,
+więc walidator wymaga własnych asercji w Peście, pisanych razem z endpointem.
+To część jego definicji gotowości, nie osobny ticket.

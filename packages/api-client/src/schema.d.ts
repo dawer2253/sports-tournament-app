@@ -2909,13 +2909,17 @@ export interface components {
          */
         ETag: string;
         /**
-         * @description Zawsze `no-cache`: przeglądarka może odpowiedź zachować, ale przed
-         *     każdym użyciem musi ją odświeżyć warunkowo. Bez tego heurystyka
-         *     pamięci podręcznej pokazałaby nieaktualną tabelę, a walidator nigdy
-         *     nie doszedłby do serwera.
-         * @example no-cache
+         * @description Musi zawierać dyrektywę `no-cache`: przeglądarka może odpowiedź
+         *     zachować, ale przed każdym użyciem musi ją odświeżyć warunkowo. Bez
+         *     tego heurystyka pamięci podręcznej pokazałaby nieaktualną tabelę,
+         *     a walidator nigdy nie doszedłby do serwera.
+         *
+         *     Nagłówek jest listą dyrektyw, więc kontrakt wymaga obecności
+         *     `no-cache`, a nie konkretnego napisu — Laravel domyślnie oddaje
+         *     `no-cache, private` i to jest zgodne.
+         * @example no-cache, private
          */
-        CacheControl: "no-cache";
+        CacheControl: string;
     };
     pathItems: never;
 }

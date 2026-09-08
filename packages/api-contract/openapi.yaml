@@ -39,9 +39,11 @@ info:
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
       kolekcje w obrębie jednego turnieju (drużyny, zawodnicy, obiekty) oraz
       wszystkie endpointy publiczne wracają w całości.
-    - Endpointy `/public/*` są odpytywane cyklicznie, więc każdy z nich niesie
-      `ETag` i `Cache-Control: no-cache`, a na zgodny `If-None-Match` odpowiada
-      `304` z pustym ciałem. To jedyne miejsce w kontrakcie, które opisuje
+    - Strona publiczna odpytuje część endpointów `/public/*` cyklicznie, więc
+      walidator niesie każdy z nich — jednakowo, żeby zachowanie nie zależało
+      od tego, który widok akurat go użyje. Odpowiedź ma `ETag` i
+      `Cache-Control` z `no-cache`, a na zgodny `If-None-Match` wraca `304`
+      z pustym ciałem. To jedyne miejsce w kontrakcie, które opisuje
       nagłówki odpowiedzi — powód siedzi w
       [ADR-0007](../../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 
@@ -1753,13 +1755,19 @@ components:
       example: '"9f2b1c4e"'
     CacheControl:
       description: |
-        Zawsze `no-cache`: przeglądarka może odpowiedź zachować, ale przed
-        każdym użyciem musi ją odświeżyć warunkowo. Bez tego heurystyka
-        pamięci podręcznej pokazałaby nieaktualną tabelę, a walidator nigdy
-        nie doszedłby do serwera.
+        Musi zawierać dyrektywę `no-cache`: przeglądarka może odpowiedź
+        zachować, ale przed każdym użyciem musi ją odświeżyć warunkowo. Bez
+        tego heurystyka pamięci podręcznej pokazałaby nieaktualną tabelę,
+        a walidator nigdy nie doszedłby do serwera.
+
+        Nagłówek jest listą dyrektyw, więc kontrakt wymaga obecności
+        `no-cache`, a nie konkretnego napisu — Laravel domyślnie oddaje
+        `no-cache, private` i to jest zgodne.
       required: true
-      schema: { type: string, const: no-cache }
-      example: no-cache
+      schema:
+        type: string
+        pattern: '(^|,)\s*no-cache\s*(,|$)'
+      example: no-cache, private
 
   responses:
     NotModified:
