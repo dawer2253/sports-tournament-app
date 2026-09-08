@@ -36,6 +36,10 @@ Wynika z tego kilka rzeczy, które zaskakują przy pierwszym użyciu:
   przykład w `openapi.yaml`, nie obok niego.
 - `npm run mock:strict` dokłada walidację żądań: mock odrzuca to, co nie zgadza
   się z kontraktem. Przydatne przy sprawdzaniu formularzy.
+- Walidatory HTTP na `/public/*` mock oddaje tylko z nazwy: `ETag` jest w nim
+  stałą wziętą z przykładu, a na `If-None-Match` odpowiada `200`, nigdy `304`.
+  Zachowanie warunkowe sprawdza się na Laravelu — patrz
+  [ADR 0007](../../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 
 ## Zakres
 
