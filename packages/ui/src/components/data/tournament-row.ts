@@ -14,3 +14,17 @@ export type TournamentRow = {
   sport: { name: string }
   teamsCount: number
 }
+
+/**
+ * Etykieta i wariant odznaki statusu. Mieszka przy typie, bo status pokazują
+ * dwa widoki tej samej listy — tabela turniejów i kafle na dashboardzie —
+ * a dwie kopie mapy rozjechałyby się na pierwszej nowej wartości `status`.
+ */
+export const TOURNAMENT_STATUS_BADGE: Record<
+  TournamentRow['status'],
+  { label: string; variant: 'default' | 'secondary' | 'outline' }
+> = {
+  draft: { label: 'Szkic', variant: 'secondary' },
+  active: { label: 'Trwa', variant: 'default' },
+  finished: { label: 'Zakończony', variant: 'outline' },
+}
