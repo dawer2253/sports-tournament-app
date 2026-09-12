@@ -26,6 +26,16 @@ class Tournament extends Model
     use GuardsFinishedMatches;
     use HasFactory;
 
+    /**
+     * Stany turnieju, w kolejności z kontraktu (`TournamentStatus`). Lista jest
+     * powtórzeniem enuma z migracji `create_tournaments_table` — trzymamy ją tu,
+     * bo walidacja filtra potrzebuje jej w PHP, a odczytanie definicji kolumny
+     * z bazy byłoby droższe i mniej czytelne niż ta jedna stała.
+     *
+     * @var list<string>
+     */
+    public const STATUSES = ['draft', 'active', 'finished'];
+
     protected function casts(): array
     {
         return [

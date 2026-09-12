@@ -46,7 +46,12 @@ export interface ApiClientOptions {
 }
 
 export function createApiClient({ baseUrl, getToken, onUnauthenticated }: ApiClientOptions) {
-  const client = createClient<paths>({ baseUrl });
+  // Tablice w query jadą po przecinku, a nie przez powtórzony klucz — powód
+  // i konsekwencje opisuje docs/adr/0008-filtr-status-jedzie-lista-po-przecinku.md.
+  const client = createClient<paths>({
+    baseUrl,
+    querySerializer: { array: { style: 'form', explode: false } },
+  });
 
   const middleware: Middleware = {
     onRequest({ request }) {
