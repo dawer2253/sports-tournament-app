@@ -1,11 +1,11 @@
 import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table'
 import { AlertTriangle, Trophy } from 'lucide-react'
-import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { EmptyState } from '../ui/empty-state'
 import { Skeleton } from '../ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import { TOURNAMENT_STATUS_BADGE, type TournamentRow } from './tournament-row'
+import type { TournamentRow } from './tournament-row'
+import { TournamentStatusBadge } from './tournament-status-badge'
 
 export type { TournamentRow }
 
@@ -40,10 +40,7 @@ const columns = helper.columns([
   helper.accessor('teamsCount', { header: 'Drużyny' }),
   helper.accessor('status', {
     header: 'Status',
-    cell: ({ getValue }) => {
-      const badge = TOURNAMENT_STATUS_BADGE[getValue()]
-      return <Badge variant={badge.variant}>{badge.label}</Badge>
-    },
+    cell: ({ getValue }) => <TournamentStatusBadge status={getValue()} />,
   }),
   helper.accessor('slug', {
     header: 'Adres publiczny',
