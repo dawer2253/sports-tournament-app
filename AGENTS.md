@@ -69,13 +69,20 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 ### Testy frontendu
 
 `npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
-`test` — na razie tylko `apps/admin` (vitest + Testing Library + msw, jsdom).
+`test` — dziś `apps/admin` i `apps/public` (vitest + Testing Library + msw,
+jsdom). Obie aplikacje mają ten sam układ: `vitest.config.ts` osobno od
+`vite.config.ts` oraz `src/test/{server,setup}.ts`.
 
-Żądania w testach panelu przechwytuje msw. Jedna pułapka jest na tyle kosztowna,
-że warto o niej wiedzieć przed pierwszym testem: `server.listen()` musi siedzieć
-**w zasięgu modułu** `apps/admin/src/test/setup.ts`, nie w `beforeAll` — inaczej
-dostajesz ciche `TypeError: fetch failed`. Powód siedzi w komentarzu przy
-`apps/admin/src/test/server.ts`, razem z zasadą, że handlerów domyślnych nie ma.
+Żądania w testach obu aplikacji przechwytuje msw. Jedna pułapka jest na tyle
+kosztowna, że warto o niej wiedzieć przed pierwszym testem: `server.listen()`
+musi siedzieć **w zasięgu modułu** pliku `src/test/setup.ts` danej aplikacji,
+nie w `beforeAll` — inaczej dostajesz ciche `TypeError: fetch failed`. Powód
+siedzi w komentarzu przy `src/test/server.ts`, razem z zasadą, że handlerów
+domyślnych nie ma, a `onUnhandledRequest: 'error'` pilnuje reszty.
+
+Wybór tego mechanizmu — zamiast testów kontraktowych po mocku albo Chromatica
+rozciągniętego na aplikacje — rozstrzyga
+[#37](https://github.com/dawer2253/sports-tournament-app/issues/37).
 
 ## Zasady globalne
 
