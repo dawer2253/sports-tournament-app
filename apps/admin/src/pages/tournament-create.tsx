@@ -1,20 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Sport, TournamentCreate } from '@tournament/api-client';
-import {
-  AdminShell,
-  Button,
-  Card,
-  CardContent,
-  EmptyState,
-  Input,
-  Label,
-  Skeleton,
-  type AdminNavKey,
-} from '@tournament/ui';
+import { Button, Card, CardContent, EmptyState, Input, Label, Skeleton } from '@tournament/ui';
 import { AlertTriangle } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
+import { AdminPage } from '../components/admin-page';
 import { ChoiceCards } from '../components/choice-cards';
 import { api } from '../lib/api';
 import { applyApiError } from '../lib/form-errors';
@@ -23,16 +14,9 @@ import {
   tournamentCreateSchema,
   type TournamentCreateValues,
 } from '../lib/tournament-create-schema';
-import { clearToken } from '../lib/session';
-import { useAccount } from '../lib/use-account';
 
-/** Pozycje nawigacji, które mają już swój ekran. */
-const NAV_ROUTES: Partial<Record<AdminNavKey, string>> = {
-  dashboard: '/',
-};
-
-/** Pola, które formularz umie podświetlić przy błędzie z API. */
-const FIELDS = ['name', 'sportId', 'format'] as const;
+/** Pola, które formularz umie podświetlić przy błędzie walidacji z API. */
+const ERROR_FIELDS = ['name', 'sportId', 'format'] as const;
 
 /**
  * Emoji przy sporcie, jak w makiecie. Kontrakt nie przysyła ikony, a `code` jest
@@ -47,7 +31,6 @@ const SPORT_EMOJI: Partial<Record<Sport['code'], string>> = {
 export function TournamentCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const account = useAccount();
 
   const sports = useQuery({
     queryKey: ['sports'],
@@ -82,7 +65,7 @@ export function TournamentCreatePage() {
     const { error } = await api.POST('/tournaments', { body });
 
     if (error) {
-      applyApiError(error, FIELDS, setError);
+      applyApiError(error, ERROR_FIELDS, setError);
       return;
     }
 
@@ -102,20 +85,10 @@ export function TournamentCreatePage() {
   }));
 
   return (
-    <AdminShell
+    <AdminPage
       active="dashboard"
       title="Nowy turniej"
       subtitle="Nazwa, sport i format. Drużyny i terminarz dołożysz później."
-      user={account}
-      navHref={(key) => NAV_ROUTES[key]}
-      onNavigate={(key) => {
-        const route = NAV_ROUTES[key];
-        if (route) void navigate(route);
-      }}
-      onLogout={() => {
-        clearToken();
-        void navigate('/login');
-      }}
     >
       {sports.status === 'error' ? (
         // Bez listy sportów formularza nie da się wypełnić, więc nie pokazujemy
@@ -171,7 +144,6 @@ export function TournamentCreatePage() {
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       errorMessage={errors.sportId?.message}
-                      errorId="sportId-error"
                       className="lg:grid-cols-2"
                     />
                   )}
@@ -190,7 +162,6 @@ export function TournamentCreatePage() {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     errorMessage={errors.format?.message}
-                    errorId="format-error"
                   />
                 )}
               />
@@ -215,6 +186,6 @@ export function TournamentCreatePage() {
           </div>
         </form>
       )}
-    </AdminShell>
+    </AdminPage>
   );
 }

@@ -46,6 +46,24 @@ describe('applyApiError', () => {
     expect(setError).toHaveBeenCalledWith('sportId', { message: 'Nie ma takiego sportu.' });
   });
 
+  it('przy mieszanym 422 nie gubi pola, którego formularz nie zna', () => {
+    const setError = vi.fn();
+
+    applyApiError(
+      {
+        message: 'Podane dane są nieprawidłowe.',
+        errors: { name: ['Nazwa zajęta.'], startDate: ['Data jest wymagana.'] },
+      },
+      FIELDS,
+      setError,
+    );
+
+    expect(setError).toHaveBeenCalledWith('name', { message: 'Nazwa zajęta.' });
+    // Błąd przy polu, którego formularz nie zna, i tak musi być widoczny —
+    // inaczej organizer poprawia nazwę i dostaje to samo 422 bez wyjaśnienia.
+    expect(setError).toHaveBeenCalledWith('root', { message: 'Data jest wymagana.' });
+  });
+
   it('wrzuca do `root` błąd pola, którego formularz nie zna — komunikat nie może przepaść', () => {
     const setError = vi.fn();
 

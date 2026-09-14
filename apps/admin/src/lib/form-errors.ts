@@ -39,11 +39,21 @@ export function applyApiError<TField extends string>(
       setError(field, { message });
     }
 
-    if (known.length > 0) return;
+    // Pola, których formularz nie umie podświetlić, trafiają nad przycisk —
+    // także wtedy, gdy obok nich przyszło pole znane. Inaczej organizer
+    // poprawia to, co widzi, i dostaje to samo 422 bez wyjaśnienia.
+    const unknown = entries.filter(([field]) => !fields.includes(field as TField));
 
-    // 422 bez pola, które formularz zna: pierwszy komunikat z mapy mówi więcej
-    // niż ogólne „Podane dane są nieprawidłowe.", więc bierzemy go, gdy jest.
-    setError('root', { message: entries[0]?.[1] || error.message || FALLBACK_MESSAGE });
+    if (unknown.length > 0) {
+      setError('root', { message: unknown.map(([, message]) => message).join(' ') });
+      return;
+    }
+
+    // 422 z pustą mapą pól: zostaje komunikat ogólny.
+    if (known.length === 0) {
+      setError('root', { message: error.message || FALLBACK_MESSAGE });
+    }
+
     return;
   }
 

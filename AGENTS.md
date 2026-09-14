@@ -71,14 +71,11 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 `npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
 `test` — na razie tylko `apps/admin` (vitest + Testing Library + msw, jsdom).
 
-Żądania w testach panelu przechwytuje msw, a jego `server.listen()` siedzi
-**w zasięgu modułu** `apps/admin/src/test/setup.ts`, nie w `beforeAll`. Powód
-jest twardy: `openapi-fetch` zapamiętuje `globalThis.fetch` w chwili tworzenia
-klienta, czyli przy imporcie `lib/api.ts`, a hooki odpalają się dopiero po
-zaimportowaniu pliku testowego. Przeniesienie tego do `beforeAll` kończy się
-cichym `TypeError: fetch failed`. Handlerów domyślnych nie ma — każdy test
-dokłada swoje przez `server.use(...)`, a `onUnhandledRequest: 'error'` pilnuje,
-żeby żadne żądanie nie przeszło niezauważone.
+Żądania w testach panelu przechwytuje msw. Jedna pułapka jest na tyle kosztowna,
+że warto o niej wiedzieć przed pierwszym testem: `server.listen()` musi siedzieć
+**w zasięgu modułu** `apps/admin/src/test/setup.ts`, nie w `beforeAll` — inaczej
+dostajesz ciche `TypeError: fetch failed`. Powód siedzi w komentarzu przy
+`apps/admin/src/test/server.ts`, razem z zasadą, że handlerów domyślnych nie ma.
 
 ## Zasady globalne
 

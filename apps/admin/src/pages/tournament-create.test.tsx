@@ -168,11 +168,20 @@ describe('TournamentCreatePage', () => {
   });
 
   it('blokuje przycisk na czas wysyłki, żeby nie założyć turnieju dwa razy', async () => {
+    // Odpowiedź wisi, dopóki test jej nie zwolni. Zwykłe `setTimeout` robiło
+    // z tego wyścig: gdy żądanie zdążyło się domknąć między jednym a drugim
+    // kliknięciem, przycisk był już z powrotem aktywny i test przechodził
+    // albo nie, zależnie od maszyny.
+    let release!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
     let requests = 0;
     server.use(
       http.post(`${API}/tournaments`, async () => {
         requests += 1;
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await pending;
         return HttpResponse.json({ data: { id: 7 } }, { status: 201 });
       }),
     );
@@ -185,8 +194,10 @@ describe('TournamentCreatePage', () => {
     await waitFor(() => expect(button).toBeDisabled());
     await user.click(button);
 
-    await screen.findByText('Lista turniejów');
     expect(requests).toBe(1);
+
+    release();
+    await screen.findByText('Lista turniejów');
   });
 
   it('kafelek ma nazwę bez opisu, a opis jako opis', async () => {

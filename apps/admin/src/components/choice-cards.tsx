@@ -21,8 +21,6 @@ export interface ChoiceCardsProps<T extends string | number> {
   onChange: (value: T) => void;
   onBlur?: () => void;
   errorMessage?: string;
-  /** Id komunikatu błędu, wskazywane przez `aria-describedby` grupy. */
-  errorId?: string;
   className?: string;
 }
 
@@ -53,10 +51,10 @@ export function ChoiceCards<T extends string | number>({
   onChange,
   onBlur,
   errorMessage,
-  errorId,
   className,
 }: ChoiceCardsProps<T>) {
   const groupId = useId();
+  const errorId = `${groupId}-error`;
 
   return (
     <fieldset aria-describedby={errorMessage ? errorId : undefined}>
