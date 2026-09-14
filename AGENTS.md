@@ -64,7 +64,21 @@ Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 
 Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
-`typecheck`, `build`.
+`typecheck`, `test`, `build`.
+
+### Testy frontendu
+
+`npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
+`test` — na razie tylko `apps/admin` (vitest + Testing Library + msw, jsdom).
+
+Żądania w testach panelu przechwytuje msw, a jego `server.listen()` siedzi
+**w zasięgu modułu** `apps/admin/src/test/setup.ts`, nie w `beforeAll`. Powód
+jest twardy: `openapi-fetch` zapamiętuje `globalThis.fetch` w chwili tworzenia
+klienta, czyli przy imporcie `lib/api.ts`, a hooki odpalają się dopiero po
+zaimportowaniu pliku testowego. Przeniesienie tego do `beforeAll` kończy się
+cichym `TypeError: fetch failed`. Handlerów domyślnych nie ma — każdy test
+dokłada swoje przez `server.use(...)`, a `onUnhandledRequest: 'error'` pilnuje,
+żeby żadne żądanie nie przeszło niezauważone.
 
 ## Zasady globalne
 
@@ -102,7 +116,7 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, build oraz job backendu (Pint w trybie `--test`, Pest; testy
+  lint, typy, testy frontendu, build oraz job backendu (Pint w trybie `--test`, Pest; testy
   Spectatora są bramką zgodności z `openapi.yaml`). Backend chodzi tam
   **natywnie, bez Saila**, a jego job odpala się tylko przy zmianach w
   `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki

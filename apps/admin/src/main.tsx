@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router';
 import './index.css';
 import { LoginPage } from './pages/login';
+import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentsPage } from './pages/tournaments';
 import { getToken } from './lib/session';
 
@@ -24,6 +25,14 @@ const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <TournamentsPage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/tournaments/new',
+    element: (
+      <RequireAuth>
+        <TournamentCreatePage />
       </RequireAuth>
     ),
   },
