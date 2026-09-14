@@ -1,6 +1,7 @@
 import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table'
 import { AlertTriangle, ArrowUpRight, Trophy } from 'lucide-react'
 import * as React from 'react'
+import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { EmptyState } from '../ui/empty-state'
@@ -66,17 +67,23 @@ const dataColumns = helper.columns([
   }),
 ])
 
+const ACTIONS_COLUMN_ID = 'actions'
+
+/**
+ * Klasa komórki kolumny akcji — jedna dla nagłówka i dla wiersza, żeby obie
+ * strony tabeli nie rozjechały się przy zmianie. `w-0` zwęża kolumnę do treści
+ * przycisku: nadwyżka szerokości ma zostać w kolumnach z danymi.
+ */
+function actionsCellClass(columnId: string) {
+  return cn(columnId === ACTIONS_COLUMN_ID && 'w-0 text-right')
+}
+
 /**
  * Kolumna akcji domyka wiersz (#26). Pięć krótkich kolumn rozciągało się na całą
  * szerokość obszaru treści i zostawiało ~220 px pustki za ostatnią z nich; wąska
  * kolumna wyrównana do prawej zajmuje tę nadwyżkę czymś, co ma sens, zamiast
  * przesuwać pustkę w inne miejsce.
  */
-const ACTIONS_COLUMN_ID = 'actions'
-
-/** Kolumna akcji nie rozpycha się: `w-0` zwęża ją do treści przycisku. */
-const ACTIONS_CELL_CLASS = 'w-0 text-right'
-
 function actionsColumn(onOpen: (tournament: TournamentRow) => void) {
   return helper.display({
     id: ACTIONS_COLUMN_ID,
@@ -151,7 +158,7 @@ export function TournamentsTable({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
-                  className={header.column.id === ACTIONS_COLUMN_ID ? ACTIONS_CELL_CLASS : undefined}
+                  className={actionsCellClass(header.column.id)}
                 >
                   <table.FlexRender header={header} />
                 </TableHead>
@@ -179,7 +186,7 @@ export function TournamentsTable({
                   {row.getAllCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={cell.column.id === ACTIONS_COLUMN_ID ? ACTIONS_CELL_CLASS : undefined}
+                      className={actionsCellClass(cell.column.id)}
                     >
                       <table.FlexRender cell={cell} />
                     </TableCell>

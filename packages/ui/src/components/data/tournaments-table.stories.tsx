@@ -30,7 +30,7 @@ export const Domyslny: Story = {
 
 /**
  * Wariant (a) z #26: wąska kolumna akcji domyka wiersz o coś, co ma sens, i daje
- * wejście w turniej. Nazwa dostępna jest per wiersz, bo trzy przyciski „Otwórz”
+ * wejście w turniej. Nazwa dostępna jest per wiersz, bo trzy przyciski „Otwórz"
  * obok siebie brzmiałyby dla czytnika ekranu identycznie.
  */
 export const Akcja: Story = {
