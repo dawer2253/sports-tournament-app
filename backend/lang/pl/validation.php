@@ -133,7 +133,7 @@ return [
         'mixed' => 'Pole :attribute musi zawierać co najmniej jedną wielką i jedną małą literę.',
         'numbers' => 'Pole :attribute musi zawierać co najmniej jedną cyfrę.',
         'symbols' => 'Pole :attribute musi zawierać co najmniej jeden znak specjalny.',
-        'uncompromised' => 'Podane :attribute wystąpiło w wycieku danych. Wybierz inne.',
+        'uncompromised' => 'Pole :attribute wystąpiło w wycieku danych. Wybierz inną wartość.',
     ],
     'present' => 'Pole :attribute musi występować.',
     'present_if' => 'Pole :attribute musi występować, gdy :other ma wartość :value.',
@@ -167,7 +167,7 @@ return [
     'starts_with' => 'Pole :attribute musi zaczynać się jedną z wartości: :values.',
     'string' => 'Pole :attribute musi być ciągiem znaków.',
     'timezone' => 'Pole :attribute musi być poprawną strefą czasową.',
-    'unique' => 'Podane :attribute jest już zajęte.',
+    'unique' => 'Pole :attribute jest już zajęte.',
     'uploaded' => 'Nie udało się wgrać pola :attribute.',
     'uppercase' => 'Pole :attribute musi być zapisane wielkimi literami.',
     'url' => 'Pole :attribute musi być poprawnym adresem URL.',
@@ -178,13 +178,14 @@ return [
     |--------------------------------------------------------------------------
     | Komunikaty dla konkretnych pól
     |--------------------------------------------------------------------------
+    |
+    | Klucze w postaci `pole.reguła`, gdy komunikat ogólny jest dla organizera
+    | za mało konkretny. Pusto, bo dziś takiego przypadku nie ma — szkieletowy
+    | wpis `attribute-name.rule-name` wypadł, bo był angielski i martwy.
+    |
     */
 
-    'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
-        ],
-    ],
+    'custom' => [],
 
     /*
     |--------------------------------------------------------------------------
