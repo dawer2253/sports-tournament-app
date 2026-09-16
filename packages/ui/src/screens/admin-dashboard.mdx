@@ -1,0 +1,39 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-dashboard.stories'
+
+<Meta of={Stories} />
+
+# Dashboard (Admin): specyfikacja
+
+Ekran startowy panelu organizera: liczniki u góry, pod nimi kafle turniejów.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Dać organizatorowi jedno spojrzenie na to, co się dzieje w jego turniejach, i wejście do każdego z nich.
+
+## Dane (wejście)
+- `tournamentList` z `lib/demo-data.ts` — jedno źródło turniejów, wspólne z `UI/Tabela turniejów`. Kafel bierze stąd nazwę, sport, liczbę drużyn i status.
+- `tiles` (lokalne, po `id` turnieju) — warstwa prezentacyjna: ikona, format rozgrywek, postęp terminarza, stopka. Wyłącznie to, czego nie ma na liście.
+- Liczniki: „Aktywne turnieje" i „Drużyny" liczą się z `tournamentList`; „Mecze (30 dni)" i „Odsłony public" to dane demo, bo lista nie zna ani okna czasu, ani ruchu na stronie publicznej.
+
+## Reguły
+- Format rozgrywek jest jedynym polem kafla spoza `tournamentList`: nie ma go ani tam, ani w `Tournament` z kontraktu. Ikona go powtarza, więc nie niesie treści, której nie da się przeczytać.
+- Odznaka statusu idzie przez `TournamentStatusBadge`, wspólny z tabelą turniejów.
+- Turniej dopisany do `tournamentList` bez wpisu w `tiles` pokazuje kafel bez warstwy prezentacyjnej, z ikoną zastępczą. Dashboard nie znika przez brakującą ikonę.
+
+## Stany
+- **Trwa** (`active`): pasek postępu terminarza, stopka z kolejką.
+- **Szkic** (`draft`): bez paska, stopka mówi, że terminarza nie ma.
+- **Zakończony** (`finished`): bez paska, w stopce puchar i zwycięzca.
+- **Brak turniejów**: pusta siatka (TODO — `EmptyState` jak w tabeli turniejów).
+
+## Zachowanie
+- Kafel jest klikalny w całości (TODO: nawigacja do turnieju); strzałka przy tytule zapowiada przejście.
+- Przycisk „Nowy turniej" w nagłówku prowadzi do ekranu zakładania turnieju (TODO).
+- Responsywność: jedna kolumna, dwie od `md`, trzy od `lg`; liczniki dwie kolumny od `sm`, cztery od `lg`.
+
+## Otwarte pytania
+- Czy postęp terminarza liczyć z rozegranych meczów, gdy wejdą endpointy silnika rozgrywek?
+- Czy format rozgrywek powinien wejść do kontraktu (`Tournament`), skoro ekran go pokazuje?
+- Czy liczniki „Mecze (30 dni)" i „Odsłony public" mają własny endpoint, czy liczy je panel?
