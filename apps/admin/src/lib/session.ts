@@ -25,10 +25,17 @@ export function setToken(token: string): void {
  *
  * Token czyścimy zawsze, przekierowanie pomijamy, gdy już jesteśmy na
  * logowaniu — inaczej 401 z samego `/login` robiłby pętlę przeładowań.
+ *
+ * Przekierowanie idzie przez `replace`, nie `assign`: panel ma zniknąć z
+ * historii, żeby „Wstecz" po wylogowaniu nie wracało na widok, z którego guard
+ * i tak natychmiast odbija. Przy okazji drugie wywołanie `endSession()` — gdy
+ * `POST /logout` zwróci 401 i odpali też ścieżkę `onUnauthenticated` — nie
+ * dokłada wtedy kolejnego wpisu do historii. Tę samą semantykę ma już
+ * `RequireAuth` w `main.tsx` (`<Navigate … replace />`).
  */
 export function endSession(): void {
   localStorage.removeItem(TOKEN_KEY);
   if (window.location.pathname !== LOGIN_PATH) {
-    window.location.assign(LOGIN_PATH);
+    window.location.replace(LOGIN_PATH);
   }
 }
