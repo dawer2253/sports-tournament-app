@@ -133,3 +133,26 @@ Domyślne, kanoniczne etykiety (`needs-triage`, `needs-info`, `ready-for-agent`,
 
 Single-context: `CONTEXT.md` + `docs/adr/` w rootcie. Zobacz
 [`docs/agents/domain.md`](docs/agents/domain.md).
+
+### Twierdzenia o stanie repo
+
+Dotyczy wszystkiego, co agent publikuje poza kodem: briefów triage'owych,
+komentarzy w trackerze, opisów PR-ów, przeglądów.
+
+- **Twierdzenie o stanie repo wymaga polecenia, które je pokazuje.** Nie
+  „`apps/admin` ma vitest", tylko „`grep vitest apps/admin/package.json`".
+  Czytelnik ma móc wkleić to polecenie i zobaczyć to samo. Zmyślenie wyniku
+  polecenia jest znacznie trudniejsze niż zmyślenie samego zdania — i o to chodzi.
+- **Czego nie sprawdziłeś, tego nie twierdź — napisz, że nie sprawdziłeś.**
+  Zdanie „nie odtwarzałem tego wiersza, biorę go z opisu" jest pełnoprawną
+  częścią przeglądu, nie przyznaniem się do porażki.
+- **Szczegół bez pokrycia jest gorszy niż ogólnik.** „Cztery pliki testowe"
+  brzmi wiarygodniej niż „są testy", więc mniej zachęca do sprawdzenia. Liczby,
+  nazwy plików i cytaty z konfiguracji podawaj wyłącznie odczytane.
+- **Zanim powołasz się na precedens w repo, otwórz go.** Rekomendacja
+  („zróbmy to wariantem 1") i stan faktyczny („wariant 1 już stoi w X") to dwa
+  różne zdania; pomylenie ich odwraca sens ticketu.
+
+Precedens: brief na #37 orzekł, że `apps/admin` ma vitest, Testing Library, msw
+i cztery pliki testowe. Nie ma żadnej z tych rzeczy — a opis PR-a, na którym
+brief się opierał, mówił to wprost.
