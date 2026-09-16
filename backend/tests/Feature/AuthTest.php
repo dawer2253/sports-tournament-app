@@ -81,7 +81,10 @@ it('odrzuca logowanie przy złym haśle jako błąd walidacji', function () {
     ])
         ->assertValidRequest()
         ->assertValidResponse(422)
-        ->assertJsonValidationErrors('email');
+        ->assertJsonValidationErrors('email')
+        // Panel pokazuje pod formularzem korzeniowe `message`, nie mapę
+        // `errors`, więc komunikat musi być po polsku właśnie tam.
+        ->assertJsonPath('message', 'Nieprawidłowy e-mail lub hasło.');
 });
 
 it('odrzuca logowanie na nieistniejące konto jako błąd walidacji', function () {
@@ -92,6 +95,37 @@ it('odrzuca logowanie na nieistniejące konto jako błąd walidacji', function (
         ->assertValidRequest()
         ->assertValidResponse(422)
         ->assertJsonValidationErrors('email');
+});
+
+// Komunikat spod reguły walidacji, a nie spod `auth.failed`: dowodzi, że po
+// polsku jest cały `lang/pl`, a nie samo logowanie. Nazwa pola („e-mail", nie
+// „email") pochodzi z sekcji `attributes`.
+//
+// `assertValidRequest()` celowo nie ma: żądanie jest niepełne z założenia, więc
+// nie przechodzi walidacji kontraktu po stronie wejścia.
+it('tłumaczy błędy walidacji rejestracji na polski', function () {
+    $this->postJson('/api/v1/register', [
+        'name' => 'Dawid Patko',
+        'password' => 'tajnehaslo123',
+        'passwordConfirmation' => 'tajnehaslo123',
+    ])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.email.0', 'Pole e-mail jest wymagane.');
+});
+
+// Przy kilku błędach naraz Laravel skleja korzeniowe `message` z pierwszego
+// komunikatu i doklejki „(and :count more errors)" — a ta idzie przez tłumacz
+// łańcuchowy, nie przez `lang/pl/validation.php`, więc bez `lang/pl.json`
+// zostawała po angielsku w polu, które panel pokazuje organizerowi.
+//
+// Liczebnik odmienia się inaczej niż w angielskim, stąd zakresy w `pl.json`:
+// `[2,4]` daje „błędy", `[5,*]` — „błędów". Tu wypada wariant `[2,4]`, bo
+// `/register` ma cztery pola; wariantu `[5,*]` nie da się dziś wywołać żadnym
+// istniejącym endpointem i dojdzie z pierwszym formularzem o 6+ polach.
+it('odmienia liczbę pozostałych błędów po polsku', function () {
+    $this->postJson('/api/v1/register', [])
+        ->assertValidResponse(422)
+        ->assertJsonPath('message', 'Pole nazwa jest wymagane. (i jeszcze 3 błędy)');
 });
 
 it('oddaje zalogowanego organizera', function () {
