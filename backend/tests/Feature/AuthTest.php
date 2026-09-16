@@ -94,6 +94,37 @@ it('odrzuca logowanie na nieistniejące konto jako błąd walidacji', function (
         ->assertJsonValidationErrors('email');
 });
 
+// Panel pokazuje pod formularzem korzeniowe `message`, nie mapę `errors`, więc
+// asercja idzie na to pole — komunikat po angielsku byłby dla organizera równie
+// nieczytelny jak surowy błąd.
+it('tłumaczy nieudane logowanie na polski', function () {
+    User::factory()->create([
+        'email' => 'dawid@example.com',
+        'password' => 'tajnehaslo123',
+    ]);
+
+    $this->postJson('/api/v1/login', [
+        'email' => 'dawid@example.com',
+        'password' => 'zlehaslo123',
+    ])
+        ->assertValidResponse(422)
+        ->assertJsonPath('message', 'Nieprawidłowy e-mail lub hasło.')
+        ->assertJsonPath('errors.email.0', 'Nieprawidłowy e-mail lub hasło.');
+});
+
+// Drugi komunikat, tym razem spod reguły walidacji, a nie spod `auth.failed`:
+// dowodzi, że po polsku jest cały `lang/pl`, a nie samo logowanie. Nazwa pola
+// („e-mail", nie „email") pochodzi z sekcji `attributes`.
+it('tłumaczy błędy walidacji rejestracji na polski', function () {
+    $this->postJson('/api/v1/register', [
+        'name' => 'Dawid Patko',
+        'password' => 'tajnehaslo123',
+        'passwordConfirmation' => 'tajnehaslo123',
+    ])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.email.0', 'Pole e-mail jest wymagane.');
+});
+
 it('oddaje zalogowanego organizera', function () {
     $user = User::factory()->create(['email' => 'dawid@example.com']);
 
