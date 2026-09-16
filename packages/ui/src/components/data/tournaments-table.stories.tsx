@@ -7,7 +7,7 @@ const meta = {
   title: 'UI/Tabela turniejów',
   component: TournamentsTable,
   parameters: { layout: 'padded' },
-  args: { tournaments: tournamentList, total: tournamentList.length },
+  args: { tournaments: tournamentList, total: tournamentList.length, onOpen: fn() },
 } satisfies Meta<typeof TournamentsTable>
 
 export default meta
@@ -25,6 +25,34 @@ export const Domyslny: Story = {
 
     // Licznik pokazuje się też wtedy, gdy lista nie jest ucięta.
     await expect(canvas.getByText('Pokazano 3 z 3 turniejów.')).toBeInTheDocument()
+  },
+}
+
+/**
+ * Wariant (a) z #26: wąska kolumna akcji domyka wiersz o coś, co ma sens, i daje
+ * wejście w turniej. Nazwa dostępna jest per wiersz, bo trzy przyciski „Otwórz"
+ * obok siebie brzmiałyby dla czytnika ekranu identycznie.
+ */
+export const Akcja: Story = {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    const akcje = canvas.getAllByRole('button', { name: /^Otwórz turniej / })
+    await expect(akcje).toHaveLength(tournamentList.length)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Otwórz turniej Liga Osiedlowa 2026' }))
+    await expect(args.onOpen).toHaveBeenCalledWith(tournamentList[0])
+  },
+}
+
+/** Bez `onOpen` kolumny nie ma: tabela nie pokazuje martwego przycisku. */
+export const BezAkcji: Story = {
+  args: { onOpen: undefined },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.queryByRole('columnheader', { name: 'Akcje' })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: /^Otwórz turniej / })).not.toBeInTheDocument()
   },
 }
 
