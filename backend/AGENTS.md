@@ -126,6 +126,14 @@ co panel.
 kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec →
 `npm run contract:generate` → kod. Szczegóły w [rootowym `AGENTS.md`](../AGENTS.md).
 
+**Stronicowana odpowiedź składa kopertę jawnie.** Domyślna odpowiedź
+`ResourceCollection` opartej na paginatorze dokłada `links` i `meta`
+w snake_case, a kontrakt żąda dokładnie czterech pól `PaginationMeta`
+w camelCase — patrz `TournamentController@index`. Filtry dokładaj **przed**
+`paginate()`, nigdy po pobraniu strony: inaczej `total` mówi o niezawężonym
+zbiorze, a `lastPage` obiecuje strony nie do pobrania
+([ADR 0008](../docs/adr/0008-filtr-status-jedzie-lista-po-przecinku.md)).
+
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 Dla backendu wynikają z tego dwie rzeczy. **Spectator asertuje samo ciało

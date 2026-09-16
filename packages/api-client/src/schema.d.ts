@@ -384,10 +384,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Turnieje zalogowanego organizera */
+        /**
+         * Turnieje zalogowanego organizera
+         * @description Najnowsze turnieje na górze. Kolejność jest częścią kontraktu, bo bez
+         *     deterministycznego porządku stronicowanie mogłoby oddać ten sam turniej
+         *     na dwóch stronach albo pominąć inny.
+         */
         get: {
             parameters: {
                 query?: {
+                    /**
+                     * @description Zawęża listę do podanych stanów, np. `draft,active`. Bez parametru
+                     *     odpowiedź obejmuje wszystkie turnieje organizera. Filtr działa przed
+                     *     stronicowaniem, więc `meta` opisuje zbiór już zawężony. Dlaczego
+                     *     lista po przecinku, a nie pojedyncza wartość:
+                     *     [ADR-0008](../../docs/adr/0008-filtr-status-jedzie-lista-po-przecinku.md).
+                     * @example [
+                     *       "draft",
+                     *       "active"
+                     *     ]
+                     */
+                    status?: components["schemas"]["TournamentStatus"][];
                     page?: number;
                     perPage?: number;
                 };
@@ -397,7 +414,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Stronicowana lista turniejów */
+                /** @description Stronicowana lista turniejów, opcjonalnie zawężona do podanych stanów */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -479,6 +496,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthenticated"];
+                422: components["responses"]["ValidationError"];
             };
         };
         put?: never;
