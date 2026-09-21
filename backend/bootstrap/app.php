@@ -36,24 +36,21 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) use ($rendersJson): void {
         $exceptions->shouldRenderJsonWhen($rendersJson);
 
-        // Kontrakt ma na 404 jedno zdanie (`components/responses/NotFound`,
-        // użyte 22 razy), a framework ma na tę odpowiedź trzy różne teksty:
-        // „The route ... could not be found." spod routera, „No query results
-        // for model [App\Models\Tournament] 7" spod wyszukania modelu i pusty
-        // string spod gołego `abort(404)`. Wszystkie po angielsku, żaden nie
-        // idzie przez `lang/pl`, a `convertExceptionToArray()` przepuszcza
-        // komunikat każdego wyjątku HTTP także produkcyjnie — czyli nazwa klasy
-        // Eloquenta trafiłaby na ekran odwiedzającego stronę publiczną.
+        // Kontrakt ma na 404 jedno zdanie (`components/responses/NotFound`),
+        // a framework ma na tę odpowiedź trzy różne teksty — spod routera,
+        // spod wyszukania modelu i pusty string spod gołego `abort(404)` —
+        // wszystkie po angielsku i wszystkie widoczne dla klienta także
+        // produkcyjnie. Jedno przesłonięcie zamyka komplet, bo
+        // `Handler::prepareException()` opakowuje `ModelNotFoundException`
+        // w ten sam `NotFoundHttpException` co router.
         //
-        // Tutaj, odwrotnie niż w #53, to backend dogania przykład: rzeczywistość
-        // jest gorsza od kontraktu, a nie lepsza. Jedno przesłonięcie zamyka
-        // wszystkie warianty, bo `Handler::prepareException()` opakowuje
-        // `ModelNotFoundException` w ten sam `NotFoundHttpException` co router.
+        // Dwie konsekwencje, obie przyjęte świadomie: w dev znika czytelne
+        // „The route ... could not be found." (zostaje w logu), a własny tekst
+        // z `abort(404, '...')` zostanie tu skasowany — 404 mówi w tym API
+        // jednym zdaniem, bo tak stanowi kontrakt.
         //
-        // Cena: w dev znika „The route ... could not be found.", czytelne przy
-        // literówce w URL-u. Świadomie, bo inaczej kontrakt byłby prawdziwy
-        // tylko produkcyjnie, a testy asertowałyby co innego niż dostaje klient.
-        // Oryginalny wyjątek zostaje w `storage/logs/laravel.log`.
+        // Pełne uzasadnienie i pomiary:
+        // docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §4.
         $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($rendersJson) {
             if (! $rendersJson($request)) {
                 return null;

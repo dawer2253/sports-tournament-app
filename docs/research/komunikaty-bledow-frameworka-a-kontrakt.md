@@ -17,19 +17,40 @@ dokumentacja Laravela 13.x przez MCP `laravel-boost`. Bez blogów i tutoriali.
 
 ## 0. Co z tego weszło
 
-Rekomendacje z tej notatki są **wdrożone w tej samej gałęzi**, więc sekcje niżej
-czyta się jako uzasadnienie zmian, nie jako listę zadań:
+**Pomiary w sekcjach niżej pochodzą sprzed wdrożenia**, z gałęzi `main`
+(`107ad4b`) — tam trzeba je odtwarzać, bo część z nich ta sama gałąź
+unieważniła. Najwyraźniej widać to przy liczbie użyć `NotFound`: §4 i §8
+podają 22, a `grep -c "responses/NotFound" packages/api-contract/openapi.yaml`
+daje na tej gałęzi **27**, bo doszło pięć nowych odwołań (niżej). Sekcje czyta
+się więc jako uzasadnienie zmian, nie jako listę zadań.
 
-- 404 — backend dogoni przykład (§4.4): przesłonięcie w `backend/bootstrap/app.php`
-  plus dwa testy w `backend/tests/Feature/AuthTest.php` (brak trasy i brak modelu).
+Weszło:
+
+- 404 — backend dogania przykład (§4.4): przesłonięcie w `backend/bootstrap/app.php`
+  plus testy w `backend/tests/Feature/AuthTest.php` na oba warianty (brak trasy
+  i brak modelu). Pominięty został carve-out debugowy, który rekomendowała §4.4:
+  `phpunit.xml` nie ustawia `APP_DEBUG`, więc testy asertowałyby wtedy inny tekst
+  niż dostaje klient. Cena jest opisana w komentarzu przy samym przesłonięciu.
 - 401 bez nagłówka `Accept` (§7.3): `redirectGuestsTo(null)` plus test, który
   omija `getJson()`.
 - Token i `createdAt` (§7.2): przykłady doganiają rzeczywistość. Offsetów było
-  41, nie trzy — przeliczone na UTC z zachowaniem chwili (`12:00+02:00` →
-  `10:00+00:00`), a reguła trafiła do sekcji „Konwencje" kontraktu.
+  41, nie trzy — pozostałe 38 leży przy endpointach, których jeszcze nie ma, ale
+  offsetu nie wyznacza ich kod, tylko `'timezone' => 'UTC'`, które już stoi.
+  Przeliczone z zachowaniem chwili (`12:00+02:00` → `10:00+00:00`), reguła
+  trafiła do „Konwencji" kontraktu.
+- **404 przy pięciu operacjach, które go nie opisywały** — dwie wskazane na
+  końcu §8 (`…/logo`) i trzy dalsze, znalezione przy przeglądzie
+  (`POST /tournaments/{tournament}/teams`, `POST /teams/{team}/players`,
+  `POST /tournaments/{tournament}/venues`). **To jest luka w kodach statusu, nie
+  rozjazd przykładu z odpowiedzią, czyli nie klasa #53** — weszło świadomie,
+  bo kontrakt z poprawionymi dwiema z pięciu byłby gorszy niż jednolity.
+- Test wiążący komunikat 404 z przykładem w kontrakcie (`mówi przy 404 dokładnie
+  to, co obiecuje kontrakt`). Nie ma go w rekomendacjach — odpowiada na przyczynę
+  źródłową z §2: Spectator waliduje schemat, nie przykład, więc rozjazd tej klasy
+  nie miał dotąd żadnej bramki.
 
-Niewdrożone zostaje to, co notatka opisuje jako otwarte: kody spoza kontraktu
-(§8) i polskie 403 przy pierwszej policy (§5).
+Otwarte zostaje: wzmianka o 405 i 500 w `info.description` (§8) oraz polskie 403
+przy pierwszej policy (§5).
 
 ## 1. Streszczenie
 

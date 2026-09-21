@@ -126,6 +126,22 @@ co panel.
 kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec →
 `npm run contract:generate` → kod. Szczegóły w [rootowym `AGENTS.md`](../AGENTS.md).
 
+**Spectator dowodzi zgodności ze schematem, nie z przykładem.** `message` typu
+`string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
+rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
+[#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 404 robi to za
+ciebie test „mówi przy 404 dokładnie to, co obiecuje kontrakt".
+
+**404 mówi w tym API jednym zdaniem.** `bootstrap/app.php` przesłania
+renderowanie `NotFoundHttpException` na `api/*` i oddaje `Nie znaleziono
+zasobu.` — tak stanowi `components/responses/NotFound`, wspólny dla wszystkich
+ścieżek. Wynika z tego pułapka: **własny tekst z `abort(404, '...')` zostanie
+skasowany po cichu**. Jeżeli jakiś zasób naprawdę potrzebuje innego komunikatu,
+to jest zmiana kontraktu i idzie normalną kolejnością, a nie obejściem
+w kontrolerze. Powody i pomiary:
+[`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
+
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 Dla backendu wynikają z tego dwie rzeczy. **Spectator asertuje samo ciało

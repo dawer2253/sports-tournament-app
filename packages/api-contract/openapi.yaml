@@ -36,7 +36,7 @@ info:
     - Daty w ISO 8601 z offsetem. W odpowiedziach offset jest zawsze `+00:00`:
       backend trzyma i oddaje czas w UTC (`backend/config/app.php`, `timezone`
       wpisane na sztywno, bez `env()`). Przeliczenie na czas lokalny należy do
-      klienta. Żądanie może przysłać dowolny offset.
+      klienta — mecz o `10:00+00:00` to mecz o dwunastej czasu polskiego.
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
@@ -515,6 +515,7 @@ paths:
                 data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /teams/{team}:
@@ -667,6 +668,7 @@ paths:
                 data: { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /players/{player}:
@@ -764,6 +766,7 @@ paths:
                 data: { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /venues/{venue}:
