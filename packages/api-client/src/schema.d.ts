@@ -50,12 +50,12 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": {
-                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZ",
+                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZaCdEfGhIjKlMnOpQrStU1a2b3c4d",
                          *         "user": {
                          *           "id": 1,
                          *           "name": "Dawid Patko",
                          *           "email": "dawid@example.com",
-                         *           "createdAt": "2026-09-01T10:00:00+02:00"
+                         *           "createdAt": "2026-09-01T08:00:00+00:00"
                          *         }
                          *       }
                          *     }
@@ -116,12 +116,12 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": {
-                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZ",
+                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZaCdEfGhIjKlMnOpQrStU1a2b3c4d",
                          *         "user": {
                          *           "id": 1,
                          *           "name": "Dawid Patko",
                          *           "email": "dawid@example.com",
-                         *           "createdAt": "2026-09-01T10:00:00+02:00"
+                         *           "createdAt": "2026-09-01T08:00:00+00:00"
                          *         }
                          *       }
                          *     }
@@ -207,7 +207,7 @@ export interface paths {
                          *         "id": 1,
                          *         "name": "Dawid Patko",
                          *         "email": "dawid@example.com",
-                         *         "createdAt": "2026-09-01T10:00:00+02:00"
+                         *         "createdAt": "2026-09-01T08:00:00+00:00"
                          *       }
                          *     }
                          */
@@ -432,8 +432,8 @@ export interface paths {
                          *             "score_for"
                          *           ],
                          *           "teamsCount": 3,
-                         *           "createdAt": "2026-09-01T10:00:00+02:00",
-                         *           "updatedAt": "2026-09-14T18:30:00+02:00"
+                         *           "createdAt": "2026-09-01T08:00:00+00:00",
+                         *           "updatedAt": "2026-09-14T16:30:00+00:00"
                          *         },
                          *         {
                          *           "id": 2,
@@ -460,8 +460,8 @@ export interface paths {
                          *             "score_diff"
                          *           ],
                          *           "teamsCount": 8,
-                         *           "createdAt": "2026-09-10T09:00:00+02:00",
-                         *           "updatedAt": "2026-09-10T09:00:00+02:00"
+                         *           "createdAt": "2026-09-10T07:00:00+00:00",
+                         *           "updatedAt": "2026-09-10T07:00:00+00:00"
                          *         }
                          *       ],
                          *       "meta": {
@@ -544,8 +544,8 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "teamsCount": 0,
-                         *         "createdAt": "2026-09-01T10:00:00+02:00",
-                         *         "updatedAt": "2026-09-01T10:00:00+02:00"
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-01T08:00:00+00:00"
                          *       }
                          *     }
                          */
@@ -619,8 +619,8 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "teamsCount": 3,
-                         *         "createdAt": "2026-09-01T10:00:00+02:00",
-                         *         "updatedAt": "2026-09-14T18:30:00+02:00"
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-14T16:30:00+00:00"
                          *       }
                          *     }
                          */
@@ -756,6 +756,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -1113,6 +1114,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -2027,7 +2029,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-09-27T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-27T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2061,7 +2063,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-10-04T12:00:00+02:00",
+                         *           "kickoffAt": "2026-10-04T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2095,7 +2097,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-10-11T12:00:00+02:00",
+                         *           "kickoffAt": "2026-10-11T10:00:00+00:00",
                          *           "venue": null,
                          *           "winnerToMatchId": null,
                          *           "loserToMatchId": null,
@@ -2202,7 +2204,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "finished",
-                         *           "kickoffAt": "2026-09-20T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-20T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2236,7 +2238,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "finished",
-                         *           "kickoffAt": "2026-09-13T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-13T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2270,7 +2272,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "finished",
-                         *           "kickoffAt": "2026-09-06T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-06T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2483,6 +2485,11 @@ export interface components {
             createdAt: string;
         };
         AuthPayload: {
+            /**
+             * @description Do wysłania w nagłówku `Authorization: Bearer <token>`. Dla klienta
+             *     nieprzezroczysty: jego długość i budowa nie są częścią kontraktu,
+             *     więc nie waliduj go po stronie frontu ani nie rozbieraj na części.
+             */
             token: string;
             user: components["schemas"]["User"];
         };
