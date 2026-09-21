@@ -1801,7 +1801,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ValidationError' }
           example:
-            message: Podane dane są nieprawidłowe.
+            message: Pole nazwa jest wymagane.
             errors:
               name: [Pole nazwa jest wymagane.]
 
@@ -1816,7 +1816,16 @@ components:
       type: object
       required: [message, errors]
       properties:
-        message: { type: string }
+        message:
+          type: string
+          description: |
+            Pierwszy komunikat z `errors`, a przy kilku błędach naraz
+            z doklejonym liczebnikiem pozostałych: „Pole nazwa jest wymagane.
+            (i jeszcze 3 błędy)". To nie jest zdanie ogólne, tylko konkret
+            pierwszego błędu (przy logowaniu: „Nieprawidłowy e-mail lub
+            hasło."), więc nadaje się do pokazania wprost pod formularzem.
+            Tekst ogólny („Podane dane są nieprawidłowe.") pada wyłącznie
+            wtedy, gdy mapa `errors` jest pusta.
         errors:
           type: object
           additionalProperties:

@@ -2453,6 +2453,15 @@ export interface components {
             message: string;
         };
         ValidationError: {
+            /**
+             * @description Pierwszy komunikat z `errors`, a przy kilku błędach naraz
+             *     z doklejonym liczebnikiem pozostałych: „Pole nazwa jest wymagane.
+             *     (i jeszcze 3 błędy)". To nie jest zdanie ogólne, tylko konkret
+             *     pierwszego błędu (przy logowaniu: „Nieprawidłowy e-mail lub
+             *     hasło."), więc nadaje się do pokazania wprost pod formularzem.
+             *     Tekst ogólny („Podane dane są nieprawidłowe.") pada wyłącznie
+             *     wtedy, gdy mapa `errors` jest pusta.
+             */
             message: string;
             errors: {
                 [key: string]: string[];
@@ -2872,7 +2881,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "Podane dane są nieprawidłowe.",
+                 *       "message": "Pole nazwa jest wymagane.",
                  *       "errors": {
                  *         "name": [
                  *           "Pole nazwa jest wymagane."
