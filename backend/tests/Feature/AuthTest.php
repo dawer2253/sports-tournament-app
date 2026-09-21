@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spectator\Spectator;
 
@@ -216,13 +217,49 @@ it('odmawia wylogowania bez tokenu', function () {
         ->assertValidResponse(401);
 });
 
+// Trzy testy wyżej idą przez `getJson()`/`postJson()`, a te same ustawiają
+// `Accept: application/json` — i właśnie dlatego nie widzą, że bez tego
+// nagłówka ta sama ścieżka oddawała 500. Strażnik liczy trzeci argument
+// `AuthenticationException` zachłannie i przy `expectsJson() === false` woła
+// `route('login')`, której ten backend nie ma; `shouldRenderJsonWhen`
+// z `bootstrap/app.php` jest wtedy jeszcze za daleko, żeby pomóc.
+//
+// Konsument bez tego nagłówka to nie hipoteza: `curl`, domyślny Postman
+// (`Accept: */*`) i monitoring tak właśnie odpytują API.
+it('odmawia dostępu bez tokenu także żądaniu bez nagłówka Accept', function () {
+    $this->get('/api/v1/me', ['Accept' => '*/*'])
+        ->assertUnauthorized()
+        ->assertJsonPath('message', 'Unauthenticated.');
+});
+
 // Zakres #6 obejmuje spójny format błędów, nie tylko 422 i 401. Ścieżki spoza
 // kontraktu Spectator z definicji nie zwaliduje, więc sprawdzamy sam kształt:
 // backend oddaje wyłącznie JSON, nigdy strony błędu Laravela.
 // 403 dochodzi razem z pierwszą policy, czyli w S1 przy zasobach turnieju.
+//
+// Asercja jest na treści, nie na `assertJsonStructure(['message'])`: goły
+// `abort(404)` oddaje `{"message": ""}`, co strukturę przechodzi, a klientowi
+// nie mówi nic.
 it('oddaje 404 jako JSON w kształcie z kontraktu', function () {
     $this->getJson('/api/v1/nie-ma-takiego-zasobu')
         ->assertNotFound()
         ->assertHeader('content-type', 'application/json')
-        ->assertJsonStructure(['message']);
+        ->assertJsonPath('message', 'Nie znaleziono zasobu.');
+});
+
+// Drugi wariant 404 — jest trasa, nie ma modelu spod jej parametru. Kontrakt
+// ma jedną odpowiedź `NotFound` na 22 użycia, więc oba warianty muszą mówić to
+// samo zdanie; bez tego przykład w kontrakcie jest prawdziwy tylko dla części
+// z nich. To jest wariant, który wyjdzie domyślnie w S1: wszystkie ścieżki
+// zasobów niosą parametr (`{tournament}`, `{team}`, `{player}`, `{venue}`).
+//
+// Trasa jest doraźna, bo `routes/api.php` ma dziś same cztery ścieżki
+// autoryzacji. Asercji Spectatora nie ma i mieć nie może — kontrakt takiej
+// ścieżki nie zna.
+it('oddaje to samo 404, gdy trasa istnieje, a model spod parametru nie', function () {
+    Route::get('/api/v1/probny-zasob/{id}', fn (string $id) => User::findOrFail($id));
+
+    $this->getJson('/api/v1/probny-zasob/999999')
+        ->assertNotFound()
+        ->assertJsonPath('message', 'Nie znaleziono zasobu.');
 });
