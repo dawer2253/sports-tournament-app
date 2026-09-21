@@ -122,9 +122,11 @@ it('sieje klasyfikację strzelców zgodną z przykładem kontraktu', function ()
 });
 
 it('sieje mecze o terminach zgodnych z kontraktem', function () {
-    // Aplikacja stoi na UTC, a kontrakt pisze terminy z offsetem `+02:00`.
-    // Test pilnuje chwili, nie zapisu: rozjazd o dwie godziny pokazywałby
-    // inną godzinę meczu na stronie niż na mocku.
+    // Aplikacja stoi na UTC i tak samo pisze terminy kontrakt. Test pilnuje
+    // chwili, nie zapisu: rozjazd o dwie godziny pokazywałby inną godzinę meczu
+    // na stronie niż na mocku. Druga asercja zostaje mimo zgodnego już zapisu,
+    // bo trzyma widoczny związek z południem czasu polskiego — godziną, na
+    // którą mecz jest naprawdę umówiony i którą zobaczy kibic.
     $first = GameMatch::query()->orderBy('kickoff_at')->first();
 
     expect($first->kickoff_at->toIso8601String())->toBe('2026-09-06T10:00:00+00:00')

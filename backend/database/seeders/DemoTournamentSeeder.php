@@ -51,10 +51,10 @@ class DemoTournamentSeeder extends Seeder
      * Rozegrana pierwsza runda: [kolejka, gospodarz, gość, bramki gospodarza,
      * bramki gościa, termin].
      *
-     * Terminy są **w UTC**, bo na UTC stoi aplikacja (`config/app.php`). Kontrakt
-     * pisze je z offsetem `+02:00` (czas polski), więc `10:00` tutaj i `12:00+02:00`
-     * w `openapi.yaml` to ta sama chwila. Zapisanie tu `12:00` przesunęłoby mecze
-     * o dwie godziny względem mocka.
+     * Terminy są **w UTC**, bo na UTC stoi aplikacja (`config/app.php`), i tak
+     * samo zapisuje je dziś kontrakt: `10:00+00:00` w `openapi.yaml` to mecz
+     * umówiony na południe czasu polskiego. Zapisanie tu `12:00` przesunęłoby
+     * mecze o dwie godziny względem mocka.
      */
     private const RESULTS = [
         [1, 'Wilki Bemowo', 'Sokoły Ursus', 2, 1, '2026-09-06 10:00:00'],
