@@ -169,10 +169,16 @@ export function AdminShell({
           <div className="ml-auto flex items-center gap-1">
             <Button variant="ghost" size="icon" aria-label="Powiadomienia"><Bell className="size-4" /></Button>
             <DropdownMenu>
+              {/* Trigger musi być prawdziwym przyciskiem: `asChild` wprost na
+                  `Avatar` (to `<span>`) dawało semantykę przycisku bez fokusu,
+                  więc „Wyloguj" było nieosiągalne z klawiatury. Promień jak
+                  w `AvatarFallback`, żeby pierścień fokusu przylegał do awatara. */}
               <DropdownMenuTrigger asChild>
-                <Avatar className="size-8 cursor-pointer">
-                  <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
-                </Avatar>
+                <Button variant="ghost" size="icon" className="cursor-pointer rounded-md" aria-label="Menu konta">
+                  <Avatar className="size-8">
+                    <AvatarFallback className="rounded-md bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
+                  </Avatar>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{accountName}</DropdownMenuLabel>
