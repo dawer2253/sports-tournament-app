@@ -13,12 +13,13 @@ Publiczny, read-only widok tabeli rozgrywek (dostępny po `slug`, np. `/t/liga-o
 Pokazać aktualną klasyfikację ligi zawodnikom, kibicom i sponsorom, bez logowania.
 
 ## Dane (wejście)
-- Lista drużyn z agregatami liczonymi **on-read** z meczów: `M, W, R, P, bramki+/−, pkt`.
+- Lista drużyn z agregatami liczonymi **on-read** z meczów: `M, W, R, P, zdobycze+/−, pkt`.
+- `scoreLabel`: nazwa zdobyczy w tym turnieju — nagłówek ich kolumny („Bramki" w piłce, „Punkty" w koszykówce). Makieta bierze ją ze `standingsScoreLabel` w danych demo.
 - `form`: wyniki ostatnich 5 meczów (W/R/P) jako kropki.
 - Branding turnieju: kolor wiodący (`--brand`), logo, nazwa.
 
 ## Reguły
-- Sortowanie wg konfigurowalnej listy tiebreaków turnieju (domyślnie: pkt → bezpośredni mecz → różnica bramek → bramki zdobyte).
+- Sortowanie wg konfigurowalnej listy tiebreaków turnieju. Zdanie pod tabelą składa się z tej listy (`tiebreakers` w danych demo), więc zmienia się razem z nią.
 - Pozycja 1 wyróżniona (tło + plakietka).
 - Strefy awansu/spadku: kolor lewej krawędzi wiersza (TODO: do ustalenia per turniej).
 

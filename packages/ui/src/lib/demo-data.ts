@@ -67,6 +67,11 @@ export const standings: StandingRow[] = [
   { pos: 8, team: teams[4], p: 5, w: 0, d: 0, l: 5, gf: 3, ga: 14, pts: 0, form: ['L', 'L', 'L', 'L', 'L'] },
 ]
 
+// Pod jaką nazwą występują zdobycze tej tabeli (`Score` w CONTEXT.md; koszykówka:
+// „Punkty"). W kontrakcie to `StandingTable.scoreLabel` — etykieta wisi na
+// tabeli, nie na turnieju (ADR-0006).
+export const standingsScoreLabel = 'Bramki'
+
 export type MatchEvent = {
   type: 'goal' | 'yellow' | 'red'
   playerName: string
@@ -188,6 +193,9 @@ export const venues: Venue[] = [
   { id: 3, name: 'Hala Miejska', address: 'ul. Główna 5', matches: 6 },
 ]
 
+// Kryteria rozstrzygające turnieju demo, w kolejności stosowania. Etykiety
+// kryteriów ze zdobyczy zależą od sportu tak jak `standingsScoreLabel`, ale
+// wymagają innej formy („różnica bramek"), więc nie da się ich z niej złożyć.
 export const tiebreakers = [
   { key: 'points', label: 'Punkty' },
   { key: 'head_to_head', label: 'Bezpośredni mecz' },

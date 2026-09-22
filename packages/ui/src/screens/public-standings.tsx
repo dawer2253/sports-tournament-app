@@ -5,11 +5,15 @@ import { MetaList } from '../components/layout/meta-list'
 import { TeamCrest } from '../components/layout/team-crest'
 import { Heading } from '../components/ui/typography'
 import { cn } from '../lib/utils'
-import { standings, formColor } from '../lib/demo-data'
+import { standings, standingsScoreLabel, tiebreakers, formColor } from '../lib/demo-data'
 import fieldImg from '../assets/public/field.webp'
 
 // Ile miejsc premiuje awansem — docelowo z ustawień turnieju.
 const PROMOTED = 4
+
+// Kolejność sortowania bierze się z kryteriów turnieju, nie ze sztywnego zdania:
+// ich etykiety zależą od sportu tak samo jak nagłówek kolumny zdobyczy.
+const tiebreakerSentence = tiebreakers.map((t) => t.label.toLocaleLowerCase('pl')).join(' → ')
 
 export function PublicStandings() {
   return (
@@ -34,7 +38,7 @@ export function PublicStandings() {
               <TableHead className="w-10 text-center">W</TableHead>
               <TableHead className="w-10 text-center">R</TableHead>
               <TableHead className="w-10 text-center">P</TableHead>
-              <TableHead className="w-16 text-center">Bramki</TableHead>
+              <TableHead className="w-16 text-center">{standingsScoreLabel}</TableHead>
               <TableHead className="w-12 text-center !text-foreground">Pkt</TableHead>
               <TableHead className="w-24">Forma</TableHead>
             </TableRow>
@@ -81,7 +85,7 @@ export function PublicStandings() {
         </Table>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Sortowanie: pkt → bezpośredni mecz → różnica bramek → bramki zdobyte. Zielona kreska przy pozycji oznacza strefę awansu do fazy pucharowej.
+        Sortowanie: {tiebreakerSentence}. Zielona kreska przy pozycji oznacza strefę awansu do fazy pucharowej.
       </p>
     </PublicShell>
   )
