@@ -243,6 +243,11 @@ paths:
     get:
       tags: [Tournaments]
       summary: Turnieje zalogowanego organizera
+      description: |
+        Od najnowszego: `createdAt` malejąco, a turnieje założone w tej samej
+        chwili rozstrzyga `id`, też malejąco. Kolejność jest przez to stabilna
+        między stronami — żaden turniej nie wypada ani nie dubluje się na
+        granicy strony.
       parameters:
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: perPage, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -2049,7 +2054,10 @@ components:
         order: { type: integer, minimum: 1 }
         groups:
           type: array
-          description: Niepuste wyłącznie dla fazy `group`.
+          description: |
+            Pusta dla faz `league` i `knockout`. W fazie `group` pusta, dopóki
+            organizer nie utworzy grup — faza powstaje przy zakładaniu turnieju
+            bez nich.
           items: { $ref: '#/components/schemas/Group' }
 
     RoundSummary:

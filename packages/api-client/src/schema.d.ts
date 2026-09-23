@@ -384,7 +384,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Turnieje zalogowanego organizera */
+        /**
+         * Turnieje zalogowanego organizera
+         * @description Od najnowszego: `createdAt` malejąco, a turnieje założone w tej samej
+         *     chwili rozstrzyga `id`, też malejąco. Kolejność jest przez to stabilna
+         *     między stronami — żaden turniej nie wypada ani nie dubluje się na
+         *     granicy strony.
+         */
         get: {
             parameters: {
                 query?: {
@@ -2624,7 +2630,11 @@ export interface components {
             type: components["schemas"]["StageType"];
             name: string;
             order: number;
-            /** @description Niepuste wyłącznie dla fazy `group`. */
+            /**
+             * @description Pusta dla faz `league` i `knockout`. W fazie `group` pusta, dopóki
+             *     organizer nie utworzy grup — faza powstaje przy zakładaniu turnieju
+             *     bez nich.
+             */
             groups: components["schemas"]["Group"][];
         };
         /**
