@@ -2463,7 +2463,9 @@ export interface components {
              *     z doklejonym liczebnikiem pozostałych: „Pole nazwa jest wymagane.
              *     (i jeszcze 3 błędy)". To nie jest zdanie ogólne, tylko konkret
              *     pierwszego błędu (przy logowaniu: „Nieprawidłowy e-mail lub
-             *     hasło."), więc nadaje się do pokazania wprost pod formularzem.
+             *     hasło."), więc nadaje się na komunikat zbiorczy — toast albo
+             *     nagłówek formularza. Pod samym polem pokaż wpis z `errors`, bo
+             *     inaczej ten sam tekst wyjdzie dwa razy.
              *     Tekst ogólny („Podane dane są nieprawidłowe.") pada wyłącznie
              *     wtedy, gdy mapa `errors` jest pusta.
              */

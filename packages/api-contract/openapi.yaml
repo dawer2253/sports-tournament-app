@@ -33,10 +33,10 @@ info:
       dodatkowo `{ "meta": ... }`.
     - Błąd walidacji: `422` z `{ "message": ..., "errors": { pole: [...] } }`.
       Pozostałe błędy: `{ "message": ... }`.
-    - Daty w ISO 8601 z offsetem. W odpowiedziach offset jest zawsze `+00:00`:
-      backend trzyma i oddaje czas w UTC (`backend/config/app.php`, `timezone`
-      wpisane na sztywno, bez `env()`). Przeliczenie na czas lokalny należy do
-      klienta — mecz o `10:00+00:00` to mecz o dwunastej czasu polskiego.
+    - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
+      `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
+      klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
+      polskiego nie jest stała, więc nie zaszywaj jej na sztywno.
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
@@ -1831,7 +1831,9 @@ components:
             z doklejonym liczebnikiem pozostałych: „Pole nazwa jest wymagane.
             (i jeszcze 3 błędy)". To nie jest zdanie ogólne, tylko konkret
             pierwszego błędu (przy logowaniu: „Nieprawidłowy e-mail lub
-            hasło."), więc nadaje się do pokazania wprost pod formularzem.
+            hasło."), więc nadaje się na komunikat zbiorczy — toast albo
+            nagłówek formularza. Pod samym polem pokaż wpis z `errors`, bo
+            inaczej ten sam tekst wyjdzie dwa razy.
             Tekst ogólny („Podane dane są nieprawidłowe.") pada wyłącznie
             wtedy, gdy mapa `errors` jest pusta.
         errors:

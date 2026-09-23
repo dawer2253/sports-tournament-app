@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -44,16 +45,26 @@ return Application::configure(basePath: dirname(__DIR__))
         // `Handler::prepareException()` opakowuje `ModelNotFoundException`
         // w ten sam `NotFoundHttpException` co router.
         //
-        // Dwie konsekwencje, obie przyjęte świadomie: w dev znika czytelne
-        // „The route ... could not be found." (zostaje w logu), a własny tekst
-        // z `abort(404, '...')` zostanie tu skasowany — 404 mówi w tym API
-        // jednym zdaniem, bo tak stanowi kontrakt.
+        // Konsekwencja przyjęta świadomie: własny tekst z `abort(404, '...')`
+        // zostanie tu skasowany — 404 mówi w tym API jednym zdaniem, bo tak
+        // stanowi kontrakt.
+        //
+        // `Log::debug` jest **jedynym** śladem po oryginalnym komunikacie.
+        // Wbrew intuicji nie ma go w `laravel.log`: `HttpException`
+        // i `ModelNotFoundException` siedzą w `Handler::$internalDontReport`,
+        // więc żadna 404 nie jest raportowana — ani przed tą zmianą, ani po
+        // niej. Bez tej linii literówka w URL-u przestaje być widoczna
+        // gdziekolwiek.
         //
         // Pełne uzasadnienie i pomiary:
         // docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §4.
         $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($rendersJson) {
             if (! $rendersJson($request)) {
                 return null;
+            }
+
+            if (config('app.debug')) {
+                Log::debug('404: '.$e->getMessage(), ['path' => $request->path()]);
             }
 
             return response()->json(['message' => 'Nie znaleziono zasobu.'], 404);

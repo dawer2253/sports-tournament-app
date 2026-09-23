@@ -30,7 +30,11 @@ Weszło:
   plus testy w `backend/tests/Feature/AuthTest.php` na oba warianty (brak trasy
   i brak modelu). Pominięty został carve-out debugowy, który rekomendowała §4.4:
   `phpunit.xml` nie ustawia `APP_DEBUG`, więc testy asertowałyby wtedy inny tekst
-  niż dostaje klient. Cena jest opisana w komentarzu przy samym przesłonięciu.
+  niż dostaje klient. Cena okazała się przy tym większa, niż zakładał przegląd:
+  404 **nigdy** nie trafia do `laravel.log`, bo `HttpException`
+  i `ModelNotFoundException` są w `Handler::$internalDontReport` — po
+  przesłonięciu oryginalny komunikat nie byłby widoczny nigdzie. Domyka to
+  `Log::debug` w samym callbacku, zapalany przy `APP_DEBUG`, z dwoma testami.
 - 401 bez nagłówka `Accept` (§7.3): `redirectGuestsTo(null)` plus test, który
   omija `getJson()`.
 - Token i `createdAt` (§7.2): przykłady doganiają rzeczywistość. Offsetów było
@@ -49,8 +53,13 @@ Weszło:
   źródłową z §2: Spectator waliduje schemat, nie przykład, więc rozjazd tej klasy
   nie miał dotąd żadnej bramki.
 
-Otwarte zostaje: wzmianka o 405 i 500 w `info.description` (§8) oraz polskie 403
-przy pierwszej policy (§5).
+Otwarte zostaje: wzmianka o 405 i 500 w `info.description` (§8) oraz **polskie
+401 i 403** (§5 i §6). Te dwa chodzą razem, bo to ten sam mechanizm co przy 404:
+`Unauthenticated.` i `This action is unauthorized.` są w kodzie frameworka
+napisami stałymi poza translatorem, więc `lang/pl` ich nie ruszy — trzeba
+`render()` na `AuthenticationException` plus zmiana przykładu w kontrakcie.
+Po tym PR-ze błędy mówią w dwóch językach: 404 i 422 po polsku, 401 i 403 po
+angielsku.
 
 ## 1. Streszczenie
 
