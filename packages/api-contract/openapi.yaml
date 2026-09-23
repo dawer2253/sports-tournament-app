@@ -1086,6 +1086,14 @@ paths:
         Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
         z zakończonych meczów. Jedna pozycja na fazę `league` i jedna na każdą
         grupę w fazie `group`. Faza `knockout` nie ma tabeli.
+
+        Przykłady są dwa, po jednym na sport, te same co w
+        `/public/t/{slug}/standings`: `pilka` (domyślny, zgodny z seedem demo)
+        i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+        `Prefer: example=koszykowka`. Drugi przykład jest tu po to, żeby dało
+        się sprawdzić, czy panel bierze nagłówek kolumny z odpowiedzi, a nie ze
+        sztywnego napisu. `/tournaments/{tournament}` nie ma jeszcze wariantu
+        koszykarskiego, więc w panelu przełącznik zmienia tylko tabele.
       responses:
         '200':
           description: Tabele w kolejności faz
@@ -1098,17 +1106,35 @@ paths:
                   data:
                     type: array
                     items: { $ref: '#/components/schemas/StandingTable' }
-              example:
-                data:
-                  - stageId: 1
-                    stageName: Faza zasadnicza
-                    groupId: null
-                    groupName: null
-                    scoreLabel: Bramki
-                    rows:
-                      - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
-                      - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
-                      - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0 }
+              examples:
+                pilka:
+                  summary: Turniej piłkarski — zdobycze to bramki
+                  value:
+                    data:
+                      - stageId: 1
+                        stageName: Faza zasadnicza
+                        groupId: null
+                        groupName: null
+                        scoreLabel: Bramki
+                        rows:
+                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
+                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0 }
+                koszykowka:
+                  summary: Turniej koszykarski — zdobycze to punkty
+                  description: |
+                    Bez odpowiednika w seedzie demo, który jest wyłącznie
+                    piłkarski.
+                  value:
+                    data:
+                      - stageId: 1
+                        stageName: Faza zasadnicza
+                        groupId: null
+                        groupName: null
+                        scoreLabel: Punkty
+                        rows:
+                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4 }
+                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
