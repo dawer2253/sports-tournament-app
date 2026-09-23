@@ -27,8 +27,8 @@ się więc jako uzasadnienie zmian, nie jako listę zadań.
 Weszło:
 
 - 404 — backend dogania przykład (§4.4): przesłonięcie w `backend/bootstrap/app.php`
-  plus testy w `backend/tests/Feature/AuthTest.php` na oba warianty (brak trasy
-  i brak modelu). Pominięty został carve-out debugowy, który rekomendowała §4.4:
+  plus testy w `backend/tests/Feature/ErrorResponsesTest.php` na oba warianty
+  (brak trasy i brak modelu). Pominięty został carve-out debugowy, który rekomendowała §4.4:
   `phpunit.xml` nie ustawia `APP_DEBUG`, więc testy asertowałyby wtedy inny tekst
   niż dostaje klient. Cena okazała się przy tym większa, niż zakładał przegląd:
   404 **nigdy** nie trafia do `laravel.log`, bo `HttpException`
