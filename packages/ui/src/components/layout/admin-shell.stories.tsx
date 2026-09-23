@@ -89,6 +89,8 @@ export const MenuKontaZKlawiatury: Story = {
     await expect(avatar).not.toHaveAttribute('role')
     const { width, height } = avatar!.getBoundingClientRect()
     await expect([width, height]).toEqual([32, 32])
+    // Awatar ma się mieścić w obszarze treści przycisku, a nie wystawać na ramkę.
+    await expect([trigger.clientWidth, trigger.clientHeight]).toEqual([32, 32])
 
     // Space otwiera, Escape zamyka i oddaje fokus triggerowi.
     await userEvent.keyboard(' ')
