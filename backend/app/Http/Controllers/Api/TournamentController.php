@@ -22,12 +22,14 @@ class TournamentController extends Controller
      * w kontrakcie. Bez drugiego klucza turnieje z tej samej sekundy mogłyby
      * się dublować albo ginąć na granicy stron.
      *
-     * `perPage` spoza granic jest dociągane do nich, bo kontrakt nie
-     * przewiduje tu odpowiedzi 422.
+     * `perPage` ponad limit jest dociągane do niego, a nieczytelne (tekst,
+     * zero, liczba ujemna) daje rozmiar domyślny — kontrakt nie przewiduje tu
+     * odpowiedzi 422.
      */
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max($request->integer('perPage', self::DEFAULT_PER_PAGE), 1), self::MAX_PER_PAGE);
+        $perPage = $request->integer('perPage');
+        $perPage = $perPage < 1 ? self::DEFAULT_PER_PAGE : min($perPage, self::MAX_PER_PAGE);
 
         $tournaments = Tournament::whereBelongsTo($request->user())
             ->with('sport')
@@ -49,7 +51,7 @@ class TournamentController extends Controller
 
     public function store(StoreTournamentRequest $request): JsonResponse
     {
-        $tournament = Tournament::open(
+        $tournament = Tournament::createForOrganizer(
             owner: $request->user(),
             sport: Sport::findOrFail($request->validated('sportId')),
             name: $request->validated('name'),

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Sport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,4 +36,13 @@ function actingAsOrganizer(?User $user = null): TestCase
     $user ??= User::factory()->create();
 
     return test()->withToken($user->createToken('test')->plainTextToken);
+}
+
+/**
+ * Sporty wstawia migracja (decyzja #10), więc test bierze je z bazy po kodzie,
+ * a nie z factory — `SportFactory` celowo nie istnieje.
+ */
+function sport(string $code): Sport
+{
+    return Sport::where('code', $code)->firstOrFail();
 }

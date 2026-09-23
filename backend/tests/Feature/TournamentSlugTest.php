@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Sport;
 use App\Models\Tournament;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -28,7 +27,7 @@ function createTournamentNamed(string $name): TestResponse
     return actingAsOrganizer()
         ->postJson('/api/v1/tournaments', [
             'name' => $name,
-            'sportId' => Sport::firstWhere('code', 'football')->id,
+            'sportId' => sport('football')->id,
             'format' => 'league',
         ])
         ->assertValidRequest()

@@ -59,6 +59,9 @@ class Tournament extends Model
 
     public const SLUG_MAX_LENGTH = 80;
 
+    /** Nazwa unikalnego indeksu sluga, którą MySQL podaje w komunikacie o duplikacie. */
+    private const SLUG_UNIQUE_INDEX = 'tournaments_slug_unique';
+
     /** Zastępuje slug, z którego po transliteracji nic sensownego nie zostało („A", „!!!"). */
     public const SLUG_FALLBACK = 'turniej';
 
@@ -75,8 +78,11 @@ class Tournament extends Model
      * kolejnego sufiksu. Sufiks rośnie także po naruszeniu, bez ponownego
      * sprawdzenia tego samego: w transakcji z REPEATABLE READ odczyt nie
      * zobaczyłby cudzego wiersza i pętla kręciłaby się w miejscu.
+     *
+     * Ponawiana jest wyłącznie kolizja sluga. Każde inne naruszenie unikatu
+     * powtórzyłoby się przy każdym sufiksie, więc idzie dalej jako błąd.
      */
-    public static function open(User $owner, Sport $sport, string $name, string $format): self
+    public static function createForOrganizer(User $owner, Sport $sport, string $name, string $format): self
     {
         $baseSlug = self::baseSlugFrom($name);
 
@@ -89,8 +95,10 @@ class Tournament extends Model
 
             try {
                 return DB::transaction(fn () => self::createWithStages($owner, $sport, $name, $slug, $format));
-            } catch (UniqueConstraintViolationException) {
-                continue;
+            } catch (UniqueConstraintViolationException $violation) {
+                if (! str_contains($violation->getMessage(), self::SLUG_UNIQUE_INDEX)) {
+                    throw $violation;
+                }
             }
         }
     }

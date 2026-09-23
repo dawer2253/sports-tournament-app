@@ -1,23 +1,19 @@
 <?php
 
-use App\Models\Sport;
+use App\Models\Stage;
 use App\Models\Tournament;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Spectator\Spectator;
 
 beforeEach(function () {
     Spectator::using('openapi.yaml');
 });
 
-function football(): Sport
-{
-    return Sport::firstWhere('code', 'football');
-}
-
 it('odmawia założenia turnieju bez tokenu', function () {
     $this->postJson('/api/v1/tournaments', [
         'name' => 'Liga Osiedlowa 2026',
-        'sportId' => football()->id,
+        'sportId' => sport('football')->id,
         'format' => 'league',
     ])
         ->assertValidRequest()
@@ -32,7 +28,7 @@ it('zakłada turniej jako szkic zalogowanego organizera', function () {
     $response = actingAsOrganizer($organizer)
         ->postJson('/api/v1/tournaments', [
             'name' => 'Liga Osiedlowa 2026',
-            'sportId' => football()->id,
+            'sportId' => sport('football')->id,
             'format' => 'league',
         ])
         ->assertValidRequest()
@@ -40,7 +36,7 @@ it('zakłada turniej jako szkic zalogowanego organizera', function () {
         ->assertJsonPath('data.name', 'Liga Osiedlowa 2026')
         ->assertJsonPath('data.slug', 'liga-osiedlowa-2026')
         ->assertJsonPath('data.status', 'draft')
-        ->assertJsonPath('data.sport', ['id' => football()->id, 'code' => 'football', 'name' => 'Piłka nożna'])
+        ->assertJsonPath('data.sport', ['id' => sport('football')->id, 'code' => 'football', 'name' => 'Piłka nożna'])
         ->assertJsonPath('data.teamsCount', 0)
         // Kolor marki z przykładu w kontrakcie — ten sam, który stoi w demo.
         ->assertJsonPath('data.branding', ['logoUrl' => null, 'primaryColor' => '#1F7A45']);
@@ -58,7 +54,7 @@ it('tworzy fazy wynikające z formatu i nic poza nimi', function (string $format
     $response = actingAsOrganizer()
         ->postJson('/api/v1/tournaments', [
             'name' => 'Turniej testowy',
-            'sportId' => football()->id,
+            'sportId' => sport('football')->id,
             'format' => $format,
         ])
         ->assertValidRequest()
@@ -94,7 +90,7 @@ it('kopiuje punktację i tiebreaki z domyślnych danego sportu', function (strin
     actingAsOrganizer()
         ->postJson('/api/v1/tournaments', [
             'name' => 'Turniej testowy',
-            'sportId' => Sport::firstWhere('code', $sportCode)->id,
+            'sportId' => sport($sportCode)->id,
             'format' => 'league',
         ])
         ->assertValidRequest()
@@ -115,7 +111,7 @@ it('odrzuca błędne dane turnieju z polskim komunikatem przy polu', function (a
     actingAsOrganizer()
         ->postJson('/api/v1/tournaments', array_filter([
             'name' => 'Liga Osiedlowa 2026',
-            'sportId' => football()->id,
+            'sportId' => sport('football')->id,
             'format' => 'league',
             ...$override,
         ], fn ($value) => $value !== null))
@@ -127,8 +123,10 @@ it('odrzuca błędne dane turnieju z polskim komunikatem przy polu', function (a
 })->with([
     'brak nazwy' => [['name' => null], 'name', 'Pole nazwa jest wymagane.'],
     'pusta nazwa' => [['name' => ''], 'name', 'Pole nazwa jest wymagane.'],
+    'nazwa z samych spacji' => [['name' => '   '], 'name', 'Pole nazwa jest wymagane.'],
     'za długa nazwa' => [['name' => str_repeat('a', 161)], 'name', 'Pole nazwa nie może mieć więcej niż 160 znaków.'],
     'brak sportu' => [['sportId' => null], 'sportId', 'Pole sport jest wymagane.'],
+    'sport nie liczbą' => [['sportId' => 'abc'], 'sportId', 'Pole sport musi być liczbą całkowitą.'],
     'brak formatu' => [['format' => null], 'format', 'Pole format jest wymagane.'],
     'format spoza listy' => [['format' => 'swiss'], 'format', 'Wybrana wartość pola format jest nieprawidłowa.'],
 ]);
@@ -154,9 +152,36 @@ it('przyjmuje nazwę o maksymalnej długości', function () {
     actingAsOrganizer()
         ->postJson('/api/v1/tournaments', [
             'name' => str_repeat('a', 160),
-            'sportId' => football()->id,
+            'sportId' => sport('football')->id,
             'format' => 'league',
         ])
         ->assertValidRequest()
         ->assertValidResponse(201);
+});
+
+// Ponowna próba z kolejnym sufiksem leczy wyłącznie kolizję sluga. Każde inne
+// naruszenie unikatu powtórzy się przy każdym sufiksie, więc ponawianie go
+// zapętliłoby żądanie zamiast oddać błąd. Naruszenie jest prawdziwe: faza
+// wstawiona drugi raz z tym samym `order` łamie unikat `(tournament_id, order)`.
+// Licznik prób jest bezpiecznikiem, żeby zapętlony kod dał czerwony test,
+// a nie zawieszony zestaw.
+it('nie ponawia zakładania przy naruszeniu unikatu innym niż slug', function () {
+    $attempts = 0;
+    Stage::created(function (Stage $stage) use (&$attempts) {
+        if (++$attempts > 5) {
+            throw new RuntimeException('Zakładanie turnieju zapętliło się.');
+        }
+        Stage::create($stage->only(['tournament_id', 'type', 'name', 'order']));
+    });
+
+    $this->withoutExceptionHandling();
+
+    expect(fn () => actingAsOrganizer()->postJson('/api/v1/tournaments', [
+        'name' => 'Liga Osiedlowa 2026',
+        'sportId' => sport('football')->id,
+        'format' => 'league',
+    ]))->toThrow(UniqueConstraintViolationException::class);
+
+    expect($attempts)->toBe(1)
+        ->and(Tournament::count())->toBe(0);
 });

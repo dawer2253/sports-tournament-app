@@ -94,6 +94,19 @@ it('nie oddaje więcej niż 100 turniejów na stronę', function () {
         ->assertJsonPath('meta.perPage', 100);
 });
 
+// Nieczytelne `perPage` (tekst, zero) to brak wartości, nie prośba o jeden
+// turniej na stronę.
+it('bierze domyślny rozmiar strony, gdy perPage jest nieczytelne', function (string $perPage) {
+    $organizer = User::factory()->create();
+    Tournament::factory()->count(21)->for($organizer)->create();
+
+    actingAsOrganizer($organizer)
+        ->getJson("/api/v1/tournaments?perPage={$perPage}")
+        ->assertValidResponse(200)
+        ->assertJsonCount(20, 'data')
+        ->assertJsonPath('meta.perPage', 20);
+})->with(['abc', '0']);
+
 // Od najnowszego, a przy tym samym `createdAt` — po `id` malejąco. Bez
 // drugiego klucza MySQL może zwrócić remisujące wiersze w dowolnej kolejności
 // przy każdym zapytaniu z osobna, więc turniej z granicy strony pojawiłby się
