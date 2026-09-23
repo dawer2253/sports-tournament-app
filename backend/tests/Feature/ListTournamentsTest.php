@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Spectator\Spectator;
+use Symfony\Component\Yaml\Yaml;
 
 beforeEach(function () {
     Spectator::using('openapi.yaml');
@@ -139,4 +140,19 @@ it('układa turnieje od najnowszego i stabilnie dzieli je na strony', function (
     }
 
     expect($seen)->toBe($expectedOrder);
+});
+
+// Mock serwuje panelowi przykład z kontraktu, a Spectator waliduje schemat,
+// nie przykład — przykład ułożony wbrew opisowi kolejności przeszedłby każdą
+// bramkę i pokazał na mocku odwrotną listę niż na Laravelu (klasa błędu z #53).
+it('ma w kontrakcie przykład listy ułożony tak, jak opisuje endpoint', function () {
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $example = $spec['paths']['/tournaments']['get']['responses']['200']['content']['application/json']['example']['data'];
+
+    $keys = array_map(fn (array $row) => [$row['createdAt'], $row['id']], $example);
+    $sorted = $keys;
+    usort($sorted, fn (array $a, array $b) => [$b[0], $b[1]] <=> [$a[0], $a[1]]);
+
+    expect(count($keys))->toBeGreaterThan(1)
+        ->and($keys)->toBe($sorted);
 });

@@ -413,6 +413,34 @@ export interface paths {
                          * @example {
                          *       "data": [
                          *         {
+                         *           "id": 2,
+                         *           "name": "Puchar Zimowy",
+                         *           "slug": "puchar-zimowy",
+                         *           "status": "draft",
+                         *           "sport": {
+                         *             "id": 2,
+                         *             "code": "basketball",
+                         *             "name": "Koszykówka"
+                         *           },
+                         *           "branding": {
+                         *             "logoUrl": null,
+                         *             "primaryColor": "#1F7A45"
+                         *           },
+                         *           "points": {
+                         *             "win": 2,
+                         *             "draw": 0,
+                         *             "loss": 1
+                         *           },
+                         *           "tiebreakers": [
+                         *             "points",
+                         *             "head_to_head",
+                         *             "score_diff"
+                         *           ],
+                         *           "teamsCount": 8,
+                         *           "createdAt": "2026-09-10T07:00:00+00:00",
+                         *           "updatedAt": "2026-09-10T07:00:00+00:00"
+                         *         },
+                         *         {
                          *           "id": 1,
                          *           "name": "Liga Osiedlowa 2026",
                          *           "slug": "liga-osiedlowa-2026",
@@ -440,34 +468,6 @@ export interface paths {
                          *           "teamsCount": 3,
                          *           "createdAt": "2026-09-01T08:00:00+00:00",
                          *           "updatedAt": "2026-09-14T16:30:00+00:00"
-                         *         },
-                         *         {
-                         *           "id": 2,
-                         *           "name": "Puchar Zimowy",
-                         *           "slug": "puchar-zimowy",
-                         *           "status": "draft",
-                         *           "sport": {
-                         *             "id": 2,
-                         *             "code": "basketball",
-                         *             "name": "Koszykówka"
-                         *           },
-                         *           "branding": {
-                         *             "logoUrl": null,
-                         *             "primaryColor": "#1F7A45"
-                         *           },
-                         *           "points": {
-                         *             "win": 2,
-                         *             "draw": 0,
-                         *             "loss": 1
-                         *           },
-                         *           "tiebreakers": [
-                         *             "points",
-                         *             "head_to_head",
-                         *             "score_diff"
-                         *           ],
-                         *           "teamsCount": 8,
-                         *           "createdAt": "2026-09-10T07:00:00+00:00",
-                         *           "updatedAt": "2026-09-10T07:00:00+00:00"
                          *         }
                          *       ],
                          *       "meta": {
