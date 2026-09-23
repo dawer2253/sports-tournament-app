@@ -33,7 +33,10 @@ info:
       dodatkowo `{ "meta": ... }`.
     - Błąd walidacji: `422` z `{ "message": ..., "errors": { pole: [...] } }`.
       Pozostałe błędy: `{ "message": ... }`.
-    - Daty w ISO 8601 z offsetem.
+    - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
+      `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
+      klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
+      polskiego nie jest stała, więc nie zaszywaj jej na sztywno.
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
@@ -109,12 +112,12 @@ paths:
                   data: { $ref: '#/components/schemas/AuthPayload' }
               example:
                 data:
-                  token: 1|4bT9xQkR7fN2wUhLpVmZ
+                  token: 1|4bT9xQkR7fN2wUhLpVmZaCdEfGhIjKlMnOpQrStU1a2b3c4d
                   user:
                     id: 1
                     name: Dawid Patko
                     email: dawid@example.com
-                    createdAt: '2026-09-01T10:00:00+02:00'
+                    createdAt: '2026-09-01T08:00:00+00:00'
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /login:
@@ -147,12 +150,12 @@ paths:
                   data: { $ref: '#/components/schemas/AuthPayload' }
               example:
                 data:
-                  token: 1|4bT9xQkR7fN2wUhLpVmZ
+                  token: 1|4bT9xQkR7fN2wUhLpVmZaCdEfGhIjKlMnOpQrStU1a2b3c4d
                   user:
                     id: 1
                     name: Dawid Patko
                     email: dawid@example.com
-                    createdAt: '2026-09-01T10:00:00+02:00'
+                    createdAt: '2026-09-01T08:00:00+00:00'
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /logout:
@@ -183,7 +186,7 @@ paths:
                   id: 1
                   name: Dawid Patko
                   email: dawid@example.com
-                  createdAt: '2026-09-01T10:00:00+02:00'
+                  createdAt: '2026-09-01T08:00:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
   /sports:
@@ -267,8 +270,8 @@ paths:
                     points: { win: 3, draw: 1, loss: 0 }
                     tiebreakers: [points, head_to_head, score_diff, score_for]
                     teamsCount: 3
-                    createdAt: '2026-09-01T10:00:00+02:00'
-                    updatedAt: '2026-09-14T18:30:00+02:00'
+                    createdAt: '2026-09-01T08:00:00+00:00'
+                    updatedAt: '2026-09-14T16:30:00+00:00'
                   - id: 2
                     name: Puchar Zimowy
                     slug: puchar-zimowy
@@ -278,8 +281,8 @@ paths:
                     points: { win: 2, draw: 0, loss: 1 }
                     tiebreakers: [points, head_to_head, score_diff]
                     teamsCount: 8
-                    createdAt: '2026-09-10T09:00:00+02:00'
-                    updatedAt: '2026-09-10T09:00:00+02:00'
+                    createdAt: '2026-09-10T07:00:00+00:00'
+                    updatedAt: '2026-09-10T07:00:00+00:00'
                 meta: { currentPage: 1, lastPage: 1, perPage: 20, total: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
     post:
@@ -321,8 +324,8 @@ paths:
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   teamsCount: 0
-                  createdAt: '2026-09-01T10:00:00+02:00'
-                  updatedAt: '2026-09-01T10:00:00+02:00'
+                  createdAt: '2026-09-01T08:00:00+00:00'
+                  updatedAt: '2026-09-01T08:00:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
@@ -353,8 +356,8 @@ paths:
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   teamsCount: 3
-                  createdAt: '2026-09-01T10:00:00+02:00'
-                  updatedAt: '2026-09-14T18:30:00+02:00'
+                  createdAt: '2026-09-01T08:00:00+00:00'
+                  updatedAt: '2026-09-14T16:30:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -423,6 +426,7 @@ paths:
                   data: { $ref: '#/components/schemas/Tournament' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /tournaments/{tournament}/stages:
@@ -511,6 +515,7 @@ paths:
                 data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /teams/{team}:
@@ -602,6 +607,7 @@ paths:
                   data: { $ref: '#/components/schemas/Team' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /teams/{team}/players:
@@ -662,6 +668,7 @@ paths:
                 data: { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /players/{player}:
@@ -759,6 +766,7 @@ paths:
                 data: { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa' }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
 
   /venues/{venue}:
@@ -855,7 +863,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-09-06T12:00:00+02:00'
+                        kickoffAt: '2026-09-06T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -872,7 +880,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        kickoffAt: '2026-09-13T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -889,7 +897,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-09-20T12:00:00+02:00'
+                        kickoffAt: '2026-09-20T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -906,7 +914,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-09-27T12:00:00+02:00'
+                        kickoffAt: '2026-09-27T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -923,7 +931,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -940,7 +948,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-11T12:00:00+02:00'
+                        kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: null
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -973,7 +981,7 @@ paths:
                         homePenalties: 4
                         awayPenalties: 3
                         status: finished
-                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 201
                         loserToMatchId: null
@@ -990,7 +998,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-10-04T14:00:00+02:00'
+                        kickoffAt: '2026-10-04T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 202
                         loserToMatchId: null
@@ -1007,7 +1015,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-10-11T12:00:00+02:00'
+                        kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
                         loserToMatchId: 302
@@ -1024,7 +1032,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-11T14:00:00+02:00'
+                        kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
                         loserToMatchId: 302
@@ -1041,7 +1049,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-18T14:00:00+02:00'
+                        kickoffAt: '2026-10-18T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1058,7 +1066,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-18T12:00:00+02:00'
+                        kickoffAt: '2026-10-18T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1287,7 +1295,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-09-06T12:00:00+02:00'
+                        kickoffAt: '2026-09-06T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1304,7 +1312,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-09-13T12:00:00+02:00'
+                        kickoffAt: '2026-09-13T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1321,7 +1329,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-09-20T12:00:00+02:00'
+                        kickoffAt: '2026-09-20T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1338,7 +1346,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-09-27T12:00:00+02:00'
+                        kickoffAt: '2026-09-27T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1355,7 +1363,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1372,7 +1380,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-11T12:00:00+02:00'
+                        kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: null
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1404,7 +1412,7 @@ paths:
                         homePenalties: 4
                         awayPenalties: 3
                         status: finished
-                        kickoffAt: '2026-10-04T12:00:00+02:00'
+                        kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 201
                         loserToMatchId: null
@@ -1421,7 +1429,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-10-04T14:00:00+02:00'
+                        kickoffAt: '2026-10-04T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 202
                         loserToMatchId: null
@@ -1438,7 +1446,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: finished
-                        kickoffAt: '2026-10-11T12:00:00+02:00'
+                        kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
                         loserToMatchId: 302
@@ -1455,7 +1463,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-11T14:00:00+02:00'
+                        kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
                         loserToMatchId: 302
@@ -1472,7 +1480,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-18T12:00:00+02:00'
+                        kickoffAt: '2026-10-18T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1489,7 +1497,7 @@ paths:
                         homePenalties: null
                         awayPenalties: null
                         status: scheduled
-                        kickoffAt: '2026-10-18T14:00:00+02:00'
+                        kickoffAt: '2026-10-18T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: null
                         loserToMatchId: null
@@ -1537,7 +1545,7 @@ paths:
                     homePenalties: null
                     awayPenalties: null
                     status: scheduled
-                    kickoffAt: '2026-09-27T12:00:00+02:00'
+                    kickoffAt: '2026-09-27T10:00:00+00:00'
                     venue: { id: 1, name: Boisko Bemowo }
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1554,7 +1562,7 @@ paths:
                     homePenalties: null
                     awayPenalties: null
                     status: scheduled
-                    kickoffAt: '2026-10-04T12:00:00+02:00'
+                    kickoffAt: '2026-10-04T10:00:00+00:00'
                     venue: { id: 1, name: Boisko Bemowo }
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1571,7 +1579,7 @@ paths:
                     homePenalties: null
                     awayPenalties: null
                     status: scheduled
-                    kickoffAt: '2026-10-11T12:00:00+02:00'
+                    kickoffAt: '2026-10-11T10:00:00+00:00'
                     venue: null
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1619,7 +1627,7 @@ paths:
                     homePenalties: null
                     awayPenalties: null
                     status: finished
-                    kickoffAt: '2026-09-20T12:00:00+02:00'
+                    kickoffAt: '2026-09-20T10:00:00+00:00'
                     venue: { id: 1, name: Boisko Bemowo }
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1636,7 +1644,7 @@ paths:
                     homePenalties: null
                     awayPenalties: null
                     status: finished
-                    kickoffAt: '2026-09-13T12:00:00+02:00'
+                    kickoffAt: '2026-09-13T10:00:00+00:00'
                     venue: { id: 1, name: Boisko Bemowo }
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1653,7 +1661,7 @@ paths:
                     homePenalties: null
                     awayPenalties: null
                     status: finished
-                    kickoffAt: '2026-09-06T12:00:00+02:00'
+                    kickoffAt: '2026-09-06T10:00:00+00:00'
                     venue: { id: 1, name: Boisko Bemowo }
                     winnerToMatchId: null
                     loserToMatchId: null
@@ -1801,7 +1809,7 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ValidationError' }
           example:
-            message: Podane dane są nieprawidłowe.
+            message: Pole nazwa jest wymagane.
             errors:
               name: [Pole nazwa jest wymagane.]
 
@@ -1816,7 +1824,18 @@ components:
       type: object
       required: [message, errors]
       properties:
-        message: { type: string }
+        message:
+          type: string
+          description: |
+            Pierwszy komunikat z `errors`, a przy kilku błędach naraz
+            z doklejonym liczebnikiem pozostałych: „Pole nazwa jest wymagane.
+            (i jeszcze 3 błędy)". To nie jest zdanie ogólne, tylko konkret
+            pierwszego błędu (przy logowaniu: „Nieprawidłowy e-mail lub
+            hasło."), więc nadaje się na komunikat zbiorczy — toast albo
+            nagłówek formularza. Pod samym polem pokaż wpis z `errors`, bo
+            inaczej ten sam tekst wyjdzie dwa razy.
+            Tekst ogólny („Podane dane są nieprawidłowe.") pada wyłącznie
+            wtedy, gdy mapa `errors` jest pusta.
         errors:
           type: object
           additionalProperties:
@@ -1845,7 +1864,12 @@ components:
       type: object
       required: [token, user]
       properties:
-        token: { type: string }
+        token:
+          type: string
+          description: |
+            Do wysłania w nagłówku `Authorization: Bearer <token>`. Dla klienta
+            nieprzezroczysty: jego długość i budowa nie są częścią kontraktu,
+            więc nie waliduj go po stronie frontu ani nie rozbieraj na części.
         user: { $ref: '#/components/schemas/User' }
 
     SportCode:

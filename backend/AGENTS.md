@@ -78,6 +78,24 @@ Tailwindem i widokiem `welcome.blade.php` — zostały usunięte razem z
 `package.json` albo widok z `@vite`, usuń go. `/` zostaje health checkiem
 zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
+**404 mówi w tym API jednym zdaniem.** [`bootstrap/app.php`](bootstrap/app.php)
+przesłania renderowanie `NotFoundHttpException` na `api/*` i oddaje
+`Nie znaleziono zasobu.` — tak stanowi `components/responses/NotFound`, wspólny
+dla wszystkich ścieżek. Framework ma tu trzy różne teksty (brak trasy, brak
+modelu, goły `abort(404)`), wszystkie po angielsku, a ten od modelu wycieka
+nazwę klasy Eloquenta wprost na ekran.
+
+Wynika z tego **pułapka: własny tekst z `abort(404, '...')` zostanie skasowany
+po cichu** i żaden test tego nie zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje
+innego komunikatu, to zmiana kontraktu idąca normalną kolejnością, a nie
+obejście w kontrolerze.
+
+Oryginalny komunikat nie trafia przy tym do `laravel.log` — `HttpException`
+i `ModelNotFoundException` są w `Handler::$internalDontReport`, więc 404 nigdy
+nie była raportowana. Jedyny jej ślad to `Log::debug` w samym przesłonięciu,
+zapalany przy `APP_DEBUG`. Powody i pomiary:
+[`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
+
 ## Schemat i modele
 
 Kształt bazy wynika z ERD w [`docs/PLAN.md`](../docs/PLAN.md) §3. Trzy miejsca
@@ -125,6 +143,24 @@ co panel.
 `packages/api-contract/openapi.yaml` jest jedynym źródłem prawdy o API. Backend
 kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec →
 `npm run contract:generate` → kod. Szczegóły w [rootowym `AGENTS.md`](../AGENTS.md).
+
+**Spectator dowodzi zgodności ze schematem, nie z przykładem.** `message` typu
+`string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
+rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
+[#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 404 robi to za
+ciebie test „mówi przy 404 dokładnie to, co obiecuje kontrakt".
+
+Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
+`abort(404, '...')`** — opisuje „Backend oddaje wyłącznie JSON" wyżej.
+
+**Czas w odpowiedziach idzie w UTC**, więc każda data wychodzi z offsetem
+`+00:00`; tak stanowią „Konwencje" w kontrakcie. Wymusza to
+[`config/app.php`](config/app.php) (`'timezone' => 'UTC'`, wpisane na sztywno,
+bez `env()`) — kontrakt niesie samą gwarancję, bez tego szczegółu, żeby front
+nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją do
+podjęcia tutaj, nie edycją jednej linijki w configu, i pociąga za sobą wszystkie
+przykłady w `openapi.yaml`.
 
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
