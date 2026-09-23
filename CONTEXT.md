@@ -54,6 +54,17 @@ Trzy rodzaje:
 Fazy w turnieju są uporządkowane. Faza `knockout` może pobierać uczestników
 z wyników fazy wcześniejszej.
 
+## Format (format turnieju)
+
+Wybór organizera przy zakładaniu turnieju, który mówi, jakie fazy utworzyć:
+
+- `league`: jedna faza `league`.
+- `knockout`: jedna faza `knockout`.
+- `groups_playoff`: faza `group`, a po niej faza `knockout`, obie od razu.
+
+Format nie jest cechą turnieju. Po założeniu nie istnieje: to, jakim turniejem
+coś jest, wynika wyłącznie z jego faz.
+
 ## Group (grupa)
 
 Podzbiór drużyn w fazie `group`, które grają wyłącznie ze sobą i mają własną
