@@ -82,7 +82,7 @@ class Tournament extends Model
      * Ponawiana jest wyłącznie kolizja sluga. Każde inne naruszenie unikatu
      * powtórzyłoby się przy każdym sufiksie, więc idzie dalej jako błąd.
      */
-    public static function createForOrganizer(User $owner, Sport $sport, string $name, string $format): self
+    public static function createForOrganizer(User $organizer, Sport $sport, string $name, string $format): self
     {
         $baseSlug = self::baseSlugFrom($name);
 
@@ -94,7 +94,7 @@ class Tournament extends Model
             }
 
             try {
-                return DB::transaction(fn () => self::createWithStages($owner, $sport, $name, $slug, $format));
+                return DB::transaction(fn () => self::createWithStages($organizer, $sport, $name, $slug, $format));
             } catch (UniqueConstraintViolationException $violation) {
                 if (! str_contains($violation->getMessage(), self::SLUG_UNIQUE_INDEX)) {
                     throw $violation;
@@ -103,10 +103,10 @@ class Tournament extends Model
         }
     }
 
-    private static function createWithStages(User $owner, Sport $sport, string $name, string $slug, string $format): self
+    private static function createWithStages(User $organizer, Sport $sport, string $name, string $slug, string $format): self
     {
         $tournament = self::create([
-            'user_id' => $owner->id,
+            'user_id' => $organizer->id,
             'sport_id' => $sport->id,
             'name' => $name,
             'slug' => $slug,

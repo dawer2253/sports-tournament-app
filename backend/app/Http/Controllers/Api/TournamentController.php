@@ -52,7 +52,7 @@ class TournamentController extends Controller
     public function store(StoreTournamentRequest $request): JsonResponse
     {
         $tournament = Tournament::createForOrganizer(
-            owner: $request->user(),
+            organizer: $request->user(),
             sport: Sport::findOrFail($request->validated('sportId')),
             name: $request->validated('name'),
             format: $request->validated('format'),
