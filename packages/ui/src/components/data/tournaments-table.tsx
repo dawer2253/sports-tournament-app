@@ -1,7 +1,6 @@
 import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table'
 import { AlertTriangle, ArrowUpRight, Trophy } from 'lucide-react'
 import * as React from 'react'
-import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { EmptyState } from '../ui/empty-state'
@@ -44,7 +43,15 @@ const STATUS_BADGE: Record<
   finished: { label: 'Zakończony', variant: 'outline' },
 }
 
-const features = tableFeatures({})
+/**
+ * `className` z `meta` trafia i do nagłówka, i do komórek kolumny, żeby obie
+ * strony tabeli nie rozjechały się przy zmianie.
+ */
+interface TournamentColumnMeta {
+  className?: string
+}
+
+const features = tableFeatures({ columnMeta: {} as TournamentColumnMeta })
 const helper = createColumnHelper<typeof features, TournamentRow>()
 
 const dataColumns = helper.columns([
@@ -67,37 +74,33 @@ const dataColumns = helper.columns([
   }),
 ])
 
-const ACTIONS_COLUMN_ID = 'actions'
-
-/**
- * Klasa komórki kolumny akcji — jedna dla nagłówka i dla wiersza, żeby obie
- * strony tabeli nie rozjechały się przy zmianie. `w-0` zwęża kolumnę do treści
- * przycisku: nadwyżka szerokości ma zostać w kolumnach z danymi.
- */
-function actionsCellClass(columnId: string) {
-  return cn(columnId === ACTIONS_COLUMN_ID && 'w-0 text-right')
-}
-
 /**
  * Kolumna akcji domyka wiersz (#26). Pięć krótkich kolumn rozciągało się na całą
  * szerokość obszaru treści i zostawiało ~220 px pustki za ostatnią z nich; wąska
- * kolumna wyrównana do prawej zajmuje tę nadwyżkę czymś, co ma sens, zamiast
+ * kolumna na końcu zajmuje tę nadwyżkę czymś, co ma sens, zamiast
  * przesuwać pustkę w inne miejsce.
  */
 function actionsColumn(onOpen: (tournament: TournamentRow) => void) {
   return helper.display({
-    id: ACTIONS_COLUMN_ID,
+    id: 'actions',
     header: 'Akcje',
+    // `w-0` zwęża kolumnę do szerokości przycisku, więc nadwyżka zostaje
+    // w kolumnach z danymi.
+    meta: { className: 'w-0' },
     cell: ({ row }) => (
       <Button
         variant="ghost"
         size="sm"
+        // Ghost nie ma widocznej ramki, więc za lewą krawędź przycisku uchodzi
+        // jego tekst. Ujemny margines równa „Otwórz" z nagłówkiem „Akcje",
+        // tak jak w pozostałych kolumnach treść stoi równo z nagłówkiem.
+        className="-ml-2.5"
         // Nazwa dostępna z nazwą turnieju: trzy przyciski „Otwórz" obok siebie
         // brzmiałyby dla czytnika ekranu identycznie.
         aria-label={`Otwórz turniej ${row.original.name}`}
         onClick={() => onOpen(row.original)}
       >
-        Otwórz <ArrowUpRight className="size-4" />
+        Otwórz <ArrowUpRight data-icon="inline-end" />
       </Button>
     ),
   })
@@ -158,7 +161,7 @@ export function TournamentsTable({
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
-                  className={actionsCellClass(header.column.id)}
+                  className={header.column.columnDef.meta?.className}
                 >
                   <table.FlexRender header={header} />
                 </TableHead>
@@ -186,7 +189,7 @@ export function TournamentsTable({
                   {row.getAllCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={actionsCellClass(cell.column.id)}
+                      className={cell.column.columnDef.meta?.className}
                     >
                       <table.FlexRender cell={cell} />
                     </TableCell>

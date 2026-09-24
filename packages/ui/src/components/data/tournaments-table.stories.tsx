@@ -28,11 +28,7 @@ export const Domyslny: Story = {
   },
 }
 
-/**
- * Wariant (a) z #26: wąska kolumna akcji domyka wiersz o coś, co ma sens, i daje
- * wejście w turniej. Nazwa dostępna jest per wiersz, bo trzy przyciski „Otwórz"
- * obok siebie brzmiałyby dla czytnika ekranu identycznie.
- */
+/** Wariant (a) z #26: wąska kolumna akcji domyka wiersz i daje wejście w turniej. */
 export const Akcja: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
@@ -40,8 +36,12 @@ export const Akcja: Story = {
     const akcje = canvas.getAllByRole('button', { name: /^Otwórz turniej / })
     await expect(akcje).toHaveLength(tournamentList.length)
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Otwórz turniej Liga Osiedlowa 2026' }))
-    await expect(args.onOpen).toHaveBeenCalledWith(tournamentList[0])
+    // Nie pierwszy wiersz: błąd, który zawsze oddaje pierwszy turniej, też by
+    // przeszedł.
+    const turniej = tournamentList[1]
+    await userEvent.click(canvas.getByRole('button', { name: `Otwórz turniej ${turniej.name}` }))
+    await expect(args.onOpen).toHaveBeenCalledTimes(1)
+    await expect(args.onOpen).toHaveBeenCalledWith(turniej)
   },
 }
 
