@@ -32,8 +32,9 @@ class ApiError extends Error {
 export function TournamentPage() {
   const navigate = useNavigate();
   const params = useParams();
-  // Adres z paska przeglądarki, więc może być czymkolwiek. Id spoza kontraktu
-  // (int64 > 0) nie idzie do API, tylko od razu kończy się stanem „nie ma".
+  // Adres z paska przeglądarki, więc może być czymkolwiek. Id, które nie jest
+  // dodatnią liczbą całkowitą, nie idzie do API, tylko od razu kończy się
+  // stanem „nie ma" — takiego turnieju i tak nie ma w bazie.
   const id = Number(params.id);
   const validId = Number.isSafeInteger(id) && id > 0;
 
@@ -55,8 +56,8 @@ export function TournamentPage() {
 
   // 403 to cudzy turniej: organizer nie dowie się z panelu, czy taki istnieje,
   // więc oba przypadki wyglądają tak samo. Ponawianie niczego tu nie zmieni.
-  const status = tournament.error instanceof ApiError ? tournament.error.status : null;
-  const notFound = !validId || status === 403 || status === 404;
+  const httpStatus = tournament.error instanceof ApiError ? tournament.error.status : null;
+  const notFound = !validId || httpStatus === 403 || httpStatus === 404;
 
   let content;
   if (notFound) {
