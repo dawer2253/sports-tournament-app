@@ -1611,6 +1611,14 @@ export interface paths {
          * @description Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
          *     z zakończonych meczów. Jedna pozycja na fazę `league` i jedna na każdą
          *     grupę w fazie `group`. Faza `knockout` nie ma tabeli.
+         *
+         *     Przykłady są dwa, po jednym na sport, te same co w
+         *     `/public/t/{slug}/standings`: `pilka` (domyślny, zgodny z seedem demo)
+         *     i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+         *     `Prefer: example=koszykowka`. Drugi przykład jest tu po to, żeby dało
+         *     się sprawdzić, czy panel bierze nagłówek kolumny z odpowiedzi, a nie ze
+         *     sztywnego napisu. `/tournaments/{tournament}` nie ma jeszcze wariantu
+         *     koszykarskiego, więc w panelu przełącznik zmienia tylko tabele.
          */
         get: {
             parameters: {
@@ -1629,69 +1637,6 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": [
-                         *         {
-                         *           "stageId": 1,
-                         *           "stageName": "Faza zasadnicza",
-                         *           "groupId": null,
-                         *           "groupName": null,
-                         *           "scoreLabel": "Bramki",
-                         *           "rows": [
-                         *             {
-                         *               "position": 1,
-                         *               "team": {
-                         *                 "id": 1,
-                         *                 "name": "Wilki Bemowo",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 2,
-                         *               "drawn": 0,
-                         *               "lost": 0,
-                         *               "scoreFor": 5,
-                         *               "scoreAgainst": 1,
-                         *               "scoreDifference": 4,
-                         *               "points": 6
-                         *             },
-                         *             {
-                         *               "position": 2,
-                         *               "team": {
-                         *                 "id": 2,
-                         *                 "name": "Sokoły Ursus",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 1,
-                         *               "drawn": 0,
-                         *               "lost": 1,
-                         *               "scoreFor": 3,
-                         *               "scoreAgainst": 3,
-                         *               "scoreDifference": 0,
-                         *               "points": 3
-                         *             },
-                         *             {
-                         *               "position": 3,
-                         *               "team": {
-                         *                 "id": 3,
-                         *                 "name": "Orły Bielany",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 0,
-                         *               "drawn": 0,
-                         *               "lost": 2,
-                         *               "scoreFor": 1,
-                         *               "scoreAgainst": 5,
-                         *               "scoreDifference": -4,
-                         *               "points": 0
-                         *             }
-                         *           ]
-                         *         }
-                         *       ]
-                         *     }
-                         */
                         "application/json": {
                             data: components["schemas"]["StandingTable"][];
                         };
