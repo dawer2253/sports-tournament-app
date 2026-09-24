@@ -158,9 +158,12 @@ Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
 `+00:00`; tak stanowią „Konwencje" w kontrakcie. Wymusza to
 [`config/app.php`](config/app.php) (`'timezone' => 'UTC'`, wpisane na sztywno,
 bez `env()`) — kontrakt niesie samą gwarancję, bez tego szczegółu, żeby front
-nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją do
-podjęcia tutaj, nie edycją jednej linijki w configu, i pociąga za sobą wszystkie
-przykłady w `openapi.yaml`.
+nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją, nie
+edycją jednej linijki w configu, i pociąga za sobą wszystkie przykłady
+w `openapi.yaml` — powody UTC i brak `env()` opisuje
+[ADR 0008](../docs/adr/0008-czas-w-api-idzie-w-utc.md). Przeczytaj go, zanim
+napiszesz pierwszy endpoint przyjmujący datę: **Eloquent przy zapisie nie
+przelicza strefy**, a reguły dla wejścia stoją w ADR-ze.
 
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
