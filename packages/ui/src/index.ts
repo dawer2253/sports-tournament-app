@@ -29,6 +29,7 @@ export * from './components/ui/tooltip';
 export * from './components/ui/typography';
 
 export * from './components/data/tournament-row';
+export * from './components/data/tournament-status-badge';
 export * from './components/data/tournaments-table';
 
 export * from './components/layout/admin-shell';
