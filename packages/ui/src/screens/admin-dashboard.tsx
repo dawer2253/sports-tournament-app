@@ -1,25 +1,41 @@
-import { Plus, Trophy, ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, GitFork, ListOrdered, Plus, Swords, Trophy } from 'lucide-react'
 import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
-import { Badge } from '../components/ui/badge'
 import { Card } from '../components/ui/card'
 import { Progress } from '../components/ui/progress'
+import { Heading } from '../components/ui/typography'
+import { TournamentStatusBadge } from '../components/data/tournament-status-badge'
+import type { TournamentRow } from '../components/data/tournament-row'
+import { tournamentList } from '../lib/demo-data'
 
+// Dwa pierwsze liczniki liczą się z `tournamentList`, więc nie mogą jej
+// zaprzeczyć. Dwa pozostałe mierzą to, czego lista nie zna — mecze w oknie
+// czasu i ruch na stronie publicznej — i zostają danymi demo.
 const stats = [
-  { label: 'Aktywne turnieje', value: '2' },
-  { label: 'Drużyny', value: '24' },
+  { label: 'Aktywne turnieje', value: tournamentList.filter((t) => t.status === 'active').length },
+  { label: 'Drużyny', value: tournamentList.reduce((sum, t) => sum + t.teamsCount, 0) },
   { label: 'Mecze (30 dni)', value: '38' },
   { label: 'Odsłony public', value: '1 204' },
 ]
 
-// Te same trzy turnieje co `tournamentList` w `lib/demo-data.ts`, tylko jako
-// kafle z postępem. Nazwy, sporty i liczby drużyn muszą się z tamtą listą
-// zgadzać — pola prezentacyjne (ikona, postęp, stopka) żyją tylko tutaj.
-const items = [
-  { icon: '⚽', name: 'Liga Osiedlowa 2026', meta: 'Piłka nożna · Liga · 8 drużyn', status: 'Trwa', variant: 'default' as const, progress: 36, foot: 'Kolejka 5 / 14 · /t/liga-osiedlowa' },
-  { icon: '🏀', name: 'Puchar Miasta — Kosz', meta: 'Koszykówka · Puchar · 16 drużyn', status: 'Szkic', variant: 'secondary' as const, progress: 0, foot: 'Terminarz niewygenerowany' },
-  { icon: '⚽', name: 'Turniej Zimowy', meta: 'Piłka nożna · Grupy + playoff · 12 drużyn', status: 'Zakończony', variant: 'outline' as const, progress: 100, foot: 'Zwycięzca: FC Górka' },
-]
+type Tile = {
+  icon: typeof Trophy
+  /** Format rozgrywek: jedyne pole kafla, którego nie ma w `tournamentList`. */
+  format: string
+  /** Procent rozegranego terminarza. Tylko dla turnieju w trakcie. */
+  progress?: number
+  foot: string
+}
+
+// Warstwa prezentacyjna kafli, po `id` turnieju: wyłącznie to, czego nie ma
+// w `tournamentList`. Nazwa, sport, liczba drużyn i status idą z listy, więc
+// nie da się ich tutaj rozjechać. Ikona powtarza format — kafel i tak wypisuje
+// go pod tytułem, więc nie niesie treści, której nie da się przeczytać.
+const tiles: Partial<Record<TournamentRow['id'], Tile>> = {
+  1: { icon: ListOrdered, format: 'Liga', progress: 36, foot: 'Kolejka 5 / 14' },
+  2: { icon: Swords, format: 'Puchar', foot: 'Terminarz niewygenerowany' },
+  3: { icon: GitFork, format: 'Grupy + playoff', foot: 'Zwycięzca: FC Górka' },
+}
 
 export function AdminDashboard() {
   return (
@@ -39,23 +55,33 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {items.map((t) => (
-          <Card key={t.name} className="cursor-pointer p-5 transition-shadow hover:shadow-md">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="grid size-10 place-items-center rounded-lg bg-primary/10 text-xl">{t.icon}</div>
-              <Badge variant={t.variant}>{t.status}</Badge>
-            </div>
-            <h3 className="flex items-center gap-1 font-semibold">
-              {t.name} <ArrowUpRight className="size-4 text-muted-foreground" />
-            </h3>
-            <p className="text-sm text-muted-foreground">{t.meta}</p>
-            {t.progress > 0 && t.progress < 100 && <Progress value={t.progress} className="mt-3 h-1.5" />}
-            <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-              {t.status === 'Zakończony' && <Trophy className="size-3.5 text-primary" />}
-              {t.foot}
-            </div>
-          </Card>
-        ))}
+        {tournamentList.map((tournament) => {
+          // Turniej dopisany do `tournamentList` bez wpisu tutaj dostaje kafel
+          // bez warstwy prezentacyjnej. Dashboard ma nie znikać przez ikonę.
+          const tile = tiles[tournament.id]
+          const Icon = tile?.icon ?? Trophy
+          const meta = [tournament.sport.name, tile?.format, `${tournament.teamsCount} drużyn`]
+
+          return (
+            <Card key={tournament.id} className="cursor-pointer p-5 transition-shadow hover:shadow-md">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="grid size-10 place-items-center rounded-lg bg-primary/10">
+                  <Icon className="size-5 text-primary" />
+                </div>
+                <TournamentStatusBadge status={tournament.status} />
+              </div>
+              <Heading level="card" className="flex items-center gap-1">
+                {tournament.name} <ArrowUpRight className="size-4 text-muted-foreground" />
+              </Heading>
+              <p className="text-sm text-muted-foreground">{meta.filter(Boolean).join(' · ')}</p>
+              {tile?.progress !== undefined && <Progress value={tile.progress} className="mt-3 h-1.5" />}
+              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                {tournament.status === 'finished' && <Trophy className="size-3.5 text-primary" />}
+                {tile?.foot}
+              </div>
+            </Card>
+          )
+        })}
       </div>
     </ShellDemo>
   )

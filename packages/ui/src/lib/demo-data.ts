@@ -212,9 +212,8 @@ export const formColor: Record<FormResult, string> = {
 // Lista turniejów organizera (ekran startowy panelu). Kształt zgodny
 // z `Tournament` z kontraktu, ograniczony do pól, które pokazuje tabela.
 //
-// Te same trzy turnieje pokazuje `screens/admin-dashboard.tsx` — w innej formie
-// (kafle z postępem), więc kształt jest osobny, ale nazwy, sporty i liczby
-// drużyn muszą się zgadzać. Zmieniasz tutaj, poprawiasz tam.
+// Dashboard bierze te same turnieje stąd (`screens/admin-dashboard.tsx`
+// dokleja po `id` własne pola prezentacyjne), więc lista jest jedna.
 export const tournamentList: TournamentRow[] = [
   {
     id: 1,
