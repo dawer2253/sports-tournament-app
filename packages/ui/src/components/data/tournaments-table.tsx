@@ -1,5 +1,6 @@
 import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table'
-import { AlertTriangle, Trophy } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, Trophy } from 'lucide-react'
+import * as React from 'react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { EmptyState } from '../ui/empty-state'
@@ -26,6 +27,11 @@ export interface TournamentsTableProps {
   onRetry?: () => void
   /** Akcja w stanie pustym. Bez niej zostaje sam komunikat. */
   onCreate?: () => void
+  /**
+   * Wejście w turniej z wiersza. Bez tego propsa kolumny akcji nie ma: tabela
+   * nie pokazuje przycisku, który donikąd nie prowadzi.
+   */
+  onOpen?: (tournament: TournamentRow) => void
 }
 
 const STATUS_BADGE: Record<
@@ -37,10 +43,18 @@ const STATUS_BADGE: Record<
   finished: { label: 'Zakończony', variant: 'outline' },
 }
 
-const features = tableFeatures({})
+/**
+ * `className` z `meta` trafia i do nagłówka, i do komórek kolumny, żeby obie
+ * strony tabeli nie rozjechały się przy zmianie.
+ */
+interface TournamentColumnMeta {
+  className?: string
+}
+
+const features = tableFeatures({ columnMeta: {} as TournamentColumnMeta })
 const helper = createColumnHelper<typeof features, TournamentRow>()
 
-const columns = helper.columns([
+const dataColumns = helper.columns([
   helper.accessor('name', {
     header: 'Nazwa',
     cell: ({ getValue }) => <span className="font-medium">{getValue()}</span>,
@@ -60,6 +74,38 @@ const columns = helper.columns([
   }),
 ])
 
+/**
+ * Kolumna akcji domyka wiersz (#26). Pięć krótkich kolumn rozciągało się na całą
+ * szerokość obszaru treści i zostawiało ~220 px pustki za ostatnią z nich; wąska
+ * kolumna na końcu zajmuje tę nadwyżkę czymś, co ma sens, zamiast
+ * przesuwać pustkę w inne miejsce.
+ */
+function actionsColumn(onOpen: (tournament: TournamentRow) => void) {
+  return helper.display({
+    id: 'actions',
+    header: 'Akcje',
+    // `w-0` zwęża kolumnę do szerokości przycisku, więc nadwyżka zostaje
+    // w kolumnach z danymi.
+    meta: { className: 'w-0' },
+    cell: ({ row }) => (
+      <Button
+        variant="ghost"
+        size="sm"
+        // Ghost nie ma widocznej ramki, więc za lewą krawędź przycisku uchodzi
+        // jego tekst. Ujemny margines równa „Otwórz" z nagłówkiem „Akcje",
+        // tak jak w pozostałych kolumnach treść stoi równo z nagłówkiem.
+        className="-ml-2.5"
+        // Nazwa dostępna z nazwą turnieju: trzy przyciski „Otwórz" obok siebie
+        // brzmiałyby dla czytnika ekranu identycznie.
+        aria-label={`Otwórz turniej ${row.original.name}`}
+        onClick={() => onOpen(row.original)}
+      >
+        Otwórz <ArrowUpRight data-icon="inline-end" />
+      </Button>
+    ),
+  })
+}
+
 const SKELETON_ROWS = 3
 
 export function TournamentsTable({
@@ -69,7 +115,12 @@ export function TournamentsTable({
   errorMessage,
   onRetry,
   onCreate,
+  onOpen,
 }: TournamentsTableProps) {
+  const columns = React.useMemo(
+    () => (onOpen ? [...dataColumns, actionsColumn(onOpen)] : dataColumns),
+    [onOpen],
+  )
   const table = useTable({ features, columns, data: tournaments })
 
   if (status === 'error') {
@@ -108,7 +159,10 @@ export function TournamentsTable({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  className={header.column.columnDef.meta?.className}
+                >
                   <table.FlexRender header={header} />
                 </TableHead>
               ))}
@@ -133,7 +187,10 @@ export function TournamentsTable({
             : table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cell.column.columnDef.meta?.className}
+                    >
                       <table.FlexRender cell={cell} />
                     </TableCell>
                   ))}
