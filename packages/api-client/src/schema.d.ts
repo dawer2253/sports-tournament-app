@@ -384,7 +384,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Turnieje zalogowanego organizera */
+        /**
+         * Turnieje zalogowanego organizera
+         * @description Od najnowszego: `createdAt` malejąco, a turnieje założone w tej samej
+         *     chwili rozstrzyga `id`, też malejąco. Kolejność jest przez to stabilna
+         *     między stronami — żaden turniej nie wypada ani nie dubluje się na
+         *     granicy strony.
+         */
         get: {
             parameters: {
                 query?: {
@@ -406,6 +412,34 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": [
+                         *         {
+                         *           "id": 2,
+                         *           "name": "Puchar Zimowy",
+                         *           "slug": "puchar-zimowy",
+                         *           "status": "draft",
+                         *           "sport": {
+                         *             "id": 2,
+                         *             "code": "basketball",
+                         *             "name": "Koszykówka"
+                         *           },
+                         *           "branding": {
+                         *             "logoUrl": null,
+                         *             "primaryColor": "#1F7A45"
+                         *           },
+                         *           "points": {
+                         *             "win": 2,
+                         *             "draw": 0,
+                         *             "loss": 1
+                         *           },
+                         *           "tiebreakers": [
+                         *             "points",
+                         *             "head_to_head",
+                         *             "score_diff"
+                         *           ],
+                         *           "teamsCount": 8,
+                         *           "createdAt": "2026-09-10T07:00:00+00:00",
+                         *           "updatedAt": "2026-09-10T07:00:00+00:00"
+                         *         },
                          *         {
                          *           "id": 1,
                          *           "name": "Liga Osiedlowa 2026",
@@ -434,34 +468,6 @@ export interface paths {
                          *           "teamsCount": 3,
                          *           "createdAt": "2026-09-01T08:00:00+00:00",
                          *           "updatedAt": "2026-09-14T16:30:00+00:00"
-                         *         },
-                         *         {
-                         *           "id": 2,
-                         *           "name": "Puchar Zimowy",
-                         *           "slug": "puchar-zimowy",
-                         *           "status": "draft",
-                         *           "sport": {
-                         *             "id": 2,
-                         *             "code": "basketball",
-                         *             "name": "Koszykówka"
-                         *           },
-                         *           "branding": {
-                         *             "logoUrl": null,
-                         *             "primaryColor": "#1F7A45"
-                         *           },
-                         *           "points": {
-                         *             "win": 2,
-                         *             "draw": 0,
-                         *             "loss": 1
-                         *           },
-                         *           "tiebreakers": [
-                         *             "points",
-                         *             "head_to_head",
-                         *             "score_diff"
-                         *           ],
-                         *           "teamsCount": 8,
-                         *           "createdAt": "2026-09-10T07:00:00+00:00",
-                         *           "updatedAt": "2026-09-10T07:00:00+00:00"
                          *         }
                          *       ],
                          *       "meta": {
@@ -2624,7 +2630,11 @@ export interface components {
             type: components["schemas"]["StageType"];
             name: string;
             order: number;
-            /** @description Niepuste wyłącznie dla fazy `group`. */
+            /**
+             * @description Pusta dla faz `league` i `knockout`. W fazie `group` pusta, dopóki
+             *     organizer nie utworzy grup — faza powstaje przy zakładaniu turnieju
+             *     bez nich.
+             */
             groups: components["schemas"]["Group"][];
         };
         /**

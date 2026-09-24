@@ -243,6 +243,11 @@ paths:
     get:
       tags: [Tournaments]
       summary: Turnieje zalogowanego organizera
+      description: |
+        Od najnowszego: `createdAt` malejąco, a turnieje założone w tej samej
+        chwili rozstrzyga `id`, też malejąco. Kolejność jest przez to stabilna
+        między stronami — żaden turniej nie wypada ani nie dubluje się na
+        granicy strony.
       parameters:
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: perPage, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -261,17 +266,6 @@ paths:
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
               example:
                 data:
-                  - id: 1
-                    name: Liga Osiedlowa 2026
-                    slug: liga-osiedlowa-2026
-                    status: active
-                    sport: { id: 1, code: football, name: Piłka nożna }
-                    branding: { logoUrl: null, primaryColor: '#1F7A45' }
-                    points: { win: 3, draw: 1, loss: 0 }
-                    tiebreakers: [points, head_to_head, score_diff, score_for]
-                    teamsCount: 3
-                    createdAt: '2026-09-01T08:00:00+00:00'
-                    updatedAt: '2026-09-14T16:30:00+00:00'
                   - id: 2
                     name: Puchar Zimowy
                     slug: puchar-zimowy
@@ -283,6 +277,17 @@ paths:
                     teamsCount: 8
                     createdAt: '2026-09-10T07:00:00+00:00'
                     updatedAt: '2026-09-10T07:00:00+00:00'
+                  - id: 1
+                    name: Liga Osiedlowa 2026
+                    slug: liga-osiedlowa-2026
+                    status: active
+                    sport: { id: 1, code: football, name: Piłka nożna }
+                    branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                    points: { win: 3, draw: 1, loss: 0 }
+                    tiebreakers: [points, head_to_head, score_diff, score_for]
+                    teamsCount: 3
+                    createdAt: '2026-09-01T08:00:00+00:00'
+                    updatedAt: '2026-09-14T16:30:00+00:00'
                 meta: { currentPage: 1, lastPage: 1, perPage: 20, total: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
     post:
@@ -2049,7 +2054,10 @@ components:
         order: { type: integer, minimum: 1 }
         groups:
           type: array
-          description: Niepuste wyłącznie dla fazy `group`.
+          description: |
+            Pusta dla faz `league` i `knockout`. W fazie `group` pusta, dopóki
+            organizer nie utworzy grup — faza powstaje przy zakładaniu turnieju
+            bez nich.
           items: { $ref: '#/components/schemas/Group' }
 
     RoundSummary:

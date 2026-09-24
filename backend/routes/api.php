@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\SportController;
+use App\Http\Controllers\Api\TournamentController;
 use Illuminate\Support\Facades\Route;
 
 // Prefiks `api/v1` dokłada `withRouting(apiPrefix: ...)` w bootstrap/app.php,
@@ -12,4 +14,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+
+    Route::get('/sports', [SportController::class, 'index']);
+    Route::get('/tournaments', [TournamentController::class, 'index']);
+    Route::post('/tournaments', [TournamentController::class, 'store']);
 });
