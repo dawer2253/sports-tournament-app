@@ -1,4 +1,5 @@
 import { ArrowUpRight, GitFork, ListOrdered, Plus, Swords, Trophy } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
@@ -8,18 +9,24 @@ import { TournamentStatusBadge } from '../components/data/tournament-status-badg
 import type { TournamentRow } from '../components/data/tournament-row'
 import { tournamentList } from '../lib/demo-data'
 
+const activeTournaments = tournamentList.filter((t) => t.status === 'active').length
+const teamsTotal = tournamentList.reduce((sum, t) => sum + t.teamsCount, 0)
+
 // Dwa pierwsze liczniki liczą się z `tournamentList`, więc nie mogą jej
 // zaprzeczyć. Dwa pozostałe mierzą to, czego lista nie zna — mecze w oknie
 // czasu i ruch na stronie publicznej — i zostają danymi demo.
+//
+// Każde `value` jest napisem: demo „1 204" ma spację tysięcy, a `number` obok
+// `string` ukrywałby, że formatowanie liczników jest niespójne.
 const stats = [
-  { label: 'Aktywne turnieje', value: tournamentList.filter((t) => t.status === 'active').length },
-  { label: 'Drużyny', value: tournamentList.reduce((sum, t) => sum + t.teamsCount, 0) },
+  { label: 'Aktywne turnieje', value: String(activeTournaments) },
+  { label: 'Drużyny', value: String(teamsTotal) },
   { label: 'Mecze (30 dni)', value: '38' },
   { label: 'Odsłony public', value: '1 204' },
 ]
 
 type Tile = {
-  icon: typeof Trophy
+  icon: LucideIcon
   /** Format rozgrywek: jedyne pole kafla, którego nie ma w `tournamentList`. */
   format: string
   /** Procent rozegranego terminarza. Tylko dla turnieju w trakcie. */
