@@ -37,6 +37,12 @@ info:
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
       polskiego nie jest stała, więc nie zaszywaj jej na sztywno.
+    - Parametr zapytania będący tablicą jedzie rozdzielony przecinkiem
+      (`style: form`, `explode: false`), np. `?status=draft,active`. Obowiązuje
+      to każdy taki parametr, bo `packages/api-client` ustawia serializację raz,
+      globalnie — parametr opisany inaczej rozjechałby się z klientem po cichu,
+      a bramka CI tego nie złapie: `openapi-typescript` nie przenosi `style` ani
+      `explode` do typów. Powód wyboru przecinka: ADR-0009.
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
@@ -249,11 +255,31 @@ paths:
         między stronami — żaden turniej nie wypada ani nie dubluje się na
         granicy strony.
       parameters:
+        - name: status
+          in: query
+          description: |
+            Zawęża listę do podanych stanów, np. `draft,active`. Bez parametru
+            odpowiedź obejmuje wszystkie turnieje organizera. Filtr działa przed
+            stronicowaniem, więc `meta` opisuje zbiór już zawężony.
+
+            Wartość spoza `TournamentStatus`, powtórzona albo pusta daje `422` —
+            to literówka w adresie, nie prośba o brak filtra. Dlaczego lista po
+            przecinku, a nie pojedyncza wartość ani powtórzony klucz: ADR-0009
+            (`docs/adr/0009-filtr-status-jedzie-lista-po-przecinku.md`).
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            uniqueItems: true
+            items: { $ref: '#/components/schemas/TournamentStatus' }
+          example: [draft, active]
         - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
         - { name: perPage, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
       responses:
         '200':
-          description: Stronicowana lista turniejów
+          description: Stronicowana lista turniejów, opcjonalnie zawężona do podanych stanów
           content:
             application/json:
               schema:
@@ -290,6 +316,7 @@ paths:
                     updatedAt: '2026-09-14T16:30:00+00:00'
                 meta: { currentPage: 1, lastPage: 1, perPage: 20, total: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
     post:
       tags: [Tournaments]
       summary: Załóż turniej

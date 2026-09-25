@@ -37,6 +37,15 @@ class Tournament extends Model
     public const DEFAULT_PRIMARY_COLOR = '#1F7A45';
 
     /**
+     * Stany turnieju, w kolejności z kontraktu (`TournamentStatus`). Lista
+     * powtarza enum z migracji `create_tournaments_table`, bo walidacja filtra
+     * potrzebuje jej w PHP — oba źródła pilnują testy w `ListTournamentsTest`.
+     *
+     * @var list<string>
+     */
+    public const STATUSES = ['draft', 'active', 'finished'];
+
+    /**
      * Fazy, które powstają przy zakładaniu turnieju w danym formacie:
      * [type, name]; `order` wynika z pozycji. Format poza tym nie istnieje —
      * nie jest kolumną turnieju, a po założeniu o strukturze mówią wyłącznie

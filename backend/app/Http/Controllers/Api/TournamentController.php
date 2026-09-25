@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tournaments\IndexTournamentRequest;
 use App\Http\Requests\Tournaments\StoreTournamentRequest;
 use App\Http\Resources\TournamentResource;
 use App\Models\Sport;
 use App\Models\Tournament;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class TournamentController extends Controller
@@ -23,10 +24,12 @@ class TournamentController extends Controller
      * się dublować albo ginąć na granicy stron.
      *
      * `perPage` ponad limit jest dociągane do niego, a nieczytelne (tekst,
-     * zero, liczba ujemna) daje rozmiar domyślny — kontrakt nie przewiduje tu
-     * odpowiedzi 422.
+     * zero, liczba ujemna) daje rozmiar domyślny — kontrakt nie przewiduje dla
+     * niego odpowiedzi 422. `status` jest tu wyjątkiem: zły stan to literówka
+     * w adresie, nie prośba o brak filtra, więc kontrakt przewiduje przy nim
+     * 422 (ADR 0009).
      */
-    public function index(Request $request): JsonResponse
+    public function index(IndexTournamentRequest $request): JsonResponse
     {
         $perPage = $request->integer('perPage');
         $perPage = $perPage < 1 ? self::DEFAULT_PER_PAGE : min($perPage, self::MAX_PER_PAGE);
@@ -34,6 +37,13 @@ class TournamentController extends Controller
         $tournaments = Tournament::whereBelongsTo($request->user())
             ->with('sport')
             ->withCount('teams')
+            // `whereIn` przed `paginate()` — sedno ADR 0009: filtr zawęża
+            // zapytanie, a nie pobraną stronę, więc `meta` mówi o zbiorze
+            // już zawężonym.
+            ->when(
+                $request->statuses(),
+                fn (Builder $query, array $statuses): Builder => $query->whereIn('status', $statuses),
+            )
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->paginate($perPage);
