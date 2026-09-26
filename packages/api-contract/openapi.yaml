@@ -36,7 +36,8 @@ info:
     - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
-      polskiego nie jest stała, więc nie zaszywaj jej na sztywno.
+      polskiego nie jest stała, więc nie zaszywaj jej na sztywno. Powody:
+      [ADR-0008](../../docs/adr/0008-czas-w-api-idzie-w-utc.md).
     - Autoryzacja: token Bearer w nagłówku `Authorization`. Endpointy
       `/public/*` są bez autoryzacji.
     - Stronicowane są lista turniejów i panelowa lista meczów turnieju. Pozostałe
