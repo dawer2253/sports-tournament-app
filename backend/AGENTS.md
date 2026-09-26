@@ -162,6 +162,15 @@ nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją do
 podjęcia tutaj, nie edycją jednej linijki w configu, i pociąga za sobą wszystkie
 przykłady w `openapi.yaml`.
 
+**Tablicowy parametr query jedzie po przecinku** (`?status=draft,active`), bo
+powtórzony klucz gubi w PHP wszystko poza ostatnią wartością
+([ADR 0009](../docs/adr/0009-filtr-status-jedzie-lista-po-przecinku.md)).
+Rozbij go w `prepareForValidation` i dołóż `App\Rules\SingleCommaSeparatedQueryParam`,
+które odrzuca powtórzony klucz i notację nawiasową. Pamiętaj o globalnym
+`ConvertEmptyStringsToNull`: czyści **też** `query`, więc `?status=` dociera już
+jako `null` i pustą wartość trzeba złapać jawnie. Filtry dokładaj **przed**
+`paginate()` — inaczej `meta.total` opisuje zbiór niezawężony.
+
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 Dla backendu wynikają z tego dwie rzeczy. **Spectator asertuje samo ciało

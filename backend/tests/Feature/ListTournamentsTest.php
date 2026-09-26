@@ -5,6 +5,7 @@ use App\Models\Tournament;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Spectator\Spectator;
 use Symfony\Component\Yaml\Yaml;
 
@@ -155,4 +156,134 @@ it('ma w kontrakcie przykład listy ułożony tak, jak opisuje endpoint', functi
 
     expect(count($keys))->toBeGreaterThan(1)
         ->and($keys)->toBe($sorted);
+});
+
+/*
+ * Filtr `status` (#23, ADR 0009). Sedno: zawęża zapytanie, a nie pobraną
+ * stronę — inaczej `total` mówiłby o wszystkich turniejach, `lastPage`
+ * obiecywałby strony nie do pobrania, a strony miałyby różną długość.
+ */
+it('bez parametru status oddaje wszystkie stany', function () {
+    $organizer = User::factory()->create();
+    foreach (Tournament::STATUSES as $status) {
+        Tournament::factory()->for($organizer)->create(['status' => $status]);
+    }
+
+    actingAsOrganizer($organizer)
+        ->getJson('/api/v1/tournaments')
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('meta.total', count(Tournament::STATUSES));
+});
+
+it('zawęża listę do jednego stanu', function () {
+    $organizer = User::factory()->create();
+    Tournament::factory()->for($organizer)->create(['status' => 'active', 'name' => 'W toku']);
+    Tournament::factory()->for($organizer)->create(['status' => 'finished']);
+
+    actingAsOrganizer($organizer)
+        ->getJson('/api/v1/tournaments?status=active')
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('data.0.name', 'W toku');
+});
+
+it('zawęża listę do kilku stanów podanych po przecinku', function () {
+    $organizer = User::factory()->create();
+    Tournament::factory()->for($organizer)->create(['status' => 'draft']);
+    Tournament::factory()->for($organizer)->create(['status' => 'active']);
+    Tournament::factory()->for($organizer)->create(['status' => 'finished']);
+
+    $response = actingAsOrganizer($organizer)
+        ->getJson('/api/v1/tournaments?status=draft,active')
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('meta.total', 2);
+
+    expect(collect($response->json('data'))->pluck('status')->sort()->values()->all())
+        ->toBe(['active', 'draft']);
+});
+
+it('filtruje przed stronicowaniem, więc meta opisuje zbiór już zawężony', function () {
+    $organizer = User::factory()->create();
+    Tournament::factory()->for($organizer)->count(3)->create(['status' => 'active']);
+    Tournament::factory()->for($organizer)->count(9)->create(['status' => 'finished']);
+
+    actingAsOrganizer($organizer)
+        ->getJson('/api/v1/tournaments?status=active&perPage=2')
+        ->assertValidResponse(200)
+        ->assertJsonPath('meta.total', 3)
+        ->assertJsonPath('meta.lastPage', 2)
+        ->assertJsonPath('meta.perPage', 2)
+        ->assertJsonCount(2, 'data');
+});
+
+it('odrzuca stan spoza enuma i mówi, co jest dozwolone', function () {
+    actingAsOrganizer()
+        ->getJson('/api/v1/tournaments?status=bogus')
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('status')
+        ->assertJsonPath('errors.status.0', 'Nieznany stan turnieju: bogus. Dozwolone: draft, active, finished.');
+});
+
+/*
+ * Komunikat asertujemy dosłownie, bo globalny `ConvertEmptyStringsToNull`
+ * czyści też `query` — bez jawnej obsługi pustej wartości klient dostałby
+ * komunikat o złym typie zamiast informacji, czego brakuje.
+ */
+it('odrzuca pusty parametr status i mówi, czego brakuje', function () {
+    actingAsOrganizer()
+        ->getJson('/api/v1/tournaments?status=')
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('status')
+        ->assertJsonPath('errors.status.0', 'Podaj co najmniej jeden stan turnieju. Dozwolone: draft, active, finished.');
+});
+
+it('odrzuca powtórzony stan', function () {
+    actingAsOrganizer()
+        ->getJson('/api/v1/tournaments?status=active,active')
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.status.0', 'Każdy stan turnieju podaj najwyżej raz.');
+});
+
+/*
+ * ADR 0009 odrzucił `explode: true`, bo PHP zwija powtórzony klucz do ostatniej
+ * wartości. Klient TS wysyła przecinek, ale `curl` i ręcznie sklejony link —
+ * niekoniecznie, więc backend musi ten kształt odrzucić. Inaczej ADR
+ * obiecywałby ochronę, której nie ma.
+ */
+it('odrzuca powtórzony klucz status zamiast po cichu gubić wartości', function () {
+    $organizer = User::factory()->create();
+    Tournament::factory()->for($organizer)->create(['status' => 'draft']);
+    Tournament::factory()->for($organizer)->create(['status' => 'active']);
+
+    actingAsOrganizer($organizer)
+        ->getJson('/api/v1/tournaments?status=draft&status=active')
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('status');
+});
+
+it('trzyma stany turnieju zgodne z enumem TournamentStatus w kontrakcie', function () {
+    $contract = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+
+    expect($contract['components']['schemas']['TournamentStatus']['enum'])
+        ->toBe(Tournament::STATUSES);
+});
+
+// Zapytanie jest MySQL-only i tak ma zostać: `information_schema` w tym
+// kształcie oddaje tylko MySQL, a projekt innej bazy nie używa (ADR 0005).
+it('trzyma stany turnieju zgodne z enumem kolumny w bazie', function () {
+    $column = DB::selectOne(
+        'SELECT COLUMN_TYPE AS column_type
+           FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = ?
+            AND COLUMN_NAME = ?',
+        ['tournaments', 'status'],
+    );
+
+    preg_match_all("/'([^']+)'/", $column->column_type, $matches);
+
+    expect($matches[1])->toBe(Tournament::STATUSES);
 });
