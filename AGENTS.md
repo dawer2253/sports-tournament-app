@@ -67,7 +67,25 @@ Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 
 Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
-`typecheck`, `build`.
+`typecheck`, `test`, `build`.
+
+### Testy frontendu
+
+`npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
+`test` — dziś `apps/admin` i `apps/public` (vitest + Testing Library + msw,
+jsdom). Obie aplikacje mają ten sam układ: `vitest.config.ts` osobno od
+`vite.config.ts` oraz `src/test/{server,setup}.ts`.
+
+Żądania w testach obu aplikacji przechwytuje msw. Jedna pułapka jest na tyle
+kosztowna, że warto o niej wiedzieć przed pierwszym testem: `server.listen()`
+musi siedzieć **w zasięgu modułu** pliku `src/test/setup.ts` danej aplikacji,
+nie w `beforeAll` — inaczej dostajesz ciche `TypeError: fetch failed`. Powód
+siedzi w komentarzu przy `src/test/server.ts`, razem z zasadą, że handlerów
+domyślnych nie ma, a `onUnhandledRequest: 'error'` pilnuje reszty.
+
+Wybór tego mechanizmu — zamiast testów kontraktowych po mocku albo Chromatica
+rozciągniętego na aplikacje — rozstrzyga
+[#37](https://github.com/dawer2253/sports-tournament-app/issues/37).
 
 ## Zasady globalne
 
@@ -105,7 +123,7 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, build oraz job backendu (Pint w trybie `--test`, Pest; testy
+  lint, typy, testy frontendu, build oraz job backendu (Pint w trybie `--test`, Pest; testy
   Spectatora są bramką zgodności z `openapi.yaml`). Backend chodzi tam
   **natywnie, bez Saila**, a jego job odpala się tylko przy zmianach w
   `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki
