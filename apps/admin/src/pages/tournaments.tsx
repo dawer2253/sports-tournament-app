@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Button, TournamentsTable } from '@tournament/ui';
+import { Button, TournamentsTable, type TournamentRow } from '@tournament/ui';
 import { Plus } from 'lucide-react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { api } from '../lib/api';
@@ -18,6 +19,13 @@ export function TournamentsPage() {
       return data;
     },
   });
+
+  // Stabilny między renderami: `TournamentsTable` memoizuje kolumny po
+  // `[onOpen]`, a inline arrow odtwarzałby je przy każdym renderze (#46).
+  const openTournament = useCallback(
+    (tournament: TournamentRow) => void navigate(`/tournaments/${tournament.id}`),
+    [navigate],
+  );
 
   function goToCreate() {
     void navigate('/tournaments/new');
@@ -49,6 +57,7 @@ export function TournamentsPage() {
         total={total}
         errorMessage={tournaments.error?.message}
         onRetry={() => void tournaments.refetch()}
+        onOpen={openTournament}
         onCreate={goToCreate}
       />
     </AdminPage>
