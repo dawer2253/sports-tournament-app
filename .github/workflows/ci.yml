@@ -82,6 +82,9 @@ jobs:
       - name: Typy
         run: npm run typecheck
 
+      - name: Testy
+        run: npm test
+
       - name: Build
         run: npm run build
 
