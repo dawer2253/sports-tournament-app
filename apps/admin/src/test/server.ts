@@ -1,11 +1,14 @@
 import { setupServer } from 'msw/node';
 
-/**
- * Adres, w który celuje `lib/api.ts`. Nie przepisujemy go z ręki: `vitest.config.ts`
- * przypina `VITE_API_URL` na czas testów, więc handlery i klient zawsze mówią
- * o tym samym hoście — także u kogoś, kto ma lokalny `.env` wskazujący Laravela.
- */
-export const API_URL = import.meta.env.VITE_API_URL;
+const apiUrl = import.meta.env.VITE_API_URL;
+if (!apiUrl) {
+  throw new Error(
+    'Brak VITE_API_URL: testy muszą iść przez vitest.config.ts, który przypina adres mocka.',
+  );
+}
+
+/** Adres, w który celuje `lib/api.ts`; przypięty w `vitest.config.ts`, nie przepisuj go z ręki. */
+export const API_URL = apiUrl;
 
 /**
  * Wspólny serwer msw dla testów panelu.
