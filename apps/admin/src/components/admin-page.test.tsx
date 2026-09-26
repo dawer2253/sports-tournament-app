@@ -67,10 +67,10 @@ describe('AdminPage — wylogowanie', () => {
     // Nagłówek czytany w handlerze, czyli w chwili, w której żądanie wyszło.
     // Gdyby `endSession()` poszło przed `POST /logout`, klient nie miałby już
     // czego dokleić i nagłówka by nie było.
-    const authorization = vi.fn<(header: string | null) => void>();
+    const recordAuthorization = vi.fn<(header: string | null) => void>();
     server.use(
       http.post(`${API}/logout`, ({ request }) => {
-        authorization(request.headers.get('Authorization'));
+        recordAuthorization(request.headers.get('Authorization'));
         return new HttpResponse(null, { status: 204 });
       }),
     );
@@ -79,7 +79,7 @@ describe('AdminPage — wylogowanie', () => {
     await clickLogout(user);
 
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/login'));
-    expect(authorization).toHaveBeenCalledExactlyOnceWith(`Bearer ${TOKEN}`);
+    expect(recordAuthorization).toHaveBeenCalledExactlyOnceWith(`Bearer ${TOKEN}`);
     expect(getToken()).toBeNull();
   });
 
@@ -102,6 +102,11 @@ describe('AdminPage — wylogowanie', () => {
   it('dwa kliknięcia „Wyloguj" pod rząd dają jedno POST /logout', async () => {
     // Odpowiedź wstrzymana do drugiego kliknięcia: tylko wtedy pierwsze
     // żądanie jest jeszcze w drodze, gdy przychodzi drugie.
+    //
+    // Drugie kliknięcie widzi już render z `isPending`, bo menu konta zamyka
+    // się po wyborze pozycji i trzeba je otworzyć od nowa. Kliknięcia z tego
+    // samego, nieaktualnego renderu UI dziś nie dopuszcza, więc test go nie
+    // odtwarza — pilnuje tego, że osłona w ogóle jest.
     let release!: () => void;
     const held = new Promise<void>((resolve) => (release = resolve));
     const requests = vi.fn();
