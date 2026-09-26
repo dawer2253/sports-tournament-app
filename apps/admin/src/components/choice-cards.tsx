@@ -1,6 +1,6 @@
 import { CheckCircle2 } from 'lucide-react';
 import { Card, CardDescription, CardHeader, CardTitle, cn } from '@tournament/ui';
-import { useId, type ReactNode } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 
 export interface ChoiceOption<T extends string | number> {
   value: T;
@@ -21,6 +21,13 @@ export interface ChoiceCardsProps<T extends string | number> {
   onChange: (value: T) => void;
   onBlur?: () => void;
   errorMessage?: string;
+  /**
+   * Ref od react-hook-form (`field.ref` z `Controller`). Trafia do radia, które
+   * ma dostać fokus przy błędzie: zaznaczonego, a bez zaznaczenia pierwszego.
+   * Bez niego `shouldFocusError` nie ma czego sfokusować i fokus po nieudanej
+   * wysyłce zostaje na przycisku.
+   */
+  ref?: Ref<HTMLInputElement>;
   className?: string;
 }
 
@@ -39,6 +46,11 @@ export interface ChoiceCardsProps<T extends string | number> {
  * czyli emoji plus dwa zdania opisu — czytnik ekranu przeczytałby to zamiast
  * samej nazwy opcji. Opis zostaje opisem, a nie częścią nazwy.
  *
+ * Komunikat błędu grupy dopinamy do opisu każdego radia, razem z
+ * `aria-invalid`, a nie do `fieldset`: opis grupy czytniki ekranu ogłaszają
+ * niekonsekwentnie, a opis radia z fokusem — tak. Tak samo zachowuje się pole
+ * tekstowe w tym samym formularzu.
+ *
  * Komponent jest lokalny dla panelu, a nie w `packages/ui`: to pierwszy taki
  * wybór w projekcie i nie wiadomo jeszcze, czy drugi ekran będzie chciał tego
  * samego. Do design systemu przeniesie się, gdy pojawi się drugi konsument.
@@ -51,13 +63,17 @@ export function ChoiceCards<T extends string | number>({
   onChange,
   onBlur,
   errorMessage,
+  ref,
   className,
 }: ChoiceCardsProps<T>) {
   const groupId = useId();
   const errorId = `${groupId}-error`;
+  const focusTarget = options.some((option) => option.value === value)
+    ? value
+    : options[0]?.value;
 
   return (
-    <fieldset aria-describedby={errorMessage ? errorId : undefined}>
+    <fieldset>
       <legend className="mb-2 text-sm font-medium">{legend}</legend>
 
       <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3', className)}>
@@ -65,6 +81,9 @@ export function ChoiceCards<T extends string | number>({
           const selected = option.value === value;
           const labelId = `${groupId}-${option.value}-label`;
           const descriptionId = `${groupId}-${option.value}-description`;
+          const describedBy = [option.description && descriptionId, errorMessage && errorId]
+            .filter(Boolean)
+            .join(' ');
           return (
             <label
               key={option.value}
@@ -75,6 +94,7 @@ export function ChoiceCards<T extends string | number>({
               )}
             >
               <input
+                ref={option.value === focusTarget ? ref : undefined}
                 type="radio"
                 className="sr-only"
                 name={name}
@@ -83,7 +103,8 @@ export function ChoiceCards<T extends string | number>({
                 onChange={() => onChange(option.value)}
                 onBlur={onBlur}
                 aria-labelledby={labelId}
-                aria-describedby={option.description ? descriptionId : undefined}
+                aria-describedby={describedBy || undefined}
+                aria-invalid={errorMessage ? true : undefined}
               />
               <Card
                 className={cn(

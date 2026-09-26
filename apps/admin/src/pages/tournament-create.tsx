@@ -125,17 +125,22 @@ export function TournamentCreatePage() {
                 )}
               </div>
 
-              {sports.status === 'pending' ? (
-                <Skeleton
-                  role="status"
-                  aria-label="Wczytywanie listy sportów"
-                  className="h-32 w-full"
-                />
-              ) : (
-                <Controller
-                  control={control}
-                  name="sportId"
-                  render={({ field }) => (
+              {/* Skeleton siedzi wewnątrz `render`, a nie zamiast `Controller`-a.
+                  react-hook-form przenosi fokus na pierwsze pole z błędem
+                  w kolejności rejestracji; `Controller` zamontowany dopiero po
+                  wczytaniu sportów zarejestrowałby się po formacie i fokus
+                  przeskakiwałby sport. */}
+              <Controller
+                control={control}
+                name="sportId"
+                render={({ field }) =>
+                  sports.status === 'pending' ? (
+                    <Skeleton
+                      role="status"
+                      aria-label="Wczytywanie listy sportów"
+                      className="h-32 w-full"
+                    />
+                  ) : (
                     <ChoiceCards
                       legend="Sport"
                       name={field.name}
@@ -143,12 +148,13 @@ export function TournamentCreatePage() {
                       value={field.value}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
+                      ref={field.ref}
                       errorMessage={errors.sportId?.message}
                       className="lg:grid-cols-2"
                     />
-                  )}
-                />
-              )}
+                  )
+                }
+              />
 
               <Controller
                 control={control}
@@ -161,6 +167,7 @@ export function TournamentCreatePage() {
                     value={field.value}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    ref={field.ref}
                     errorMessage={errors.format?.message}
                   />
                 )}

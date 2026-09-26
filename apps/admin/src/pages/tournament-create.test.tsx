@@ -213,6 +213,89 @@ describe('TournamentCreatePage', () => {
     );
   });
 
+  it('błąd grupy kafelków oznacza radia i trafia do ich opisu', async () => {
+    const { user } = renderPage();
+    await screen.findByRole('radio', { name: 'Piłka nożna' });
+
+    await submit(user);
+    await screen.findByText('Wybierz sport.');
+
+    const football = screen.getByRole('radio', { name: 'Piłka nożna' });
+    expect(football).toHaveAttribute('aria-invalid', 'true');
+    expect(football).toHaveAccessibleDescription('Wybierz sport.');
+
+    // Nazwa zostaje samym tytułem: opis opcji i błąd idą do opisu.
+    const format = screen.getByRole('radio', { name: 'Liga każdy z każdym' });
+    expect(format).toHaveAttribute('aria-invalid', 'true');
+    expect(format).toHaveAccessibleDescription(
+      'Wszystkie drużyny grają ze sobą, o kolejności decyduje tabela punktowa. Wybierz format rozgrywek.',
+    );
+  });
+
+  it('bez błędu radia nie są oznaczone jako nieprawidłowe', async () => {
+    renderPage();
+
+    const football = await screen.findByRole('radio', { name: 'Piłka nożna' });
+    expect(football).not.toHaveAttribute('aria-invalid');
+    expect(football).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('po wysyłce z samą nazwą fokus trafia na pierwszy kafelek sportu', async () => {
+    const { user } = renderPage();
+    await screen.findByRole('radio', { name: 'Piłka nożna' });
+    await user.type(screen.getByLabelText(/Nazwa turnieju/), 'Liga Osiedlowa 2026');
+
+    await submit(user);
+
+    await screen.findByText('Wybierz sport.');
+    expect(screen.getByRole('radio', { name: 'Piłka nożna' })).toHaveFocus();
+  });
+
+  it('z wybranym sportem fokus przechodzi na format, pierwszą grupę z błędem', async () => {
+    const { user } = renderPage();
+    await screen.findByRole('radio', { name: 'Piłka nożna' });
+    await user.type(screen.getByLabelText(/Nazwa turnieju/), 'Liga Osiedlowa 2026');
+    await user.click(screen.getByRole('radio', { name: 'Koszykówka' }));
+
+    await submit(user);
+
+    await screen.findByText('Wybierz format rozgrywek.');
+    expect(screen.getByRole('radio', { name: 'Liga każdy z każdym' })).toHaveFocus();
+  });
+
+  it('po całkiem pustej wysyłce fokus trafia na nazwę, bo to pierwsze pole', async () => {
+    const { user } = renderPage();
+    await screen.findByRole('radio', { name: 'Piłka nożna' });
+
+    await submit(user);
+
+    await screen.findByText('Wybierz sport.');
+    expect(screen.getByLabelText(/Nazwa turnieju/)).toHaveFocus();
+  });
+
+  it('błąd 422 z API na sportId oznacza radia sportu', async () => {
+    server.use(
+      http.post(`${API}/tournaments`, () =>
+        HttpResponse.json(
+          {
+            message: 'Podane dane są nieprawidłowe.',
+            errors: { sportId: ['Wybrany sport nie istnieje.'] },
+          },
+          { status: 422 },
+        ),
+      ),
+    );
+
+    const { user } = renderPage();
+    await fillForm(user);
+    await submit(user);
+
+    await screen.findByText('Wybrany sport nie istnieje.');
+    const football = screen.getByRole('radio', { name: 'Piłka nożna' });
+    expect(football).toHaveAttribute('aria-invalid', 'true');
+    expect(football).toHaveAccessibleDescription('Wybrany sport nie istnieje.');
+  });
+
   it('strzałki przestawiają wybór w obrębie grupy, bez myszy', async () => {
     const { user } = renderPage();
     const football = await screen.findByRole('radio', { name: 'Piłka nożna' });
