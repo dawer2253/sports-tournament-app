@@ -34,9 +34,11 @@ export function TournamentPage() {
   const params = useParams();
   // Adres z paska przeglądarki, więc może być czymkolwiek. Id, które nie jest
   // dodatnią liczbą całkowitą, nie idzie do API, tylko od razu kończy się
-  // stanem „nie ma" — takiego turnieju i tak nie ma w bazie.
+  // stanem „nie ma" — takiego turnieju i tak nie ma w bazie. Sprawdzamy zapis,
+  // a nie samą wartość po `Number()`, bo ten przyjmuje też `1e3` czy `0x10`
+  // i zapytałby API o zupełnie inny turniej niż ten z adresu.
   const id = Number(params.id);
-  const validId = Number.isSafeInteger(id) && id > 0;
+  const validId = /^[1-9]\d*$/.test(params.id ?? '') && Number.isSafeInteger(id);
 
   const tournament = useQuery({
     queryKey: ['tournament', id],
