@@ -1,0 +1,14 @@
+# Wyjątki od reguł Redocly, wypisane co do komponentu — reguła zostaje włączona,
+# żeby łapała prawdziwie martwe komponenty.
+#
+# Odpowiedzi niżej opisują kody, które oddaje warstwa frameworka na dowolnym
+# żądaniu (#76). Kontrakt wymienia je w `info.description` („Konwencje”),
+# a przy ścieżkach celowo ich nie powtarza. Backend czyta z nich teksty
+# w testach (`contractErrorMessage()`), więc nieużywane są tylko dla linta.
+openapi.yaml:
+  no-unused-components:
+    - '#/components/responses/BadRequest'
+    - '#/components/responses/MethodNotAllowed'
+    - '#/components/responses/PayloadTooLarge'
+    - '#/components/responses/ServerError'
+    - '#/components/responses/ServiceUnavailable'

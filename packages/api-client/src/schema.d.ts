@@ -2840,6 +2840,78 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description Ścieżka URL z niepoprawnym UTF-8 */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Niepoprawny adres URL."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Metoda HTTP nieobsługiwana przez ścieżkę; dozwolone podaje nagłówek `Allow` */
+        MethodNotAllowed: {
+            headers: {
+                /** @description Metody obsługiwane przez ścieżkę, np. `POST` */
+                Allow?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Metoda niedozwolona dla tego zasobu."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Ciało żądania przekracza limit serwera */
+        PayloadTooLarge: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Przesłane dane są za duże."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Nieoczekiwany błąd serwera */
+        ServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Wewnętrzny błąd serwera."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Tryb konserwacji */
+        ServiceUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Usługa chwilowo niedostępna."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Dane nie przeszły walidacji */
         ValidationError: {
             headers: {

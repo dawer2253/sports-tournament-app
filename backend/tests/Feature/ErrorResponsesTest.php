@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Tournament;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Spectator\Spectator;
@@ -119,4 +120,131 @@ it('oddaje to samo 403 przy gołym abort z własnym tekstem', function () {
     $this->getJson('/api/v1/probna-odmowa')
         ->assertForbidden()
         ->assertJsonPath('message', contractErrorMessage('Forbidden'));
+});
+
+/*
+|--------------------------------------------------------------------------
+| Kody spoza ścieżek kontraktu (#76)
+|--------------------------------------------------------------------------
+|
+| 400, 405, 413, 500 i 503 oddaje warstwa frameworka na dowolnym żądaniu,
+| więc kontrakt trzyma je we wspólnych `components/responses` i nie powtarza
+| przy ścieżkach. Framework wpisuje tu napisy stałe po angielsku, z pominięciem
+| translatora. Tekst zawsze z kontraktu, z tego samego powodu co przy 404.
+|
+| `app.debug` ustawiane jawnie: przy `true` framework dokleja `exception`
+| i `trace`, a 500 w ogóle nie idzie przez `HttpException`.
+|
+*/
+
+it('mówi przy 405 dokładnie to, co obiecuje kontrakt, i zostawia nagłówek Allow', function () {
+    config(['app.debug' => false]);
+
+    $this->getJson('/api/v1/login')
+        ->assertMethodNotAllowed()
+        ->assertHeader('Allow', 'POST')
+        ->assertExactJson(['message' => contractErrorMessage('MethodNotAllowed')]);
+});
+
+// `ValidatePostSize` porównuje nagłówek `Content-Length` z `post_max_size`,
+// zanim PHP w ogóle przeczyta ciało — wystarczy więc podać długość ponad
+// limit, bez wysyłania stu megabajtów.
+it('mówi przy 413 dokładnie to, co obiecuje kontrakt', function () {
+    config(['app.debug' => false]);
+
+    $this->call('POST', '/api/v1/login', server: [
+        'HTTP_ACCEPT' => 'application/json',
+        'CONTENT_LENGTH' => PHP_INT_MAX,
+    ])
+        ->assertStatus(413)
+        ->assertExactJson(['message' => contractErrorMessage('PayloadTooLarge')]);
+});
+
+it('mówi przy 400 dokładnie to, co obiecuje kontrakt', function () {
+    config(['app.debug' => false]);
+
+    // `%C0` to bajt, który nie zaczyna żadnego poprawnego znaku UTF-8.
+    $this->getJson('/api/v1/%C0')
+        ->assertBadRequest()
+        ->assertExactJson(['message' => contractErrorMessage('BadRequest')]);
+});
+
+// Klient bez `Accept` też ma dostać JSON (`$rendersJson` w `bootstrap/app.php`).
+// Przy 400 to nie jest oczywiste: `Request::is('api/*')` dopasowuje wzorzec do
+// *zdekodowanej* ścieżki regexem z flagą `u`, a ten na niepoprawnym UTF-8
+// nie dopasowuje niczego — więc bez tego testu wychodziła strona HTML.
+it('oddaje 400 jako JSON także bez nagłówka Accept', function () {
+    config(['app.debug' => false]);
+
+    $this->get('/api/v1/%C0')
+        ->assertBadRequest()
+        ->assertHeader('content-type', 'application/json')
+        ->assertExactJson(['message' => contractErrorMessage('BadRequest')]);
+});
+
+it('mówi przy 503 dokładnie to, co obiecuje kontrakt, i zostawia Retry-After', function () {
+    config(['app.debug' => false]);
+    app()->maintenanceMode()->activate(['retry' => 60]);
+
+    try {
+        $this->getJson('/api/v1/sports')
+            ->assertServiceUnavailable()
+            ->assertHeader('Retry-After', '60')
+            ->assertExactJson(['message' => contractErrorMessage('ServiceUnavailable')]);
+    } finally {
+        app()->maintenanceMode()->deactivate();
+    }
+});
+
+it('mówi przy 500 dokładnie to, co obiecuje kontrakt, i dalej raportuje wyjątek', function () {
+    config(['app.debug' => false]);
+    Exceptions::fake();
+    Route::get('/api/v1/probny-blad', fn () => throw new RuntimeException('szczegół z wnętrza'));
+
+    $this->getJson('/api/v1/probny-blad')
+        ->assertInternalServerError()
+        ->assertExactJson(['message' => contractErrorMessage('ServerError')]);
+
+    Exceptions::assertReported(RuntimeException::class);
+});
+
+it('oddaje to samo 500 przy gołym abort(500) z własnym tekstem', function () {
+    config(['app.debug' => false]);
+    Route::get('/api/v1/probny-abort', fn () => abort(500, 'Custom boom'));
+
+    $this->getJson('/api/v1/probny-abort')
+        ->assertInternalServerError()
+        ->assertExactJson(['message' => contractErrorMessage('ServerError')]);
+});
+
+// Przy `APP_DEBUG=true` 500 to narzędzie deweloperskie: przesłonięcie nie
+// może zabrać klasy wyjątku i śladu, bo tylko po nich widać, co pękło.
+it('zostawia przy 500 w trybie debug wyjątek i ślad', function () {
+    config(['app.debug' => true]);
+    Route::get('/api/v1/probny-blad', fn () => throw new RuntimeException('szczegół z wnętrza'));
+
+    $this->getJson('/api/v1/probny-blad')
+        ->assertInternalServerError()
+        ->assertJsonPath('message', 'szczegół z wnętrza')
+        ->assertJsonPath('exception', RuntimeException::class)
+        ->assertJsonStructure(['trace']);
+});
+
+// Gałąź 500 łapie wyjątki spoza `HttpException`, a takimi są też walidacja
+// i brak logowania — dopiero `Handler::prepareException()` zamienia je
+// w odpowiedzi. Zbyt szerokie przesłonięcie zrobiłoby z nich 500.
+it('nie zamienia w 500 błędu walidacji', function () {
+    config(['app.debug' => false]);
+
+    $this->postJson('/api/v1/login', [])
+        ->assertUnprocessable()
+        ->assertJsonStructure(['message', 'errors' => ['email', 'password']]);
+});
+
+it('nie zamienia w 500 braku logowania', function () {
+    config(['app.debug' => false]);
+
+    $this->getJson('/api/v1/me')
+        ->assertUnauthorized()
+        ->assertExactJson(['message' => contractErrorMessage('Unauthenticated')]);
 });

@@ -90,9 +90,25 @@ dostępu do zasobu.` (`Forbidden`). Framework wpisuje tu napisy stałe
 z pominięciem translatora, więc `lang/pl` ich nie przetłumaczy — polski tekst
 daje wyłącznie przesłonięcie w `bootstrap/app.php`.
 
-Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`
-czy `Response::deny('...')` zostanie skasowany po cichu** i żaden test tego nie
-zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje innego komunikatu, to zmiana
+**Tak samo kody, które oddaje warstwa frameworka na dowolnym żądaniu**, choć
+żadna ścieżka kontraktu ich nie wypisuje: 400 (`BadRequest`), 405
+(`MethodNotAllowed`), 413 (`PayloadTooLarge`), 500 (`ServerError`) i 503
+(`ServiceUnavailable`). Kontrakt trzyma je we wspólnych `components/responses`
+i wspomina w `info.description`. Przesłonięcie idzie przez
+`$exceptions->respond()`, czyli po statusie gotowej odpowiedzi — dzięki temu
+nagłówki (`Allow`, `Retry-After`) zostają, a 422 i 401 nie wpadają w gałąź 500.
+Tam też siedzi 403. Wyjątek: **500 przy `APP_DEBUG` zostaje nietknięte**,
+z `exception` i `trace`, a raportowanie wyjątku działa jak dotąd.
+
+**429 celowo nie ma**, bo nie ma limitera, a kontrakt nie opisuje zachowań,
+których backend nie realizuje. Kto doda pierwszy `throttle`, dokłada razem
+z nim wpis w mapie w `bootstrap/app.php`, komponent w `components/responses`,
+wzmiankę w `info.description` i test w `ErrorResponsesTest` (framework mówi
+tu `Too Many Attempts.`).
+
+Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`,
+`abort(500, '...')` czy `Response::deny('...')` zostanie skasowany po cichu**
+i żaden test tego nie zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje innego komunikatu, to zmiana
 kontraktu idąca normalną kolejnością, a nie obejście w kontrolerze.
 
 Oryginalny komunikat nie trafia przy tym do `laravel.log` — `HttpException`
@@ -159,9 +175,9 @@ kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec
 `string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
 rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
 [#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
-endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 401, 403 i 404 robią to
-za ciebie testy „mówi przy … dokładnie to, co obiecuje kontrakt"
-w `ErrorResponsesTest`.
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla wspólnych
+odpowiedzi błędów robią to za ciebie testy „mówi przy … dokładnie to, co
+obiecuje kontrakt" w `ErrorResponsesTest`.
 
 Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
 `abort(404, '...')`** — opisuje „Backend oddaje wyłącznie JSON" wyżej.

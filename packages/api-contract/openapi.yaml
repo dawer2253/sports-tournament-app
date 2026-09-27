@@ -33,6 +33,14 @@ info:
       dodatkowo `{ "meta": ... }`.
     - Błąd walidacji: `422` z `{ "message": ..., "errors": { pole: [...] } }`.
       Pozostałe błędy: `{ "message": ... }`.
+    - Poza kodami wypisanymi przy ścieżkach każde żądanie może dostać
+      odpowiedź z warstwy frameworka — w tej samej kopercie, po polsku,
+      z jednym zdaniem na kod: `400` (`BadRequest`, niepoprawny UTF-8
+      w ścieżce), `405` (`MethodNotAllowed`, dozwolone metody niesie nagłówek
+      `Allow`), `413` (`PayloadTooLarge`, ciało ponad limit serwera), `500`
+      (`ServerError`, `message` nie niesie szczegółów) i `503`
+      (`ServiceUnavailable`, tryb konserwacji). Teksty są w
+      `components/responses`; przy ścieżkach ich nie powtarzamy.
     - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
@@ -1834,6 +1842,40 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example: { message: Nie znaleziono zasobu. }
+    BadRequest:
+      description: Ścieżka URL z niepoprawnym UTF-8
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Niepoprawny adres URL. }
+    MethodNotAllowed:
+      description: Metoda HTTP nieobsługiwana przez ścieżkę; dozwolone podaje nagłówek `Allow`
+      headers:
+        Allow:
+          description: Metody obsługiwane przez ścieżkę, np. `POST`
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Metoda niedozwolona dla tego zasobu. }
+    PayloadTooLarge:
+      description: Ciało żądania przekracza limit serwera
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Przesłane dane są za duże. }
+    ServerError:
+      description: Nieoczekiwany błąd serwera
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Wewnętrzny błąd serwera. }
+    ServiceUnavailable:
+      description: Tryb konserwacji
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Usługa chwilowo niedostępna. }
     ValidationError:
       description: Dane nie przeszły walidacji
       content:
