@@ -4,9 +4,10 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -60,7 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         // Pełne uzasadnienie i pomiary:
         // docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §4.
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($rendersJson) {
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($rendersJson): ?JsonResponse {
             if (! $rendersJson($request)) {
                 return null;
             }
@@ -77,16 +78,18 @@ return Application::configure(basePath: dirname(__DIR__))
         // wpisuje `Unauthenticated.` i `This action is unauthorized.` jako
         // napisy stałe, z pominięciem translatora — `lang/pl` ich nie ruszy.
         //
-        // 403 łapiemy na `AccessDeniedHttpException`, bo w niego
-        // `Handler::prepareException()` zamienia odmowę policy
-        // (`AuthorizationException`) zanim dojdzie do tych callbacków. Ta sama
-        // konsekwencja co przy 404: własny tekst z `Response::deny('...')`
-        // zostanie tu skasowany.
+        // 403 łapiemy na `HttpException` ze statusem, a nie na
+        // `AccessDeniedHttpException`: w ten drugi `Handler::prepareException()`
+        // zamienia tylko odmowę policy (`AuthorizationException`), a goły
+        // `abort(403)` rzuca zwykły `HttpException(403)` — w przeciwieństwie do
+        // `abort(404)`, który framework mapuje na `NotFoundHttpException`. Ta
+        // sama konsekwencja co przy 404: własny tekst z `Response::deny('...')`
+        // czy `abort(403, '...')` zostanie tu skasowany.
         //
         // Dla 401 przesłonięcie niczego nie ukrywa: `Handler::unauthenticated()`
         // i tak oddawał sam komunikat, bez `exception` i `trace`, także przy
         // `APP_DEBUG` (docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §6).
-        $exceptions->render(function (AuthenticationException $e, Request $request) use ($rendersJson) {
+        $exceptions->render(function (AuthenticationException $e, Request $request) use ($rendersJson): ?JsonResponse {
             if (! $rendersJson($request)) {
                 return null;
             }
@@ -94,8 +97,8 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json(['message' => 'Wymagane zalogowanie.'], 401);
         });
 
-        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) use ($rendersJson) {
-            if (! $rendersJson($request)) {
+        $exceptions->render(function (HttpException $e, Request $request) use ($rendersJson): ?JsonResponse {
+            if ($e->getStatusCode() !== 403 || ! $rendersJson($request)) {
                 return null;
             }
 

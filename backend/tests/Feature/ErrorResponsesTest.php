@@ -2,8 +2,8 @@
 
 use App\Models\Tournament;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Spectator\Spectator;
-use Symfony\Component\Yaml\Yaml;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,17 +49,8 @@ it('oddaje to samo 404, gdy trasa istnieje, a model spod parametru nie', functio
 // klasa błędu z #53. Ten test czyta przykład ze speca i porównuje go
 // z odpowiedzią, czyli pilnuje tego, czego Spectator nie pilnuje: on waliduje
 // schemat (`message: { type: string }`), więc przechodzi mu dowolny tekst.
-//
-// Ścieżka do kontraktu idzie z konfiguracji Spectatora, żeby oba mechanizmy
-// czytały ten sam plik.
 it('mówi przy 404 dokładnie to, co obiecuje kontrakt', function () {
-    $spec = Yaml::parseFile(
-        config('spectator.sources.local.base_path').'/openapi.yaml'
-    );
-
-    $promised = $spec['components']['responses']['NotFound']['content']['application/json']['example']['message'];
-
-    expect($promised)->toBeString()->not->toBeEmpty();
+    $promised = contractErrorMessage('NotFound');
 
     $this->getJson('/api/v1/nie-ma-takiego-zasobu')
         ->assertNotFound()
@@ -97,15 +88,9 @@ it('nie loguje 404 poza trybem debug', function () {
 // 401 i 403 frameworka to napisy stałe poza translatorem, więc `lang/pl` ich
 // nie tłumaczy — po polsku mówią wyłącznie dzięki przesłonięciu
 // w `bootstrap/app.php`. Tekst czytany z kontraktu, bo Spectator przepuszcza
-// dowolny `message` (klasa błędu z #53).
+// dowolny `message` (klasa błędu z #53). Dotyczy to obu testów niżej.
 it('mówi przy 403 dokładnie to, co obiecuje kontrakt', function () {
-    $spec = Yaml::parseFile(
-        config('spectator.sources.local.base_path').'/openapi.yaml'
-    );
-
-    $promised = $spec['components']['responses']['Forbidden']['content']['application/json']['example']['message'];
-
-    expect($promised)->toBeString()->not->toBeEmpty();
+    $promised = contractErrorMessage('Forbidden');
 
     $foreign = Tournament::factory()->create();
 
@@ -116,15 +101,22 @@ it('mówi przy 403 dokładnie to, co obiecuje kontrakt', function () {
 });
 
 it('mówi przy 401 dokładnie to, co obiecuje kontrakt', function () {
-    $spec = Yaml::parseFile(
-        config('spectator.sources.local.base_path').'/openapi.yaml'
-    );
-
-    $promised = $spec['components']['responses']['Unauthenticated']['content']['application/json']['example']['message'];
-
-    expect($promised)->toBeString()->not->toBeEmpty();
+    $promised = contractErrorMessage('Unauthenticated');
 
     $this->getJson('/api/v1/me')
         ->assertUnauthorized()
         ->assertJsonPath('message', $promised);
+});
+
+// Odmowa policy i goły `abort(403)` to dwa różne wyjątki: pierwszy framework
+// zamienia w `AccessDeniedHttpException`, drugi zostaje zwykłym
+// `HttpException(403)`. Przesłonięcie łapiące tylko ten pierwszy przeszłoby
+// test policy wyżej, a `abort(403)` mówiłby po angielsku albo własnym tekstem.
+// Trasa jest doraźna, bo w `app/` nie ma dziś żadnego `abort(403)`.
+it('oddaje to samo 403 przy gołym abort z własnym tekstem', function () {
+    Route::get('/api/v1/probna-odmowa', fn () => abort(403, 'Custom deny'));
+
+    $this->getJson('/api/v1/probna-odmowa')
+        ->assertForbidden()
+        ->assertJsonPath('message', contractErrorMessage('Forbidden'));
 });
