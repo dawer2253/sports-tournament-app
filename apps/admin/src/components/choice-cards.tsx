@@ -11,7 +11,7 @@ export interface ChoiceOption<T extends string | number> {
 }
 
 export interface ChoiceCardsProps<T extends string | number> {
-  /** Nagłówek grupy, czytany przez czytnik ekranu razem z każdą opcją. */
+  /** Nagłówek pola wyboru, czytany przez czytnik ekranu razem z każdą opcją. */
   legend: string;
   /** Wspólna nazwa pola dla natywnych `input[type=radio]`. */
   name: string;
@@ -46,8 +46,8 @@ export interface ChoiceCardsProps<T extends string | number> {
  * czyli emoji plus dwa zdania opisu — czytnik ekranu przeczytałby to zamiast
  * samej nazwy opcji. Opis zostaje opisem, a nie częścią nazwy.
  *
- * Komunikat błędu grupy dopinamy do opisu każdego radia, razem z
- * `aria-invalid`, a nie do `fieldset`: opis grupy czytniki ekranu ogłaszają
+ * Komunikat błędu pola wyboru dopinamy do opisu każdego radia, razem z
+ * `aria-invalid`, a nie do `fieldset`: jego opis czytniki ekranu ogłaszają
  * niekonsekwentnie, a opis radia z fokusem — tak. Tak samo zachowuje się pole
  * tekstowe w tym samym formularzu.
  *

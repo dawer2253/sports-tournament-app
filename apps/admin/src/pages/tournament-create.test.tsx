@@ -213,7 +213,7 @@ describe('TournamentCreatePage', () => {
     );
   });
 
-  it('błąd grupy kafelków oznacza radia i trafia do ich opisu', async () => {
+  it('błąd pola wyboru oznacza radia i trafia do ich opisu', async () => {
     const { user } = renderPage();
     await screen.findByRole('radio', { name: 'Piłka nożna' });
 
@@ -251,7 +251,7 @@ describe('TournamentCreatePage', () => {
     expect(screen.getByRole('radio', { name: 'Piłka nożna' })).toHaveFocus();
   });
 
-  it('z wybranym sportem fokus przechodzi na format, pierwszą grupę z błędem', async () => {
+  it('z wybranym sportem fokus przechodzi na format, pierwsze pole z błędem', async () => {
     const { user } = renderPage();
     await screen.findByRole('radio', { name: 'Piłka nożna' });
     await user.type(screen.getByLabelText(/Nazwa turnieju/), 'Liga Osiedlowa 2026');
@@ -296,7 +296,7 @@ describe('TournamentCreatePage', () => {
     expect(football).toHaveAccessibleDescription('Wybrany sport nie istnieje.');
   });
 
-  it('strzałki przestawiają wybór w obrębie grupy, bez myszy', async () => {
+  it('strzałki przestawiają wybór w obrębie pola, bez myszy', async () => {
     const { user } = renderPage();
     const football = await screen.findByRole('radio', { name: 'Piłka nożna' });
 

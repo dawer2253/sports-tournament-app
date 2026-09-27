@@ -24,7 +24,7 @@ function renderCards(value: string | undefined) {
   return ref;
 }
 
-// Na ekranie zakładania turnieju zaznaczona grupa z błędem zdarza się tylko po
+// Na ekranie zakładania turnieju zaznaczone pole wyboru z błędem zdarza się tylko po
 // 422 z API, a wtedy react-hook-form fokusu nie przenosi. Dlatego to, gdzie
 // trafia ref, sprawdzamy na samym komponencie.
 describe('ChoiceCards', () => {
