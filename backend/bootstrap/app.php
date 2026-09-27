@@ -1,10 +1,12 @@
 <?php
 
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -68,5 +70,35 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return response()->json(['message' => 'Nie znaleziono zasobu.'], 404);
+        });
+
+        // 401 i 403 z tego samego powodu co 404: kontrakt ma na każdy z nich
+        // jedno polskie zdanie (`Unauthenticated`, `Forbidden`), a framework
+        // wpisuje `Unauthenticated.` i `This action is unauthorized.` jako
+        // napisy stałe, z pominięciem translatora — `lang/pl` ich nie ruszy.
+        //
+        // 403 łapiemy na `AccessDeniedHttpException`, bo w niego
+        // `Handler::prepareException()` zamienia odmowę policy
+        // (`AuthorizationException`) zanim dojdzie do tych callbacków. Ta sama
+        // konsekwencja co przy 404: własny tekst z `Response::deny('...')`
+        // zostanie tu skasowany.
+        //
+        // Dla 401 przesłonięcie niczego nie ukrywa: `Handler::unauthenticated()`
+        // i tak oddawał sam komunikat, bez `exception` i `trace`, także przy
+        // `APP_DEBUG` (docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §6).
+        $exceptions->render(function (AuthenticationException $e, Request $request) use ($rendersJson) {
+            if (! $rendersJson($request)) {
+                return null;
+            }
+
+            return response()->json(['message' => 'Wymagane zalogowanie.'], 401);
+        });
+
+        $exceptions->render(function (AccessDeniedHttpException $e, Request $request) use ($rendersJson) {
+            if (! $rendersJson($request)) {
+                return null;
+            }
+
+            return response()->json(['message' => 'Brak dostępu do zasobu.'], 403);
         });
     })->create();

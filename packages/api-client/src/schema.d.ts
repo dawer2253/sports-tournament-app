@@ -2806,7 +2806,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "Unauthenticated."
+                 *       "message": "Wymagane zalogowanie."
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -2820,7 +2820,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "This action is unauthorized."
+                 *       "message": "Brak dostępu do zasobu."
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];

@@ -85,10 +85,15 @@ dla wszystkich ścieżek. Framework ma tu trzy różne teksty (brak trasy, brak
 modelu, goły `abort(404)`), wszystkie po angielsku, a ten od modelu wycieka
 nazwę klasy Eloquenta wprost na ekran.
 
-Wynika z tego **pułapka: własny tekst z `abort(404, '...')` zostanie skasowany
-po cichu** i żaden test tego nie zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje
-innego komunikatu, to zmiana kontraktu idąca normalną kolejnością, a nie
-obejście w kontrolerze.
+**Tak samo 401 i 403**: `Wymagane zalogowanie.` (`Unauthenticated`) i `Brak
+dostępu do zasobu.` (`Forbidden`). Framework wpisuje tu napisy stałe
+z pominięciem translatora, więc `lang/pl` ich nie przetłumaczy — polski tekst
+daje wyłącznie przesłonięcie w `bootstrap/app.php`.
+
+Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`
+czy `Response::deny('...')` zostanie skasowany po cichu** i żaden test tego nie
+zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje innego komunikatu, to zmiana
+kontraktu idąca normalną kolejnością, a nie obejście w kontrolerze.
 
 Oryginalny komunikat nie trafia przy tym do `laravel.log` — `HttpException`
 i `ModelNotFoundException` są w `Handler::$internalDontReport`, więc 404 nigdy
@@ -154,8 +159,8 @@ kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec
 `string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
 rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
 [#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
-endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 404 i 403 robią to za
-ciebie testy „mówi przy 404/403 dokładnie to, co obiecuje kontrakt"
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 401, 403 i 404 robią to
+za ciebie testy „mówi przy … dokładnie to, co obiecuje kontrakt"
 w `ErrorResponsesTest`.
 
 Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy

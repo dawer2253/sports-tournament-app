@@ -94,11 +94,10 @@ it('nie loguje 404 poza trybem debug', function () {
     Log::shouldNotHaveReceived('debug');
 });
 
-// 403 bierze tekst wprost z frameworka (`AuthorizationException`), bez
-// przesłonięcia jak przy 404 — więc jego zgodność z przykładem w kontrakcie
-// trzyma wyłącznie domyślny komunikat Laravela. Zmiana wersji frameworka albo
-// własny tekst w `Response::deny()` rozjechałyby je po cichu, bo Spectator
-// przepuszcza dowolny `message` (klasa błędu z #53).
+// 401 i 403 frameworka to napisy stałe poza translatorem, więc `lang/pl` ich
+// nie tłumaczy — po polsku mówią wyłącznie dzięki przesłonięciu
+// w `bootstrap/app.php`. Tekst czytany z kontraktu, bo Spectator przepuszcza
+// dowolny `message` (klasa błędu z #53).
 it('mówi przy 403 dokładnie to, co obiecuje kontrakt', function () {
     $spec = Yaml::parseFile(
         config('spectator.sources.local.base_path').'/openapi.yaml'
@@ -113,5 +112,19 @@ it('mówi przy 403 dokładnie to, co obiecuje kontrakt', function () {
     actingAsOrganizer()
         ->getJson("/api/v1/tournaments/{$foreign->id}")
         ->assertForbidden()
+        ->assertJsonPath('message', $promised);
+});
+
+it('mówi przy 401 dokładnie to, co obiecuje kontrakt', function () {
+    $spec = Yaml::parseFile(
+        config('spectator.sources.local.base_path').'/openapi.yaml'
+    );
+
+    $promised = $spec['components']['responses']['Unauthenticated']['content']['application/json']['example']['message'];
+
+    expect($promised)->toBeString()->not->toBeEmpty();
+
+    $this->getJson('/api/v1/me')
+        ->assertUnauthorized()
         ->assertJsonPath('message', $promised);
 });
