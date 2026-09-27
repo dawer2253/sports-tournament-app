@@ -34,13 +34,15 @@ info:
     - Błąd walidacji: `422` z `{ "message": ..., "errors": { pole: [...] } }`.
       Pozostałe błędy: `{ "message": ... }`.
     - Poza kodami wypisanymi przy ścieżkach każde żądanie może dostać
-      odpowiedź z warstwy frameworka — w tej samej kopercie, po polsku,
-      z jednym zdaniem na kod: `400` (`BadRequest`, niepoprawny UTF-8
-      w ścieżce), `405` (`MethodNotAllowed`, dozwolone metody niesie nagłówek
-      `Allow`), `413` (`PayloadTooLarge`, ciało ponad limit serwera), `500`
-      (`ServerError`, `message` nie niesie szczegółów) i `503`
-      (`ServiceUnavailable`, tryb konserwacji). Teksty są w
-      `components/responses`; przy ścieżkach ich nie powtarzamy.
+      `400` (`BadRequest`), `405` (`MethodNotAllowed`), `413`
+      (`PayloadTooLarge`), `500` (`ServerError`) albo `503`
+      (`ServiceUnavailable`) — w tej samej kopercie, po polsku. `message`
+      zależy wyłącznie od kodu, nie od przyczyny: jedno zdanie na kod, tak jak
+      przy `401`, `403` i `404`. Typowe przyczyny to kolejno niepoprawny
+      UTF-8 w ścieżce, metoda spoza obsługiwanych (te niesie nagłówek
+      `Allow`), ciało ponad limit serwera, nieoczekiwany błąd i tryb
+      konserwacji. Przy `500` `message` nie niesie szczegółów. Teksty są
+      w `components/responses`; przy ścieżkach ich nie powtarzamy.
     - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
@@ -1843,7 +1845,7 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
           example: { message: Nie znaleziono zasobu. }
     BadRequest:
-      description: Ścieżka URL z niepoprawnym UTF-8
+      description: Żądanie odrzucone przed trasą, np. ścieżka URL z niepoprawnym UTF-8
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -1871,7 +1873,7 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
           example: { message: Wewnętrzny błąd serwera. }
     ServiceUnavailable:
-      description: Tryb konserwacji
+      description: Usługa chwilowo niedostępna, np. tryb konserwacji
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }

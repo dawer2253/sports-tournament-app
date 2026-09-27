@@ -2840,7 +2840,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Ścieżka URL z niepoprawnym UTF-8 */
+        /** @description Żądanie odrzucone przed trasą, np. ścieżka URL z niepoprawnym UTF-8 */
         BadRequest: {
             headers: {
                 [name: string]: unknown;
@@ -2898,7 +2898,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Tryb konserwacji */
+        /** @description Usługa chwilowo niedostępna, np. tryb konserwacji */
         ServiceUnavailable: {
             headers: {
                 [name: string]: unknown;

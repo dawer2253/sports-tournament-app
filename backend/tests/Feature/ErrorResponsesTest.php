@@ -234,11 +234,10 @@ it('zostawia przy 500 w trybie debug wyjątek i ślad', function () {
         ->assertJsonStructure(['trace']);
 });
 
-// Mapa w `respond()` idzie po statusie, więc 422 i 401 omijają ją z definicji.
-// Ten test pilnuje, żeby tak zostało, gdyby ktoś przepisał 500 na
-// `render(Throwable)` — przez niego przechodzą nieprzerobione
-// `ValidationException` i `AuthenticationException`. 401 pilnuje test
-// „mówi przy 401…” wyżej.
+// Mapa w `respond()` idzie po statusie, więc 422 omija ją z definicji. Ten
+// test pilnuje, żeby tak zostało, gdyby ktoś przepisał 500 na
+// `render(Throwable)` — przez niego przechodzi nieprzerobiona
+// `ValidationException`. 401 pilnuje test „mówi przy 401…” wyżej.
 it('nie zamienia w 500 błędu walidacji', function () {
     config(['app.debug' => false]);
 

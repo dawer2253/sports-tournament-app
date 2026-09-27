@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -81,42 +80,32 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json(['message' => 'Nie znaleziono zasobu.'], 404);
         });
 
-        // 401 z tego samego powodu co 404: kontrakt ma na niego jedno polskie
-        // zdanie (`Unauthenticated`), a framework wpisuje `Unauthenticated.`
-        // jako napis stały, z pominięciem translatora — `lang/pl` go nie ruszy.
-        // Przesłonięcie niczego nie ukrywa: `Handler::unauthenticated()`
-        // i tak oddawał sam komunikat, bez `exception` i `trace`, także przy
-        // `APP_DEBUG` (docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §6).
-        $exceptions->render(function (AuthenticationException $e, Request $request) use ($rendersJson): ?JsonResponse {
-            if (! $rendersJson($request)) {
-                return null;
-            }
-
-            return response()->json(['message' => 'Wymagane zalogowanie.'], 401);
-        });
-
-        // Pozostałe kody z jednym zdaniem w kontrakcie: 403 (`Forbidden`) i te,
-        // które warstwa frameworka oddaje na dowolnym żądaniu (#76). Tu też
-        // framework ma napisy stałe po angielsku, spoza translatora.
+        // Pozostałe kody z jednym zdaniem w kontrakcie: 401 (`Unauthenticated`),
+        // 403 (`Forbidden`) i te, które warstwa frameworka oddaje na dowolnym
+        // żądaniu (#76). Tu też framework ma napisy stałe po angielsku, spoza
+        // translatora — `lang/pl` ich nie ruszy.
         //
         // `respond()`, a nie `render()`, bo działa na gotowej odpowiedzi według
         // jej statusu. `render()` dla 500 musiałby łapać `Throwable`, a przez
         // niego przechodzą jeszcze nieprzerobione `ValidationException`
         // i `AuthenticationException` — każdy trzeba by wykluczać ręcznie.
-        // Po statusie 422 i 401 omijają mapę same, nagłówki (`Allow`,
-        // `Retry-After`) zostają, a jeden wpis obejmuje każdą drogę do danego
-        // kodu: odmowę policy i goły `abort(403)`, wyjątek i `abort(500)`.
+        // Po statusie 422 omija mapę sam, nagłówki (`Allow`, `Retry-After`)
+        // zostają, a jeden wpis obejmuje każdą drogę do danego kodu: odmowę
+        // policy i goły `abort(403)`, wyjątek i `abort(500)`.
         //
         // Omijamy `HttpResponseException` (dociera tu tylko spod middleware'u,
         // z akcji łapie ją `Route::run()`): tę odpowiedź kod zbudował celowo.
         // Przy `APP_DEBUG` 500 zostaje z `exception` i `trace`; pozostałe
-        // kody tracą je tak samo jak 403 i 404, bo nie niosły nic poza
-        // napisem stałym. Pułapki i 429: `backend/AGENTS.md`.
+        // kody tracą je tak samo jak 404, bo nie niosły nic poza napisem
+        // stałym (401 i tak oddawał sam komunikat, research §6). Pułapki
+        // i 429: `backend/AGENTS.md`.
         //
         // Teksty są przykładami z `components/responses` — pilnuje tego
         // `ErrorResponsesTest`.
+        /** @var array<int, string> $contractMessageByStatus status HTTP => `message` z kontraktu */
         $contractMessageByStatus = [
             400 => 'Niepoprawny adres URL.',
+            401 => 'Wymagane zalogowanie.',
             403 => 'Brak dostępu do zasobu.',
             405 => 'Metoda niedozwolona dla tego zasobu.',
             413 => 'Przesłane dane są za duże.',
