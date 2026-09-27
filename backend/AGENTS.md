@@ -134,6 +134,12 @@ a wynikają wprost z kontraktu:
   Reguła `confirmed` szuka pola `password_confirmation`, a kontrakt ma pola
   w camelCase.
 
+**Cudzy turniej to 403, nie 404.** Kontrakt rozróżnia `Forbidden` od
+`NotFound`, więc pojedynczy zasób wiąże się z trasy bez zawężania do
+organizera, a własność rozstrzyga [`TournamentPolicy`](app/Policies/TournamentPolicy.php).
+Zawężone zapytanie (`whereBelongsTo`) zostaje dla list, gdzie cudze wiersze po
+prostu nie istnieją.
+
 Testy nie logują się przez `actingAs()`. Helper `actingAsOrganizer()`
 z `tests/Pest.php` wydaje prawdziwy token, żeby test przechodził tę samą drogę
 co panel.
@@ -148,8 +154,9 @@ kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec
 `string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
 rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
 [#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
-endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 404 robi to za
-ciebie test „mówi przy 404 dokładnie to, co obiecuje kontrakt".
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 404 i 403 robią to za
+ciebie testy „mówi przy 404/403 dokładnie to, co obiecuje kontrakt"
+w `ErrorResponsesTest`.
 
 Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
 `abort(404, '...')`** — opisuje „Backend oddaje wyłącznie JSON" wyżej.

@@ -18,4 +18,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sports', [SportController::class, 'index']);
     Route::get('/tournaments', [TournamentController::class, 'index']);
     Route::post('/tournaments', [TournamentController::class, 'store']);
+    Route::get('/tournaments/{tournament}', [TournamentController::class, 'show']);
 });
