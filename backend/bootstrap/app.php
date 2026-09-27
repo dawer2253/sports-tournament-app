@@ -4,6 +4,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -15,12 +16,14 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * (patrz `AGENTS.md`), ale `expectsJson()` samo nie wystarcza: klient bez
  * nagłówka `Accept` też ma dostać kształt z kontraktu, nie stronę błędu.
  *
- * Prefiks sprawdzany na surowej ścieżce, a nie przez `$request->is('api/*')`:
- * `is()` dopasowuje wzorzec do ścieżki zdekodowanej, regexem z flagą `u`,
- * więc na niepoprawnym UTF-8 (`/api/v1/%C0`, czyli 400) nie dopasowuje niczego
- * i klient bez `Accept` dostawał stronę HTML.
+ * Prefiks sprawdzany dwa razy. `is()` dopasowuje wzorzec do ścieżki
+ * zdekodowanej (więc łapie `/%61pi/...`), ale regexem z flagą `u` — na
+ * niepoprawnym UTF-8 (`/api/v1/%C0`, czyli 400) nie dopasowuje niczego i klient
+ * bez `Accept` dostawał stronę HTML. Tam ratuje surowa ścieżka.
  */
-$rendersJson = fn (Request $request): bool => str_starts_with($request->path(), 'api/') || $request->expectsJson();
+$rendersJson = fn (Request $request): bool => $request->is('api/*')
+    || str_starts_with($request->path(), 'api/')
+    || $request->expectsJson();
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -93,54 +96,45 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Pozostałe kody z jednym zdaniem w kontrakcie: 403 (`Forbidden`) i te,
-        // które oddaje warstwa frameworka na dowolnym żądaniu (#76). Framework
-        // ma na nie napisy stałe po angielsku, spoza translatora.
+        // które warstwa frameworka oddaje na dowolnym żądaniu (#76). Tu też
+        // framework ma napisy stałe po angielsku, spoza translatora.
         //
         // `respond()`, a nie `render()`, bo działa na gotowej odpowiedzi według
         // jej statusu. `render()` dla 500 musiałby łapać `Throwable`, a przez
         // niego przechodzą jeszcze nieprzerobione `ValidationException`
-        // i `AuthenticationException` (`Handler::render()` zamienia je
-        // w odpowiedzi dopiero po callbackach) — każdy trzeba by wykluczać
-        // ręcznie. Tu 422 i 401 mają swój status, więc omijają mapę same.
-        // Po drodze zostają nagłówki: `Allow` przy 405, `Retry-After` przy 503.
+        // i `AuthenticationException` — każdy trzeba by wykluczać ręcznie.
+        // Po statusie 422 i 401 omijają mapę same, nagłówki (`Allow`,
+        // `Retry-After`) zostają, a jeden wpis obejmuje każdą drogę do danego
+        // kodu: odmowę policy i goły `abort(403)`, wyjątek i `abort(500)`.
         //
-        // 403 z mapy obejmuje i odmowę policy, i goły `abort(403)` — to dwa
-        // różne wyjątki (`AccessDeniedHttpException` i zwykły
-        // `HttpException(403)`), ale ten sam status. 500 obejmuje zarówno
-        // wyjątek spoza `HttpException`, jak i `abort(500)`.
+        // Omijamy `HttpResponseException` (dociera tu tylko spod middleware'u,
+        // z akcji łapie ją `Route::run()`): tę odpowiedź kod zbudował celowo.
+        // Przy `APP_DEBUG` 500 zostaje z `exception` i `trace`; pozostałe
+        // kody tracą je tak samo jak 403 i 404, bo nie niosły nic poza
+        // napisem stałym. Pułapki i 429: `backend/AGENTS.md`.
         //
-        // Ta sama konsekwencja co przy 404: własny tekst z `abort(403, '...')`,
-        // `Response::deny('...')` czy `abort(500, '...')` zostanie tu
-        // skasowany. Raportowanie się nie zmienia — `respond()` dotyka tylko
-        // odpowiedzi, wyjątek trafia do logu jak dotąd.
-        //
-        // Przy `APP_DEBUG` 500 zostaje nietknięte, z `exception` i `trace`:
-        // to narzędzie deweloperskie, a jedyną treścią niesioną przez te
-        // pozostałe kody i tak był napis stały.
-        //
-        // 429 celowo brak: limitera nie ma, więc kontrakt o nim milczy.
-        // Dochodzi tutaj razem z pierwszym `throttle` (framework: `Too Many
-        // Attempts.`). Teksty muszą być równe przykładom z
-        // `components/responses` — pilnuje tego `ErrorResponsesTest`.
-        $messages = [
-            400 => 'Niepoprawny adres URL.',          // BadRequest
-            403 => 'Brak dostępu do zasobu.',         // Forbidden
-            405 => 'Metoda niedozwolona dla tego zasobu.', // MethodNotAllowed
-            413 => 'Przesłane dane są za duże.',      // PayloadTooLarge
-            500 => 'Wewnętrzny błąd serwera.',        // ServerError
-            503 => 'Usługa chwilowo niedostępna.',    // ServiceUnavailable
+        // Teksty są przykładami z `components/responses` — pilnuje tego
+        // `ErrorResponsesTest`.
+        $contractMessageByStatus = [
+            400 => 'Niepoprawny adres URL.',
+            403 => 'Brak dostępu do zasobu.',
+            405 => 'Metoda niedozwolona dla tego zasobu.',
+            413 => 'Przesłane dane są za duże.',
+            500 => 'Wewnętrzny błąd serwera.',
+            503 => 'Usługa chwilowo niedostępna.',
         ];
 
-        $exceptions->respond(function (Response $response, Throwable $e, Request $request) use ($rendersJson, $messages): Response {
+        $exceptions->respond(function (Response $response, Throwable $e, Request $request) use ($rendersJson, $contractMessageByStatus): Response {
             $status = $response->getStatusCode();
 
-            if (! isset($messages[$status])
+            if (! isset($contractMessageByStatus[$status])
+                || $e instanceof HttpResponseException
                 || ! $response instanceof JsonResponse
                 || ! $rendersJson($request)
                 || ($status === 500 && config('app.debug'))) {
                 return $response;
             }
 
-            return $response->setData(['message' => $messages[$status]]);
+            return $response->setData(['message' => $contractMessageByStatus[$status]]);
         });
     })->create();

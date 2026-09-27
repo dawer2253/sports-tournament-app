@@ -97,19 +97,22 @@ daje wyłącznie przesłonięcie w `bootstrap/app.php`.
 i wspomina w `info.description`. Przesłonięcie idzie przez
 `$exceptions->respond()`, czyli po statusie gotowej odpowiedzi — dzięki temu
 nagłówki (`Allow`, `Retry-After`) zostają, a 422 i 401 nie wpadają w gałąź 500.
-Tam też siedzi 403. Wyjątek: **500 przy `APP_DEBUG` zostaje nietknięte**,
-z `exception` i `trace`, a raportowanie wyjątku działa jak dotąd.
+Tą samą mapą idzie 403. Wyjątki: **500 przy `APP_DEBUG` zostaje nietknięte**,
+z `exception` i `trace`, a odpowiedź z `HttpResponseException` przechodzi bez
+zmian. Raportowanie wyjątku działa jak dotąd.
+
+Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`,
+`abort(500, '...')` czy `Response::deny('...')` zostanie skasowany po cichu**
+i żaden test tego nie zgłosi. Dotyczy to też JSON-a o jednym z tych statusów
+zwróconego z `render()` wyjątku albo z `Responsable`. Jeżeli jakiś zasób
+naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
+kolejnością, a nie obejście w kontrolerze.
 
 **429 celowo nie ma**, bo nie ma limitera, a kontrakt nie opisuje zachowań,
 których backend nie realizuje. Kto doda pierwszy `throttle`, dokłada razem
 z nim wpis w mapie w `bootstrap/app.php`, komponent w `components/responses`,
 wzmiankę w `info.description` i test w `ErrorResponsesTest` (framework mówi
 tu `Too Many Attempts.`).
-
-Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`,
-`abort(500, '...')` czy `Response::deny('...')` zostanie skasowany po cichu**
-i żaden test tego nie zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje innego komunikatu, to zmiana
-kontraktu idąca normalną kolejnością, a nie obejście w kontrolerze.
 
 Oryginalny komunikat nie trafia przy tym do `laravel.log` — `HttpException`
 i `ModelNotFoundException` są w `Handler::$internalDontReport`, więc 404 nigdy

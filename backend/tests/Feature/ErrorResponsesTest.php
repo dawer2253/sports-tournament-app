@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Tournament;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
@@ -132,8 +133,8 @@ it('oddaje to samo 403 przy gołym abort z własnym tekstem', function () {
 | przy ścieżkach. Framework wpisuje tu napisy stałe po angielsku, z pominięciem
 | translatora. Tekst zawsze z kontraktu, z tego samego powodu co przy 404.
 |
-| `app.debug` ustawiane jawnie: przy `true` framework dokleja `exception`
-| i `trace`, a 500 w ogóle nie idzie przez `HttpException`.
+| `app.debug` ustawiane jawnie, bo przy `true` framework dokleja `exception`
+| i `trace`, a 500 zostaje wtedy celowo nieprzesłonięte.
 |
 */
 
@@ -183,7 +184,10 @@ it('oddaje 400 jako JSON także bez nagłówka Accept', function () {
 });
 
 it('mówi przy 503 dokładnie to, co obiecuje kontrakt, i zostawia Retry-After', function () {
-    config(['app.debug' => false]);
+    // Sterownik `file` pisze do `storage/framework/down`, który test dzieli
+    // z działającym Sailem — położyłby go na czas testu (albo na stałe, gdyby
+    // proces padł przed `finally`). `array` żyje tylko w tym procesie.
+    config(['app.debug' => false, 'app.maintenance.driver' => 'array']);
     app()->maintenanceMode()->activate(['retry' => 60]);
 
     try {
@@ -230,21 +234,45 @@ it('zostawia przy 500 w trybie debug wyjątek i ślad', function () {
         ->assertJsonStructure(['trace']);
 });
 
-// Gałąź 500 łapie wyjątki spoza `HttpException`, a takimi są też walidacja
-// i brak logowania — dopiero `Handler::prepareException()` zamienia je
-// w odpowiedzi. Zbyt szerokie przesłonięcie zrobiłoby z nich 500.
+// Mapa w `respond()` idzie po statusie, więc 422 i 401 omijają ją z definicji.
+// Ten test pilnuje, żeby tak zostało, gdyby ktoś przepisał 500 na
+// `render(Throwable)` — przez niego przechodzą nieprzerobione
+// `ValidationException` i `AuthenticationException`. 401 pilnuje test
+// „mówi przy 401…” wyżej.
 it('nie zamienia w 500 błędu walidacji', function () {
     config(['app.debug' => false]);
 
     $this->postJson('/api/v1/login', [])
         ->assertUnprocessable()
+        ->assertJsonPath('message', fn (string $message) => str_starts_with($message, 'Pole '))
         ->assertJsonStructure(['message', 'errors' => ['email', 'password']]);
 });
 
-it('nie zamienia w 500 braku logowania', function () {
+// Kod, który sam zbudował odpowiedź i rzucił ją jako `HttpResponseException`,
+// dostaje ją bez zmian — mapa przesłania wyłącznie napisy stałe frameworka.
+// Rzucona z akcji w ogóle nie dociera do handlera (`Route::run()` ją łapie),
+// więc test rzuca ją z middleware'u — to jedyna droga, na której wykluczenie
+// w `respond()` cokolwiek zmienia.
+it('nie przesłania odpowiedzi z HttpResponseException rzuconej w middleware', function () {
     config(['app.debug' => false]);
+    app()->instance('probny-middleware', new class
+    {
+        public function handle(): never
+        {
+            throw new HttpResponseException(response()->json(['message' => 'Własny tekst.'], 503));
+        }
+    });
+    Route::get('/api/v1/probna-odpowiedz', fn () => 'nieosiągalne')->middleware('probny-middleware');
 
-    $this->getJson('/api/v1/me')
+    $this->getJson('/api/v1/probna-odpowiedz')
+        ->assertServiceUnavailable()
+        ->assertExactJson(['message' => 'Własny tekst.']);
+});
+
+// `Request::is()` patrzy na ścieżkę zdekodowaną, więc zakodowany prefiks też
+// jest `api/*` — surowa ścieżka dołożona dla 400 nie może tego zgubić.
+it('oddaje JSON bez nagłówka Accept także przy zakodowanym prefiksie api', function () {
+    $this->get('/%61pi/v1/me')
         ->assertUnauthorized()
-        ->assertExactJson(['message' => contractErrorMessage('Unauthenticated')]);
+        ->assertHeader('content-type', 'application/json');
 });
