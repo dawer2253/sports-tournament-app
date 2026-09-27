@@ -19,6 +19,8 @@ const ME = {
   },
 };
 
+const replace = vi.fn();
+
 /**
  * `endSession()` przekierowuje przez `window.location.replace`, a jsdom nie
  * umie nawigować. Samej metody nie da się podmienić — w jsdomie `replace` jest
@@ -27,8 +29,6 @@ const ME = {
  * `pathname` inny niż `/login`, bo na logowaniu `endSession()` przekierowanie
  * pomija.
  */
-const replace = vi.fn();
-
 beforeEach(() => {
   vi.stubGlobal('location', { pathname: '/', replace });
   setToken(TOKEN);
