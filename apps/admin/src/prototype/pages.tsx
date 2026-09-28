@@ -13,6 +13,7 @@ import { api } from '../lib/api';
 import { TournamentPage } from '../pages/tournament';
 import type { Section } from './shells';
 import { useVariant } from './variant';
+import { VenuesPrototype } from './venues-variants';
 
 export function TournamentLayout() {
   const params = useParams();
@@ -37,7 +38,7 @@ export function TournamentLayout() {
 export function TournamentIndex() {
   const variant = useVariant();
   if (variant === 'B') return <TournamentPage />;
-  return <Navigate to={`teams?variant=${variant}`} replace />;
+  return <Navigate to={`teams${window.location.search}`} replace />;
 }
 
 const SECTIONS: Record<string, { title: string; ticket: string }> = {
@@ -49,6 +50,7 @@ const SECTIONS: Record<string, { title: string; ticket: string }> = {
 export function SectionPage({ section }: { section: Section }) {
   const tournament = useOutletContext<Tournament>();
   const variant = useVariant();
+  if (section === 'venues') return <VenuesPrototype tournament={tournament} />;
   const meta = SECTIONS[section];
   const title = variant === 'B' && section === 'settings' ? 'Branding i ustawienia' : meta.title;
   return (

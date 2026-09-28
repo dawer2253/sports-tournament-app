@@ -1,38 +1,44 @@
-// PROTOTYP (#85) — wyrzucany kod na gałęzi prototype/nawigacja-turnieju, nie do main.
-// Trzy warianty nawigacji panelu wewnątrz turnieju, przełączane `?variant=`
-// na istniejących trasach panelu (`/`, `/tournaments/:id/...`).
+// PROTOTYP (#86) — wyrzucany kod na gałęzi prototype/edycja-list, nie do main.
+// Gałąź wyrasta z prototype/nawigacja-turnieju (#85), więc nawigacja jest
+// na sztywno wariantem D, który tam wygrał. `?variant=` przełącza teraz
+// warianty edycji list (#86) na ekranie obiektów.
 import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 
 export const VARIANTS = [
-  { key: 'A', name: 'Dwie sekcje w sidebarze' },
-  { key: 'B', name: 'Dzisiejszy shell, pozycje dostają adresy' },
-  { key: 'C', name: 'Turnieje w sidebarze, sekcje jako karty' },
-  { key: 'D', name: 'Sidebar z A, sekcje jako karty z C' },
+  { key: 'A', name: 'Dialog' },
+  { key: 'B', name: 'Panel boczny (sheet)' },
+  { key: 'C', name: 'Edycja w wierszu' },
 ] as const;
 
-export type VariantKey = (typeof VARIANTS)[number]['key'];
+export type EditVariant = (typeof VARIANTS)[number]['key'];
 
-export function useVariant(): VariantKey {
+export function useEditVariant(): EditVariant {
   const [params] = useSearchParams();
   const raw = params.get('variant');
-  return VARIANTS.some((v) => v.key === raw) ? (raw as VariantKey) : 'A';
+  return VARIANTS.some((v) => v.key === raw) ? (raw as EditVariant) : 'A';
 }
 
-/** Nawigacja, która nie gubi `?variant=` przy przejściu między ekranami. */
+/** Nawigacja z #85: na sztywno wariant D. */
+export type VariantKey = 'A' | 'B' | 'C' | 'D';
+export function useVariant(): VariantKey {
+  return 'D';
+}
+
+/** Przejście, które nie gubi `?variant=` wariantu edycji. */
 export function useGo() {
   const navigate = useNavigate();
-  const variant = useVariant();
+  const [params] = useSearchParams();
   return useCallback(
     (path: string) => {
       const [base, hash] = path.split('#');
-      void navigate(`${base}?variant=${variant}${hash ? `#${hash}` : ''}`);
+      void navigate(`${base}?${params}${hash ? `#${hash}` : ''}`);
     },
-    [navigate, variant],
+    [navigate, params],
   );
 }
 
-export function href(path: string, variant: VariantKey): string {
+export function href(path: string, _variant?: VariantKey): string {
   const [base, hash] = path.split('#');
-  return `${base}?variant=${variant}${hash ? `#${hash}` : ''}`;
+  return `${base}${window.location.search}${hash ? `#${hash}` : ''}`;
 }

@@ -1,11 +1,11 @@
-// PROTOTYP (#85) — pływający przełącznik wariantów. Nie do main.
+// PROTOTYP (#86) — pływający przełącznik wariantów. Nie do main.
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { VARIANTS, useVariant } from './variant';
+import { VARIANTS, useEditVariant } from './variant';
 
 export function PrototypeSwitcher() {
-  const variant = useVariant();
+  const variant = useEditVariant();
   const navigate = useNavigate();
   const location = useLocation();
   const index = VARIANTS.findIndex((v) => v.key === variant);
