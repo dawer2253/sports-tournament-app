@@ -125,7 +125,9 @@ kolejnością, a nie obejście w kontrolerze.
 
 **429 celowo nie ma**, bo nie ma limitera, a kontrakt nie opisuje zachowań,
 których backend nie realizuje. Kto doda pierwszy `throttle`, dokłada razem
-z nim wpis w mapie w `bootstrap/app.php`, komponent w `components/responses`,
+z nim wpis w mapie w `bootstrap/app.php` — **w tej samej mapie, nie w drugim
+`$exceptions->respond()`**, bo `respond()` podmienia jedyny callback zamiast go
+dokładać, więc drugi wyłączyłby całą mapę — komponent w `components/responses`,
 wzmiankę w `info.description` i test w `ErrorResponsesTest` (framework mówi
 tu `Too Many Attempts.`).
 

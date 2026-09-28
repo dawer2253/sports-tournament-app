@@ -80,6 +80,11 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         // Teksty są przykładami z `components/responses` — pilnuje tego
         // `ErrorResponsesTest`.
+        //
+        // **Kolejne kody dokładaj do tej mapy, nie w drugim `respond()`.**
+        // `respond()` nie dokłada callbacku, tylko go podmienia
+        // (`Handler::respondUsing()` nadpisuje `$finalizeResponseCallback`),
+        // więc drugi wyłączyłby po cichu całą mapę.
         /** @var array<int, string> $contractMessageByStatus status HTTP => `message` z kontraktu */
         $contractMessageByStatus = [
             400 => 'Niepoprawny adres URL.',
