@@ -34,6 +34,7 @@
 | 23 | Seeding drabinki (grupy+playoff) | **Automatyczny krzyżowy** (1A–2B, 1B–2A…) jako domyślny, z **ręczną korektą par** przed startem fazy | Domyślnie organizator nic nie klika; przy nietypowym regulaminie nie jest zablokowany. Po starcie fazy pary zamraża kaskada (#15) |
 | 24 | „Pauza" (bye) w lidze nieparzystej | **Nie pokazywana jawnie** w terminarzu; kolejka ma po prostu o jeden mecz mniej | Bye to artefakt circle method, nie informacja dla kibica. Wewnętrznie generator dalej go używa |
 | 25 | Domyślna punktacja i tiebreaki per sport | **Ustalone w kontrakcie v0.1**; odłożone zostaje wyłącznie strojenie punktacji per turniej w UI (S1) | Pierwotnie odłożone w całości jako zgadywanie. Przestało nim być, gdy kontrakt zaczął serwować komplet w przykładzie `GET /sports` — piłka `{win:3, draw:1, loss:0}`, kosz `{win:2, draw:0, loss:1}`, `allowsDraw`, `eventTypes`. Mock już to oddaje, a `apps/admin` przeciw temu stoi, więc migracja `sports` przepisuje te wartości dosłownie; rozjazd oznaczałby dwie różne prawdy o tym samym sporcie |
+| 26 | Sport: dane czy strategia | **Sam `config` w bazie**, bez klasy strategii sportu. Punktację za wynik liczy klasyfikacja z `Tournament.points`, nie sport | W S1 i S2 sporty różnią się wartościami, nie algorytmem, a akcesory `Sport` te wartości wystawiają. Klasa niosąca dane dublowałaby `config`, czyli dawałaby dwie prawdy o sporcie (#25). Kod per sport powstaje dopiero z pierwszym algorytmem nie do wyrażenia danymi i czyta `config`. Rozstrzygnięte w [#81](https://github.com/dawer2253/sports-tournament-app/issues/81) |
 
 ---
 
@@ -138,13 +139,20 @@ Uwagi:
 
 ## 4. Sporty i konfiguracja (rozszerzalność)
 
-- Sport = **konfiguracja (DB/JSON) + strategia (PHP)**. Interfejs `SportRules`:
-  - `pointsFor(result): int` — np. piłka W=3/R=1/P=0; kosz W=2/P=1.
-  - `allowedEventTypes(): array` — goal, card (piłka); points, foul (kosz)…
-  - `availableTiebreakers(): array`, `availableStats(): array`.
-- Piłka i koszykówka seedowane w kodzie + seedzie DB.
+- Sport = **konfiguracja w bazie** (`sports.config`, decyzja #26): `allowsDraw`,
+  `defaultPoints`, `eventTypes`, `defaultTiebreakers`, `availableTiebreakers`,
+  `availableStats`. Czyta się ją przez akcesory modelu `Sport`.
+- Piłkę i koszykówkę wstawia migracja `sports`, przepisując dosłownie przykład
+  `GET /sports` z kontraktu (decyzja #25).
+- Punktacja należy do **turnieju** (`Tournament.points`). Sport daje tylko wartość
+  domyślną, kopiowaną przy zakładaniu, więc nie liczy punktów za wynik: robi to
+  klasyfikacja z punktacji turnieju.
 - Per turniej organizator konfiguruje w UI: **wartości punktowe** i **kolejność tiebreaków** (drag&drop).
-- Dodanie nowego sportu = nowa klasa `SportRules` + seed (bez zmian w silniku) → rozdział „rozszerzalność".
+- Dodanie nowego sportu = `SportCode` i przykład `GET /sports` w kontrakcie +
+  migracja z wierszem sportu (bez zmian w silniku) → rozdział „rozszerzalność".
+- Kod specyficzny dla sportu powstaje dopiero wtedy, gdy sport wniesie algorytm,
+  którego nie da się wyrazić danymi. Taka klasa nie trzyma wartości: czyta
+  `config`, a nazwę dostaje od tego, co robi.
 
 ---
 
@@ -282,9 +290,5 @@ Trzy pytania, które wisiały tu wcześniej, są rozstrzygnięte i przeniesione 
 decision logu: seeding drabinki → **#23**, jawność „pauzy" → **#24**, domyślna
 punktacja i tiebreaki per sport → **#25**.
 
-Zostaje jedno, świadomie odłożone:
-
-1. **Domyślne reguły punktacji i tiebreaków per sport** (#25). Ustalamy je przy
-   wdrażaniu każdego sportu w S1, razem z klasą `SportRules` i seedem. Silnik jest
-   na te wartości obojętny (są konfiguracją, nie kodem), więc odłożenie nie blokuje
-   ani generatora, ani klasyfikacji — blokowałoby tylko seed sportów.
+Ostatnie, odłożone do S1 razem z klasą `SportRules`, zamknęła decyzja **#26**:
+sport to sam `config` w bazie, bez klasy strategii. Otwartych pytań nie ma.

@@ -32,12 +32,18 @@ globalnie, nie tylko w obrębie jednego organizera.
 
 ## Sport
 
-Zestaw reguł, które określają jak liczy się wynik: ile punktów daje zwycięstwo,
-jakie zdarzenia mogą wystąpić w meczu, po czym można rozstrzygać remisy w tabeli
-i jakie statystyki mają sens.
+Zestaw reguł, które określają jak liczy się wynik: czy mecz może skończyć się
+remisem, jakie zdarzenia mogą w nim wystąpić, po czym można rozstrzygać remisy
+w tabeli i jakie statystyki mają sens.
 
 Sport jest predefiniowany. Organizer nie tworzy sportów, wybiera jeden z listy,
 a następnie dostosowuje jego parametry w obrębie swojego turnieju.
+
+Punktację (ile punktów w tabeli daje zwycięstwo, remis i porażka) sport podaje
+wyłącznie jako domyślną. Obowiązuje punktacja turnieju, którą organizer może
+zmienić, więc sport nigdy sam nie liczy punktów za wynik meczu.
+
+_Unikaj_: SportRules (osobna nazwa na to samo co Sport).
 
 ## Stage (faza)
 
