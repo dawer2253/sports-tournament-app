@@ -89,9 +89,10 @@ przesłonięcie idzie po statusie, nie po klasie wyjątku.
 
 Oryginalny komunikat nie trafia przy tym do `laravel.log` —
 `HttpException` i `ModelNotFoundException` są w `Handler::$internalDontReport`,
-więc nie były raportowane nigdy. Jedyny ślad po skasowanym tekście (404, 403,
-każdy kod z mapy niżej) to `Log::debug` w samym przesłonięciu, zapalany przy
-`APP_DEBUG`. Powody i pomiary:
+więc nie były raportowane nigdy. Jedyny ślad po skasowanym tekście (404, 403 i
+reszta kodów z mapy niżej) to `Log::debug` w samym przesłonięciu, zapalany przy
+`APP_DEBUG` — z wyjątkiem 500, które w tym trybie zostaje nieprzesłonięte, więc
+tekst zostaje w odpowiedzi. Powody i pomiary:
 [`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
 
 **Tak samo 401 i 403**: `Wymagane zalogowanie.` (`Unauthenticated`) i `Brak
@@ -116,7 +117,8 @@ i żaden test tego nie zgłosi. Dotyczy to też JSON-a o jednym z tych statusów
 zwróconego z `render()` wyjątku albo z `Responsable`. Przy 500 różnica jest
 ostra: wyjątek spoza `HttpException` idzie do `laravel.log` jak dotąd, ale tekst
 z `abort(500, '...')` poza `APP_DEBUG` znika bez śladu — `HttpException` nie
-jest raportowany, a `Log::debug` zapala się tylko w dev. Błąd, który ma zostawić
+jest raportowany, a w dev tekst widać tylko dlatego, że 500 zostaje wtedy
+nieprzesłonięte. Błąd, który ma zostawić
 ślad na produkcji, rzucaj jako zwykły wyjątek, nie `abort(500)`. Jeżeli jakiś zasób
 naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
 kolejnością, a nie obejście w kontrolerze.

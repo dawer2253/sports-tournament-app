@@ -60,33 +60,40 @@ it('mówi przy 404 dokładnie to, co obiecuje kontrakt', function () {
         ->assertJsonPath('message', $promised);
 });
 
-// Przesłonięcie kasuje oryginalny komunikat, a `laravel.log` go nie dostaje:
-// `HttpException` i `ModelNotFoundException` są w `Handler::$internalDontReport`,
-// więc 404 nigdy nie była raportowana. `Log::debug` jest jedynym jej śladem
-// i bez tego testu nikt by nie zauważył, że zniknął — odpowiedź dla klienta
-// wygląda przecież tak samo.
+// Przesłonięcie kasuje oryginalny komunikat, a `laravel.log` go nie dostaje —
+// powód i jedyny ślad (`Log::debug`) opisuje komentarz przy mapie
+// w `bootstrap/app.php`. Bez tych testów nikt by nie zauważył, że ślad zniknął:
+// odpowiedź dla klienta wygląda przecież tak samo. 404 to literówka w URL-u,
+// 403 — skasowany tekst z `abort(403, '...')` czy `Response::deny('...')`.
 //
 // `app.debug` ustawiane jawnie, a nie brane z `.env`, żeby test znaczył to samo
 // u każdego i w CI.
-it('zostawia w dev ślad po oryginalnym komunikacie 404', function () {
+dataset('skasowane komunikaty', [
+    '404 spod routera' => ['/api/v1/nie-ma-takiego-zasobu', 404, 'nie-ma-takiego-zasobu'],
+    '403 z gołego abort' => ['/api/v1/probna-odmowa', 403, 'Custom deny'],
+]);
+
+it('zostawia w dev ślad po skasowanym komunikacie', function (string $uri, int $status, string $original) {
     config(['app.debug' => true]);
     Log::spy();
+    Route::get('/api/v1/probna-odmowa', fn () => abort(403, 'Custom deny'));
 
-    $this->getJson('/api/v1/nie-ma-takiego-zasobu')->assertNotFound();
+    $this->getJson($uri)->assertStatus($status);
 
     Log::shouldHaveReceived('debug')
-        ->withArgs(fn (string $message, array $context = []) => str_contains($message, 'nie-ma-takiego-zasobu'))
+        ->withArgs(fn (string $message, array $context = []) => str_contains($message, $original))
         ->once();
-});
+})->with('skasowane komunikaty');
 
-it('nie loguje 404 poza trybem debug', function () {
+it('nie loguje skasowanego komunikatu poza trybem debug', function (string $uri, int $status) {
     config(['app.debug' => false]);
     Log::spy();
+    Route::get('/api/v1/probna-odmowa', fn () => abort(403, 'Custom deny'));
 
-    $this->getJson('/api/v1/nie-ma-takiego-zasobu')->assertNotFound();
+    $this->getJson($uri)->assertStatus($status);
 
     Log::shouldNotHaveReceived('debug');
-});
+})->with('skasowane komunikaty');
 
 // 401 i 403 frameworka to napisy stałe poza translatorem, więc `lang/pl` ich
 // nie tłumaczy — po polsku mówią wyłącznie dzięki przesłonięciu
@@ -124,8 +131,21 @@ it('oddaje to samo 403 przy gołym abort z własnym tekstem', function () {
         ->assertJsonPath('message', contractErrorMessage('Forbidden'));
 });
 
-// Odmowa policy ze statusem (`Response::denyAsNotFound()`, `denyWithStatus()`)
-// to trzecia droga do 404: `Handler::prepareException()` robi z niej zwykły
+// Ta sama pułapka po stronie 401: brak tokenu rzuca `AuthenticationException`,
+// a goły `abort(401)` — zwykły `HttpException(401)`. Test „mówi przy 401…”
+// wyżej idzie tylko pierwszą drogą.
+it('oddaje to samo 401 przy gołym abort z własnym tekstem', function () {
+    config(['app.debug' => false]);
+    Route::get('/api/v1/probny-brak-tokenu', fn () => abort(401, 'Custom unauthenticated'));
+
+    $this->getJson('/api/v1/probny-brak-tokenu')
+        ->assertUnauthorized()
+        ->assertExactJson(['message' => contractErrorMessage('Unauthenticated')]);
+});
+
+// Odmowa policy ze statusem (`Response::denyAsNotFound()`, czyli
+// `denyWithStatus(404)`) to czwarta droga do 404, obok routera, modelu i gołego
+// `abort(404)`: `Handler::prepareException()` robi z niej zwykły
 // `HttpException(404)`, a nie `NotFoundHttpException`, więc przesłonięcie
 // łapiące tę klasę przepuściłoby angielskie `Not Found` albo tekst z policy.
 it('oddaje to samo 404 przy odmowie policy udającej brak zasobu', function () {
@@ -135,21 +155,6 @@ it('oddaje to samo 404 przy odmowie policy udającej brak zasobu', function () {
     $this->getJson('/api/v1/probna-ukryta-odmowa')
         ->assertNotFound()
         ->assertExactJson(['message' => contractErrorMessage('NotFound')]);
-});
-
-// To samo co przy 404: tekst z `Response::deny('...')` czy `abort(403, '...')`
-// jest kasowany, a `HttpException` siedzi w `Handler::$internalDontReport`, więc
-// bez `Log::debug` w dev nie zostaje po nim nic.
-it('zostawia w dev ślad po skasowanym tekście 403', function () {
-    config(['app.debug' => true]);
-    Log::spy();
-    Route::get('/api/v1/probna-odmowa', fn () => abort(403, 'Custom deny'));
-
-    $this->getJson('/api/v1/probna-odmowa')->assertForbidden();
-
-    Log::shouldHaveReceived('debug')
-        ->withArgs(fn (string $message, array $context = []) => str_contains($message, 'Custom deny'))
-        ->once();
 });
 
 /*

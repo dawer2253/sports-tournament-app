@@ -72,9 +72,10 @@ return Application::configure(basePath: dirname(__DIR__))
         //
         // Omijamy `HttpResponseException` (dociera tu tylko spod middleware'u,
         // z akcji łapie ją `Route::run()`): tę odpowiedź kod zbudował celowo.
-        // Przy `APP_DEBUG` 500 zostaje z `exception` i `trace`; pozostałe
-        // kody tracą je tak samo jak 404, bo nie niosły nic poza napisem
-        // stałym (401 i tak oddawał sam komunikat, research §6). Pułapki
+        // Przy `APP_DEBUG` 500 zostaje z `exception` i `trace` (i bez
+        // `Log::debug` niżej — tekst i tak jest w odpowiedzi); pozostałe kody
+        // je tracą, bo nie niosły nic poza napisem stałym albo tekstem, który
+        // i tak ląduje w logu (401 oddawał sam komunikat, research §6). Pułapki
         // i 429: `backend/AGENTS.md`.
         //
         // Teksty są przykładami z `components/responses` — pilnuje tego
