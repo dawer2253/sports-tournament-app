@@ -60,6 +60,7 @@ export function ProtoShell(props: ProtoShellProps) {
   const variant = useVariant();
   if (variant === 'B') return <VariantB {...props} />;
   if (variant === 'C') return <VariantC {...props} />;
+  if (variant === 'D') return <VariantD {...props} />;
   return <VariantA {...props} />;
 }
 
@@ -321,6 +322,76 @@ function VariantC({ section, title, subtitle, actions, children, tournament, acc
           {tournament && title !== tournament.name && <h2 className="mb-4 text-lg font-semibold">{title}</h2>}
           {children}
         </main>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- D
+// Sidebar z A (turniej jako karta, bez listy sekcji), sekcje jako karty z C.
+// Pozycje bez treści w S1 są kartami nieczynnymi z dopiskiem etapu, jak w A.
+
+function VariantD({ section, title, subtitle, actions, children, tournament, account, onLogout }: ProtoShellProps) {
+  const go = useGo();
+  const base = tournament ? `/tournaments/${tournament.id}` : '';
+  return (
+    <div className="flex min-h-screen bg-background text-foreground">
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+        <Brand />
+        <nav className="flex-1 space-y-0.5 p-2">
+          <NavLink to="/" icon={LayoutGrid} label="Turnieje" active={section === 'tournaments' || section === 'create'} />
+          {tournament && (
+            <button
+              type="button"
+              onClick={() => go(base)}
+              aria-current="page"
+              className="mx-1 mt-4 block w-[calc(100%-0.5rem)] rounded-md border border-primary/40 bg-background/60 px-3 py-2 text-left"
+            >
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Turniej</div>
+              <div className="mt-0.5 truncate text-sm font-semibold" title={tournament.name}>{tournament.name}</div>
+              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                <TournamentStatusBadge status={tournament.status} />
+                {tournament.sport.name}
+              </div>
+            </button>
+          )}
+        </nav>
+        <AccountFooter account={account} onLogout={onLogout} />
+      </aside>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TitleBar
+          title={title}
+          subtitle={subtitle}
+          actions={actions}
+          below={
+            tournament ? (
+              <div className="-mb-px flex gap-1" role="tablist">
+                {TOURNAMENT_ITEMS.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={section === t.key}
+                    disabled={!!t.stage}
+                    title={t.stage ? `Dostępne od ${t.stage}` : undefined}
+                    onClick={() => go(`${base}/${t.key}`)}
+                    className={cn(
+                      'flex items-center gap-2 border-b-2 px-3 pb-2 text-sm',
+                      section === t.key
+                        ? 'border-primary font-medium text-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground',
+                      t.stage && 'cursor-default opacity-50 hover:text-muted-foreground',
+                    )}
+                  >
+                    <t.icon className="size-4" /> {t.label}
+                    {t.stage && <span className="text-[10px] font-semibold">{t.stage}</span>}
+                  </button>
+                ))}
+              </div>
+            ) : undefined
+          }
+        />
+        <main className="flex-1 overflow-auto p-4 pb-24 sm:p-6">{children}</main>
       </div>
     </div>
   );

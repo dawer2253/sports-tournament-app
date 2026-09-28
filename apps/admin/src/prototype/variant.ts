@@ -8,6 +8,7 @@ export const VARIANTS = [
   { key: 'A', name: 'Dwie sekcje w sidebarze' },
   { key: 'B', name: 'Dzisiejszy shell, pozycje dostają adresy' },
   { key: 'C', name: 'Turnieje w sidebarze, sekcje jako karty' },
+  { key: 'D', name: 'Sidebar z A, sekcje jako karty z C' },
 ] as const;
 
 export type VariantKey = (typeof VARIANTS)[number]['key'];
