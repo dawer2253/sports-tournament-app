@@ -8,7 +8,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Czy odpowiedź dla tego żądania ma być JSON-em. Backend oddaje wyłącznie JSON
@@ -47,43 +46,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) use ($rendersJson): void {
         $exceptions->shouldRenderJsonWhen($rendersJson);
 
-        // Kontrakt ma na 404 jedno zdanie (`components/responses/NotFound`),
-        // a framework ma na tę odpowiedź trzy różne teksty — spod routera,
-        // spod wyszukania modelu i pusty string spod gołego `abort(404)` —
-        // wszystkie po angielsku i wszystkie widoczne dla klienta także
-        // produkcyjnie. Jedno przesłonięcie zamyka komplet, bo
-        // `Handler::prepareException()` opakowuje `ModelNotFoundException`
-        // w ten sam `NotFoundHttpException` co router.
-        //
-        // Konsekwencja przyjęta świadomie: własny tekst z `abort(404, '...')`
-        // zostanie tu skasowany — 404 mówi w tym API jednym zdaniem, bo tak
-        // stanowi kontrakt.
-        //
-        // `Log::debug` jest **jedynym** śladem po oryginalnym komunikacie.
-        // Wbrew intuicji nie ma go w `laravel.log`: `HttpException`
-        // i `ModelNotFoundException` siedzą w `Handler::$internalDontReport`,
-        // więc żadna 404 nie jest raportowana — ani przed tą zmianą, ani po
-        // niej. Bez tej linii literówka w URL-u przestaje być widoczna
-        // gdziekolwiek.
-        //
-        // Pełne uzasadnienie i pomiary:
-        // docs/research/komunikaty-bledow-frameworka-a-kontrakt.md §4.
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($rendersJson): ?JsonResponse {
-            if (! $rendersJson($request)) {
-                return null;
-            }
-
-            if (config('app.debug')) {
-                Log::debug('404: '.$e->getMessage(), ['path' => $request->path()]);
-            }
-
-            return response()->json(['message' => 'Nie znaleziono zasobu.'], 404);
-        });
-
-        // Pozostałe kody z jednym zdaniem w kontrakcie: 401 (`Unauthenticated`),
-        // 403 (`Forbidden`) i te, które warstwa frameworka oddaje na dowolnym
-        // żądaniu (#76). Tu też framework ma napisy stałe po angielsku, spoza
-        // translatora — `lang/pl` ich nie ruszy.
+        // Kody z jednym zdaniem w kontrakcie: 401 (`Unauthenticated`),
+        // 403 (`Forbidden`), 404 (`NotFound`) i te, które warstwa frameworka
+        // oddaje na dowolnym żądaniu (#76). Tu też framework ma napisy stałe
+        // po angielsku, spoza translatora — `lang/pl` ich nie ruszy.
         //
         // `respond()`, a nie `render()`, bo działa na gotowej odpowiedzi według
         // jej statusu. `render()` dla 500 musiałby łapać `Throwable`, a przez
@@ -91,7 +57,18 @@ return Application::configure(basePath: dirname(__DIR__))
         // i `AuthenticationException` — każdy trzeba by wykluczać ręcznie.
         // Po statusie 422 omija mapę sam, nagłówki (`Allow`, `Retry-After`)
         // zostają, a jeden wpis obejmuje każdą drogę do danego kodu: odmowę
-        // policy i goły `abort(403)`, wyjątek i `abort(500)`.
+        // policy i goły `abort(403)`, wyjątek i `abort(500)`. Przy 404 to trzy
+        // teksty spod routera, wyszukania modelu i gołego `abort(404)` oraz
+        // czwarta droga, której klasa wyjątku nie złapie: `denyAsNotFound()`
+        // z policy `Handler::prepareException()` robi zwykłym
+        // `HttpException(404)`, nie `NotFoundHttpException`.
+        //
+        // Konsekwencja przyjęta świadomie: własny tekst z `abort(40x, '...')`
+        // czy `Response::deny('...')` zostanie tu skasowany. `Log::debug` jest
+        // wtedy **jedynym** śladem po nim — `HttpException`
+        // i `ModelNotFoundException` siedzą w `Handler::$internalDontReport`,
+        // więc nie trafiają do `laravel.log`. Bez tej linii literówka w URL-u
+        // czy powód odmowy przestają być widoczne gdziekolwiek (research §4).
         //
         // Omijamy `HttpResponseException` (dociera tu tylko spod middleware'u,
         // z akcji łapie ją `Route::run()`): tę odpowiedź kod zbudował celowo.
@@ -107,6 +84,7 @@ return Application::configure(basePath: dirname(__DIR__))
             400 => 'Niepoprawny adres URL.',
             401 => 'Wymagane zalogowanie.',
             403 => 'Brak dostępu do zasobu.',
+            404 => 'Nie znaleziono zasobu.',
             405 => 'Metoda niedozwolona dla tego zasobu.',
             413 => 'Przesłane dane są za duże.',
             500 => 'Wewnętrzny błąd serwera.',
@@ -122,6 +100,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 || ! $rendersJson($request)
                 || ($status === 500 && config('app.debug'))) {
                 return $response;
+            }
+
+            if (config('app.debug')) {
+                Log::debug("{$status}: ".$e->getMessage(), ['path' => $request->path()]);
             }
 
             return $response->setData(['message' => $contractMessageByStatus[$status]]);

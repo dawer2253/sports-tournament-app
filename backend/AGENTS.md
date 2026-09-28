@@ -79,16 +79,19 @@ Tailwindem i widokiem `welcome.blade.php` — zostały usunięte razem z
 zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
 **404 mówi w tym API jednym zdaniem.** [`bootstrap/app.php`](bootstrap/app.php)
-przesłania renderowanie `NotFoundHttpException` na `api/*` i oddaje
-`Nie znaleziono zasobu.` — tak stanowi `components/responses/NotFound`, wspólny
-dla wszystkich ścieżek. Framework ma tu trzy różne teksty (brak trasy, brak
-modelu, goły `abort(404)`), wszystkie po angielsku, a ten od modelu wycieka
-nazwę klasy Eloquenta wprost na ekran.
+przesłania na `api/*` każdą odpowiedź 404 i oddaje `Nie znaleziono zasobu.` —
+tak stanowi `components/responses/NotFound`, wspólny dla wszystkich ścieżek.
+Framework ma tu cztery drogi (brak trasy, brak modelu, goły `abort(404)`,
+`denyAsNotFound()` z policy), wszystkie po angielsku albo z tekstem spod kodu,
+a ta od modelu wycieka nazwę klasy Eloquenta wprost na ekran. Czwarta nie jest
+`NotFoundHttpException`, tylko zwykłym `HttpException(404)` — dlatego
+przesłonięcie idzie po statusie, nie po klasie wyjątku.
 
-Oryginalny komunikat 404 nie trafia przy tym do `laravel.log` —
+Oryginalny komunikat nie trafia przy tym do `laravel.log` —
 `HttpException` i `ModelNotFoundException` są w `Handler::$internalDontReport`,
-więc 404 nigdy nie była raportowana. Jedyny jej ślad to `Log::debug` w samym
-przesłonięciu, zapalany przy `APP_DEBUG`. Powody i pomiary:
+więc nie były raportowane nigdy. Jedyny ślad po skasowanym tekście (404, 403,
+każdy kod z mapy niżej) to `Log::debug` w samym przesłonięciu, zapalany przy
+`APP_DEBUG`. Powody i pomiary:
 [`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
 
 **Tak samo 401 i 403**: `Wymagane zalogowanie.` (`Unauthenticated`) i `Brak
@@ -103,7 +106,7 @@ daje wyłącznie przesłonięcie w `bootstrap/app.php`.
 i wspomina w `info.description`. Przesłonięcie idzie przez
 `$exceptions->respond()`, czyli po statusie gotowej odpowiedzi — dzięki temu
 nagłówki (`Allow`, `Retry-After`) zostają, a 422 nie wpada w gałąź 500.
-Tą samą mapą idą 401 i 403. Wyjątki: **500 przy `APP_DEBUG` zostaje nietknięte**,
+Tą samą mapą idą 401, 403 i 404. Wyjątki: **500 przy `APP_DEBUG` zostaje nietknięte**,
 z `exception` i `trace`, a odpowiedź z `HttpResponseException` przechodzi bez
 zmian. Raportowanie wyjątku działa jak dotąd.
 
@@ -112,9 +115,9 @@ Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...'
 i żaden test tego nie zgłosi. Dotyczy to też JSON-a o jednym z tych statusów
 zwróconego z `render()` wyjątku albo z `Responsable`. Przy 500 różnica jest
 ostra: wyjątek spoza `HttpException` idzie do `laravel.log` jak dotąd, ale tekst
-z `abort(500, '...')` znika bez śladu, bo `HttpException` nie jest raportowany,
-a przy 500 nie ma odpowiednika `Log::debug` z 404. Błąd, który ma zostawić ślad,
-rzucaj jako zwykły wyjątek, nie `abort(500)`. Jeżeli jakiś zasób
+z `abort(500, '...')` poza `APP_DEBUG` znika bez śladu — `HttpException` nie
+jest raportowany, a `Log::debug` zapala się tylko w dev. Błąd, który ma zostawić
+ślad na produkcji, rzucaj jako zwykły wyjątek, nie `abort(500)`. Jeżeli jakiś zasób
 naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
 kolejnością, a nie obejście w kontrolerze.
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Tournament;
+use Illuminate\Auth\Access\Response as AuthorizationResponse;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Log;
@@ -121,6 +122,34 @@ it('oddaje to samo 403 przy gołym abort z własnym tekstem', function () {
     $this->getJson('/api/v1/probna-odmowa')
         ->assertForbidden()
         ->assertJsonPath('message', contractErrorMessage('Forbidden'));
+});
+
+// Odmowa policy ze statusem (`Response::denyAsNotFound()`, `denyWithStatus()`)
+// to trzecia droga do 404: `Handler::prepareException()` robi z niej zwykły
+// `HttpException(404)`, a nie `NotFoundHttpException`, więc przesłonięcie
+// łapiące tę klasę przepuściłoby angielskie `Not Found` albo tekst z policy.
+it('oddaje to samo 404 przy odmowie policy udającej brak zasobu', function () {
+    config(['app.debug' => false]);
+    Route::get('/api/v1/probna-ukryta-odmowa', fn () => AuthorizationResponse::denyAsNotFound('Tajny turniej')->authorize());
+
+    $this->getJson('/api/v1/probna-ukryta-odmowa')
+        ->assertNotFound()
+        ->assertExactJson(['message' => contractErrorMessage('NotFound')]);
+});
+
+// To samo co przy 404: tekst z `Response::deny('...')` czy `abort(403, '...')`
+// jest kasowany, a `HttpException` siedzi w `Handler::$internalDontReport`, więc
+// bez `Log::debug` w dev nie zostaje po nim nic.
+it('zostawia w dev ślad po skasowanym tekście 403', function () {
+    config(['app.debug' => true]);
+    Log::spy();
+    Route::get('/api/v1/probna-odmowa', fn () => abort(403, 'Custom deny'));
+
+    $this->getJson('/api/v1/probna-odmowa')->assertForbidden();
+
+    Log::shouldHaveReceived('debug')
+        ->withArgs(fn (string $message, array $context = []) => str_contains($message, 'Custom deny'))
+        ->once();
 });
 
 /*
