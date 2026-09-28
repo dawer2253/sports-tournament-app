@@ -88,21 +88,24 @@ jobs:
       # Funkcje `play` w stories `packages/ui` chodzą w trybie browser Vitesta,
       # czyli w prawdziwym Chromium. Bez tego kroku egzekwował je tylko Chromatic,
       # a ten siedzi za sekretem i w osobnym workflow (#71). Przeglądarka waży
-      # ~100 MB, więc trzymamy ją w cache'u pod wersją Playwrighta z lockfile'a —
-      # podbicie Playwrighta samo unieważnia cache. Cache nie obejmuje bibliotek
-      # systemowych z apt, dlatego przy trafieniu doinstalowujemy same zależności.
-      - name: Wersja Playwrighta
+      # ~100 MB (szacunek z #71), więc trzymamy ją w cache'u pod wersją Playwrighta
+      # z lockfile'a i obrazem runnera (`ImageOS`) — zmiana którejkolwiek z nich
+      # sama unieważnia cache. Cache nie obejmuje bibliotek systemowych z apt,
+      # dlatego przy trafieniu doinstalowujemy same zależności.
+      - name: Wersja Playwrighta i obraz runnera
         id: playwright
-        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "image=$ImageOS" >> "$GITHUB_OUTPUT"
 
       - name: Cache Chromium
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+          key: playwright-${{ steps.playwright.outputs.image }}-${{ steps.playwright.outputs.version }}
 
-      - name: Chromium
+      - name: Instalacja Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 

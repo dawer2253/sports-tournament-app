@@ -91,8 +91,10 @@ rozciągniętego na aplikacje — rozstrzyga
 funkcjami `play` puszcza się osobno: `npx vitest run` w `packages/ui` (tryb
 browser, Chromium przez Playwrighta; za pierwszym razem `npx playwright install
 chromium`). **To bramka CI, nie tylko komenda lokalna** — job „Frontend" ma ten
-krok, więc czerwona funkcja `play` wywala pull requesta
-([#71](https://github.com/dawer2253/sports-tournament-app/issues/71)).
+krok, więc czerwona funkcja `play` robi go czerwonym
+([#71](https://github.com/dawer2253/sports-tournament-app/issues/71)). Merge
+blokuje to tylko wtedy, gdy „Frontend" jest wymaganym sprawdzeniem w ochronie
+gałęzi `main` — to ustawienie repo, nie tego pliku.
 
 ## Zasady globalne
 
