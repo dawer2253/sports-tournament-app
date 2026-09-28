@@ -66,6 +66,11 @@ angielsku.
 > a `bootstrap/app.php` przesłania `AuthenticationException`
 > i `HttpException` ze statusem 403 tak samo jak 404. Sekcje §5 i §6 opisują stan
 > sprzed tej zmiany.
+>
+> **Aktualizacja (28 września 2026, #77):** wszystkie przesłonięcia, łącznie
+> z 404 i jego `Log::debug`, idą jedną mapą po statusie w `$exceptions->respond()`.
+> Callback `render(NotFoundHttpException)` z §4 już nie istnieje — przepuszczał
+> `denyAsNotFound()` z policy, które jest zwykłym `HttpException(404)`.
 
 ## 1. Streszczenie
 

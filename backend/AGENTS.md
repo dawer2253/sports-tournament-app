@@ -79,27 +79,58 @@ Tailwindem i widokiem `welcome.blade.php` — zostały usunięte razem z
 zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
 **404 mówi w tym API jednym zdaniem.** [`bootstrap/app.php`](bootstrap/app.php)
-przesłania renderowanie `NotFoundHttpException` na `api/*` i oddaje
-`Nie znaleziono zasobu.` — tak stanowi `components/responses/NotFound`, wspólny
-dla wszystkich ścieżek. Framework ma tu trzy różne teksty (brak trasy, brak
-modelu, goły `abort(404)`), wszystkie po angielsku, a ten od modelu wycieka
-nazwę klasy Eloquenta wprost na ekran.
+przesłania na `api/*` każdą odpowiedź 404 i oddaje `Nie znaleziono zasobu.` —
+tak stanowi `components/responses/NotFound`, wspólny dla wszystkich ścieżek.
+Framework ma tu cztery drogi (brak trasy, brak modelu, goły `abort(404)`,
+`denyAsNotFound()` z policy), wszystkie po angielsku albo z tekstem spod kodu,
+a ta od modelu wycieka nazwę klasy Eloquenta wprost na ekran. Czwarta nie jest
+`NotFoundHttpException`, tylko zwykłym `HttpException(404)` — dlatego
+przesłonięcie idzie po statusie, nie po klasie wyjątku.
+
+Oryginalny komunikat nie trafia przy tym do `laravel.log` —
+`HttpException` i `ModelNotFoundException` są w `Handler::$internalDontReport`,
+więc nie były raportowane nigdy. Jedyny ślad po tekście skasowanym z takiego
+wyjątku (404, 403 i reszta kodów z mapy niżej) to `Log::debug` w samym
+przesłonięciu, zapalany przy `APP_DEBUG`. Wyjątki od tej reguły: 500 ze
+zwykłego wyjątku trafia do `laravel.log` jak dotąd, a 500 w trybie debug zostaje
+nieprzesłonięte, więc tekst zostaje w odpowiedzi. Powody i pomiary:
+[`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
 
 **Tak samo 401 i 403**: `Wymagane zalogowanie.` (`Unauthenticated`) i `Brak
 dostępu do zasobu.` (`Forbidden`). Framework wpisuje tu napisy stałe
 z pominięciem translatora, więc `lang/pl` ich nie przetłumaczy — polski tekst
 daje wyłącznie przesłonięcie w `bootstrap/app.php`.
 
-Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`
-czy `Response::deny('...')` zostanie skasowany po cichu** i żaden test tego nie
-zgłosi. Jeżeli jakiś zasób naprawdę potrzebuje innego komunikatu, to zmiana
-kontraktu idąca normalną kolejnością, a nie obejście w kontrolerze.
+**Tak samo kody, które oddaje warstwa frameworka na dowolnym żądaniu**, choć
+żadna ścieżka kontraktu ich nie wypisuje: 400 (`BadRequest`), 405
+(`MethodNotAllowed`), 413 (`PayloadTooLarge`), 500 (`ServerError`) i 503
+(`ServiceUnavailable`). Kontrakt trzyma je we wspólnych `components/responses`
+i wspomina w `info.description`. Przesłonięcie idzie przez
+`$exceptions->respond()`, czyli po statusie gotowej odpowiedzi — dzięki temu
+nagłówki (`Allow`, `Retry-After`) zostają, a 422 nie wpada w gałąź 500.
+Tą samą mapą idą 401, 403 i 404. Wyjątki: **500 przy `APP_DEBUG` zostaje nietknięte**,
+z `exception` i `trace`, a odpowiedź z `HttpResponseException` przechodzi bez
+zmian. Raportowanie wyjątku działa jak dotąd.
 
-Oryginalny komunikat nie trafia przy tym do `laravel.log` — `HttpException`
-i `ModelNotFoundException` są w `Handler::$internalDontReport`, więc 404 nigdy
-nie była raportowana. Jedyny jej ślad to `Log::debug` w samym przesłonięciu,
-zapalany przy `APP_DEBUG`. Powody i pomiary:
-[`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
+Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`,
+`abort(500, '...')` czy `Response::deny('...')` zostanie skasowany po cichu**
+i żaden test tego nie zgłosi. Dotyczy to też JSON-a o jednym z tych statusów
+zwróconego z `render()` wyjątku albo z `Responsable`. Przy 500 różnica jest
+ostra: wyjątek spoza `HttpException` idzie do `laravel.log` jak dotąd, ale tekst
+z `abort(500, '...')` poza `APP_DEBUG` znika bez śladu — `HttpException` nie
+jest raportowany, a w dev tekst widać tylko dlatego, że 500 zostaje wtedy
+nieprzesłonięte. Błąd, który ma zostawić
+ślad na produkcji, rzucaj jako zwykły wyjątek, nie `abort(500)`. Jeżeli jakiś zasób
+naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
+kolejnością, a nie obejście w kontrolerze.
+
+**429 celowo nie ma**, bo nie ma limitera, a kontrakt nie opisuje zachowań,
+których backend nie realizuje. Kto doda pierwszy `throttle`, dokłada razem
+z nim wpis w mapie w `bootstrap/app.php` — **w tej samej mapie, nie w drugim
+`$exceptions->respond()`**, bo `respond()` podmienia jedyny callback zamiast go
+dokładać, więc drugi wyłączyłby całą mapę — komponent w `components/responses`,
+wzmiankę w `info.description` i test w `ErrorResponsesTest` (framework mówi
+tu `Too Many Attempts.`).
 
 ## Schemat i modele
 
@@ -159,9 +190,9 @@ kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec
 `string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
 rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
 [#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
-endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla 401, 403 i 404 robią to
-za ciebie testy „mówi przy … dokładnie to, co obiecuje kontrakt"
-w `ErrorResponsesTest`.
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla wspólnych
+odpowiedzi błędów robią to za ciebie testy „mówi przy … dokładnie to, co
+obiecuje kontrakt" w `ErrorResponsesTest`.
 
 Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
 `abort(404, '...')`** — opisuje „Backend oddaje wyłącznie JSON" wyżej.

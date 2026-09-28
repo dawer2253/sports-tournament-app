@@ -33,6 +33,16 @@ info:
       dodatkowo `{ "meta": ... }`.
     - Błąd walidacji: `422` z `{ "message": ..., "errors": { pole: [...] } }`.
       Pozostałe błędy: `{ "message": ... }`.
+    - Poza kodami wypisanymi przy ścieżkach każde żądanie może dostać
+      `400` (`BadRequest`), `405` (`MethodNotAllowed`), `413`
+      (`PayloadTooLarge`), `500` (`ServerError`) albo `503`
+      (`ServiceUnavailable`) — w tej samej kopercie, po polsku. `message`
+      zależy wyłącznie od kodu, nie od przyczyny: jedno zdanie na kod, tak jak
+      przy `401`, `403` i `404`. Typowe przyczyny to kolejno niepoprawny
+      UTF-8 w ścieżce, metoda spoza obsługiwanych (te niesie nagłówek
+      `Allow`), ciało ponad limit serwera, nieoczekiwany błąd i tryb
+      konserwacji. Przy `500` `message` nie niesie szczegółów. Teksty są
+      w `components/responses`; przy ścieżkach ich nie powtarzamy.
     - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
@@ -1834,6 +1844,40 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
           example: { message: Nie znaleziono zasobu. }
+    BadRequest:
+      description: Żądanie odrzucone przed trasą, np. ścieżka URL z niepoprawnym UTF-8
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Niepoprawny adres URL. }
+    MethodNotAllowed:
+      description: Metoda HTTP nieobsługiwana przez ścieżkę; dozwolone podaje nagłówek `Allow`
+      headers:
+        Allow:
+          description: Metody obsługiwane przez ścieżkę, np. `POST`
+          schema: { type: string }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Metoda niedozwolona dla tego zasobu. }
+    PayloadTooLarge:
+      description: Ciało żądania przekracza limit serwera
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Przesłane dane są za duże. }
+    ServerError:
+      description: Nieoczekiwany błąd serwera
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Wewnętrzny błąd serwera. }
+    ServiceUnavailable:
+      description: Usługa chwilowo niedostępna, np. tryb konserwacji
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Usługa chwilowo niedostępna. }
     ValidationError:
       description: Dane nie przeszły walidacji
       content:
