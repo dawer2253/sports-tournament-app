@@ -61,6 +61,12 @@ napisami stałymi poza translatorem, więc `lang/pl` ich nie ruszy — trzeba
 Po tym PR-ze błędy mówią w dwóch językach: 404 i 422 po polsku, 401 i 403 po
 angielsku.
 
+> **Aktualizacja (27 września 2026, #74):** polskie 401 i 403 zamknięte —
+> przykłady w kontrakcie to `Wymagane zalogowanie.` i `Brak dostępu do zasobu.`,
+> a `bootstrap/app.php` przesłania `AuthenticationException`
+> i `HttpException` ze statusem 403 tak samo jak 404. Sekcje §5 i §6 opisują stan
+> sprzed tej zmiany.
+
 ## 1. Streszczenie
 
 **Jedno twarde znalezisko w klasie #53: `components/responses/NotFound` (l. 1797).**

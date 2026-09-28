@@ -3,6 +3,7 @@
 use App\Models\Sport;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
 
 /*
@@ -45,4 +46,20 @@ function actingAsOrganizer(?User $user = null): TestCase
 function sport(string $code): Sport
 {
     return Sport::where('code', $code)->firstOrFail();
+}
+
+/**
+ * Komunikat, który kontrakt obiecuje we wspólnej odpowiedzi błędu
+ * (`components/responses/{name}`). Spectator waliduje schemat, nie przykład,
+ * więc zgodność tekstu trzeba asertować osobno (klasa błędu z #53). Ścieżka
+ * idzie z konfiguracji Spectatora, żeby oba mechanizmy czytały ten sam plik.
+ */
+function contractErrorMessage(string $response): string
+{
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $message = $spec['components']['responses'][$response]['content']['application/json']['example']['message'];
+
+    expect($message)->toBeString()->not->toBeEmpty();
+
+    return $message;
 }

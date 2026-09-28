@@ -1,9 +1,9 @@
 <?php
 
-use App\Models\User;
+use App\Models\Tournament;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Symfony\Component\Yaml\Yaml;
+use Spectator\Spectator;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,8 +12,8 @@ use Symfony\Component\Yaml\Yaml;
 |
 | Zakres #6 obejmuje spójny format błędów, nie tylko 422 i 401. Rodzina siedzi
 | osobno od `AuthTest`, bo dotyczy tego, jak backend przerabia wyjątki na
-| odpowiedzi, a nie autoryzacji — tu dojdzie też 403 razem z pierwszą policy
-| (S1, przy zasobach turnieju).
+| odpowiedzi, a nie autoryzacji. 403 siedzi tu razem z 404, bo oba teksty
+| obiecuje kontrakt wspólnie dla wszystkich ścieżek.
 |
 | Ścieżek spoza kontraktu Spectator z definicji nie zwaliduje, więc asercje idą
 | na treści. `assertJsonStructure(['message'])` tu nie wystarcza: goły
@@ -32,21 +32,15 @@ it('oddaje 404 jako JSON w kształcie z kontraktu', function () {
 // Drugi wariant 404 — jest trasa, nie ma modelu spod jej parametru. Kontrakt
 // ma na wszystkie ścieżki jedną odpowiedź `NotFound`, więc oba warianty muszą
 // mówić to samo zdanie; bez tego przykład w kontrakcie jest prawdziwy tylko
-// dla części z nich. To jest wariant, który wyjdzie domyślnie w S1: wszystkie
-// ścieżki zasobów niosą parametr (`{tournament}`, `{team}`, `{player}`,
-// `{venue}`).
-//
-// Trasa jest doraźna, bo `routes/api.php` ma dziś same cztery ścieżki
-// autoryzacji, więc asercji Spectatora nie ma i mieć nie może — kontrakt takiej
-// ścieżki nie zna. **Kiedy w S1 wejdzie pierwsza prawdziwa ścieżka z parametrem
-// (np. `GET /tournaments/{tournament}`), przepnij ten test na nią i dołóż
-// `assertValidResponse(404)`** — atrapa ma zniknąć razem z powodem, dla którego
-// powstała.
+// dla części z nich. Wszystkie ścieżki zasobów niosą parametr (`{tournament}`,
+// `{team}`, `{player}`, `{venue}`), więc to jest wariant, który wychodzi
+// najczęściej.
 it('oddaje to samo 404, gdy trasa istnieje, a model spod parametru nie', function () {
-    Route::get('/api/v1/probny-zasob/{id}', fn (string $id) => User::findOrFail($id));
+    Spectator::using('openapi.yaml');
 
-    $this->getJson('/api/v1/probny-zasob/999999')
-        ->assertNotFound()
+    actingAsOrganizer()
+        ->getJson('/api/v1/tournaments/999999')
+        ->assertValidResponse(404)
         ->assertJsonPath('message', 'Nie znaleziono zasobu.');
 });
 
@@ -55,17 +49,8 @@ it('oddaje to samo 404, gdy trasa istnieje, a model spod parametru nie', functio
 // klasa błędu z #53. Ten test czyta przykład ze speca i porównuje go
 // z odpowiedzią, czyli pilnuje tego, czego Spectator nie pilnuje: on waliduje
 // schemat (`message: { type: string }`), więc przechodzi mu dowolny tekst.
-//
-// Ścieżka do kontraktu idzie z konfiguracji Spectatora, żeby oba mechanizmy
-// czytały ten sam plik.
 it('mówi przy 404 dokładnie to, co obiecuje kontrakt', function () {
-    $spec = Yaml::parseFile(
-        config('spectator.sources.local.base_path').'/openapi.yaml'
-    );
-
-    $promised = $spec['components']['responses']['NotFound']['content']['application/json']['example']['message'];
-
-    expect($promised)->toBeString()->not->toBeEmpty();
+    $promised = contractErrorMessage('NotFound');
 
     $this->getJson('/api/v1/nie-ma-takiego-zasobu')
         ->assertNotFound()
@@ -98,4 +83,40 @@ it('nie loguje 404 poza trybem debug', function () {
     $this->getJson('/api/v1/nie-ma-takiego-zasobu')->assertNotFound();
 
     Log::shouldNotHaveReceived('debug');
+});
+
+// 401 i 403 frameworka to napisy stałe poza translatorem, więc `lang/pl` ich
+// nie tłumaczy — po polsku mówią wyłącznie dzięki przesłonięciu
+// w `bootstrap/app.php`. Tekst czytany z kontraktu, bo Spectator przepuszcza
+// dowolny `message` (klasa błędu z #53). Dotyczy to obu testów niżej.
+it('mówi przy 403 dokładnie to, co obiecuje kontrakt', function () {
+    $promised = contractErrorMessage('Forbidden');
+
+    $foreign = Tournament::factory()->create();
+
+    actingAsOrganizer()
+        ->getJson("/api/v1/tournaments/{$foreign->id}")
+        ->assertForbidden()
+        ->assertJsonPath('message', $promised);
+});
+
+it('mówi przy 401 dokładnie to, co obiecuje kontrakt', function () {
+    $promised = contractErrorMessage('Unauthenticated');
+
+    $this->getJson('/api/v1/me')
+        ->assertUnauthorized()
+        ->assertJsonPath('message', $promised);
+});
+
+// Odmowa policy i goły `abort(403)` to dwa różne wyjątki: pierwszy framework
+// zamienia w `AccessDeniedHttpException`, drugi zostaje zwykłym
+// `HttpException(403)`. Przesłonięcie łapiące tylko ten pierwszy przeszłoby
+// test policy wyżej, a `abort(403)` mówiłby po angielsku albo własnym tekstem.
+// Trasa jest doraźna, bo w `app/` nie ma dziś żadnego `abort(403)`.
+it('oddaje to samo 403 przy gołym abort z własnym tekstem', function () {
+    Route::get('/api/v1/probna-odmowa', fn () => abort(403, 'Custom deny'));
+
+    $this->getJson('/api/v1/probna-odmowa')
+        ->assertForbidden()
+        ->assertJsonPath('message', contractErrorMessage('Forbidden'));
 });

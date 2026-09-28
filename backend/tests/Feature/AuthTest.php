@@ -229,5 +229,5 @@ it('odmawia dostępu bez tokenu także żądaniu bez nagłówka Accept', functio
     $this->get('/api/v1/me', ['Accept' => '*/*'])
         ->assertValidRequest()
         ->assertValidResponse(401)
-        ->assertJsonPath('message', 'Unauthenticated.');
+        ->assertJsonPath('message', contractErrorMessage('Unauthenticated'));
 });

@@ -1821,13 +1821,13 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
-          example: { message: Unauthenticated. }
+          example: { message: Wymagane zalogowanie. }
     Forbidden:
       description: Zasób należy do innego organizera
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
-          example: { message: This action is unauthorized. }
+          example: { message: Brak dostępu do zasobu. }
     NotFound:
       description: Zasób nie istnieje
       content:
