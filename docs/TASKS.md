@@ -28,7 +28,7 @@ Do zrobienia:
 - [ ] CRUD turnieje (+ slug, branding, format, sport) — BE+admin (J)
 - [ ] CRUD drużyny + zawodnicy — BE+admin (J)
 - [ ] CRUD venues — BE+admin (W)
-- [ ] Seed sportów (piłka, kosz) + `SportRules` (D) — tu ustalamy domyślną punktację i kolejność tiebreaków per sport (decyzja #25)
+- [x] Seed sportów (piłka, kosz) (D) — domyślna punktacja i kolejność tiebreaków per sport ustalone w decyzji #25; klasy strategii sportu nie ma, bo nic w S1 ani S2 jej nie potrzebuje (decyzja #26, [#81](https://github.com/dawer2253/sports-tournament-app/issues/81))
 - [ ] Policies + nested route binding (autoryzacja przez Tournament.user_id) (J)
 
 ## S2 — Liga (D prowadzi) → Demo #1
