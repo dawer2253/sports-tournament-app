@@ -23,7 +23,8 @@ export function TournamentsPage() {
   // Stabilny między renderami: `TournamentsTable` memoizuje kolumny po
   // `[onOpen]`, a inline arrow odtwarzałby je przy każdym renderze (#46).
   const openTournament = useCallback(
-    (tournament: TournamentRow) => void navigate(`/tournaments/${tournament.id}`),
+    // PROTOTYP (#85): przejście zachowuje ?variant=.
+    (tournament: TournamentRow) => void navigate(`/tournaments/${tournament.id}${window.location.search}`),
     [navigate],
   );
 

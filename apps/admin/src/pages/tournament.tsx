@@ -108,7 +108,12 @@ export function TournamentPage() {
   }
 
   return (
-    <AdminPage active="dashboard" title={tournament.data?.name ?? 'Turniej'}>
+    <AdminPage
+      active="dashboard"
+      section="overview"
+      tournament={tournament.data}
+      title={tournament.data?.name ?? 'Turniej'}
+    >
       {content}
     </AdminPage>
   );

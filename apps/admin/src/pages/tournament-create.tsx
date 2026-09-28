@@ -87,6 +87,7 @@ export function TournamentCreatePage() {
   return (
     <AdminPage
       active="dashboard"
+      section="create"
       title="Nowy turniej"
       subtitle="Nazwa, sport i format. Drużyny i terminarz dołożysz później."
     >
