@@ -89,10 +89,11 @@ przesłonięcie idzie po statusie, nie po klasie wyjątku.
 
 Oryginalny komunikat nie trafia przy tym do `laravel.log` —
 `HttpException` i `ModelNotFoundException` są w `Handler::$internalDontReport`,
-więc nie były raportowane nigdy. Jedyny ślad po skasowanym tekście (404, 403 i
-reszta kodów z mapy niżej) to `Log::debug` w samym przesłonięciu, zapalany przy
-`APP_DEBUG` — z wyjątkiem 500, które w tym trybie zostaje nieprzesłonięte, więc
-tekst zostaje w odpowiedzi. Powody i pomiary:
+więc nie były raportowane nigdy. Jedyny ślad po tekście skasowanym z takiego
+wyjątku (404, 403 i reszta kodów z mapy niżej) to `Log::debug` w samym
+przesłonięciu, zapalany przy `APP_DEBUG`. Wyjątki od tej reguły: 500 ze
+zwykłego wyjątku trafia do `laravel.log` jak dotąd, a 500 w trybie debug zostaje
+nieprzesłonięte, więc tekst zostaje w odpowiedzi. Powody i pomiary:
 [`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
 
 **Tak samo 401 i 403**: `Wymagane zalogowanie.` (`Unauthenticated`) i `Brak

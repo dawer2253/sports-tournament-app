@@ -15,8 +15,9 @@ use Spectator\Spectator;
 |
 | Zakres #6 obejmuje spójny format błędów, nie tylko 422 i 401. Rodzina siedzi
 | osobno od `AuthTest`, bo dotyczy tego, jak backend przerabia wyjątki na
-| odpowiedzi, a nie autoryzacji. 403 siedzi tu razem z 404, bo oba teksty
-| obiecuje kontrakt wspólnie dla wszystkich ścieżek.
+| odpowiedzi, a nie autoryzacji. Siedzą tu wszystkie kody z mapy
+| w `bootstrap/app.php`, bo każdy tekst obiecuje kontrakt wspólnie dla
+| wszystkich ścieżek.
 |
 | Ścieżek spoza kontraktu Spectator z definicji nie zwaliduje, więc asercje idą
 | na treści. `assertJsonStructure(['message'])` tu nie wystarcza: goły
@@ -98,7 +99,8 @@ it('nie loguje skasowanego komunikatu poza trybem debug', function (string $uri,
 // 401 i 403 frameworka to napisy stałe poza translatorem, więc `lang/pl` ich
 // nie tłumaczy — po polsku mówią wyłącznie dzięki przesłonięciu
 // w `bootstrap/app.php`. Tekst czytany z kontraktu, bo Spectator przepuszcza
-// dowolny `message` (klasa błędu z #53). Dotyczy to obu testów niżej.
+// dowolny `message` (klasa błędu z #53). Dotyczy to wszystkich testów 401
+// i 403 niżej.
 it('mówi przy 403 dokładnie to, co obiecuje kontrakt', function () {
     $promised = contractErrorMessage('Forbidden');
 
@@ -167,8 +169,9 @@ it('oddaje to samo 404 przy odmowie policy udającej brak zasobu', function () {
 | przy ścieżkach. Framework wpisuje tu napisy stałe po angielsku, z pominięciem
 | translatora. Tekst zawsze z kontraktu, z tego samego powodu co przy 404.
 |
-| `app.debug` ustawiane jawnie, bo przy `true` framework dokleja `exception`
-| i `trace`, a 500 zostaje wtedy celowo nieprzesłonięte.
+| `app.debug` ustawiane jawnie, żeby test znaczył to samo u każdego i w CI —
+| przy 500 to warunek konieczny, bo w trybie debug zostaje ono celowo
+| nieprzesłonięte, z `exception` i `trace`.
 |
 */
 
@@ -288,14 +291,14 @@ it('nie zamienia w 500 błędu walidacji', function () {
 // w `respond()` cokolwiek zmienia.
 it('nie przesłania odpowiedzi z HttpResponseException rzuconej w middleware', function () {
     config(['app.debug' => false]);
-    app()->instance('probny-middleware', new class
+    app()->instance('fake-middleware', new class
     {
         public function handle(): never
         {
             throw new HttpResponseException(response()->json(['message' => 'Własny tekst.'], 503));
         }
     });
-    Route::get('/api/v1/probna-odpowiedz', fn () => 'nieosiągalne')->middleware('probny-middleware');
+    Route::get('/api/v1/probna-odpowiedz', fn () => 'nieosiągalne')->middleware('fake-middleware');
 
     $this->getJson('/api/v1/probna-odpowiedz')
         ->assertServiceUnavailable()

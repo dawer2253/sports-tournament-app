@@ -48,8 +48,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Kody z jednym zdaniem w kontrakcie: 401 (`Unauthenticated`),
         // 403 (`Forbidden`), 404 (`NotFound`) i te, które warstwa frameworka
-        // oddaje na dowolnym żądaniu (#76). Tu też framework ma napisy stałe
-        // po angielsku, spoza translatora — `lang/pl` ich nie ruszy.
+        // oddaje na dowolnym żądaniu (#76). Framework ma na nie napisy stałe
+        // po angielsku, spoza translatora (`lang/pl` ich nie ruszy), albo —
+        // przy 500 ze zwykłego wyjątku — jego wewnętrzny komunikat.
         //
         // `respond()`, a nie `render()`, bo działa na gotowej odpowiedzi według
         // jej statusu. `render()` dla 500 musiałby łapać `Throwable`, a przez
@@ -63,7 +64,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // z policy `Handler::prepareException()` robi zwykłym
         // `HttpException(404)`, nie `NotFoundHttpException`.
         //
-        // Konsekwencja przyjęta świadomie: własny tekst z `abort(40x, '...')`
+        // Konsekwencja przyjęta świadomie: własny tekst z `abort(4xx/5xx, '...')`
         // czy `Response::deny('...')` zostanie tu skasowany. `Log::debug` jest
         // wtedy **jedynym** śladem po nim — `HttpException`
         // i `ModelNotFoundException` siedzą w `Handler::$internalDontReport`,
