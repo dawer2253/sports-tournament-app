@@ -85,6 +85,35 @@ jobs:
       - name: Testy
         run: npm test
 
+      # Funkcje `play` w stories `packages/ui` chodzą w trybie browser Vitesta,
+      # czyli w prawdziwym Chromium. Bez tego kroku egzekwował je tylko Chromatic,
+      # a ten siedzi za sekretem i w osobnym workflow (#71). Przeglądarka waży
+      # ~100 MB, więc trzymamy ją w cache'u pod wersją Playwrighta z lockfile'a —
+      # podbicie Playwrighta samo unieważnia cache. Cache nie obejmuje bibliotek
+      # systemowych z apt, dlatego przy trafieniu doinstalowujemy same zależności.
+      - name: Wersja Playwrighta
+        id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Chromium
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Zależności systemowe Chromium
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: Stories (funkcje play)
+        working-directory: packages/ui
+        run: npx vitest run
+
       - name: Build
         run: npm run build
 

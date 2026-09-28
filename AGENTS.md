@@ -87,6 +87,13 @@ Wybór tego mechanizmu — zamiast testów kontraktowych po mocku albo Chromatic
 rozciągniętego na aplikacje — rozstrzyga
 [#37](https://github.com/dawer2253/sports-tournament-app/issues/37).
 
+`packages/ui` nie ma skryptu `test`, więc `npm test` go pomija. Stories z
+funkcjami `play` puszcza się osobno: `npx vitest run` w `packages/ui` (tryb
+browser, Chromium przez Playwrighta; za pierwszym razem `npx playwright install
+chromium`). **To bramka CI, nie tylko komenda lokalna** — job „Frontend" ma ten
+krok, więc czerwona funkcja `play` wywala pull requesta
+([#71](https://github.com/dawer2253/sports-tournament-app/issues/71)).
+
 ## Zasady globalne
 
 - **Menedżer pakietów: npm.** Instaluj z roota, nie z podkatalogów.
@@ -123,7 +130,8 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, testy frontendu, build oraz job backendu (Pint w trybie `--test`, Pest; testy
+  lint, typy, testy frontendu, stories z funkcjami `play` (Vitest w Chromium),
+  build oraz job backendu (Pint w trybie `--test`, Pest; testy
   Spectatora są bramką zgodności z `openapi.yaml`). Backend chodzi tam
   **natywnie, bez Saila**, a jego job odpala się tylko przy zmianach w
   `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki
