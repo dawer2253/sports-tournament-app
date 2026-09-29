@@ -843,7 +843,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Drużyny w turnieju */
+        /**
+         * Drużyny w turnieju
+         * @description Po `name` rosnąco, a drużyny o tej samej nazwie rozstrzyga `id`.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -865,25 +868,28 @@ export interface paths {
                          * @example {
                          *       "data": [
                          *         {
-                         *           "id": 1,
+                         *           "id": 3,
                          *           "tournamentId": 1,
-                         *           "name": "Wilki Bemowo",
+                         *           "name": "Orły Bielany",
                          *           "logoUrl": null,
-                         *           "groupId": null
+                         *           "groupId": null,
+                         *           "playersCount": 3
                          *         },
                          *         {
                          *           "id": 2,
                          *           "tournamentId": 1,
                          *           "name": "Sokoły Ursus",
                          *           "logoUrl": null,
-                         *           "groupId": null
+                         *           "groupId": null,
+                         *           "playersCount": 3
                          *         },
                          *         {
-                         *           "id": 3,
+                         *           "id": 1,
                          *           "tournamentId": 1,
-                         *           "name": "Orły Bielany",
+                         *           "name": "Wilki Bemowo",
                          *           "logoUrl": null,
-                         *           "groupId": null
+                         *           "groupId": null,
+                         *           "playersCount": 3
                          *         }
                          *       ]
                          *     }
@@ -899,7 +905,15 @@ export interface paths {
             };
         };
         put?: never;
-        /** Dodaj drużynę */
+        /**
+         * Dodaj drużynę
+         * @description Nazwa jest unikalna wśród drużyn turnieju, bez względu na wielkość
+         *     liter. Spacje na brzegach nazwy są obcinane, a drużyna usunięta nie
+         *     blokuje nazwy. Konflikt nazw daje `422` z błędem pod `name`.
+         *
+         *     Turniej mieści najwyżej 128 drużyn. Próba dodania kolejnej daje `422`
+         *     z błędem pod `teams`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -935,7 +949,8 @@ export interface paths {
                          *         "tournamentId": 1,
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
-                         *         "groupId": null
+                         *         "groupId": null,
+                         *         "playersCount": 0
                          *       }
                          *     }
                          */
@@ -990,7 +1005,8 @@ export interface paths {
                          *         "tournamentId": 1,
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
-                         *         "groupId": null
+                         *         "groupId": null,
+                         *         "playersCount": 3
                          *       }
                          *     }
                          */
@@ -1008,7 +1024,9 @@ export interface paths {
         post?: never;
         /**
          * Usuń drużynę
-         * @description Odrzucane z kodem `422`, jeżeli drużyna wystąpiła w rozegranym meczu:
+         * @description Usuwa także zawodników drużyny.
+         *
+         *     Odrzucane z kodem `422`, jeżeli drużyna wystąpiła w rozegranym meczu:
          *     usunięcie zmieniłoby tabelę wstecz.
          */
         delete: {
@@ -1039,7 +1057,13 @@ export interface paths {
         head?: never;
         /**
          * Zmień drużynę
-         * @description Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
+         * @description Nazwa podlega tym samym zasadom co przy `POST
+         *     /tournaments/{tournament}/teams`: jest unikalna wśród drużyn turnieju,
+         *     bez względu na wielkość liter, spacje na jej brzegach są obcinane,
+         *     a drużyna usunięta nie blokuje nazwy. Konflikt nazw daje `422` z błędem
+         *     pod `name`.
+         *
+         *     Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
          *     tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
          */
         patch: {
@@ -1140,7 +1164,11 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Zawodnicy drużyny */
+        /**
+         * Zawodnicy drużyny
+         * @description Po `number` rosnąco, a zawodnicy bez numeru na końcu. Przy tym samym
+         *     numerze (albo jego braku) decyduje `name`, a potem `id`.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1162,13 +1190,6 @@ export interface paths {
                          * @example {
                          *       "data": [
                          *         {
-                         *           "id": 1,
-                         *           "teamId": 1,
-                         *           "name": "Marek Nowak",
-                         *           "number": 9,
-                         *           "position": "napastnik"
-                         *         },
-                         *         {
                          *           "id": 2,
                          *           "teamId": 1,
                          *           "name": "Piotr Kowal",
@@ -1181,6 +1202,13 @@ export interface paths {
                          *           "name": "Jakub Wrona",
                          *           "number": 7,
                          *           "position": "pomocnik"
+                         *         },
+                         *         {
+                         *           "id": 1,
+                         *           "teamId": 1,
+                         *           "name": "Marek Nowak",
+                         *           "number": 9,
+                         *           "position": "napastnik"
                          *         }
                          *       ]
                          *     }
@@ -1196,7 +1224,16 @@ export interface paths {
             };
         };
         put?: never;
-        /** Dodaj zawodnika */
+        /**
+         * Dodaj zawodnika
+         * @description `number` jest unikalny wśród tych zawodników drużyny, którzy mają
+         *     numer; `null` z niczym nie koliduje, a zawodnik usunięty nie blokuje
+         *     numeru. Konflikt numerów daje `422` z błędem pod `number`. Imię
+         *     i nazwisko mogą się w drużynie powtarzać. `position` to wolny tekst.
+         *
+         *     Drużyna mieści najwyżej 50 zawodników. Próba dodania kolejnego daje
+         *     `422` z błędem pod `players`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1296,7 +1333,13 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Zmień zawodnika */
+        /**
+         * Zmień zawodnika
+         * @description `number` jest unikalny wśród tych zawodników drużyny, którzy mają
+         *     numer; `null` z niczym nie koliduje, a zawodnik usunięty nie blokuje
+         *     numeru. Konflikt numerów daje `422` z błędem pod `number`. Imię
+         *     i nazwisko mogą się w drużynie powtarzać. `position` to wolny tekst.
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -1344,7 +1387,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Obiekty w turnieju */
+        /**
+         * Obiekty w turnieju
+         * @description Po `name` rosnąco, a obiekty o tej samej nazwie rozstrzyga `id`.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1391,7 +1437,16 @@ export interface paths {
             };
         };
         put?: never;
-        /** Dodaj obiekt */
+        /**
+         * Dodaj obiekt
+         * @description Nazwa podlega tym samym zasadom co nazwa drużyny: jest unikalna wśród
+         *     obiektów turnieju, bez względu na wielkość liter, spacje na jej
+         *     brzegach są obcinane, a obiekt usunięty nie blokuje nazwy. Konflikt
+         *     nazw daje `422` z błędem pod `name`.
+         *
+         *     Turniej mieści najwyżej 32 obiekty. Próba dodania kolejnego daje `422`
+         *     z błędem pod `venues`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1488,7 +1543,13 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Zmień obiekt */
+        /**
+         * Zmień obiekt
+         * @description Nazwa podlega tym samym zasadom co nazwa drużyny: jest unikalna wśród
+         *     obiektów turnieju, bez względu na wielkość liter, spacje na jej
+         *     brzegach są obcinane, a obiekt usunięty nie blokuje nazwy. Konflikt
+         *     nazw daje `422` z błędem pod `name`.
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -2605,6 +2666,8 @@ export interface components {
              * @description Grupa w fazie `group`. `null`, gdy turniej nie ma fazy grupowej.
              */
             groupId: number | null;
+            /** @description Liczba zawodników drużyny, bez usuniętych. */
+            playersCount: number;
         };
         TeamSummary: {
             /** Format: int64 */

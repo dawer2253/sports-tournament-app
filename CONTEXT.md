@@ -85,16 +85,22 @@ jest w obu przypadkach ta sama, więc w kodzie i w API występuje wyłącznie na
 ## Team (drużyna)
 
 Uczestnik turnieju. Należy do jednego turnieju. Dwie drużyny o tej samej nazwie
-w dwóch turniejach to dwa niepowiązane byty.
+w dwóch turniejach to dwa niepowiązane byty. W obrębie jednego turnieju nazwa
+drużyny się nie powtarza.
 
 ## Player (zawodnik)
 
 Osoba przypisana do drużyny. Istnieje po to, żeby przypisywać jej zdarzenia
-meczowe i budować z nich statystyki indywidualne.
+meczowe i budować z nich statystyki indywidualne. Numer zawodnika, jeśli jest,
+nie powtarza się w drużynie.
+
+Zawodnik nie istnieje bez drużyny, więc usunięcie drużyny usuwa jej zawodników.
+Zawodnicy jednej drużyny to jej skład (etykieta UI „skład”).
 
 ## Venue (obiekt)
 
-Miejsce rozegrania meczu. Należy do turnieju.
+Miejsce rozegrania meczu. Należy do turnieju. W obrębie jednego turnieju nazwa
+obiektu się nie powtarza.
 
 ## Match (mecz)
 

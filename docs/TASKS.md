@@ -33,6 +33,7 @@ Do zrobienia:
 
 ## S2 — Liga (D prowadzi) → Demo #1
 - [ ] Generator round-robin (circle method + bye + 1/2 rundy) (D) — bye zostaje wewnątrz generatora, nie trafia do terminarza (decyzja #24)
+  - Razem z generatorem: usuwanie drużyny lub obiektu z zaplanowanymi, nierozegranymi meczami (mapa #78, #80)
 - [ ] Auto-rozkład dat (start + interwał) + ostrzeżenia kolizji (W)
 - [ ] StandingsCalculator on-read (D)
 - [ ] Tiebreaki + rejestr komparatorów + head-to-head mini-tabela (D)
@@ -44,6 +45,7 @@ Do zrobienia:
 - [ ] MatchEvent CRUD (typy wg sportu) (J)
 - [ ] Statystyki/strzelcy (agregacja z eventów) (J)
 - [ ] Public: tabela + terminarz + wyniki (po slug) (J)
+  - Etykiety tiebreaków pod tabelą („Sortowanie: …”), bo `PublicTournament` nie dostaje konfiguracji sportu (#117)
 - [ ] Public: branding (logo/kolor) + polling (W)
 - Kamień: publiczny link do pokazania
 
