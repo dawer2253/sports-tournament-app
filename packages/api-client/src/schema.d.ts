@@ -1026,8 +1026,8 @@ export interface paths {
          * Usuń drużynę
          * @description Usuwa także zawodników drużyny.
          *
-         *     Odrzucane z kodem `422`, jeżeli drużyna wystąpiła w rozegranym meczu:
-         *     usunięcie zmieniłoby tabelę wstecz.
+         *     Daje `422` z błędem pod `id`, jeżeli drużyna wystąpiła w rozegranym
+         *     meczu: usunięcie zmieniłoby tabelę wstecz.
          */
         delete: {
             parameters: {
@@ -1165,7 +1165,7 @@ export interface paths {
         /**
          * Zawodnicy drużyny
          * @description Po `number` rosnąco, a zawodnicy bez numeru na końcu. Przy tym samym
-         *     numerze (albo jego braku) decyduje `name`, a potem `id` rosnąco.
+         *     numerze (albo jego braku) decyduje `name`, a potem `id`, oba rosnąco.
          */
         get: {
             parameters: {
@@ -1436,10 +1436,9 @@ export interface paths {
         put?: never;
         /**
          * Dodaj obiekt
-         * @description Nazwa podlega tym samym zasadom co nazwa drużyny: jest unikalna wśród
-         *     obiektów turnieju, bez względu na wielkość liter, spacje na jej
-         *     brzegach są obcinane, a obiekt usunięty nie blokuje nazwy. Konflikt
-         *     nazw daje `422` z błędem pod `name`.
+         * @description Nazwa jest unikalna wśród obiektów turnieju, bez względu na wielkość
+         *     liter. Spacje na brzegach nazwy są obcinane, a obiekt usunięty nie
+         *     blokuje nazwy. Konflikt nazw daje `422` z błędem pod `name`.
          *
          *     Turniej mieści najwyżej 32 obiekty. Próba dodania kolejnego daje `422`
          *     z błędem pod `venues`.
