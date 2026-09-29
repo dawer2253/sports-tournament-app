@@ -485,6 +485,8 @@ paths:
     get:
       tags: [Teams]
       summary: Drużyny w turnieju
+      description: |
+        Po `name` rosnąco, a drużyny o tej samej nazwie rozstrzyga `id`, też rosnąco.
       responses:
         '200':
           description: Pełna lista drużyn, bez stronicowania
@@ -499,15 +501,22 @@ paths:
                     items: { $ref: '#/components/schemas/Team' }
               example:
                 data:
-                  - { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
-                  - { id: 2, tournamentId: 1, name: Sokoły Ursus, logoUrl: null, groupId: null }
-                  - { id: 3, tournamentId: 1, name: Orły Bielany, logoUrl: null, groupId: null }
+                  - { id: 3, tournamentId: 1, name: Orły Bielany, logoUrl: null, groupId: null, playersCount: 3 }
+                  - { id: 2, tournamentId: 1, name: Sokoły Ursus, logoUrl: null, groupId: null, playersCount: 3 }
+                  - { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [Teams]
       summary: Dodaj drużynę
+      description: |
+        Nazwa jest unikalna wśród drużyn turnieju, bez względu na wielkość
+        liter. Spacje na brzegach nazwy są obcinane, a drużyna usunięta nie
+        blokuje nazwy. Konflikt nazw daje `422` z błędem pod `name`.
+
+        Turniej mieści najwyżej 128 drużyn. Próba dodania kolejnej daje `422`
+        z błędem pod `teams`.
       requestBody:
         required: true
         content:
@@ -530,7 +539,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
               example:
-                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 0 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -553,7 +562,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
               example:
-                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null }
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -561,6 +570,10 @@ paths:
       tags: [Teams]
       summary: Zmień drużynę
       description: |
+        Nazwa podlega tym samym zasadom co przy `POST
+        /tournaments/{tournament}/teams`, a konflikt nazw daje `422` z błędem
+        pod `name`.
+
         Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
         tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
       requestBody:
@@ -589,8 +602,10 @@ paths:
       tags: [Teams]
       summary: Usuń drużynę
       description: |
-        Odrzucane z kodem `422`, jeżeli drużyna wystąpiła w rozegranym meczu:
-        usunięcie zmieniłoby tabelę wstecz.
+        Usuwa także zawodników drużyny.
+
+        Daje `422` z błędem pod `id`, jeżeli drużyna wystąpiła w rozegranym
+        meczu: usunięcie zmieniłoby tabelę wstecz.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -634,6 +649,9 @@ paths:
     get:
       tags: [Players]
       summary: Zawodnicy drużyny
+      description: |
+        Po `number` rosnąco, a zawodnicy bez numeru na końcu. Przy tym samym
+        numerze (albo jego braku) decyduje `name`, a potem `id`, oba rosnąco.
       responses:
         '200':
           description: Pełna lista zawodników, bez stronicowania
@@ -648,15 +666,23 @@ paths:
                     items: { $ref: '#/components/schemas/Player' }
               example:
                 data:
-                  - { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
                   - { id: 2, teamId: 1, name: Piotr Kowal, number: 1, position: bramkarz }
                   - { id: 3, teamId: 1, name: Jakub Wrona, number: 7, position: pomocnik }
+                  - { id: 1, teamId: 1, name: Marek Nowak, number: 9, position: napastnik }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [Players]
       summary: Dodaj zawodnika
+      description: |
+        `number` jest unikalny wśród tych zawodników drużyny, którzy mają
+        numer; `null` z niczym nie koliduje, a zawodnik usunięty nie blokuje
+        numeru. Konflikt numerów daje `422` z błędem pod `number`. Imię
+        i nazwisko mogą się w drużynie powtarzać. `position` to wolny tekst.
+
+        Drużyna mieści najwyżej 50 zawodników. Próba dodania kolejnego daje
+        `422` z błędem pod `players`.
       requestBody:
         required: true
         content:
@@ -695,6 +721,10 @@ paths:
     patch:
       tags: [Players]
       summary: Zmień zawodnika
+      description: |
+        `number`, `name` i `position` podlegają tym samym zasadom co przy
+        `POST /teams/{team}/players`, a konflikt numerów daje `422` z błędem
+        pod `number`.
       requestBody:
         required: true
         content:
@@ -735,6 +765,8 @@ paths:
     get:
       tags: [Venues]
       summary: Obiekty w turnieju
+      description: |
+        Po `name` rosnąco, a obiekty o tej samej nazwie rozstrzyga `id`, też rosnąco.
       responses:
         '200':
           description: Pełna lista obiektów, bez stronicowania
@@ -757,6 +789,13 @@ paths:
     post:
       tags: [Venues]
       summary: Dodaj obiekt
+      description: |
+        Nazwa jest unikalna wśród obiektów turnieju, bez względu na wielkość
+        liter. Spacje na brzegach nazwy są obcinane, a obiekt usunięty nie
+        blokuje nazwy. Konflikt nazw daje `422` z błędem pod `name`.
+
+        Turniej mieści najwyżej 32 obiekty. Próba dodania kolejnego daje `422`
+        z błędem pod `venues`.
       requestBody:
         required: true
         content:
@@ -793,6 +832,10 @@ paths:
     patch:
       tags: [Venues]
       summary: Zmień obiekt
+      description: |
+        Nazwa podlega tym samym zasadom co przy `POST
+        /tournaments/{tournament}/venues`, a konflikt nazw daje `422` z błędem
+        pod `name`.
       requestBody:
         required: true
         content:
@@ -2146,7 +2189,7 @@ components:
 
     Team:
       type: object
-      required: [id, tournamentId, name, logoUrl, groupId]
+      required: [id, tournamentId, name, logoUrl, groupId, playersCount]
       properties:
         id: { type: integer, format: int64 }
         tournamentId: { type: integer, format: int64 }
@@ -2156,6 +2199,10 @@ components:
           type: [integer, 'null']
           format: int64
           description: Grupa w fazie `group`. `null`, gdy turniej nie ma fazy grupowej.
+        playersCount:
+          type: integer
+          minimum: 0
+          description: Liczba zawodników drużyny, bez usuniętych.
 
     TeamSummary:
       type: object
