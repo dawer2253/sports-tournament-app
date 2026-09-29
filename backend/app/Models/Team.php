@@ -33,23 +33,23 @@ class Team extends Model
      * odrzucone usunięcie nie dochodzi tu wcale i zawodnicy zostają
      * nietknięci, bez zależności od kolejności rejestrowania nasłuchów.
      *
-     * Jedno zapytanie, bez zdarzeń zawodników, a więc i bez ich guarda.
-     * Niczego to nie przepuszcza: zdarzenie zawodnika wisi zawsze na meczu
-     * jego drużyny, więc zawodnik z rozegranym meczem oznacza drużynę
-     * z rozegranym meczem, którą zatrzymał już guard drużyny. Usunięcie
-     * twarde załatwia `cascadeOnDelete` w bazie.
+     * Każdy zawodnik idzie przez własny `delete()`, więc i przez swój guard.
+     * Guard drużyny go nie zastępuje: baza nie wiąże zawodnika zdarzenia
+     * z drużyną meczu, więc zawodnik może mieć rozegrany mecz, którego jego
+     * drużyna nie ma. Usunięcie twarde załatwia `cascadeOnDelete` w bazie.
      */
     protected static function booted(): void
     {
         static::deleted(function (self $team): void {
             if (! $team->isForceDeleting()) {
-                $team->players()->delete();
+                $team->players()->get()->each->delete();
             }
         });
     }
 
     /**
-     * Drużyna i jej zawodnicy znikają razem albo wcale.
+     * Drużyna i jej zawodnicy znikają razem albo wcale: odmowa guarda
+     * zawodnika w kaskadzie cofa też usunięcie drużyny.
      */
     public function delete(): ?bool
     {

@@ -145,7 +145,9 @@ przeczytaj go, zanim któreś z nich „naprawisz":
   zwracający **422** (tak stanowi kontrakt), nie Policy i nie klucz obcy.
   Obejmuje byty kasowane ręcznie, nie strukturę spod generatora.
 - **Przynależność grupy do turnieju sprawdzi Form Request**, nie klucz obcy —
-  predykat `Team::groupBelongsToSameTournament()` czeka na CRUD drużyn w S1.
+  predykat `Team::groupBelongsToSameTournament()` czeka na przypisywanie
+  drużyn do grup. CRUD drużyn w v0.1 go nie potrzebuje, bo `groupId` jest
+  w kontrakcie tylko do odczytu.
 
 Poza tym:
 

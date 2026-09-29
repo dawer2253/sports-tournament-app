@@ -15,10 +15,9 @@ use Illuminate\Http\Response;
 class TeamController extends Controller
 {
     /**
-     * Własność turnieju rozstrzyga `can` na trasie, więc lista idzie przez
-     * jego relację, a nie przez zapytanie z id z żądania. Kolejność po `name`
-     * stanowi kontrakt, a bez względu na wielkość liter porównuje collation
-     * kolumny. Remis rozstrzyga `id`.
+     * Przez relację turnieju, jak każda lista poddrzewa (`backend/AGENTS.md`).
+     * Kolejność po `name` stanowi kontrakt, a bez względu na wielkość liter
+     * porównuje collation kolumny. Remis rozstrzyga `id`.
      */
     public function index(Tournament $tournament): AnonymousResourceCollection
     {
