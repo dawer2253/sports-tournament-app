@@ -785,6 +785,9 @@ export interface paths {
          * Fazy turnieju
          * @description Turniej ma zawsze co najmniej jedną fazę, także gdy jest zwykłą ligą.
          *     Endpointy zapisu dla faz wchodzą w v0.2 razem z silnikiem rozgrywek.
+         *
+         *     Fazy idą po `order` rosnąco. Drugi klucz nie jest potrzebny, bo `order`
+         *     jest unikalny w obrębie turnieju.
          */
         get: {
             parameters: {
