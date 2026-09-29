@@ -10,7 +10,6 @@ use App\Models\Tournament;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 
 class TournamentController extends Controller
 {
@@ -66,8 +65,6 @@ class TournamentController extends Controller
 
     public function show(Tournament $tournament): TournamentResource
     {
-        Gate::authorize('view', $tournament);
-
         return new TournamentResource($tournament->load('sport')->loadCount('teams'));
     }
 }

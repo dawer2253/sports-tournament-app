@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SportController;
+use App\Http\Controllers\Api\StageController;
 use App\Http\Controllers\Api\TournamentController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,5 +19,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sports', [SportController::class, 'index']);
     Route::get('/tournaments', [TournamentController::class, 'index']);
     Route::post('/tournaments', [TournamentController::class, 'store']);
-    Route::get('/tournaments/{tournament}', [TournamentController::class, 'show']);
+
+    // Trasy poddrzewa turnieju autoryzuje middleware `can`, nie kontroler —
+    // patrz „Autoryzacja poddrzewa turnieju" w `backend/AGENTS.md`.
+    Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])
+        ->can('manage', 'tournament');
+    Route::get('/tournaments/{tournament}/stages', [StageController::class, 'index'])
+        ->can('manage', 'tournament');
 });

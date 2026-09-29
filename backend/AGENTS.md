@@ -174,11 +174,63 @@ a wynikają wprost z kontraktu:
 `NotFound`, więc pojedynczy zasób wiąże się z trasy bez zawężania do
 organizera, a własność rozstrzyga [`TournamentPolicy`](app/Policies/TournamentPolicy.php).
 Zawężone zapytanie (`whereBelongsTo`) zostaje dla list, gdzie cudze wiersze po
-prostu nie istnieją.
+prostu nie istnieją. To samo dotyczy drużyn, zawodników i obiektów — wzorzec
+opisuje sekcja niżej.
 
 Testy nie logują się przez `actingAs()`. Helper `actingAsOrganizer()`
 z `tests/Pest.php` wydaje prawdziwy token, żeby test przechodził tę samą drogę
 co panel.
+
+## Autoryzacja poddrzewa turnieju
+
+Turniej jest jedynym korzeniem własności, więc każdy byt pod nim (drużyna,
+zawodnik, obiekt, faza…) należy do organizera przez turniej. Jeden wzorzec
+obowiązuje wszystkie trasy poddrzewa, także te, które wniosą dopiero tickety
+CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
+[#79](https://github.com/dawer2253/sports-tournament-app/issues/79).
+
+- **`->can('manage', '<parametr>')` na każdej trasie poddrzewa**, nie
+  `Gate::authorize` w kontrolerze. Middleware `can` odpala po wiązaniu modelu,
+  a przed kontrolerem, więc kody idą w kolejności 401 → 404 → 403 → 422.
+  Sprawdzenie w ciele kontrolera oddałoby przy zapisie 422 przed 403, bo Form
+  Request waliduje już przy rozwiązywaniu zależności kontrolera. Obcy
+  organizer dostawałby wtedy listę błędów w polach cudzego zasobu zamiast
+  odmowy.
+- **Jedna zdolność `manage`** na odczyt i zapis, bo turniej ma dokładnie jedno
+  konto z dostępem. **Policy sprawdza wyłącznie własność.** Ograniczenie ze
+  statusu turnieju to reguła domenowa i daje 422, nie 403 — kontrakt definiuje
+  `Forbidden` jako zasób innego organizera.
+- **Policy per model**: `TeamPolicy`, `PlayerPolicy`, `VenuePolicy`, wykrywane
+  automatycznie jak [`TournamentPolicy`](app/Policies/TournamentPolicy.php),
+  bez `Gate::policy()`. Każda ma jedną metodę `manage`, delegującą przez
+  relację do `TournamentPolicy`; zawodnik idzie przez drużynę. Reguła własności
+  żyje w jednym miejscu. Policy dochodzi razem z pierwszą trasą swojego modelu,
+  nie wcześniej.
+- **Cudzy zasób daje 403**, także na płaskich ścieżkach (`/teams/{team}`,
+  `/players/{player}`, `/venues/{venue}`, `/teams/{team}/logo`).
+- **Zasób usunięty miękko daje 404, także cudzy**, bo wiązanie modelu rusza
+  przed `can` i nie widzi usuniętych. **Zawodnik z usuniętą miękko drużyną też
+  daje 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy idąca
+  przez `$player->team` dostałaby `null`, bo `SoftDeletes` ukrywa drużynę także
+  w relacji.
+- **Zagnieżdżone listy i tworzenie autoryzuje rodzic**, ale idą przez jego
+  relację (`$tournament->stages()`, `$team->players()->create()`), nigdy przez
+  `Model::query()` z id z żądania. Policy rodzica przepuści organizera do
+  każdego jego turnieju, więc to relacja odsiewa byty innego turnieju tego
+  samego organizera.
+- **Id cudzego bytu w ciele żądania daje 422** z walidacji („musi należeć do
+  tego turnieju"), nie 403 — to błąd danych, a nie odmowa dostępu do zasobu
+  z adresu. W S1 żadne ciało takiego id nie niesie; reguła jest na v0.2
+  (`venueId` w meczu, `playerId` w zdarzeniu).
+
+**Wzorca pilnuje [`SubtreeAuthorizationTest`](tests/Feature/SubtreeAuthorizationTest.php).**
+Bierze z routera każdą trasę pod `auth:sanctum` z parametrem `{tournament}`,
+`{team}`, `{player}` albo `{venue}` i sprawdza 403 dla obcego organizera
+z pustym ciałem, 404 po miękkim usunięciu i 401 bez tokenu. Nowa trasa trafia
+tam sama; dopisujesz ją do testu tylko wtedy, gdy wnosi nowy rodzaj parametru
+(wpis w mapie fabryk) albo nie należy do poddrzewa (lista wyjątków — wtedy
+zastanów się dwa razy). Testy per endpoint zostają na szczęśliwą ścieżkę
+i izolację list.
 
 ## Kontrakt API
 
