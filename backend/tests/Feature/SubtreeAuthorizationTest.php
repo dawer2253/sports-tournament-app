@@ -29,6 +29,9 @@ use Spectator\Spectator;
 |
 | Testy per endpoint zostają na szczęśliwą ścieżkę i na izolację list.
 |
+| Stałe i funkcje niżej lądują w globalnej przestrzeni nazw, wspólnej dla
+| całego przebiegu Pesta, stąd prefiks `subtree`/`SUBTREE_` w każdej nazwie.
+|
 */
 
 beforeEach(function () {
@@ -86,7 +89,7 @@ function subtreeFactories(): array
  * @param  iterable<RouteDefinition>  $routes
  * @return array<string, array{method: string, route: RouteDefinition}>
  */
-function authenticatedRoutes(iterable $routes): array
+function subtreeAuthenticatedRoutes(iterable $routes): array
 {
     $found = [];
 
@@ -96,11 +99,16 @@ function authenticatedRoutes(iterable $routes): array
         }
 
         foreach (array_diff($route->methods(), ['HEAD']) as $method) {
-            $found["{$method} /".preg_replace('#^api/v1/#', '', $route->uri())] = compact('method', 'route');
+            $found[subtreeRouteLabel($method, $route->uri())] = compact('method', 'route');
         }
     }
 
     return $found;
+}
+
+function subtreeRouteLabel(string $method, string $uri): string
+{
+    return "{$method} /".preg_replace('#^api/v1/#', '', $uri);
 }
 
 function isSubtreeRoute(RouteDefinition $route): bool
@@ -127,7 +135,7 @@ dataset('trasy poddrzewa', function () {
         BootProviders::class,
     ]);
 
-    foreach (authenticatedRoutes($app['router']->getRoutes()) as $label => ['method' => $method, 'route' => $route]) {
+    foreach (subtreeAuthenticatedRoutes($app['router']->getRoutes()) as $label => ['method' => $method, 'route' => $route]) {
         if (isSubtreeRoute($route)) {
             yield $label => [$method, $route->uri(), $route->parameterNames()];
         }
@@ -156,12 +164,32 @@ function subtreeRequest(string $uri, array $parameters, User $owner): array
 
     $path = preg_replace_callback(
         '/\{(\w+)\??\}/',
-        fn (array $match) => $models[$match[1]]->getRouteKey(),
+        fn (array $match): string => (string) $models[$match[1]]->getRouteKey(),
         $uri,
     );
 
     return ['/'.$path, $models];
 }
+
+// Same odpowiedzi nie odróżnią `->can(...)` od `Gate::authorize` w ciele
+// kontrolera: na `GET` i na trasie zapisu, której Form Request przepuszcza
+// puste ciało (same pola `sometimes`), oba dają 403. Dlatego wzorzec sprawdza
+// się też wprost na trasie. Wystarczy `can` na jednym parametrze z poddrzewa,
+// bo zagnieżdżone listy i tworzenie autoryzuje rodzic.
+it('autoryzuje middlewarem can na parametrze z poddrzewa, nie w kontrolerze', function (string $method, string $uri, array $parameters) {
+    $label = subtreeRouteLabel($method, $uri);
+    $route = subtreeAuthenticatedRoutes(Route::getRoutes())[$label]['route'];
+
+    $expected = array_map(
+        fn (string $parameter): string => "can:manage,{$parameter}",
+        array_intersect($parameters, SUBTREE_PARAMETERS),
+    );
+
+    expect(array_intersect($route->gatherMiddleware(), $expected))->not->toBe(
+        [],
+        "Trasa {$label} nie ma ->can('manage', …) na żadnym parametrze z poddrzewa.",
+    );
+})->with('trasy poddrzewa');
 
 // Puste ciało przypina kolejność „403 przed 422": trasa zapisu, która
 // sprawdzałaby własność w kontrolerze, oddałaby tu błąd walidacji z Form
@@ -191,7 +219,7 @@ it('oddaje 404 dla zasobu usuniętego miękko, także cudzego', function (string
     [, $models] = subtreeRequest($uri, $parameters, User::factory()->create());
     $softDeletable = array_keys(array_filter(
         $models,
-        fn (Model $model) => in_array(SoftDeletes::class, class_uses_recursive($model), true),
+        fn (Model $model): bool => in_array(SoftDeletes::class, class_uses_recursive($model), true),
     ));
 
     if ($softDeletable === []) {
@@ -210,11 +238,11 @@ it('oddaje 404 dla zasobu usuniętego miękko, także cudzego', function (string
 })->with('trasy poddrzewa');
 
 it('nie zostawia pod tokenem trasy spoza poddrzewa i spoza listy wyjątków', function () {
-    $routes = authenticatedRoutes(Route::getRoutes());
+    $routes = subtreeAuthenticatedRoutes(Route::getRoutes());
 
     $unguarded = array_keys(array_filter(
         $routes,
-        fn (array $entry, string $label) => ! isSubtreeRoute($entry['route']) && ! in_array($label, SUBTREE_EXCEPTIONS, true),
+        fn (array $entry, string $label): bool => ! isSubtreeRoute($entry['route']) && ! in_array($label, SUBTREE_EXCEPTIONS, true),
         ARRAY_FILTER_USE_BOTH,
     ));
 

@@ -228,7 +228,10 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
 **Wzorca pilnuje [`SubtreeAuthorizationTest`](tests/Feature/SubtreeAuthorizationTest.php).**
 Bierze z routera każdą trasę pod `auth:sanctum` z parametrem `{tournament}`,
 `{team}`, `{player}` albo `{venue}` i sprawdza 403 dla obcego organizera
-z pustym ciałem, 404 po miękkim usunięciu i 401 bez tokenu. Nowa trasa trafia
+z pustym ciałem, 404 po miękkim usunięciu i 401 bez tokenu. Sprawdza też wprost,
+że trasa ma `->can('manage', …)`: same odpowiedzi tego nie dowodzą, bo na `GET`
+i na trasie zapisu z samymi polami `sometimes` `Gate::authorize` w kontrolerze
+też daje 403, a 422 przed 403 wyszłoby dopiero na niepustym ciele. Nowa trasa trafia
 tam sama; dopisujesz ją do testu tylko wtedy, gdy wnosi nowy rodzaj parametru
 (wpis w mapie fabryk) albo nie należy do poddrzewa (lista wyjątków — wtedy
 zastanów się dwa razy). Testy per endpoint zostają na szczęśliwą ścieżkę
