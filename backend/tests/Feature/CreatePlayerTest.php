@@ -120,11 +120,14 @@ it('odrzuca wartości spoza kontraktu', function (array $body, string $field, st
 
     expect($team->players()->count())->toBe(0);
 })->with([
-    'pusta nazwa' => [['name' => ''], 'name', 'Pole nazwa jest wymagane.'],
-    'nazwa 121 znaków' => [['name' => str_repeat('a', 121)], 'name', 'Pole nazwa nie może mieć więcej niż 120 znaków.'],
+    'puste imię i nazwisko' => [['name' => ''], 'name', 'Pole imię i nazwisko jest wymagane.'],
+    'imię i nazwisko 121 znaków' => [['name' => str_repeat('a', 121)], 'name', 'Pole imię i nazwisko nie może mieć więcej niż 120 znaków.'],
     'numer ujemny' => [['number' => -1], 'number', 'Pole numer musi mieścić się w przedziale od 0 do 999.'],
     'numer 1000' => [['number' => 1000], 'number', 'Pole numer musi mieścić się w przedziale od 0 do 999.'],
     'numer ułamkowy' => [['number' => 9.5], 'number', 'Pole numer musi być liczbą całkowitą.'],
+    // Zwykłe `integer` przepuszcza oba i odpowiedź oddałaby je bez zmiany typu.
+    'numer jako napis' => [['number' => '9'], 'number', 'Pole numer musi być liczbą całkowitą.'],
+    'numer jako wartość logiczna' => [['number' => true], 'number', 'Pole numer musi być liczbą całkowitą.'],
     'pozycja 61 znaków' => [['position' => str_repeat('a', 61)], 'position', 'Pole pozycja nie może mieć więcej niż 60 znaków.'],
 ]);
 

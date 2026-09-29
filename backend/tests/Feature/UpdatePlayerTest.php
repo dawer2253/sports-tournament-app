@@ -55,6 +55,20 @@ it('odrzuca numer innego zawodnika tej drużyny', function () {
     expect($player->fresh()->number)->toBe(9);
 });
 
+// `ignore($player)` i `whereNull('deleted_at')` działają w jednej regule,
+// więc `PATCH` ma swój przypadek obok tego przy `POST`.
+it('przyjmuje numer zawodnika usuniętego', function () {
+    $player = Player::factory()->create(['number' => 9]);
+    Player::factory()->for($player->team)->create(['number' => 7])->delete();
+
+    actingAsOrganizer($player->team->tournament->user)
+        ->patchJson("/api/v1/players/{$player->id}", ['number' => 7])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.number', 7);
+
+    expect($player->fresh()->number)->toBe(7);
+});
+
 it('czyści numer i pozycję nullem', function () {
     $player = Player::factory()->create(['number' => 9, 'position' => 'napastnik']);
 

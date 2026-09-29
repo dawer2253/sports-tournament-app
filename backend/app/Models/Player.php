@@ -22,6 +22,15 @@ class Player extends Model
     use SoftDeletes;
 
     /**
+     * Kontrakt oddaje `number` jako liczbę. Walidacja przyjmuje wyłącznie
+     * liczbę, ale cast pilnuje typu także dla wartości spoza API.
+     */
+    protected function casts(): array
+    {
+        return ['number' => 'integer'];
+    }
+
+    /**
      * Zawodnik z trasy musi mieć żywą drużynę, inaczej to 404 (#79, pkt 5).
      * Bez tego `PlayerPolicy` dostałaby `null` z `$player->team`, bo
      * `SoftDeletes` ukrywa usuniętą drużynę także w relacji, i oddała 500.
