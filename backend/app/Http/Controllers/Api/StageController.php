@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\StageResource;
 use App\Models\Tournament;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class StageController extends Controller
@@ -20,7 +21,7 @@ class StageController extends Controller
     {
         return StageResource::collection(
             $tournament->stages()
-                ->with(['groups' => fn ($groups) => $groups->orderBy('id')])
+                ->with(['groups' => fn (HasMany $groups): HasMany => $groups->orderBy('id')])
                 ->orderBy('order')
                 ->get()
         );

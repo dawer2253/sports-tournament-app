@@ -2,13 +2,14 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Group;
 use App\Models\Stage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Wymaga wczytanych `groups` — resource nie dociąga ich sam, żeby lista faz
- * nie robiła zapytania na wiersz.
+ * Oczekuje wczytanych `groups`. Bez tego dociągnąłby je leniwie, osobnym
+ * zapytaniem na każdą fazę.
  *
  * @mixin Stage
  */
@@ -24,7 +25,7 @@ class StageResource extends JsonResource
             'type' => $this->type,
             'name' => $this->name,
             'order' => $this->order,
-            'groups' => $this->groups->map(fn ($group) => [
+            'groups' => $this->groups->map(fn (Group $group): array => [
                 'id' => $group->id,
                 'name' => $group->name,
             ])->all(),

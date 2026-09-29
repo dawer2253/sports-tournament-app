@@ -65,14 +65,14 @@ const SUBTREE_EXCEPTIONS = [
 function subtreeFactories(): array
 {
     return [
-        'tournament' => fn (User $owner) => Tournament::factory()->for($owner)->create(),
-        'team' => fn (User $owner) => Team::factory()
+        'tournament' => fn (User $owner): Tournament => Tournament::factory()->for($owner)->create(),
+        'team' => fn (User $owner): Team => Team::factory()
             ->for(Tournament::factory()->for($owner))
             ->create(),
-        'player' => fn (User $owner) => Player::factory()
+        'player' => fn (User $owner): Player => Player::factory()
             ->for(Team::factory()->for(Tournament::factory()->for($owner)))
             ->create(),
-        'venue' => fn (User $owner) => Venue::factory()
+        'venue' => fn (User $owner): Venue => Venue::factory()
             ->for(Tournament::factory()->for($owner))
             ->create(),
     ];
@@ -83,6 +83,7 @@ function subtreeFactories(): array
  * w kontrakcie). Metoda po metodzie, bez `HEAD`, który router dokłada do
  * każdego `GET`.
  *
+ * @param  iterable<RouteDefinition>  $routes
  * @return array<string, array{method: string, route: RouteDefinition}>
  */
 function authenticatedRoutes(iterable $routes): array

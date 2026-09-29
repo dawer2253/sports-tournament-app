@@ -174,8 +174,8 @@ a wynikają wprost z kontraktu:
 `NotFound`, więc pojedynczy zasób wiąże się z trasy bez zawężania do
 organizera, a własność rozstrzyga [`TournamentPolicy`](app/Policies/TournamentPolicy.php).
 Zawężone zapytanie (`whereBelongsTo`) zostaje dla list, gdzie cudze wiersze po
-prostu nie istnieją. To samo dotyczy drużyn, zawodników i obiektów — wzorzec
-opisuje sekcja niżej.
+prostu nie istnieją. Tak idzie wyłącznie lista turniejów: listy wewnątrz
+turnieju idą przez relację rodzica, patrz „Autoryzacja poddrzewa turnieju" niżej.
 
 Testy nie logują się przez `actingAs()`. Helper `actingAsOrganizer()`
 z `tests/Pest.php` wydaje prawdziwy token, żeby test przechodził tę samą drogę
@@ -210,9 +210,11 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
   `/players/{player}`, `/venues/{venue}`, `/teams/{team}/logo`).
 - **Zasób usunięty miękko daje 404, także cudzy**, bo wiązanie modelu rusza
   przed `can` i nie widzi usuniętych. **Zawodnik z usuniętą miękko drużyną też
-  daje 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy idąca
-  przez `$player->team` dostałaby `null`, bo `SoftDeletes` ukrywa drużynę także
-  w relacji.
+  ma dawać 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy
+  idąca przez `$player->team` dostałaby `null`, bo `SoftDeletes` ukrywa drużynę
+  także w relacji. Tego wiązania jeszcze nie ma (`Player` nie nadpisuje
+  `resolveRouteBinding`) — wnosi je ticket CRUD zawodników razem z własnym
+  testem, bo test przekrojowy usuwa miękko tylko zasoby z parametrów trasy.
 - **Zagnieżdżone listy i tworzenie autoryzuje rodzic**, ale idą przez jego
   relację (`$tournament->stages()`, `$team->players()->create()`), nigdy przez
   `Model::query()` z id z żądania. Policy rodzica przepuści organizera do
