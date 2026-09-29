@@ -21,6 +21,22 @@ class Player extends Model
     use HasFactory;
     use SoftDeletes;
 
+    /**
+     * Zawodnik z trasy musi mieć żywą drużynę, inaczej to 404 (#79, pkt 5).
+     * Bez tego `PlayerPolicy` dostałaby `null` z `$player->team`, bo
+     * `SoftDeletes` ukrywa usuniętą drużynę także w relacji, i oddała 500.
+     * `whereHas` stosuje zakres `SoftDeletes` drużyny.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        return $this->resolveRouteBindingQuery($this, $value, $field)
+            ->whereHas('team')
+            ->first();
+    }
+
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);

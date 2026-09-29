@@ -25,9 +25,9 @@ it('usuwa drużynę miękko i oddaje 204', function () {
     expect(Team::withTrashed()->findOrFail($team->id)->trashed())->toBeTrue();
 });
 
-// Zawodników nie da się dziś odczytać przez API (trasy przychodzą z CRUD-em
-// zawodników), więc ich stan czyta model. Zawodnik innej drużyny tego samego
-// turnieju pilnuje, że kaskada idzie przez relację usuwanej drużyny.
+// Stan zawodników czyta model, bo lista zawodników usuniętej drużyny to już
+// 404. Zawodnik innej drużyny tego samego turnieju pilnuje, że kaskada idzie
+// przez relację usuwanej drużyny.
 it('usuwa miękko zawodników drużyny i tylko ich', function () {
     $team = Team::factory()->create();
     $players = Player::factory()->count(2)->for($team)->create();

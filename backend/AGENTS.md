@@ -214,9 +214,9 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
   przed `can` i nie widzi usuniętych. **Zawodnik z usuniętą miękko drużyną też
   ma dawać 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy
   idąca przez `$player->team` dostałaby `null`, bo `SoftDeletes` ukrywa drużynę
-  także w relacji. Tego wiązania jeszcze nie ma (`Player` nie nadpisuje
-  `resolveRouteBinding`) — wnosi je ticket CRUD zawodników razem z własnym
-  testem, bo test przekrojowy usuwa miękko tylko zasoby z parametrów trasy.
+  także w relacji. Załatwia to `Player::resolveRouteBinding`, a pilnuje
+  osobny test w `UpdatePlayerTest` i `DeletePlayerTest`, bo test przekrojowy
+  usuwa miękko tylko zasoby z parametrów trasy.
 - **Zagnieżdżone listy i tworzenie autoryzuje rodzic**, ale idą przez jego
   relację (`$tournament->stages()`, `$team->players()->create()`), nigdy przez
   `Model::query()` z id z żądania. Policy rodzica przepuści organizera do

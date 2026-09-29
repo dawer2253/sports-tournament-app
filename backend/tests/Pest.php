@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Sport;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\Yaml\Yaml;
@@ -62,4 +63,17 @@ function contractErrorMessage(string $response): string
     expect($message)->toBeString()->not->toBeEmpty();
 
     return $message;
+}
+
+/**
+ * Drużyna usunięta miękko z żywymi zawodnikami. Kaskada w `Team` nie dopuszcza
+ * do tego stanu przez model, więc test stawia go z pominięciem zdarzeń —
+ * wiązanie zawodnika z trasy ma go obsłużyć i tak (#79, pkt 5), bo wiersze
+ * mogą powstać poza modelem.
+ */
+function softDeleteTeamLeavingPlayers(Team $team): void
+{
+    Team::withoutEvents(fn () => $team->delete());
+
+    expect($team->players()->withTrashed()->whereNull('deleted_at')->exists())->toBeTrue();
 }

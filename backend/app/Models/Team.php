@@ -24,6 +24,12 @@ class Team extends Model
     use SoftDeletes;
 
     /**
+     * Najwięcej żywych zawodników w drużynie (decyzja #80, opis `POST
+     * /teams/{team}/players` w kontrakcie). Zmienia się razem z kontraktem.
+     */
+    public const MAX_PLAYERS = 50;
+
+    /**
      * Kaskada: zawodnik nie istnieje bez drużyny (`CONTEXT.md`), więc
      * miękkie usunięcie drużyny usuwa miękko jej zawodników. Siedzi w modelu
      * z tego samego powodu co guard — nie ominie jej ani seeder, ani przyszły
