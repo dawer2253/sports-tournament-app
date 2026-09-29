@@ -845,7 +845,7 @@ export interface paths {
         };
         /**
          * Drużyny w turnieju
-         * @description Po `name` rosnąco, a drużyny o tej samej nazwie rozstrzyga `id`.
+         * @description Po `name` rosnąco, a drużyny o tej samej nazwie rozstrzyga `id`, też rosnąco.
          */
         get: {
             parameters: {
@@ -1058,9 +1058,7 @@ export interface paths {
         /**
          * Zmień drużynę
          * @description Nazwa podlega tym samym zasadom co przy `POST
-         *     /tournaments/{tournament}/teams`: jest unikalna wśród drużyn turnieju,
-         *     bez względu na wielkość liter, spacje na jej brzegach są obcinane,
-         *     a drużyna usunięta nie blokuje nazwy. Konflikt nazw daje `422` z błędem
+         *     /tournaments/{tournament}/teams`, a konflikt nazw daje `422` z błędem
          *     pod `name`.
          *
          *     Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
@@ -1167,7 +1165,7 @@ export interface paths {
         /**
          * Zawodnicy drużyny
          * @description Po `number` rosnąco, a zawodnicy bez numeru na końcu. Przy tym samym
-         *     numerze (albo jego braku) decyduje `name`, a potem `id`.
+         *     numerze (albo jego braku) decyduje `name`, a potem `id` rosnąco.
          */
         get: {
             parameters: {
@@ -1335,10 +1333,9 @@ export interface paths {
         head?: never;
         /**
          * Zmień zawodnika
-         * @description `number` jest unikalny wśród tych zawodników drużyny, którzy mają
-         *     numer; `null` z niczym nie koliduje, a zawodnik usunięty nie blokuje
-         *     numeru. Konflikt numerów daje `422` z błędem pod `number`. Imię
-         *     i nazwisko mogą się w drużynie powtarzać. `position` to wolny tekst.
+         * @description `number`, `name` i `position` podlegają tym samym zasadom co przy
+         *     `POST /teams/{team}/players`, a konflikt numerów daje `422` z błędem
+         *     pod `number`.
          */
         patch: {
             parameters: {
@@ -1389,7 +1386,7 @@ export interface paths {
         };
         /**
          * Obiekty w turnieju
-         * @description Po `name` rosnąco, a obiekty o tej samej nazwie rozstrzyga `id`.
+         * @description Po `name` rosnąco, a obiekty o tej samej nazwie rozstrzyga `id`, też rosnąco.
          */
         get: {
             parameters: {
@@ -1545,10 +1542,9 @@ export interface paths {
         head?: never;
         /**
          * Zmień obiekt
-         * @description Nazwa podlega tym samym zasadom co nazwa drużyny: jest unikalna wśród
-         *     obiektów turnieju, bez względu na wielkość liter, spacje na jej
-         *     brzegach są obcinane, a obiekt usunięty nie blokuje nazwy. Konflikt
-         *     nazw daje `422` z błędem pod `name`.
+         * @description Nazwa podlega tym samym zasadom co przy `POST
+         *     /tournaments/{tournament}/venues`, a konflikt nazw daje `422` z błędem
+         *     pod `name`.
          */
         patch: {
             parameters: {

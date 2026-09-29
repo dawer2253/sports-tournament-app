@@ -95,7 +95,7 @@ meczowe i budować z nich statystyki indywidualne. Numer zawodnika, jeśli jest,
 nie powtarza się w drużynie.
 
 Zawodnik nie istnieje bez drużyny, więc usunięcie drużyny usuwa jej zawodników.
-Zawodnicy jednej drużyny to jej skład (etykieta UI „skład”).
+Zawodnicy jednej drużyny to jej skład (etykieta UI "skład").
 
 ## Venue (obiekt)
 
