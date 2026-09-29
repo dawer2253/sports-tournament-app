@@ -66,6 +66,13 @@ class Tournament extends Model
     public const SLUG_FALLBACK = 'turniej';
 
     /**
+     * Najwięcej żywych drużyn w turnieju (decyzja #80, opis `POST
+     * /tournaments/{tournament}/teams` w kontrakcie). Zmienia się razem
+     * z kontraktem.
+     */
+    public const MAX_TEAMS = 128;
+
+    /**
      * Zakłada turniej organizera jako szkic, razem z fazami wynikającymi
      * z formatu, w jednej transakcji.
      *

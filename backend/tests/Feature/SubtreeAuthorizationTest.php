@@ -57,8 +57,8 @@ const SUBTREE_EXCEPTIONS = [
 /**
  * Parametr trasy → zasób należący do `$owner`. Parametr bez wpisu czerwieni
  * test zamiast go pomijać, więc nowy rodzaj parametru wymaga świadomego
- * dopisania fabryki. Wpisy dla drużyny, zawodnika i obiektu czekają na trasy
- * CRUD — dzięki nim pierwsza z nich jest sprawdzana od razu, w całości.
+ * dopisania fabryki. Wpisy dla zawodnika i obiektu czekają na trasy CRUD —
+ * dzięki nim pierwsza z nich jest sprawdzana od razu, w całości.
  *
  * Trasa z dwoma parametrami dostaje zasoby zbudowane niezależnie od siebie.
  * Wystarcza, dopóki żadna trasa nie ma wiązań zawężonych (`scopeBindings`).
@@ -213,8 +213,8 @@ it('odmawia bez tokenu z 401', function (string $method, string $uri, array $par
 
 // Zasób jest cudzy, więc 404 zamiast 403 dowodzi, że wiązanie modelu odpala
 // przed `can` i nie widzi usuniętych miękko — oba naraz. Turniej nie ma
-// `SoftDeletes`, więc dziś trasy są tu pomijane z nazwą powodu; część ruszy
-// sama przy pierwszej trasie drużyny, zawodnika albo obiektu.
+// `SoftDeletes`, więc trasy z samym `{tournament}` są tu pomijane z nazwą
+// powodu.
 it('oddaje 404 dla zasobu usuniętego miękko, także cudzego', function (string $method, string $uri, array $parameters) {
     [, $models] = subtreeRequest($uri, $parameters, User::factory()->create());
     $softDeletable = array_keys(array_filter(
