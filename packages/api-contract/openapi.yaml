@@ -435,11 +435,21 @@ paths:
     delete:
       tags: [Tournaments]
       summary: Usuń turniej
+      description: |
+        Usuwa turniej na twardo razem z całym poddrzewem: drużynami (także
+        usuniętymi wcześniej), zawodnikami, obiektami, fazami i meczami, oraz
+        z plikami logo i herbów. Operacji nie da się cofnąć, a `slug` od razu
+        się zwalnia.
+
+        Odrzucane z kodem `422`, jeżeli w turnieju rozegrano choć jeden mecz:
+        jego publiczny adres ma działać dalej. Status turnieju nie ma tu
+        znaczenia.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/DeleteBlocked' }
 
   /tournaments/{tournament}/logo:
     parameters:
@@ -638,7 +648,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/DeleteBlocked' }
 
   /teams/{team}/logo:
     parameters:
@@ -784,7 +794,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/DeleteBlocked' }
 
   /tournaments/{tournament}/venues:
     parameters:
@@ -894,7 +904,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/DeleteBlocked' }
 
   /tournaments/{tournament}/matches:
     parameters:
@@ -1960,6 +1970,15 @@ components:
             message: Pole nazwa jest wymagane.
             errors:
               name: [Pole nazwa jest wymagane.]
+    DeleteBlocked:
+      description: Usunięcie zablokowane przez rozegrane mecze
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+          example:
+            message: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.'
+            errors:
+              id: ['Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.']
 
   schemas:
     Error:
