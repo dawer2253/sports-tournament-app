@@ -13,14 +13,13 @@ Ekran zarządzania drużynami i ich składami w obrębie jednego turnieju.
 Umożliwić organizatorowi przegląd wszystkich drużyn turnieju oraz zarządzanie każdą drużyną i jej zawodnikami z jednego miejsca.
 
 ## Dane (wejście)
-- `tournament`: nazwa turnieju i liczba drużyn (w podtytule).
+- `tournament`: nazwa turnieju, sport i adres publiczny w nagłówku strony, wspólnym dla ekranów turnieju.
 - `teams` to lista drużyn: skrót (`abbr`), nazwa (`name`), liczba zawodników (`players`).
 - `players` to zawodnicy przypisani do drużyny przez `teamId`: numer, imię i nazwisko, pozycja.
 
 ## Reguły
 - Skład drużyny to zawodnicy z `players` odfiltrowani po `teamId`.
 - Drużyny bez wpisów w `players` pokazują 2 pozycje przykładowe (placeholder) zamiast pustej listy.
-- Podtytuł łączy nazwę turnieju z liczbą drużyn liczoną z `teams`.
 
 ## Stany
 - **Pełna lista** (domyślny, powyżej): 8 kart drużyn w siatce dwukolumnowej.

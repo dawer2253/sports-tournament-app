@@ -1,5 +1,5 @@
-import { AdminShell, type AdminShellProps } from '../components/layout/admin-shell'
-import { organizer } from '../lib/demo-data'
+import { AdminShell, type AdminSectionKey, type AdminShellProps } from '../components/layout/admin-shell'
+import { organizer, tournamentList } from '../lib/demo-data'
 
 /**
  * `AdminShell` z kontem demo, dla ekranów w Storybooku.
@@ -13,4 +13,25 @@ import { organizer } from '../lib/demo-data'
  */
 export function ShellDemo(props: Omit<AdminShellProps, 'user'>) {
   return <AdminShell user={organizer} {...props} />
+}
+
+/** Turniej demo, w którym stoją ekrany turnieju. */
+const demoTournament = tournamentList[0]!
+
+/**
+ * `ShellDemo` wewnątrz turnieju demo. Układ nagłówka jest wspólny dla
+ * wszystkich ekranów turnieju: tytuł to nazwa turnieju, podtytuł to sport
+ * i adres publiczny, a sekcję pokazuje aktywna karta, nie tytuł.
+ */
+export function TournamentShellDemo(
+  props: Omit<AdminShellProps, 'user' | 'tournament' | 'title' | 'subtitle' | 'active'> & { active: AdminSectionKey },
+) {
+  return (
+    <ShellDemo
+      tournament={demoTournament}
+      title={demoTournament.name}
+      subtitle={`${demoTournament.sport.name} · /t/${demoTournament.slug}`}
+      {...props}
+    />
+  )
 }

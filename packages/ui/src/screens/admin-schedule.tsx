@@ -1,7 +1,7 @@
 import {
   SlidersHorizontal, RefreshCw, ChevronLeft, ChevronRight, Clock, Check, AlertTriangle,
 } from 'lucide-react'
-import { ShellDemo } from './shell-demo'
+import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent } from '../components/ui/card'
@@ -79,10 +79,8 @@ export function AdminSchedule() {
   const roundDate = roundFixtures[0]?.date ?? ''
 
   return (
-    <ShellDemo
+    <TournamentShellDemo
       active="schedule"
-      title={tournament.name}
-      subtitle={`${tournament.teamsCount} drużyn · ${tournament.rounds} kolejek · ${tournament.sport}`}
       actions={
         <>
           <Button variant="outline"><SlidersHorizontal className="size-4" /> Tiebreaki</Button>
@@ -172,6 +170,6 @@ export function AdminSchedule() {
           </Card>
         </TabsContent>
       </Tabs>
-    </ShellDemo>
+    </TournamentShellDemo>
   )
 }
