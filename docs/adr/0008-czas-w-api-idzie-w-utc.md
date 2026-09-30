@@ -53,6 +53,23 @@ takiego pominięcia nie wyłapie.
 Kontrakt niesie samą gwarancję, a szczegół implementacji zostaje w
 `backend/AGENTS.md`.
 
+**Format `+00:00` nadaje jedno miejsce, a nie pamięć każdego zasobu.** Strefa
+aplikacji daje UTC, ale nie daje formatu: `+00:00` wychodzi dziś tylko dlatego,
+że `UserResource` i `TournamentResource` wołają `toIso8601String()` ręcznie.
+Zasób, który wstawi do tablicy surowego Carbona, odda
+`2026-10-04T10:00:00.000000Z`. To też poprawny `date-time`, więc Spectator go
+przepuści, a „Konwencje" pękną po cichu. To ta sama słabość, za którą
+odrzucony jest wariant „UTC w bazie, `Europe/Warsaw` na wyjściu", więc
+wybrany wariant nie może jej zostawić.
+
+Nadpisane `serializeDate` w modelu tu nie pomoże: zasoby budują tablice same,
+a Carbon w tablicy serializuje się przez własne `jsonSerialize()`, z pominięciem
+modelu. Globalny serializer Carbona (`Carbon::serializeUsing()`) też odpada, bo
+Carbon 3 oznacza go jako `@deprecated` i zaleca przekształcić datę przed
+serializacją. Zostaje więc jeden helper albo trait zasobów, przez który
+przechodzi każda data w odpowiedzi. Kształt zostawiamy temu, kto go wdroży, pod
+dwoma warunkami: miejsce jest jedno i ma test (patrz „Konsekwencje").
+
 **Czas lokalny liczy klient.** Front przelicza datę z odpowiedzi przez strefę
 IANA (`Intl.DateTimeFormat` z `timeZone`), a nie przez dodanie godziny czy
 dwóch. Stała różnica byłaby dobra przez pół roku i zła przez drugie pół, więc
@@ -71,7 +88,8 @@ podlega trzem regułom:
   `422` wychodzi przy pierwszym zapisie. Reguła jest też tańsza w tę stronę:
   poluzowanie jej później niczego nie psuje, a zaostrzenie złamałoby klientów,
   którzy na luźnej już polegają;
-- backend sam przelicza wartość na UTC (`Carbon::parse(...)->utc()`), zanim
+- backend sam przelicza wartość na UTC (`Date::parse(...)->utc()` z fasady
+  `Illuminate\Support\Facades\Date`, tą samą drogą co Eloquent), zanim
   przypisze ją do modelu, bo Eloquent tego nie zrobi (patrz „Kontekst");
 - odpowiedź oddaje ten sam moment, ale w `+00:00`. Kto wyśle
   `2026-10-04T12:00:00+02:00`, dostanie `2026-10-04T10:00:00+00:00`, więc
@@ -88,8 +106,9 @@ na UTC.
 ## Konsekwencje
 
 Kupujemy: jeden offset w całym API, więc napisy dat w odpowiedziach sortują się
-leksykograficznie tak jak momenty, o ile mają tę samą precyzję (dziś pełne
-sekundy, bez ułamków). Baza nie ma dwuznacznych godzin, a indeks
+leksykograficznie tak jak momenty, o ile wszystkie mają ten sam format. To
+pilnuje dopiero jedno miejsce z „Decyzji": zasób z domyślnym `.000000Z` obok
+`+00:00` zepsułby tę kolejność. Baza nie ma dwuznacznych godzin, a indeks
 na `kickoff_at` porządkuje mecze poprawnie także przez noc zmiany czasu.
 Zostajemy przy domyślnym ustawieniu szkieletu Laravela, więc nikt nie musi
 pamiętać o wyjątku.
@@ -114,6 +133,16 @@ rzeczy, żeby reguły z tego ADR-a nie zostały na papierze:
   i przelicza na UTC, zamiast kopii w każdym Form Requeście;
 - test w Peście, że `12:00+02:00` wraca jako `10:00+00:00`, a data bez
   offsetu dostaje `422`.
+
+Wyjście ma własną definicję gotowości, i to już zaległą, bo daty oddają dziś
+dwa zasoby bez wspólnego mechanizmu i bez testu formatu:
+
+- jedno miejsce, które nadaje format `+00:00` (patrz „Decyzja"), a ręczne
+  `toIso8601String()` w `UserResource` i `TournamentResource` przechodzą na nie;
+- test w Peście, że każda data w odpowiedzi kończy się na `+00:00`, i to
+  sprawdzany na odpowiedzi HTTP, a nie na modelu;
+- najpóźniej razem z `MatchResource`, czyli trzecim zasobem z datą
+  (`kickoffAt`).
 
 Odsyłacze: akapit o czasie w sekcji „Kontrakt API" w
 [`backend/AGENTS.md`](../../backend/AGENTS.md) i „Konwencje" w

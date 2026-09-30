@@ -263,7 +263,11 @@ edycją jednej linijki w configu, i pociąga za sobą wszystkie przykłady
 w `openapi.yaml` — powody UTC i brak `env()` opisuje
 [ADR 0008](../docs/adr/0008-czas-w-api-idzie-w-utc.md). Przeczytaj go, zanim
 napiszesz pierwszy endpoint przyjmujący datę: **Eloquent przy zapisie nie
-przelicza strefy**, a reguły dla wejścia stoją w ADR-ze.
+przelicza strefy**, a reguły dla wejścia stoją w ADR-ze. **Strefa nie nadaje
+też formatu**: surowy Carbon w tablicy zasobu wychodzi jako `…000000Z`, nie
+`+00:00`, a Spectator to przepuści. Dziś format nadaje ręczne
+`toIso8601String()` w każdym zasobie. ADR wymaga jednego miejsca z testem,
+najpóźniej razem z `MatchResource`.
 
 **Tablicowy parametr query jedzie po przecinku** (`?status=draft,active`), bo
 powtórzony klucz gubi w PHP wszystko poza ostatnią wartością
