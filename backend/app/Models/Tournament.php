@@ -61,13 +61,6 @@ class Tournament extends Model
     ];
 
     /**
-     * Najwięcej żywych obiektów w turnieju (decyzja #80, opis `POST
-     * /tournaments/{tournament}/venues` w kontrakcie). Zmienia się razem
-     * z kontraktem.
-     */
-    public const MAX_VENUES = 32;
-
-    /**
      * Granice sluga są te same co przy ręcznej zmianie (`TournamentUpdate`
      * w kontrakcie), żeby wygenerowany adres dało się też zapisać ręcznie.
      */
@@ -87,6 +80,13 @@ class Tournament extends Model
      * z kontraktem.
      */
     public const MAX_TEAMS = 128;
+
+    /**
+     * Najwięcej żywych obiektów w turnieju (decyzja #80, opis `POST
+     * /tournaments/{tournament}/venues` w kontrakcie). Zmienia się razem
+     * z kontraktem.
+     */
+    public const MAX_VENUES = 32;
 
     /**
      * Zakłada turniej organizera jako szkic, razem z fazami wynikającymi

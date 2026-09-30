@@ -26,10 +26,9 @@ class StoreVenueRequest extends VenueRequest
      * reguły języka zapasowego (`en`). Test limitu ma liczbę wpisaną wprost,
      * więc zmiana stałej go zaczerwieni.
      *
-     * Sprawdzenie i zapis to dwa kroki, więc równoległe żądania mogą razem
-     * przekroczyć limit. Dla panelu jednego organizera to akceptowalne;
-     * blokada wiersza turnieju byłaby tu na wyrost. To samo dotyczy
-     * unikalności nazwy, której nie pilnuje indeks (migracja `venues`).
+     * Wyścig między sprawdzeniem a zapisem, tu i przy unikalności nazwy, jest
+     * akceptowalny z tego samego powodu co przy limicie drużyn
+     * (`StoreTeamRequest`).
      *
      * @return list<callable(Validator): void>
      */

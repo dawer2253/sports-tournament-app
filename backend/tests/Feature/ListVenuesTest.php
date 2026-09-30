@@ -15,9 +15,11 @@ beforeEach(function () {
 // Kolejność wstawiania to `stadion`, `Hala`, `Orlik`, `hala`. Sortowanie po
 // `id` dałoby `stadion` na początku, a binarne (wielkie litery przed małymi)
 // — na końcu. Tylko porównanie bez względu na wielkość liter daje kolejność
-// z kontraktu, a dwie „hale" (collation widzi w nich tę samą nazwę)
-// rozstrzyga `id`.
-it('oddaje obiekty po nazwie bez względu na wielkość liter, remis po id, w kształcie z kontraktu', function () {
+// z kontraktu. Dwie „hale" (collation widzi w nich tę samą nazwę) wychodzą
+// w kolejności `id`, ale remisu test nie przypina: InnoDB trzyma wiersze
+// w kolejności klucza głównego, więc oddaje je tak samo także bez
+// `orderBy('id')`.
+it('oddaje obiekty po nazwie bez względu na wielkość liter, w kształcie z kontraktu', function () {
     $organizer = User::factory()->create();
     $tournament = Tournament::factory()->for($organizer)->create();
     $stadium = Venue::factory()->for($tournament)->create(['name' => 'stadion', 'address' => null]);
