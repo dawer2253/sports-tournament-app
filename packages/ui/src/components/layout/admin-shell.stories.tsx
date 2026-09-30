@@ -22,6 +22,13 @@ type Story = StoryObj<typeof meta>
 /** Turniej demo w kształcie, w jakim shell go przyjmuje. */
 const turniej = tournamentList[0]!
 
+/** Argumenty shella wewnątrz turnieju, w układzie nagłówka z makiet. */
+const wTurnieju = {
+  tournament: turniej,
+  title: turniej.name,
+  subtitle: `${turniej.sport.name} · /t/${turniej.slug}`,
+}
+
 const SEKCJE = ['Drużyny', 'Obiekty', 'Ustawienia', 'Terminarz', 'Drabinka', 'Statystyki']
 
 /**
@@ -56,10 +63,8 @@ export const Domyslny: Story = {
  */
 export const WTurnieju: Story = {
   args: {
+    ...wTurnieju,
     active: 'teams',
-    tournament: turniej,
-    title: turniej.name,
-    subtitle: `${turniej.sport.name} · /t/${turniej.slug}`,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -97,10 +102,8 @@ export const WTurnieju: Story = {
  */
 export const NawigacjaCzesciowa: Story = {
   args: {
+    ...wTurnieju,
     active: 'venues',
-    tournament: turniej,
-    title: turniej.name,
-    subtitle: `${turniej.sport.name} · /t/${turniej.slug}`,
     navHref: (key: AdminNavKey) =>
       ({ dashboard: '/', tournament: '/tournaments/1', teams: '/tournaments/1/teams', venues: '/tournaments/1/venues', settings: '/tournaments/1/settings' } as Partial<Record<AdminNavKey, string>>)[key],
     onNavigate: fn(),

@@ -3,6 +3,7 @@ import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Settings,
   Trophy, Search, Bell, LogOut, GitFork,
 } from 'lucide-react'
+import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 import type { TournamentRow } from '../data/tournament-row'
 import { TournamentStatusBadge } from '../data/tournament-status-badge'
@@ -111,20 +112,48 @@ function navLink(key: AdminNavKey, { active, navHref, onNavigate }: NavProps) {
   }
 }
 
+const sidebarLinkVariants = cva(
+  [
+    'relative flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+    'before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity',
+  ],
+  {
+    variants: {
+      active: {
+        true: 'bg-sidebar-accent font-medium text-sidebar-accent-foreground before:opacity-100',
+        false: 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+      },
+      disabled: { true: 'cursor-default opacity-50 hover:bg-transparent', false: '' },
+    },
+  },
+)
+
+const tournamentCardVariants = cva(
+  'mx-1 mt-3 block cursor-pointer rounded-md border border-primary/40 bg-background/60 px-3 py-2 transition-colors hover:bg-sidebar-accent/50',
+  {
+    variants: {
+      disabled: { true: 'cursor-default opacity-50 hover:bg-background/60', false: '' },
+    },
+  },
+)
+
+const sectionTabVariants = cva(
+  'flex shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-3 pb-2 text-sm transition-colors',
+  {
+    variants: {
+      active: {
+        true: 'border-primary font-medium text-foreground',
+        false: 'border-transparent text-muted-foreground hover:text-foreground',
+      },
+      disabled: { true: 'cursor-default opacity-50 hover:text-muted-foreground', false: '' },
+    },
+  },
+)
+
 function TournamentsLink(nav: NavProps) {
   const { isActive, isDisabled, linkProps } = navLink('dashboard', nav)
   return (
-    <a
-      {...linkProps}
-      className={cn(
-        'relative flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-        'before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-primary before:opacity-0 before:transition-opacity',
-        isActive
-          ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground before:opacity-100'
-          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
-        isDisabled && 'cursor-default opacity-50 hover:bg-transparent',
-      )}
-    >
+    <a {...linkProps} className={sidebarLinkVariants({ active: isActive, disabled: isDisabled })}>
       <LayoutGrid className={cn('size-4 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} />
       Turnieje
     </a>
@@ -138,13 +167,7 @@ function TournamentsLink(nav: NavProps) {
 function TournamentCard({ tournament, ...nav }: NavProps & { tournament: AdminShellTournament }) {
   const { isDisabled, linkProps } = navLink('tournament', nav)
   return (
-    <a
-      {...linkProps}
-      className={cn(
-        'mx-1 mt-3 block cursor-pointer rounded-md border border-primary/40 bg-background/60 px-3 py-2 transition-colors hover:bg-sidebar-accent/50',
-        isDisabled && 'cursor-default opacity-50 hover:bg-background/60',
-      )}
-    >
+    <a {...linkProps} className={tournamentCardVariants({ disabled: isDisabled })}>
       <span className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Turniej</span>
       <span className="mt-0.5 block truncate text-sm font-semibold" title={tournament.name}>{tournament.name}</span>
       <span className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
@@ -171,13 +194,7 @@ function SectionTabs(nav: NavProps) {
             key={key}
             {...linkProps}
             title={isDisabled ? 'Wkrótce' : undefined}
-            className={cn(
-              'flex shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap border-b-2 px-3 pb-2 text-sm transition-colors',
-              isActive
-                ? 'border-primary font-medium text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-              isDisabled && 'cursor-default opacity-50 hover:text-muted-foreground',
-            )}
+            className={sectionTabVariants({ active: isActive, disabled: isDisabled })}
           >
             <Icon className={cn('size-4', isActive && 'text-primary')} />
             {label}
