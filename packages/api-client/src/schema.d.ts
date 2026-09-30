@@ -690,12 +690,12 @@ export interface paths {
          *     `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
          *     panel musi o tym ostrzec przed zapisem.
          *
-         *     To jedyne miejsce, w którym zmienia się `status` (znaczenie stanów:
+         *     Zmienia też `status` (znaczenie stanów i to, kto je ustawia:
          *     `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
          *     warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
-         *     nie przechodzi do `draft` z innego stanu — taka próba daje `422` pod
-         *     `status`. Wysłanie `draft` turniejowi, który już jest w `draft`, nie
-         *     jest przejściem, więc zakaz go nie dotyczy.
+         *     nie przechodzi do `draft` z innego stanu — taka próba daje `422`
+         *     z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
+         *     w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
          */
         patch: {
             parameters: {
