@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Venue;
+use Illuminate\Testing\TestResponse;
 use Spectator\Spectator;
 
 beforeEach(function () {
@@ -11,14 +12,23 @@ beforeEach(function () {
 // są wspólne z `POST` (`VenueRequest`) i tam mają pełny komplet przypadków;
 // tu zostaje to, czym `PATCH` się różni.
 
+/**
+ * Ląduje w globalnej przestrzeni nazw, wspólnej dla całego przebiegu Pesta,
+ * stąd nazwa, której nie użyje inny plik.
+ */
+function patchVenue(Venue $venue, array $body): TestResponse
+{
+    return actingAsOrganizer($venue->tournament->user)
+        ->patchJson("/api/v1/venues/{$venue->id}", $body);
+}
+
 it('zmienia nazwę i adres obiektu', function () {
     $venue = Venue::factory()->create(['name' => 'Hala Ursus']);
 
-    actingAsOrganizer($venue->tournament->user)
-        ->patchJson("/api/v1/venues/{$venue->id}", [
-            'name' => 'Hala Ursus II',
-            'address' => 'ul. Sosnkowskiego 3, Warszawa',
-        ])
+    patchVenue($venue, [
+        'name' => 'Hala Ursus II',
+        'address' => 'ul. Sosnkowskiego 3, Warszawa',
+    ])
         ->assertValidRequest()
         ->assertValidResponse(200)
         ->assertJsonPath('data', [
@@ -36,8 +46,7 @@ it('zmienia nazwę i adres obiektu', function () {
 it('przyjmuje własną nazwę obiektu', function (string $name) {
     $venue = Venue::factory()->create(['name' => 'Hala Ursus']);
 
-    actingAsOrganizer($venue->tournament->user)
-        ->patchJson("/api/v1/venues/{$venue->id}", ['name' => $name])
+    patchVenue($venue, ['name' => $name])
         ->assertValidResponse(200)
         ->assertJsonPath('data.name', $name);
 })->with([
@@ -49,8 +58,7 @@ it('odrzuca nazwę innego obiektu tego turnieju', function () {
     $venue = Venue::factory()->create(['name' => 'Hala Ursus']);
     Venue::factory()->for($venue->tournament)->create(['name' => 'Boisko Bemowo']);
 
-    actingAsOrganizer($venue->tournament->user)
-        ->patchJson("/api/v1/venues/{$venue->id}", ['name' => 'boisko bemowo'])
+    patchVenue($venue, ['name' => 'boisko bemowo'])
         ->assertValidResponse(422)
         ->assertJsonPath('errors.name', ['W tym turnieju jest już obiekt o tej nazwie.']);
 
@@ -65,8 +73,7 @@ it('nie rusza pól pominiętych w ciele', function () {
         'address' => 'ul. Sosnkowskiego 3, Warszawa',
     ]);
 
-    actingAsOrganizer($venue->tournament->user)
-        ->patchJson("/api/v1/venues/{$venue->id}", [])
+    patchVenue($venue, [])
         ->assertValidResponse(200)
         ->assertJsonPath('data.name', 'Hala Ursus')
         ->assertJsonPath('data.address', 'ul. Sosnkowskiego 3, Warszawa');
@@ -75,8 +82,7 @@ it('nie rusza pól pominiętych w ciele', function () {
 it('czyści adres wysłany jako null albo pusty napis', function (?string $address) {
     $venue = Venue::factory()->create(['address' => 'ul. Sosnkowskiego 3, Warszawa']);
 
-    actingAsOrganizer($venue->tournament->user)
-        ->patchJson("/api/v1/venues/{$venue->id}", ['address' => $address])
+    patchVenue($venue, ['address' => $address])
         ->assertValidResponse(200)
         ->assertJsonPath('data.address', null);
 
@@ -91,8 +97,7 @@ it('czyści adres wysłany jako null albo pusty napis', function (?string $addre
 it('odrzuca pustą nazwę', function (?string $name) {
     $venue = Venue::factory()->create(['name' => 'Hala Ursus']);
 
-    actingAsOrganizer($venue->tournament->user)
-        ->patchJson("/api/v1/venues/{$venue->id}", ['name' => $name])
+    patchVenue($venue, ['name' => $name])
         ->assertValidResponse(422)
         ->assertJsonValidationErrors('name');
 

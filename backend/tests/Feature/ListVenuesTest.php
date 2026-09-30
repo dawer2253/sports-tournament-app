@@ -9,8 +9,8 @@ beforeEach(function () {
     Spectator::using('openapi.yaml');
 });
 
-// 401, 403 i 404 tej trasy pilnuje `SubtreeAuthorizationTest`, razem z każdą
-// inną trasą poddrzewa turnieju. Tu zostaje szczęśliwa ścieżka i izolacja listy.
+// 401 i 403 tej trasy pilnuje `SubtreeAuthorizationTest`, razem z każdą inną
+// trasą poddrzewa turnieju. Tu zostaje szczęśliwa ścieżka i izolacja listy.
 
 // Kolejność wstawiania to `stadion`, `Hala`, `Orlik`, `hala`. Sortowanie po
 // `id` dałoby `stadion` na początku, a binarne (wielkie litery przed małymi)
@@ -20,21 +20,21 @@ beforeEach(function () {
 it('oddaje obiekty po nazwie bez względu na wielkość liter, remis po id, w kształcie z kontraktu', function () {
     $organizer = User::factory()->create();
     $tournament = Tournament::factory()->for($organizer)->create();
-    $stadion = Venue::factory()->for($tournament)->create(['name' => 'stadion', 'address' => null]);
-    $hala = Venue::factory()->for($tournament)->create([
+    $stadium = Venue::factory()->for($tournament)->create(['name' => 'stadion', 'address' => null]);
+    $hall = Venue::factory()->for($tournament)->create([
         'name' => 'Hala',
         'address' => 'ul. Sosnkowskiego 3, Warszawa',
     ]);
-    $orlik = Venue::factory()->for($tournament)->create(['name' => 'Orlik']);
-    $halaDruga = Venue::factory()->for($tournament)->create(['name' => 'hala']);
+    $pitch = Venue::factory()->for($tournament)->create(['name' => 'Orlik']);
+    $lowercaseHall = Venue::factory()->for($tournament)->create(['name' => 'hala']);
 
     actingAsOrganizer($organizer)
         ->getJson("/api/v1/tournaments/{$tournament->id}/venues")
         ->assertValidRequest()
         ->assertValidResponse(200)
-        ->assertJsonPath('data.*.id', [$hala->id, $halaDruga->id, $orlik->id, $stadion->id])
+        ->assertJsonPath('data.*.id', [$hall->id, $lowercaseHall->id, $pitch->id, $stadium->id])
         ->assertJsonPath('data.0', [
-            'id' => $hala->id,
+            'id' => $hall->id,
             'tournamentId' => $tournament->id,
             'name' => 'Hala',
             'address' => 'ul. Sosnkowskiego 3, Warszawa',

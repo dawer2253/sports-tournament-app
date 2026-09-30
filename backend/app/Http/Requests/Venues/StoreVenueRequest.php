@@ -21,6 +21,10 @@ class StoreVenueRequest extends VenueRequest
     /**
      * Limit to stan turnieju, nie pole z ciała, więc błąd idzie pod `venues`
      * (tak stanowi kontrakt). `venues()` pomija obiekty usunięte miękko.
+     * Forma „obiekty" pasuje do 32; zmieniając `MAX_VENUES`, popraw też
+     * odmianę. `trans_choice` tu nie pomoże: z tekstem spoza `lang/` bierze
+     * reguły języka zapasowego (`en`). Test limitu ma liczbę wpisaną wprost,
+     * więc zmiana stałej go zaczerwieni.
      *
      * Sprawdzenie i zapis to dwa kroki, więc równoległe żądania mogą razem
      * przekroczyć limit. Dla panelu jednego organizera to akceptowalne;

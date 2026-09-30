@@ -9,11 +9,12 @@ beforeEach(function () {
     Spectator::using('openapi.yaml');
 });
 
-// 401, 403 i 404 tej trasy pilnuje `SubtreeAuthorizationTest`.
-//
-// Helper ląduje w globalnej przestrzeni nazw, wspólnej dla całego przebiegu
-// Pesta, stąd nazwa, której nie użyje inny plik.
+// 401 i 403 tej trasy pilnuje `SubtreeAuthorizationTest`.
 
+/**
+ * Ląduje w globalnej przestrzeni nazw, wspólnej dla całego przebiegu Pesta,
+ * stąd nazwa, której nie użyje inny plik.
+ */
 function postVenueTo(Tournament $tournament, array $body): TestResponse
 {
     return actingAsOrganizer($tournament->user)
@@ -64,6 +65,21 @@ it('odrzuca nazwę pustą albo dłuższą niż 120 znaków', function (?string $
     'brak' => [null],
     'same spacje' => ['   '],
     '121 znaków' => [str_repeat('a', 121)],
+]);
+
+// Kontrakt przyjmuje w obu polach wyłącznie napis (`address` także `null`).
+it('odrzuca pole, które nie jest napisem', function (array $body, string $field) {
+    $tournament = Tournament::factory()->create();
+
+    postVenueTo($tournament, ['name' => 'Hala Ursus', ...$body])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors($field);
+
+    expect($tournament->venues()->count())->toBe(0);
+})->with([
+    'liczba w name' => [['name' => 123], 'name'],
+    'tablica w name' => [['name' => ['Hala Ursus']], 'name'],
+    'liczba w address' => [['address' => 123], 'address'],
 ]);
 
 // Komunikat przypina polską nazwę pola z `lang/pl/validation.php`.
