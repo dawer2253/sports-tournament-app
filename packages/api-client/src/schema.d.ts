@@ -394,6 +394,21 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    /**
+                     * @description Zawęża listę do podanych stanów, np. `draft,active`. Bez parametru
+                     *     odpowiedź obejmuje wszystkie turnieje organizera. Filtr działa przed
+                     *     stronicowaniem, więc `meta` opisuje zbiór już zawężony.
+                     *
+                     *     Wartość spoza `TournamentStatus`, powtórzona albo pusta daje `422` —
+                     *     to literówka w adresie, nie prośba o brak filtra. Dlaczego lista po
+                     *     przecinku, a nie pojedyncza wartość ani powtórzony klucz: ADR-0009
+                     *     (`docs/adr/0009-filtr-status-jedzie-lista-po-przecinku.md`).
+                     * @example [
+                     *       "draft",
+                     *       "active"
+                     *     ]
+                     */
+                    status?: components["schemas"]["TournamentStatus"][];
                     page?: number;
                     perPage?: number;
                 };
@@ -403,7 +418,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Stronicowana lista turniejów */
+                /** @description Stronicowana lista turniejów, opcjonalnie zawężona do podanych stanów */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -485,6 +500,7 @@ export interface paths {
                     };
                 };
                 401: components["responses"]["Unauthenticated"];
+                422: components["responses"]["ValidationError"];
             };
         };
         put?: never;

@@ -17,5 +17,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // Vitest czyta `.env` przez Vite, a `AGENTS.md` każe tam wpisać adres Laravela,
+    // żeby przełączyć aplikację z mocka. Bez przypięcia klient strzelałby pod inny
+    // host niż handlery msw i `onUnhandledRequest: 'error'` wywalałby cały zestaw.
+    env: { VITE_API_URL: 'http://127.0.0.1:4010' },
   },
 });

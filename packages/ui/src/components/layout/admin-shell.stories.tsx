@@ -91,6 +91,9 @@ export const MenuKontaZKlawiatury: Story = {
     await expect([width, height]).toEqual([32, 32])
     // Awatar ma się mieścić w obszarze treści przycisku, a nie wystawać na ramkę.
     await expect([trigger.clientWidth, trigger.clientHeight]).toEqual([32, 32])
+    // Obwódka awatara ma kształt kafelka i pierścienia fokusu, a nie okręgu (#59).
+    const triggerRadius = getComputedStyle(trigger).borderTopLeftRadius
+    await expect(getComputedStyle(avatar!, '::after').borderTopLeftRadius).toBe(triggerRadius)
 
     // Space otwiera, Escape zamyka i oddaje fokus triggerowi.
     await userEvent.keyboard(' ')
