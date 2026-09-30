@@ -65,9 +65,10 @@ niesie odtąd polszczyznę, więc wersja wielojęzyczna byłaby zmianą tutaj, a
 w kliencie.
 
 Decyzja obejmuje konsumentów kontraktu. Makiety w `packages/ui` renderują
-`lib/demo-data.ts` i kontraktu nie znają, więc `public-standings.tsx` zostaje
-na razie ze sztywnym napisem „Bramki" — od tej zmiany makieta i realny ekran
-mówią o zdobyczach inaczej. Domknięcie tego jest osobnym ticketem (#38).
+`lib/demo-data.ts` i kontraktu nie znają. `public-standings.tsx` miała
+początkowo sztywny napis „Bramki"; od #38 bierze etykietę ze
+`standingsScoreLabel`, który leży w danych demo obok tabeli, tak jak w
+kontrakcie.
 
 Endpoint tabel po stronie backendu jeszcze nie istnieje — kiedy powstanie,
 `scoreLabel` wypełnia się ze sportu turnieju, a nie z pola w bazie: tabela nie

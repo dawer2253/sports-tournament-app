@@ -50,12 +50,12 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": {
-                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZ",
+                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZaCdEfGhIjKlMnOpQrStU1a2b3c4d",
                          *         "user": {
                          *           "id": 1,
                          *           "name": "Dawid Patko",
                          *           "email": "dawid@example.com",
-                         *           "createdAt": "2026-09-01T10:00:00+02:00"
+                         *           "createdAt": "2026-09-01T08:00:00+00:00"
                          *         }
                          *       }
                          *     }
@@ -116,12 +116,12 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": {
-                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZ",
+                         *         "token": "1|4bT9xQkR7fN2wUhLpVmZaCdEfGhIjKlMnOpQrStU1a2b3c4d",
                          *         "user": {
                          *           "id": 1,
                          *           "name": "Dawid Patko",
                          *           "email": "dawid@example.com",
-                         *           "createdAt": "2026-09-01T10:00:00+02:00"
+                         *           "createdAt": "2026-09-01T08:00:00+00:00"
                          *         }
                          *       }
                          *     }
@@ -207,7 +207,7 @@ export interface paths {
                          *         "id": 1,
                          *         "name": "Dawid Patko",
                          *         "email": "dawid@example.com",
-                         *         "createdAt": "2026-09-01T10:00:00+02:00"
+                         *         "createdAt": "2026-09-01T08:00:00+00:00"
                          *       }
                          *     }
                          */
@@ -384,7 +384,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Turnieje zalogowanego organizera */
+        /**
+         * Turnieje zalogowanego organizera
+         * @description Od najnowszego: `createdAt` malejąco, a turnieje założone w tej samej
+         *     chwili rozstrzyga `id`, też malejąco. Kolejność jest przez to stabilna
+         *     między stronami — żaden turniej nie wypada ani nie dubluje się na
+         *     granicy strony.
+         */
         get: {
             parameters: {
                 query?: {
@@ -406,6 +412,34 @@ export interface paths {
                         /**
                          * @example {
                          *       "data": [
+                         *         {
+                         *           "id": 2,
+                         *           "name": "Puchar Zimowy",
+                         *           "slug": "puchar-zimowy",
+                         *           "status": "draft",
+                         *           "sport": {
+                         *             "id": 2,
+                         *             "code": "basketball",
+                         *             "name": "Koszykówka"
+                         *           },
+                         *           "branding": {
+                         *             "logoUrl": null,
+                         *             "primaryColor": "#1F7A45"
+                         *           },
+                         *           "points": {
+                         *             "win": 2,
+                         *             "draw": 0,
+                         *             "loss": 1
+                         *           },
+                         *           "tiebreakers": [
+                         *             "points",
+                         *             "head_to_head",
+                         *             "score_diff"
+                         *           ],
+                         *           "teamsCount": 8,
+                         *           "createdAt": "2026-09-10T07:00:00+00:00",
+                         *           "updatedAt": "2026-09-10T07:00:00+00:00"
+                         *         },
                          *         {
                          *           "id": 1,
                          *           "name": "Liga Osiedlowa 2026",
@@ -432,36 +466,8 @@ export interface paths {
                          *             "score_for"
                          *           ],
                          *           "teamsCount": 3,
-                         *           "createdAt": "2026-09-01T10:00:00+02:00",
-                         *           "updatedAt": "2026-09-14T18:30:00+02:00"
-                         *         },
-                         *         {
-                         *           "id": 2,
-                         *           "name": "Puchar Zimowy",
-                         *           "slug": "puchar-zimowy",
-                         *           "status": "draft",
-                         *           "sport": {
-                         *             "id": 2,
-                         *             "code": "basketball",
-                         *             "name": "Koszykówka"
-                         *           },
-                         *           "branding": {
-                         *             "logoUrl": null,
-                         *             "primaryColor": "#1F7A45"
-                         *           },
-                         *           "points": {
-                         *             "win": 2,
-                         *             "draw": 0,
-                         *             "loss": 1
-                         *           },
-                         *           "tiebreakers": [
-                         *             "points",
-                         *             "head_to_head",
-                         *             "score_diff"
-                         *           ],
-                         *           "teamsCount": 8,
-                         *           "createdAt": "2026-09-10T09:00:00+02:00",
-                         *           "updatedAt": "2026-09-10T09:00:00+02:00"
+                         *           "createdAt": "2026-09-01T08:00:00+00:00",
+                         *           "updatedAt": "2026-09-14T16:30:00+00:00"
                          *         }
                          *       ],
                          *       "meta": {
@@ -544,8 +550,8 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "teamsCount": 0,
-                         *         "createdAt": "2026-09-01T10:00:00+02:00",
-                         *         "updatedAt": "2026-09-01T10:00:00+02:00"
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-01T08:00:00+00:00"
                          *       }
                          *     }
                          */
@@ -619,8 +625,8 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "teamsCount": 3,
-                         *         "createdAt": "2026-09-01T10:00:00+02:00",
-                         *         "updatedAt": "2026-09-14T18:30:00+02:00"
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-14T16:30:00+00:00"
                          *       }
                          *     }
                          */
@@ -756,6 +762,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -778,6 +785,9 @@ export interface paths {
          * Fazy turnieju
          * @description Turniej ma zawsze co najmniej jedną fazę, także gdy jest zwykłą ligą.
          *     Endpointy zapisu dla faz wchodzą w v0.2 razem z silnikiem rozgrywek.
+         *
+         *     Fazy idą po `order` rosnąco. Drugi klucz nie jest potrzebny, bo `order`
+         *     jest unikalny w obrębie turnieju.
          */
         get: {
             parameters: {
@@ -836,7 +846,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Drużyny w turnieju */
+        /**
+         * Drużyny w turnieju
+         * @description Po `name` rosnąco, a drużyny o tej samej nazwie rozstrzyga `id`, też rosnąco.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -858,25 +871,28 @@ export interface paths {
                          * @example {
                          *       "data": [
                          *         {
-                         *           "id": 1,
+                         *           "id": 3,
                          *           "tournamentId": 1,
-                         *           "name": "Wilki Bemowo",
+                         *           "name": "Orły Bielany",
                          *           "logoUrl": null,
-                         *           "groupId": null
+                         *           "groupId": null,
+                         *           "playersCount": 3
                          *         },
                          *         {
                          *           "id": 2,
                          *           "tournamentId": 1,
                          *           "name": "Sokoły Ursus",
                          *           "logoUrl": null,
-                         *           "groupId": null
+                         *           "groupId": null,
+                         *           "playersCount": 3
                          *         },
                          *         {
-                         *           "id": 3,
+                         *           "id": 1,
                          *           "tournamentId": 1,
-                         *           "name": "Orły Bielany",
+                         *           "name": "Wilki Bemowo",
                          *           "logoUrl": null,
-                         *           "groupId": null
+                         *           "groupId": null,
+                         *           "playersCount": 3
                          *         }
                          *       ]
                          *     }
@@ -892,7 +908,15 @@ export interface paths {
             };
         };
         put?: never;
-        /** Dodaj drużynę */
+        /**
+         * Dodaj drużynę
+         * @description Nazwa jest unikalna wśród drużyn turnieju, bez względu na wielkość
+         *     liter. Spacje na brzegach nazwy są obcinane, a drużyna usunięta nie
+         *     blokuje nazwy. Konflikt nazw daje `422` z błędem pod `name`.
+         *
+         *     Turniej mieści najwyżej 128 drużyn. Próba dodania kolejnej daje `422`
+         *     z błędem pod `teams`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -928,7 +952,8 @@ export interface paths {
                          *         "tournamentId": 1,
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
-                         *         "groupId": null
+                         *         "groupId": null,
+                         *         "playersCount": 0
                          *       }
                          *     }
                          */
@@ -939,6 +964,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -982,7 +1008,8 @@ export interface paths {
                          *         "tournamentId": 1,
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
-                         *         "groupId": null
+                         *         "groupId": null,
+                         *         "playersCount": 3
                          *       }
                          *     }
                          */
@@ -1000,8 +1027,10 @@ export interface paths {
         post?: never;
         /**
          * Usuń drużynę
-         * @description Odrzucane z kodem `422`, jeżeli drużyna wystąpiła w rozegranym meczu:
-         *     usunięcie zmieniłoby tabelę wstecz.
+         * @description Usuwa także zawodników drużyny.
+         *
+         *     Daje `422` z błędem pod `id`, jeżeli drużyna wystąpiła w rozegranym
+         *     meczu: usunięcie zmieniłoby tabelę wstecz.
          */
         delete: {
             parameters: {
@@ -1031,7 +1060,11 @@ export interface paths {
         head?: never;
         /**
          * Zmień drużynę
-         * @description Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
+         * @description Nazwa podlega tym samym zasadom co przy `POST
+         *     /tournaments/{tournament}/teams`, a konflikt nazw daje `422` z błędem
+         *     pod `name`.
+         *
+         *     Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
          *     tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
          */
         patch: {
@@ -1113,6 +1146,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -1131,7 +1165,11 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Zawodnicy drużyny */
+        /**
+         * Zawodnicy drużyny
+         * @description Po `number` rosnąco, a zawodnicy bez numeru na końcu. Przy tym samym
+         *     numerze (albo jego braku) decyduje `name`, a potem `id`, oba rosnąco.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1153,13 +1191,6 @@ export interface paths {
                          * @example {
                          *       "data": [
                          *         {
-                         *           "id": 1,
-                         *           "teamId": 1,
-                         *           "name": "Marek Nowak",
-                         *           "number": 9,
-                         *           "position": "napastnik"
-                         *         },
-                         *         {
                          *           "id": 2,
                          *           "teamId": 1,
                          *           "name": "Piotr Kowal",
@@ -1172,6 +1203,13 @@ export interface paths {
                          *           "name": "Jakub Wrona",
                          *           "number": 7,
                          *           "position": "pomocnik"
+                         *         },
+                         *         {
+                         *           "id": 1,
+                         *           "teamId": 1,
+                         *           "name": "Marek Nowak",
+                         *           "number": 9,
+                         *           "position": "napastnik"
                          *         }
                          *       ]
                          *     }
@@ -1187,7 +1225,16 @@ export interface paths {
             };
         };
         put?: never;
-        /** Dodaj zawodnika */
+        /**
+         * Dodaj zawodnika
+         * @description `number` jest unikalny wśród tych zawodników drużyny, którzy mają
+         *     numer; `null` z niczym nie koliduje, a zawodnik usunięty nie blokuje
+         *     numeru. Konflikt numerów daje `422` z błędem pod `number`. Imię
+         *     i nazwisko mogą się w drużynie powtarzać. `position` to wolny tekst.
+         *
+         *     Drużyna mieści najwyżej 50 zawodników. Próba dodania kolejnego daje
+         *     `422` z błędem pod `players`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1238,6 +1285,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -1286,7 +1334,12 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Zmień zawodnika */
+        /**
+         * Zmień zawodnika
+         * @description `number`, `name` i `position` podlegają tym samym zasadom co przy
+         *     `POST /teams/{team}/players`, a konflikt numerów daje `422` z błędem
+         *     pod `number`.
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -1334,7 +1387,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Obiekty w turnieju */
+        /**
+         * Obiekty w turnieju
+         * @description Po `name` rosnąco, a obiekty o tej samej nazwie rozstrzyga `id`, też rosnąco.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -1381,7 +1437,15 @@ export interface paths {
             };
         };
         put?: never;
-        /** Dodaj obiekt */
+        /**
+         * Dodaj obiekt
+         * @description Nazwa jest unikalna wśród obiektów turnieju, bez względu na wielkość
+         *     liter. Spacje na brzegach nazwy są obcinane, a obiekt usunięty nie
+         *     blokuje nazwy. Konflikt nazw daje `422` z błędem pod `name`.
+         *
+         *     Turniej mieści najwyżej 32 obiekty. Próba dodania kolejnego daje `422`
+         *     z błędem pod `venues`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1429,6 +1493,7 @@ export interface paths {
                 };
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
                 422: components["responses"]["ValidationError"];
             };
         };
@@ -1477,7 +1542,12 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        /** Zmień obiekt */
+        /**
+         * Zmień obiekt
+         * @description Nazwa podlega tym samym zasadom co przy `POST
+         *     /tournaments/{tournament}/venues`, a konflikt nazw daje `422` z błędem
+         *     pod `name`.
+         */
         patch: {
             parameters: {
                 query?: never;
@@ -1600,6 +1670,14 @@ export interface paths {
          * @description Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
          *     z zakończonych meczów. Jedna pozycja na fazę `league` i jedna na każdą
          *     grupę w fazie `group`. Faza `knockout` nie ma tabeli.
+         *
+         *     Przykłady są dwa, po jednym na sport, te same co w
+         *     `/public/t/{slug}/standings`: `pilka` (domyślny, zgodny z seedem demo)
+         *     i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+         *     `Prefer: example=koszykowka`. Drugi przykład jest tu po to, żeby dało
+         *     się sprawdzić, czy panel bierze nagłówek kolumny z odpowiedzi, a nie ze
+         *     sztywnego napisu. `/tournaments/{tournament}` nie ma jeszcze wariantu
+         *     koszykarskiego, więc w panelu przełącznik zmienia tylko tabele.
          */
         get: {
             parameters: {
@@ -1618,69 +1696,6 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": [
-                         *         {
-                         *           "stageId": 1,
-                         *           "stageName": "Faza zasadnicza",
-                         *           "groupId": null,
-                         *           "groupName": null,
-                         *           "scoreLabel": "Bramki",
-                         *           "rows": [
-                         *             {
-                         *               "position": 1,
-                         *               "team": {
-                         *                 "id": 1,
-                         *                 "name": "Wilki Bemowo",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 2,
-                         *               "drawn": 0,
-                         *               "lost": 0,
-                         *               "scoreFor": 5,
-                         *               "scoreAgainst": 1,
-                         *               "scoreDifference": 4,
-                         *               "points": 6
-                         *             },
-                         *             {
-                         *               "position": 2,
-                         *               "team": {
-                         *                 "id": 2,
-                         *                 "name": "Sokoły Ursus",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 1,
-                         *               "drawn": 0,
-                         *               "lost": 1,
-                         *               "scoreFor": 3,
-                         *               "scoreAgainst": 3,
-                         *               "scoreDifference": 0,
-                         *               "points": 3
-                         *             },
-                         *             {
-                         *               "position": 3,
-                         *               "team": {
-                         *                 "id": 3,
-                         *                 "name": "Orły Bielany",
-                         *                 "logoUrl": null
-                         *               },
-                         *               "played": 2,
-                         *               "won": 0,
-                         *               "drawn": 0,
-                         *               "lost": 2,
-                         *               "scoreFor": 1,
-                         *               "scoreAgainst": 5,
-                         *               "scoreDifference": -4,
-                         *               "points": 0
-                         *             }
-                         *           ]
-                         *         }
-                         *       ]
-                         *     }
-                         */
                         "application/json": {
                             data: components["schemas"]["StandingTable"][];
                         };
@@ -2027,7 +2042,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-09-27T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-27T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2061,7 +2076,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-10-04T12:00:00+02:00",
+                         *           "kickoffAt": "2026-10-04T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2095,7 +2110,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "scheduled",
-                         *           "kickoffAt": "2026-10-11T12:00:00+02:00",
+                         *           "kickoffAt": "2026-10-11T10:00:00+00:00",
                          *           "venue": null,
                          *           "winnerToMatchId": null,
                          *           "loserToMatchId": null,
@@ -2202,7 +2217,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "finished",
-                         *           "kickoffAt": "2026-09-20T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-20T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2236,7 +2251,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "finished",
-                         *           "kickoffAt": "2026-09-13T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-13T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2270,7 +2285,7 @@ export interface paths {
                          *           "homePenalties": null,
                          *           "awayPenalties": null,
                          *           "status": "finished",
-                         *           "kickoffAt": "2026-09-06T12:00:00+02:00",
+                         *           "kickoffAt": "2026-09-06T10:00:00+00:00",
                          *           "venue": {
                          *             "id": 1,
                          *             "name": "Boisko Bemowo"
@@ -2453,6 +2468,17 @@ export interface components {
             message: string;
         };
         ValidationError: {
+            /**
+             * @description Pierwszy komunikat z `errors`, a przy kilku błędach naraz
+             *     z doklejonym liczebnikiem pozostałych: „Pole nazwa jest wymagane.
+             *     (i jeszcze 3 błędy)". To nie jest zdanie ogólne, tylko konkret
+             *     pierwszego błędu (przy logowaniu: „Nieprawidłowy e-mail lub
+             *     hasło."), więc nadaje się na komunikat zbiorczy — toast albo
+             *     nagłówek formularza. Pod samym polem pokaż wpis z `errors`, bo
+             *     inaczej ten sam tekst wyjdzie dwa razy.
+             *     Tekst ogólny („Podane dane są nieprawidłowe.") pada wyłącznie
+             *     wtedy, gdy mapa `errors` jest pusta.
+             */
             message: string;
             errors: {
                 [key: string]: string[];
@@ -2474,6 +2500,11 @@ export interface components {
             createdAt: string;
         };
         AuthPayload: {
+            /**
+             * @description Do wysłania w nagłówku `Authorization: Bearer <token>`. Dla klienta
+             *     nieprzezroczysty: jego długość i budowa nie są częścią kontraktu,
+             *     więc nie waliduj go po stronie frontu ani nie rozbieraj na części.
+             */
             token: string;
             user: components["schemas"]["User"];
         };
@@ -2603,7 +2634,11 @@ export interface components {
             type: components["schemas"]["StageType"];
             name: string;
             order: number;
-            /** @description Niepuste wyłącznie dla fazy `group`. */
+            /**
+             * @description Pusta dla faz `league` i `knockout`. W fazie `group` pusta, dopóki
+             *     organizer nie utworzy grup — faza powstaje przy zakładaniu turnieju
+             *     bez nich.
+             */
             groups: components["schemas"]["Group"][];
         };
         /**
@@ -2629,6 +2664,8 @@ export interface components {
              * @description Grupa w fazie `group`. `null`, gdy turniej nie ma fazy grupowej.
              */
             groupId: number | null;
+            /** @description Liczba zawodników drużyny, bez usuniętych. */
+            playersCount: number;
         };
         TeamSummary: {
             /** Format: int64 */
@@ -2830,7 +2867,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "Unauthenticated."
+                 *       "message": "Wymagane zalogowanie."
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -2844,7 +2881,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "This action is unauthorized."
+                 *       "message": "Brak dostępu do zasobu."
                  *     }
                  */
                 "application/json": components["schemas"]["Error"];
@@ -2864,6 +2901,78 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description Żądanie odrzucone przed trasą, np. ścieżka URL z niepoprawnym UTF-8 */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Niepoprawny adres URL."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Metoda HTTP nieobsługiwana przez ścieżkę; dozwolone podaje nagłówek `Allow` */
+        MethodNotAllowed: {
+            headers: {
+                /** @description Metody obsługiwane przez ścieżkę, np. `POST` */
+                Allow?: string;
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Metoda niedozwolona dla tego zasobu."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Ciało żądania przekracza limit serwera */
+        PayloadTooLarge: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Przesłane dane są za duże."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Nieoczekiwany błąd serwera */
+        ServerError: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Wewnętrzny błąd serwera."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Usługa chwilowo niedostępna, np. tryb konserwacji */
+        ServiceUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Usługa chwilowo niedostępna."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Dane nie przeszły walidacji */
         ValidationError: {
             headers: {
@@ -2872,7 +2981,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "Podane dane są nieprawidłowe.",
+                 *       "message": "Pole nazwa jest wymagane.",
                  *       "errors": {
                  *         "name": [
                  *           "Pole nazwa jest wymagane."

@@ -28,11 +28,12 @@ Do zrobienia:
 - [ ] CRUD turnieje (+ slug, branding, format, sport) — BE+admin (J)
 - [ ] CRUD drużyny + zawodnicy — BE+admin (J)
 - [ ] CRUD venues — BE+admin (W)
-- [ ] Seed sportów (piłka, kosz) + `SportRules` (D) — tu ustalamy domyślną punktację i kolejność tiebreaków per sport (decyzja #25)
+- [x] Seed sportów (piłka, kosz) (D) — domyślna punktacja i kolejność tiebreaków per sport ustalone w decyzji #25; klasy strategii sportu nie ma, bo nic w S1 ani S2 jej nie potrzebuje (decyzja #26, [#81](https://github.com/dawer2253/sports-tournament-app/issues/81))
 - [ ] Policies + nested route binding (autoryzacja przez Tournament.user_id) (J)
 
 ## S2 — Liga (D prowadzi) → Demo #1
 - [ ] Generator round-robin (circle method + bye + 1/2 rundy) (D) — bye zostaje wewnątrz generatora, nie trafia do terminarza (decyzja #24)
+  - Razem z generatorem: usuwanie drużyny lub obiektu z zaplanowanymi, nierozegranymi meczami (mapa #78, #80)
 - [ ] Auto-rozkład dat (start + interwał) + ostrzeżenia kolizji (W)
 - [ ] StandingsCalculator on-read (D)
 - [ ] Tiebreaki + rejestr komparatorów + head-to-head mini-tabela (D)
@@ -44,6 +45,7 @@ Do zrobienia:
 - [ ] MatchEvent CRUD (typy wg sportu) (J)
 - [ ] Statystyki/strzelcy (agregacja z eventów) (J)
 - [ ] Public: tabela + terminarz + wyniki (po slug) (J)
+  - Etykiety tiebreaków pod tabelą („Sortowanie: …”), bo `PublicTournament` nie dostaje konfiguracji sportu (#117)
 - [ ] Public: branding (logo/kolor) + polling (W)
 - Kamień: publiczny link do pokazania
 

@@ -65,6 +65,52 @@ export const NawigacjaCzesciowa: Story = {
   },
 }
 
+/**
+ * „Wyloguj" jest jedynym wyjściem z sesji, więc musi dać się wybrać bez
+ * myszki. Test nie klika triggera — dochodzi do niego tabem.
+ */
+export const MenuKontaZKlawiatury: Story = {
+  args: { onLogout: fn() },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    // Treść menu Radix portaluje do `body`, poza `canvasElement`.
+    const page = within(canvasElement.ownerDocument.body)
+
+    // Do triggera prowadzi Tab od sąsiedniego przycisku, nie `focus()` na nim.
+    canvas.getByRole('button', { name: 'Powiadomienia' }).focus()
+    await userEvent.tab()
+    const trigger = canvas.getByRole('button', { name: 'Menu konta' })
+    await expect(trigger).toHaveFocus()
+
+    // Awatar zostaje prezentacyjny i nie zmienia rozmiaru: semantykę niesie
+    // przycisk wokół niego, a nie ręcznie dopisany `tabindex`.
+    const avatar = trigger.querySelector('[data-slot="avatar"]')
+    await expect(avatar).not.toHaveAttribute('tabindex')
+    await expect(avatar).not.toHaveAttribute('role')
+    const { width, height } = avatar!.getBoundingClientRect()
+    await expect([width, height]).toEqual([32, 32])
+    // Awatar ma się mieścić w obszarze treści przycisku, a nie wystawać na ramkę.
+    await expect([trigger.clientWidth, trigger.clientHeight]).toEqual([32, 32])
+
+    // Space otwiera, Escape zamyka i oddaje fokus triggerowi.
+    await userEvent.keyboard(' ')
+    await expect(await page.findByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    await expect(page.queryByRole('menu')).not.toBeInTheDocument()
+    await expect(trigger).toHaveFocus()
+
+    // Enter otwiera z fokusem na pierwszej pozycji, strzałka przechodzi na
+    // „Wyloguj", Enter wybiera.
+    await userEvent.keyboard('{Enter}')
+    await expect(await page.findByRole('menuitem', { name: 'Ustawienia konta' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    const logoutItem = page.getByRole('menuitem', { name: 'Wyloguj' })
+    await expect(logoutItem).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onLogout).toHaveBeenCalledOnce()
+  },
+}
+
 /** `/me` jest w drodze. Header mówi, że czeka, a nie że konta nie ma. */
 export const KontoWczytywane: Story = {
   args: { user: 'pending' },

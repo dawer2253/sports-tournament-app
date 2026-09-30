@@ -7,6 +7,13 @@ import * as Stories from './admin-tournament-create.stories'
 
 Kreator zakładania nowego turnieju w panelu administratora: konfiguracja w 4 krokach (Sport → Format → Drużyny → Terminarz).
 
+> **Ten ekran wyprzedza kontrakt.** Panel dowozi dziś (#28) jedną stronę
+> z polami, które przyjmuje `POST /tournaments`: nazwa, sport, format. Kroki
+> „Drużyny" i „Terminarz" oraz ustawienia ligi (mecz i rewanż, auto-harmonogram,
+> punktacja) nie mają endpointów w v0.1 — wchodzą razem z silnikiem rozgrywek
+> w v0.2. Makieta zostaje jako kierunek, nie jako opis tego, co stoi.
+> Implementacja: `apps/admin/src/pages/tournament-create.tsx`.
+
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
@@ -14,7 +21,7 @@ Poprowadzić organizatora przez utworzenie turnieju krok po kroku, tak aby nie m
 
 ## Dane (wejście)
 - Wybrany sport (krok 1): decyduje o dostępnych regułach punktacji (np. koszykówka bez remisów).
-- Wybrany format (krok 2): liga każdy z każdym, puchar (drabinka), grupy + playoff.
+- Wybrany format (krok 2): liga każdy z każdym, puchar (drabinka), grupy + playoff. Klucze jak w kontrakcie (`TournamentFormat`): `league`, `knockout`, `groups_playoff`.
 - Ustawienia ligi: `mecz i rewanż` (bool), `auto-harmonogram dat` (bool), `punkty za zwycięstwo` (liczba, domyślnie 3), `punkty za remis` (liczba, domyślnie 1).
 
 ## Reguły

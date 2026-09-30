@@ -78,6 +78,60 @@ Tailwindem i widokiem `welcome.blade.php` — zostały usunięte razem z
 `package.json` albo widok z `@vite`, usuń go. `/` zostaje health checkiem
 zwracającym `{"status":"ok"}` — na tym stoi smoke test środowiska.
 
+**404 mówi w tym API jednym zdaniem.** [`bootstrap/app.php`](bootstrap/app.php)
+przesłania na `api/*` każdą odpowiedź 404 i oddaje `Nie znaleziono zasobu.` —
+tak stanowi `components/responses/NotFound`, wspólny dla wszystkich ścieżek.
+Framework ma tu cztery drogi (brak trasy, brak modelu, goły `abort(404)`,
+`denyAsNotFound()` z policy), wszystkie po angielsku albo z tekstem spod kodu,
+a ta od modelu wycieka nazwę klasy Eloquenta wprost na ekran. Czwarta nie jest
+`NotFoundHttpException`, tylko zwykłym `HttpException(404)` — dlatego
+przesłonięcie idzie po statusie, nie po klasie wyjątku.
+
+Oryginalny komunikat nie trafia przy tym do `laravel.log` —
+`HttpException` i `ModelNotFoundException` są w `Handler::$internalDontReport`,
+więc nie były raportowane nigdy. Jedyny ślad po tekście skasowanym z takiego
+wyjątku (404, 403 i reszta kodów z mapy niżej) to `Log::debug` w samym
+przesłonięciu, zapalany przy `APP_DEBUG`. Wyjątki od tej reguły: 500 ze
+zwykłego wyjątku trafia do `laravel.log` jak dotąd, a 500 w trybie debug zostaje
+nieprzesłonięte, więc tekst zostaje w odpowiedzi. Powody i pomiary:
+[`docs/research/komunikaty-bledow-frameworka-a-kontrakt.md`](../docs/research/komunikaty-bledow-frameworka-a-kontrakt.md).
+
+**Tak samo 401 i 403**: `Wymagane zalogowanie.` (`Unauthenticated`) i `Brak
+dostępu do zasobu.` (`Forbidden`). Framework wpisuje tu napisy stałe
+z pominięciem translatora, więc `lang/pl` ich nie przetłumaczy — polski tekst
+daje wyłącznie przesłonięcie w `bootstrap/app.php`.
+
+**Tak samo kody, które oddaje warstwa frameworka na dowolnym żądaniu**, choć
+żadna ścieżka kontraktu ich nie wypisuje: 400 (`BadRequest`), 405
+(`MethodNotAllowed`), 413 (`PayloadTooLarge`), 500 (`ServerError`) i 503
+(`ServiceUnavailable`). Kontrakt trzyma je we wspólnych `components/responses`
+i wspomina w `info.description`. Przesłonięcie idzie przez
+`$exceptions->respond()`, czyli po statusie gotowej odpowiedzi — dzięki temu
+nagłówki (`Allow`, `Retry-After`) zostają, a 422 nie wpada w gałąź 500.
+Tą samą mapą idą 401, 403 i 404. Wyjątki: **500 przy `APP_DEBUG` zostaje nietknięte**,
+z `exception` i `trace`, a odpowiedź z `HttpResponseException` przechodzi bez
+zmian. Raportowanie wyjątku działa jak dotąd.
+
+Wynika z tego **pułapka: własny tekst z `abort(404, '...')`, `abort(403, '...')`,
+`abort(500, '...')` czy `Response::deny('...')` zostanie skasowany po cichu**
+i żaden test tego nie zgłosi. Dotyczy to też JSON-a o jednym z tych statusów
+zwróconego z `render()` wyjątku albo z `Responsable`. Przy 500 różnica jest
+ostra: wyjątek spoza `HttpException` idzie do `laravel.log` jak dotąd, ale tekst
+z `abort(500, '...')` poza `APP_DEBUG` znika bez śladu — `HttpException` nie
+jest raportowany, a w dev tekst widać tylko dlatego, że 500 zostaje wtedy
+nieprzesłonięte. Błąd, który ma zostawić
+ślad na produkcji, rzucaj jako zwykły wyjątek, nie `abort(500)`. Jeżeli jakiś zasób
+naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
+kolejnością, a nie obejście w kontrolerze.
+
+**429 celowo nie ma**, bo nie ma limitera, a kontrakt nie opisuje zachowań,
+których backend nie realizuje. Kto doda pierwszy `throttle`, dokłada razem
+z nim wpis w mapie w `bootstrap/app.php` — **w tej samej mapie, nie w drugim
+`$exceptions->respond()`**, bo `respond()` podmienia jedyny callback zamiast go
+dokładać, więc drugi wyłączyłby całą mapę — komponent w `components/responses`,
+wzmiankę w `info.description` i test w `ErrorResponsesTest` (framework mówi
+tu `Too Many Attempts.`).
+
 ## Schemat i modele
 
 Kształt bazy wynika z ERD w [`docs/PLAN.md`](../docs/PLAN.md) §3. Trzy miejsca
@@ -116,15 +170,97 @@ a wynikają wprost z kontraktu:
   Reguła `confirmed` szuka pola `password_confirmation`, a kontrakt ma pola
   w camelCase.
 
+**Cudzy turniej to 403, nie 404.** Kontrakt rozróżnia `Forbidden` od
+`NotFound`, więc pojedynczy zasób wiąże się z trasy bez zawężania do
+organizera, a własność rozstrzyga [`TournamentPolicy`](app/Policies/TournamentPolicy.php).
+Zawężone zapytanie (`whereBelongsTo`) zostaje dla list, gdzie cudze wiersze po
+prostu nie istnieją. Tak idzie wyłącznie lista turniejów: listy wewnątrz
+turnieju idą przez relację rodzica, patrz „Autoryzacja poddrzewa turnieju" niżej.
+
 Testy nie logują się przez `actingAs()`. Helper `actingAsOrganizer()`
 z `tests/Pest.php` wydaje prawdziwy token, żeby test przechodził tę samą drogę
 co panel.
+
+## Autoryzacja poddrzewa turnieju
+
+Turniej jest jedynym korzeniem własności, więc każdy byt pod nim (drużyna,
+zawodnik, obiekt, faza…) należy do organizera przez turniej. Jeden wzorzec
+obowiązuje wszystkie trasy poddrzewa, także te, które wniosą dopiero tickety
+CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
+[#79](https://github.com/dawer2253/sports-tournament-app/issues/79).
+
+- **`->can('manage', '<parametr>')` na każdej trasie poddrzewa**, nie
+  `Gate::authorize` w kontrolerze. Middleware `can` odpala po wiązaniu modelu,
+  a przed kontrolerem, więc kody idą w kolejności 401 → 404 → 403 → 422.
+  Sprawdzenie w ciele kontrolera oddałoby przy zapisie 422 przed 403, bo Form
+  Request waliduje już przy rozwiązywaniu zależności kontrolera. Obcy
+  organizer dostawałby wtedy listę błędów w polach cudzego zasobu zamiast
+  odmowy.
+- **Jedna zdolność `manage`** na odczyt i zapis, bo turniej ma dokładnie jedno
+  konto z dostępem. **Policy sprawdza wyłącznie własność.** Ograniczenie ze
+  statusu turnieju to reguła domenowa i daje 422, nie 403 — kontrakt definiuje
+  `Forbidden` jako zasób innego organizera.
+- **Policy per model**: `TeamPolicy`, `PlayerPolicy`, `VenuePolicy`, wykrywane
+  automatycznie jak [`TournamentPolicy`](app/Policies/TournamentPolicy.php),
+  bez `Gate::policy()`. Każda ma jedną metodę `manage`, delegującą przez
+  relację do `TournamentPolicy`; zawodnik idzie przez drużynę. Reguła własności
+  żyje w jednym miejscu. Policy dochodzi razem z pierwszą trasą swojego modelu,
+  nie wcześniej.
+- **Cudzy zasób daje 403**, także na płaskich ścieżkach (`/teams/{team}`,
+  `/players/{player}`, `/venues/{venue}`, `/teams/{team}/logo`).
+- **Zasób usunięty miękko daje 404, także cudzy**, bo wiązanie modelu rusza
+  przed `can` i nie widzi usuniętych. **Zawodnik z usuniętą miękko drużyną też
+  ma dawać 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy
+  idąca przez `$player->team` dostałaby `null`, bo `SoftDeletes` ukrywa drużynę
+  także w relacji. Tego wiązania jeszcze nie ma (`Player` nie nadpisuje
+  `resolveRouteBinding`) — wnosi je ticket CRUD zawodników razem z własnym
+  testem, bo test przekrojowy usuwa miękko tylko zasoby z parametrów trasy.
+- **Zagnieżdżone listy i tworzenie autoryzuje rodzic**, ale idą przez jego
+  relację (`$tournament->stages()`, `$team->players()->create()`), nigdy przez
+  `Model::query()` z id z żądania. Policy rodzica przepuści organizera do
+  każdego jego turnieju, więc to relacja odsiewa byty innego turnieju tego
+  samego organizera.
+- **Id cudzego bytu w ciele żądania daje 422** z walidacji („musi należeć do
+  tego turnieju"), nie 403 — to błąd danych, a nie odmowa dostępu do zasobu
+  z adresu. W S1 żadne ciało takiego id nie niesie; reguła jest na v0.2
+  (`venueId` w meczu, `playerId` w zdarzeniu).
+
+**Wzorca pilnuje [`SubtreeAuthorizationTest`](tests/Feature/SubtreeAuthorizationTest.php).**
+Bierze z routera każdą trasę pod `auth:sanctum` z parametrem `{tournament}`,
+`{team}`, `{player}` albo `{venue}` i sprawdza 403 dla obcego organizera
+z pustym ciałem, 404 po miękkim usunięciu i 401 bez tokenu. Sprawdza też wprost,
+że trasa ma `->can('manage', …)`: same odpowiedzi tego nie dowodzą, bo na `GET`
+i na trasie zapisu z samymi polami `sometimes` `Gate::authorize` w kontrolerze
+też daje 403, a 422 przed 403 wyszłoby dopiero na niepustym ciele. Nowa trasa trafia
+tam sama; dopisujesz ją do testu tylko wtedy, gdy wnosi nowy rodzaj parametru
+(wpis w mapie fabryk) albo nie należy do poddrzewa (lista wyjątków — wtedy
+zastanów się dwa razy). Testy per endpoint zostają na szczęśliwą ścieżkę
+i izolację list.
 
 ## Kontrakt API
 
 `packages/api-contract/openapi.yaml` jest jedynym źródłem prawdy o API. Backend
 kontraktu nie definiuje, tylko dowodzi, że go spełnia. Kolejność zmian: spec →
 `npm run contract:generate` → kod. Szczegóły w [rootowym `AGENTS.md`](../AGENTS.md).
+
+**Spectator dowodzi zgodności ze schematem, nie z przykładem.** `message` typu
+`string` przepuszcza dowolny tekst, więc przykład w kontrakcie może się
+rozjechać z odpowiedzią i żaden test tego nie zauważy — tak powstało
+[#53](https://github.com/dawer2253/sports-tournament-app/issues/53). Pisząc
+endpoint, porównaj jego odpowiedź z przykładem ręcznie; dla wspólnych
+odpowiedzi błędów robią to za ciebie testy „mówi przy … dokładnie to, co
+obiecuje kontrakt" w `ErrorResponsesTest`.
+
+Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
+`abort(404, '...')`** — opisuje „Backend oddaje wyłącznie JSON" wyżej.
+
+**Czas w odpowiedziach idzie w UTC**, więc każda data wychodzi z offsetem
+`+00:00`; tak stanowią „Konwencje" w kontrakcie. Wymusza to
+[`config/app.php`](config/app.php) (`'timezone' => 'UTC'`, wpisane na sztywno,
+bez `env()`) — kontrakt niesie samą gwarancję, bez tego szczegółu, żeby front
+nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją do
+podjęcia tutaj, nie edycją jednej linijki w configu, i pociąga za sobą wszystkie
+przykłady w `openapi.yaml`.
 
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
