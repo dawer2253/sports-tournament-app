@@ -81,13 +81,13 @@ const FORMATS: FormatOption[] = [
     selected: true,
   },
   {
-    key: 'cup',
+    key: 'knockout',
     title: 'Puchar (drabinka)',
     description: 'System pucharowy — przegrany odpada, wygrany awansuje do kolejnej rundy.',
     icon: GitFork,
   },
   {
-    key: 'groups',
+    key: 'groups_playoff',
     title: 'Grupy + playoff',
     description: 'Faza grupowa wyłania najlepszych, potem rozgrywki pucharowe.',
     icon: Trophy,

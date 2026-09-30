@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use App\Models\Player;
-use App\Models\Round;
 use App\Models\Sport;
 use App\Models\Stage;
 use App\Models\Team;
@@ -35,18 +34,18 @@ use Illuminate\Database\Seeder;
  * powtórne `db:seed` na stojącej bazie odświeża demo zamiast wywalać się na
  * unikacie.
  *
- * Idempotencja trzyma się jednak tylko dla bazy, w której demo jest jedynym
- * turniejem. Id fazy, kolejek i meczów są nadawane wprost (patrz niżej), więc
- * gdy w bazie stoi **inny** turniej, który zdążył zająć `stages.id = 1` albo
- * `matches.id` z zakresu 1–6, `db:seed` padnie na duplikacie klucza. Dziś to
- * niemożliwe — endpointy zakładania turnieju wchodzą z S1 — ale kto je doda,
- * ten wraca tutaj i wiąże demo z id-kami przydzielanymi autoinkrementem.
+ * Id fazy, kolejek i meczów przydziela autoinkrement. Na świeżej bazie
+ * (`make fresh`) demo jest pierwszym turniejem, więc dostaje te same id co
+ * w przykładach kontraktu (`stageId: 1`, kolejki i mecze 1–6). Powtórne
+ * `db:seed` na stojącej bazie odtwarza poddrzewo pod nowymi id — i to jest
+ * cena przyjęta świadomie. Wcześniej seed nadawał te id na sztywno, ale od
+ * kiedy organizer zakłada turnieje przez API (#47), najniższe id może zająć
+ * jego turniej i seed padał na duplikacie klucza. Zgodność id z mockiem nie
+ * jest warta wywracania seeda na bazie, na której ktoś pracuje: strona
+ * publiczna adresuje turniej slugiem, nie id.
  */
 class DemoTournamentSeeder extends Seeder
 {
-    /** Faza jest jedna i w kontrakcie ma `stageId: 1`. */
-    private const STAGE_ID = 1;
-
     /**
      * Rozegrana pierwsza runda: [kolejka, gospodarz, gość, bramki gospodarza,
      * bramki gościa, termin].
@@ -154,18 +153,11 @@ class DemoTournamentSeeder extends Seeder
         // czyszczenia nie dotyczy — leci kaskadą po fazie.
         $tournament->stages()->delete();
 
-        // Id fazy, kolejek i meczów padają wprost w przykładach kontraktu
-        // (`stageId: 1`, `round.id: 1..6`, `id: 1..6`), więc seed nadaje je sam.
-        // Zdane na autoinkrement rozjechałyby się przy drugim `db:seed`, bo
-        // poddrzewo rozgrywek jest wtedy kasowane i wstawiane od nowa.
-        $stage = Stage::make([
-            'tournament_id' => $tournament->id,
+        $stage = $tournament->stages()->create([
             'type' => 'league',
             'name' => 'Faza zasadnicza',
             'order' => 1,
         ]);
-        $stage->id = self::STAGE_ID;
-        $stage->save();
 
         // Obiekty są dwa, tak jak w przykładzie `GET /tournaments/{tournament}/venues`.
         // Mecze demo toczą się na pierwszym; drugi istnieje, bo panel obiektów ma
@@ -230,8 +222,7 @@ class DemoTournamentSeeder extends Seeder
 
     /**
      * Mecz razem z jego kolejką: w lidze demo każda kolejka ma dokładnie jeden
-     * mecz, więc jedno bez drugiego nie powstaje i numer kolejki jest zarazem
-     * id obu bytów. Wynik podany oznacza mecz rozegrany — innego stanu to demo
+     * mecz, więc jedno bez drugiego nie powstaje. Wynik podany oznacza mecz rozegrany — innego stanu to demo
      * nie potrzebuje.
      */
     private function createMatch(
@@ -244,15 +235,12 @@ class DemoTournamentSeeder extends Seeder
         ?int $homeScore = null,
         ?int $awayScore = null,
     ): GameMatch {
-        $round = Round::make([
-            'stage_id' => $stage->id,
+        $round = $stage->rounds()->create([
             'name' => "Kolejka {$roundNumber}",
             'order' => $roundNumber,
         ]);
-        $round->id = $roundNumber;
-        $round->save();
 
-        $match = GameMatch::make([
+        return GameMatch::create([
             'round_id' => $round->id,
             'stage_id' => $stage->id,
             'group_id' => null,
@@ -265,9 +253,5 @@ class DemoTournamentSeeder extends Seeder
             'kickoff_at' => $kickoff,
             'venue_id' => $venue?->id,
         ]);
-        $match->id = $roundNumber;
-        $match->save();
-
-        return $match;
     }
 }

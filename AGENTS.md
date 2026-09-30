@@ -57,6 +57,9 @@ oddał drabinkę, dołóż do żądania nagłówek `Prefer: example=puchar`. Oso
 przełącznik, `Prefer: example=koszykowka`, oddaje turniej koszykarski —
 obsługują go publiczne tabele **i** `/public/t/{slug}`, więc oba widoki mówią
 o tym samym sporcie, a zdobycze nazywają się w nim „Punkty", a nie „Bramki".
+Tabele panelu (`/tournaments/{tournament}/standings`) mają ten sam przełącznik
+i te same przykłady, ale `/tournaments/{tournament}` nie ma jeszcze wariantu
+koszykarskiego.
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.
@@ -64,7 +67,34 @@ Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 
 Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
-`typecheck`, `build`.
+`typecheck`, `test`, `build`.
+
+### Testy frontendu
+
+`npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
+`test` — dziś `apps/admin` i `apps/public` (vitest + Testing Library + msw,
+jsdom). Obie aplikacje mają ten sam układ: `vitest.config.ts` osobno od
+`vite.config.ts` oraz `src/test/{server,setup}.ts`.
+
+Żądania w testach obu aplikacji przechwytuje msw. Jedna pułapka jest na tyle
+kosztowna, że warto o niej wiedzieć przed pierwszym testem: `server.listen()`
+musi siedzieć **w zasięgu modułu** pliku `src/test/setup.ts` danej aplikacji,
+nie w `beforeAll` — inaczej dostajesz ciche `TypeError: fetch failed`. Powód
+siedzi w komentarzu przy `src/test/server.ts`, razem z zasadą, że handlerów
+domyślnych nie ma, a `onUnhandledRequest: 'error'` pilnuje reszty.
+
+Wybór tego mechanizmu — zamiast testów kontraktowych po mocku albo Chromatica
+rozciągniętego na aplikacje — rozstrzyga
+[#37](https://github.com/dawer2253/sports-tournament-app/issues/37).
+
+`packages/ui` nie ma skryptu `test`, więc `npm test` go pomija. Stories z
+funkcjami `play` puszcza się osobno: `npx vitest run` w `packages/ui` (tryb
+browser, Chromium przez Playwrighta; za pierwszym razem `npx playwright install
+chromium`). **To bramka CI, nie tylko komenda lokalna** — job „Frontend" ma ten
+krok, więc czerwona funkcja `play` robi go czerwonym
+([#71](https://github.com/dawer2253/sports-tournament-app/issues/71)). Merge
+blokuje to tylko wtedy, gdy „Frontend" jest wymaganym sprawdzeniem w ochronie
+gałęzi `main` — to ustawienie repo, nie tego pliku.
 
 ## Zasady globalne
 
@@ -102,7 +132,8 @@ pliku przy odpowiednim eksporcie.
 ## CI/CD
 
 - [`ci.yml`](.github/workflows/ci.yml) — walidacja kontraktu, zgodność klienta,
-  lint, typy, build oraz job backendu (Pint w trybie `--test`, Pest; testy
+  lint, typy, testy frontendu, stories z funkcjami `play` (Vitest w Chromium),
+  build oraz job backendu (Pint w trybie `--test`, Pest; testy
   Spectatora są bramką zgodności z `openapi.yaml`). Backend chodzi tam
   **natywnie, bez Saila**, a jego job odpala się tylko przy zmianach w
   `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki

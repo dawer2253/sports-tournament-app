@@ -3,6 +3,8 @@
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use App\Models\Round;
+use App\Models\Stage;
+use App\Models\Team;
 use App\Models\Tournament;
 
 /*
@@ -139,11 +141,48 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
     // wywaliłby się na unikacie.
     $this->seed();
 
+    $demo = Tournament::firstWhere('slug', 'liga-osiedlowa-2026');
+
+    // Poddrzewo powstaje od nowa pod nowymi id (autoinkrement, patrz docblock
+    // seedera), więc pilnujemy, że stare nie zostało obok: jedna faza, sześć
+    // kolejek i sześć meczów, wszystkie wiszące pod demo.
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
+        ->and(Stage::query()->count())->toBe(1)
+        ->and(Round::query()->count())->toBe(6)
         ->and(GameMatch::query()->count())->toBe(6)
-        // Id fazy, kolejek i meczów padają w przykładach kontraktu, więc nie
-        // wolno im uciec autoinkrementem przy powtórnym seedowaniu.
-        ->and(GameMatch::query()->orderBy('id')->pluck('id')->all())->toBe([1, 2, 3, 4, 5, 6])
-        ->and(GameMatch::query()->pluck('stage_id')->unique()->values()->all())->toBe([1])
-        ->and(Round::query()->orderBy('id')->pluck('id')->all())->toBe([1, 2, 3, 4, 5, 6]);
+        ->and($demo->matches()->count())->toBe(6);
+});
+
+// Od kiedy organizer może założyć turniej przez API, baza deweloperska ma
+// turnieje spoza demo — także założone, zanim ktokolwiek uruchomił seed, więc
+// zajmujące najniższe id. Demo nadawało kiedyś fazie, kolejkom i meczom id
+// 1–6 na sztywno i padało wtedy na duplikacie klucza.
+//
+// `beforeEach` zasiał już demo, więc test najpierw je usuwa (zapytaniem, bo
+// guard rozegranych meczów słusznie nie pozwala skasować modelu; poddrzewo
+// schodzi kaskadą). Id są wymuszone, bo autoinkrement w bazie testowej nie
+// wraca do jedynki między testami i bez tego kolizja by się nie pojawiła.
+it('sieje demo obok turnieju organizera, który zajął najniższe id', function () {
+    Tournament::query()->where('slug', 'liga-osiedlowa-2026')->delete();
+
+    $other = Tournament::factory()->create(['slug' => 'turniej-organizera']);
+    $stage = Stage::factory()->for($other)->create(['id' => 1]);
+    $round = Round::factory()->for($stage)->create(['id' => 1]);
+    [$home, $away] = Team::factory()->count(2)->for($other)->create();
+    GameMatch::factory()->create([
+        'id' => 1,
+        'stage_id' => $stage->id,
+        'round_id' => $round->id,
+        'home_team_id' => $home->id,
+        'away_team_id' => $away->id,
+    ]);
+
+    $this->seed();
+
+    $demo = Tournament::firstWhere('slug', 'liga-osiedlowa-2026');
+
+    expect($demo->matches()->count())->toBe(6)
+        ->and($demo->stages()->count())->toBe(1)
+        ->and($other->stages()->pluck('id')->all())->toBe([1])
+        ->and($other->matches()->pluck('matches.id')->all())->toBe([1]);
 });

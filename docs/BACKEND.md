@@ -90,6 +90,12 @@ samo na mocku i na Laravelu. Sporty seeder pomija — wstawia je migracja, bo s�
 danymi systemowymi (decyzja #10). Sam seeder jest idempotentny: `db:seed` na
 stojącej bazie odświeża demo, zamiast wywalać się na unikacie sluga.
 
+Id fazy, kolejek i meczów zgadzają się z przykładami kontraktu (`stageId: 1`,
+kolejki i mecze 1–6) **tylko po `make fresh`**. Przydziela je autoinkrement, więc
+powtórne `db:seed` na stojącej bazie odtwarza demo pod nowymi id. To cena za to,
+że seed nie pada obok turniejów założonych przez panel — powody w docblocku
+`DemoTournamentSeeder`.
+
 ## Warstwa API i autoryzacja
 
 Stoi. Endpointy `/register`, `/login`, `/logout` i `/me` są zaimplementowane,
