@@ -207,6 +207,8 @@ return [
         'sportId' => 'sport',
         'format' => 'format',
         'address' => 'adres',
+        'number' => 'numer',
+        'position' => 'pozycja',
     ],
 
 ];

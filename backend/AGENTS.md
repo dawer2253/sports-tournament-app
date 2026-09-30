@@ -220,9 +220,9 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
   przed `can` i nie widzi usuniętych. **Zawodnik z usuniętą miękko drużyną też
   ma dawać 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy
   idąca przez `$player->team` dostałaby `null`, bo `SoftDeletes` ukrywa drużynę
-  także w relacji. Tego wiązania jeszcze nie ma (`Player` nie nadpisuje
-  `resolveRouteBinding`) — wnosi je ticket CRUD zawodników razem z własnym
-  testem, bo test przekrojowy usuwa miękko tylko zasoby z parametrów trasy.
+  także w relacji. Załatwia to `Player::resolveRouteBinding`, a pilnuje
+  osobny test w `UpdatePlayerTest` i `DeletePlayerTest`, bo test przekrojowy
+  usuwa miękko tylko zasoby z parametrów trasy.
 - **Zagnieżdżone listy i tworzenie autoryzuje rodzic**, ale idą przez jego
   relację (`$tournament->stages()`, `$team->players()->create()`), nigdy przez
   `Model::query()` z id z żądania. Policy rodzica przepuści organizera do
@@ -278,6 +278,16 @@ które odrzuca powtórzony klucz i notację nawiasową. Pamiętaj o globalnym
 `ConvertEmptyStringsToNull`: czyści **też** `query`, więc `?status=` dociera już
 jako `null` i pustą wartość trzeba złapać jawnie. Filtry dokładaj **przed**
 `paginate()` — inaczej `meta.total` opisuje zbiór niezawężony.
+
+**Pole liczbowe z ciała waliduj `integer:strict`**, nie samym `integer`. Zwykła
+reguła przepuszcza `"9"` i `true`, a model bez castu oddałby je w odpowiedzi
+wbrew typowi z kontraktu (tak było z `number` zawodnika w
+[#125](https://github.com/dawer2253/sports-tournament-app/pull/125)). Dołóż też
+cast w modelu, żeby typ trzymał się także poza API. **Pusty napis dociera przy
+tym jako `null`** — ten sam globalny `ConvertEmptyStringsToNull` — więc
+`"number": ""` przy polu `nullable` przechodzi jak jawny `null`, a nie jako 422.
+To świadome: backend przyjmuje tu trochę więcej, niż kontrakt opisuje, a skutek
+jest ten sam co przy `null`.
 
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).

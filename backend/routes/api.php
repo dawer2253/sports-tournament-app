@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\SportController;
 use App\Http\Controllers\Api\StageController;
 use App\Http\Controllers\Api\TeamController;
@@ -39,6 +40,15 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'team');
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
         ->can('manage', 'team');
+
+    Route::get('/teams/{team}/players', [PlayerController::class, 'index'])
+        ->can('manage', 'team');
+    Route::post('/teams/{team}/players', [PlayerController::class, 'store'])
+        ->can('manage', 'team');
+    Route::patch('/players/{player}', [PlayerController::class, 'update'])
+        ->can('manage', 'player');
+    Route::delete('/players/{player}', [PlayerController::class, 'destroy'])
+        ->can('manage', 'player');
 
     Route::get('/tournaments/{tournament}/venues', [VenueController::class, 'index'])
         ->can('manage', 'tournament');
