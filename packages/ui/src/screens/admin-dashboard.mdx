@@ -18,7 +18,8 @@ Dać organizatorowi jedno spojrzenie na to, co się dzieje w jego turniejach, i 
 - Liczniki: „Aktywne turnieje" i „Drużyny" liczą się z `tournamentList`; „Mecze (30 dni)" i „Odsłony public" to dane demo, bo lista nie zna ani okna czasu, ani ruchu na stronie publicznej.
 
 ## Reguły
-- Format rozgrywek jest jedynym polem kafla spoza `tournamentList`: nie ma go ani tam, ani w `Tournament` z kontraktu. Ikona go powtarza, więc nie niesie treści, której nie da się przeczytać.
+- Format rozgrywek jest jedynym polem kafla spoza `tournamentList`: nie ma go ani tam, ani w `Tournament` z kontraktu — i nie powinno być. Słownik mówi wprost, że „format nie jest cechą turnieju. Po założeniu nie istnieje: to, jakim turniejem coś jest, wynika wyłącznie z jego faz" ([`CONTEXT.md`](../../../../CONTEXT.md)). Etykiety w `tiles` (`Liga`, `Puchar`, `Grupy + playoff`) to więc mock tego, co docelowo wyliczy się z faz turnieju — odpowiednio `league`, `knockout` i `groups_playoff`.
+- Ikona powtarza format, więc nie niesie treści, której nie da się przeczytać.
 - Odznaka statusu idzie przez `TournamentStatusBadge`, wspólny z tabelą turniejów.
 - Turniej dopisany do `tournamentList` bez wpisu w `tiles` pokazuje kafel bez warstwy prezentacyjnej, z ikoną zastępczą. Dashboard nie znika przez brakującą ikonę.
 
@@ -35,5 +36,5 @@ Dać organizatorowi jedno spojrzenie na to, co się dzieje w jego turniejach, i 
 
 ## Otwarte pytania
 - Czy postęp terminarza liczyć z rozegranych meczów, gdy wejdą endpointy silnika rozgrywek?
-- Czy format rozgrywek powinien wejść do kontraktu (`Tournament`), skoro ekran go pokazuje?
+- Czym zastąpić `format` w kaflu, gdy wejdą fazy: nazwą fazy, czy wyliczoną etykietą („Grupy + playoff" to dwie fazy, nie jedna)?
 - Czy liczniki „Mecze (30 dni)" i „Odsłony public" mają własny endpoint, czy liczy je panel?

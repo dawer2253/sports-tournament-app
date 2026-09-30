@@ -27,7 +27,11 @@ const stats = [
 
 type Tile = {
   icon: LucideIcon
-  /** Format rozgrywek: jedyne pole kafla, którego nie ma w `tournamentList`. */
+  /**
+   * Format rozgrywek: jedyne pole kafla, którego nie ma w `tournamentList`.
+   * Mock — słownik mówi, że format nie jest cechą turnieju i po założeniu nie
+   * istnieje, więc docelowo etykieta wyliczy się z faz (patrz `CONTEXT.md`).
+   */
   format: string
   /** Procent rozegranego terminarza. Tylko dla turnieju w trakcie. */
   progress?: number
