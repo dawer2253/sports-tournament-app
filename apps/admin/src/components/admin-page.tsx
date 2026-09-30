@@ -1,7 +1,9 @@
+import { useMutation } from '@tanstack/react-query';
 import { AdminShell, type AdminNavKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
-import { clearToken } from '../lib/session';
+import { api } from '../lib/api';
+import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
 
 /**
@@ -35,6 +37,25 @@ export function AdminPage({ active, title, subtitle, actions, children }: AdminP
   const navigate = useNavigate();
   const account = useAccount();
 
+  /**
+   * Wylogowanie unieważnia token po stronie API, a nie tylko zapomina go
+   * lokalnie: `POST /logout` kasuje w Sanctumie dokładnie ten token, którym
+   * poszło żądanie. Bez tego „Wyloguj" zostawia ważne poświadczenie w rękach
+   * każdego, kto je przechwycił.
+   *
+   * Żądanie musi wyjść, *zanim* zniknie token, bo inaczej idzie bez nagłówka
+   * `Authorization` i nie unieważnia niczego. Sesję zamyka `endSession()`
+   * z `onSettled`, czyli niezależnie od wyniku: padnięta sieć ani 500 nie mogą
+   * zatrzymać organizera w panelu.
+   */
+  const logout = useMutation({
+    mutationFn: async () => {
+      const { error } = await api.POST('/logout');
+      if (error) throw new Error(error.message);
+    },
+    onSettled: endSession,
+  });
+
   return (
     <AdminShell
       active={active}
@@ -47,9 +68,10 @@ export function AdminPage({ active, title, subtitle, actions, children }: AdminP
         const route = NAV_ROUTES[key];
         if (route) void navigate(route);
       }}
+      // Drugi klik przed odpowiedzią wysłałby drugie `/logout`, a to już na
+      // unieważnionym tokenie — czyli 401 i przekierowanie w poprzek pierwszego.
       onLogout={() => {
-        clearToken();
-        void navigate('/login');
+        if (!logout.isPending) logout.mutate();
       }}
     >
       {children}

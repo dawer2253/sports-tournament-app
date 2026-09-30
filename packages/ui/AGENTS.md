@@ -12,7 +12,7 @@ React 19 + TypeScript 6 + Vite 8. Biblioteka komponentów (shadcn/ui, styl
 | Storybook (dev, `:6006`) | `npm run storybook` |
 | Lint | `npm run lint` (oxlint) |
 | Typy + build | `npm run build` (`tsc -b` + `vite build`) |
-| Testy (Storybook + Vitest, Chromium headless) | `npx vitest` |
+| Testy (Storybook + Vitest, Chromium headless) | `npx vitest` (CI: `npx vitest run`, patrz „Testy frontendu" w root `AGENTS.md`) |
 | Regresja wizualna | `npm run chromatic` |
 | Statyczny Storybook | `npm run build-storybook` |
 

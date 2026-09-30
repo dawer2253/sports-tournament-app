@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { Navigate, RouterProvider, createBrowserRouter } from 'react-router';
 import './index.css';
 import { LoginPage } from './pages/login';
+import { TournamentPage } from './pages/tournament';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentsPage } from './pages/tournaments';
 import { getToken } from './lib/session';
@@ -28,11 +29,22 @@ const router = createBrowserRouter([
       </RequireAuth>
     ),
   },
+  // `new` stoi przed `:id`, żeby kolejność czytała się tak samo jak dopasowanie:
+  // router i tak stawia segment stały nad dynamicznym, ale czytelnik nie musi
+  // tego wiedzieć, żeby zobaczyć, że kreator nie wpada pod ekran turnieju.
   {
     path: '/tournaments/new',
     element: (
       <RequireAuth>
         <TournamentCreatePage />
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/tournaments/:id',
+    element: (
+      <RequireAuth>
+        <TournamentPage />
       </RequireAuth>
     ),
   },

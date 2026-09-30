@@ -34,6 +34,12 @@ w kontenerze `laravelsail/php84-composer` (na hoście nie ma PHP) i generuje
 `APP_KEY`. Cel jest plikowy, więc powtórne wywołanie nic nie robi, a `make up`
 ma go w zależnościach — samo `make up` na czystym klonie też zadziała.
 
+`.env` powstaje z `.env.example` **raz**, więc zmiany w szablonie nie doganiają
+osób, które mają już swój plik. Dotyczy to `APP_LOCALE=pl`, od którego zależą
+polskie komunikaty błędów API: kto sklonował repo wcześniej, dopisuje tę linię
+u siebie ręcznie. Testy locale nie obchodzi — pinuje je `phpunit.xml`, żeby
+czerwone testy nie zależały od pliku spoza repo.
+
 `make up` kończy się migracjami i nie jest to ozdobnik: sesje siedzą w bazie
 (`SESSION_DRIVER=database`), a baza żyje w wolumenie Dockera, którego na czystym
 klonie nie ma. Bez tabel aplikacja zwraca **500 na każdym żądaniu**. `migrate`
@@ -83,6 +89,12 @@ Dane są przepisane z przykładów w kontrakcie, żeby `apps/public` pokazywało
 samo na mocku i na Laravelu. Sporty seeder pomija — wstawia je migracja, bo są
 danymi systemowymi (decyzja #10). Sam seeder jest idempotentny: `db:seed` na
 stojącej bazie odświeża demo, zamiast wywalać się na unikacie sluga.
+
+Id fazy, kolejek i meczów zgadzają się z przykładami kontraktu (`stageId: 1`,
+kolejki i mecze 1–6) **tylko po `make fresh`**. Przydziela je autoinkrement, więc
+powtórne `db:seed` na stojącej bazie odtwarza demo pod nowymi id. To cena za to,
+że seed nie pada obok turniejów założonych przez panel — powody w docblocku
+`DemoTournamentSeeder`.
 
 ## Warstwa API i autoryzacja
 

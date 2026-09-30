@@ -85,6 +85,19 @@ jobs:
       - name: Testy
         run: npm test
 
+      # Funkcje `play` w stories `packages/ui` chodzą w trybie browser Vitesta,
+      # czyli w Chromium. Bez tego kroku egzekwował je tylko Chromatic, a ten
+      # siedzi za sekretem i w osobnym workflow (#71). Testy idą headless, więc
+      # wystarczy sam headless shell (`--only-shell`). Bez cache'u: w #99 cała
+      # instalacja z `apt` trwała 23 s, cache ważył ~280 MB, a `apt` i tak musi
+      # się wykonać, więc zysk był bliski zera.
+      - name: Instalacja Chromium
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Stories (funkcje play)
+        working-directory: packages/ui
+        run: npx vitest run
+
       - name: Build
         run: npm run build
 
