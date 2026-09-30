@@ -145,7 +145,9 @@ przeczytaj go, zanim któreś z nich „naprawisz":
   zwracający **422** (tak stanowi kontrakt), nie Policy i nie klucz obcy.
   Obejmuje byty kasowane ręcznie, nie strukturę spod generatora.
 - **Przynależność grupy do turnieju sprawdzi Form Request**, nie klucz obcy —
-  predykat `Team::groupBelongsToSameTournament()` czeka na CRUD drużyn w S1.
+  predykat `Team::groupBelongsToSameTournament()` czeka na przypisywanie
+  drużyn do grup. CRUD drużyn w v0.1 go nie potrzebuje, bo `groupId` jest
+  w kontrakcie tylko do odczytu.
 
 Poza tym:
 
@@ -154,6 +156,12 @@ Poza tym:
   celowo nie istnieje.
 - Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
   robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
+- **`Team::delete()` jest nadpisane i owija w transakcję usunięcie drużyny
+  razem z kaskadą na zawodników** — powody w docblockach `Team::booted()`
+  i `Team::delete()`. Nie `deleteOrFail()`, bo transakcję dostaje wtedy tylko
+  wywołujący, który o nim pamięta. Masowe `->delete()` na zapytaniu omija
+  i transakcję, i zdarzenia modelu (także guard), więc drużyny usuwa się
+  pojedynczo.
 
 ## Autoryzacja
 

@@ -43,6 +43,7 @@ Do zrobienia:
 
 ## S3 — Eventy + Public (J prowadzi)
 - [ ] MatchEvent CRUD (typy wg sportu) (J)
+  - Zawodnik zdarzenia z drużyny zdarzenia, a ta z meczu (422), bo baza tego nie wiąże — inaczej usunięcie drużyny trafia na guard zawodnika, o którym kontrakt milczy (#96)
 - [ ] Statystyki/strzelcy (agregacja z eventów) (J)
 - [ ] Public: tabela + terminarz + wyniki (po slug) (J)
   - Etykiety tiebreaków pod tabelą („Sortowanie: …”), bo `PublicTournament` nie dostaje konfiguracji sportu (#117)

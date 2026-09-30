@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\SportController;
 use App\Http\Controllers\Api\StageController;
+use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\TournamentController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,4 +27,15 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/stages', [StageController::class, 'index'])
         ->can('manage', 'tournament');
+
+    Route::get('/tournaments/{tournament}/teams', [TeamController::class, 'index'])
+        ->can('manage', 'tournament');
+    Route::post('/tournaments/{tournament}/teams', [TeamController::class, 'store'])
+        ->can('manage', 'tournament');
+    Route::get('/teams/{team}', [TeamController::class, 'show'])
+        ->can('manage', 'team');
+    Route::patch('/teams/{team}', [TeamController::class, 'update'])
+        ->can('manage', 'team');
+    Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
+        ->can('manage', 'team');
 });

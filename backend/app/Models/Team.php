@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Uczestnik turnieju. Dwie drużyny o tej samej nazwie w dwóch turniejach to
@@ -21,6 +22,39 @@ class Team extends Model
     use GuardsFinishedMatches;
     use HasFactory;
     use SoftDeletes;
+
+    /**
+     * Kaskada: zawodnik nie istnieje bez drużyny (`CONTEXT.md`), więc
+     * miękkie usunięcie drużyny usuwa miękko jej zawodników. Siedzi w modelu
+     * z tego samego powodu co guard — nie ominie jej ani seeder, ani przyszły
+     * kod (`GuardsFinishedMatches`).
+     *
+     * Zdarzenie `deleted`, nie `deleting`: guard odpala w `deleting`, więc
+     * odrzucone usunięcie nie dochodzi tu wcale i zawodnicy zostają
+     * nietknięci, bez zależności od kolejności rejestrowania nasłuchów.
+     *
+     * Każdy zawodnik idzie przez własny `delete()`, więc i przez swój guard.
+     * Guard drużyny go nie zastępuje: baza nie wiąże zawodnika zdarzenia
+     * z drużyną meczu, więc zawodnik może mieć rozegrany mecz, którego jego
+     * drużyna nie ma. Usunięcie twarde załatwia `cascadeOnDelete` w bazie.
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (self $team): void {
+            if (! $team->isForceDeleting()) {
+                $team->players()->get()->each->delete();
+            }
+        });
+    }
+
+    /**
+     * Drużyna i jej zawodnicy znikają razem albo wcale: odmowa guarda
+     * zawodnika w kaskadzie cofa też usunięcie drużyny.
+     */
+    public function delete(): ?bool
+    {
+        return DB::transaction(fn (): ?bool => parent::delete());
+    }
 
     public function tournament(): BelongsTo
     {
