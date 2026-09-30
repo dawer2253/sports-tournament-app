@@ -279,6 +279,16 @@ które odrzuca powtórzony klucz i notację nawiasową. Pamiętaj o globalnym
 jako `null` i pustą wartość trzeba złapać jawnie. Filtry dokładaj **przed**
 `paginate()` — inaczej `meta.total` opisuje zbiór niezawężony.
 
+**Pole liczbowe z ciała waliduj `integer:strict`**, nie samym `integer`. Zwykła
+reguła przepuszcza `"9"` i `true`, a model bez castu oddałby je w odpowiedzi
+wbrew typowi z kontraktu (tak było z `number` zawodnika w
+[#125](https://github.com/dawer2253/sports-tournament-app/pull/125)). Dołóż też
+cast w modelu, żeby typ trzymał się także poza API. **Pusty napis dociera przy
+tym jako `null`** — ten sam globalny `ConvertEmptyStringsToNull` — więc
+`"number": ""` przy polu `nullable` przechodzi jak jawny `null`, a nie jako 422.
+To świadome: backend przyjmuje tu trochę więcej, niż kontrakt opisuje, a skutek
+jest ten sam co przy `null`.
+
 **Endpointy `/public/*` niosą walidator HTTP** — nagłówki i `304` opisuje
 kontrakt, powody [ADR 0007](../docs/adr/0007-odswiezanie-strony-publicznej-na-walidatorach-http.md).
 Dla backendu wynikają z tego dwie rzeczy. **Spectator asertuje samo ciało

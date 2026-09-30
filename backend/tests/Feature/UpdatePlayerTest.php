@@ -105,6 +105,29 @@ it('odrzuca pustą nazwę', function () {
     expect($player->fresh()->name)->toBe('Marek Nowak');
 });
 
+// Przenoszenia między drużynami kontrakt nie ma (#97, „Poza zakresem”).
+// `team_id` jest w `#[Fillable]`, więc przed zapisem chroni go dziś to, że
+// walidacja przepuszcza tylko pola z kontraktu. Ciało niesie oba zapisy, więc
+// test czerwienieje, gdy któryś trafi do kolumny, także przez `$request->all()`.
+// Druga drużyna jest w tym samym turnieju, więc przeniesienie nie odpadłoby
+// na policy.
+it('ignoruje teamId w ciele żądania', function () {
+    $player = Player::factory()->create(['name' => 'Marek Nowak']);
+    $otherTeam = Team::factory()->for($player->team->tournament)->create();
+
+    actingAsOrganizer($player->team->tournament->user)
+        ->patchJson("/api/v1/players/{$player->id}", [
+            'name' => 'Marek Nowacki',
+            'teamId' => $otherTeam->id,
+            'team_id' => $otherTeam->id,
+        ])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.name', 'Marek Nowacki')
+        ->assertJsonPath('data.teamId', $player->team_id);
+
+    expect($player->fresh()->team_id)->toBe($player->team_id);
+});
+
 // Bez wymogu żywej drużyny w wiązaniu `PlayerPolicy` dostałaby `null`
 // z `$player->team` i oddała 500.
 it('oddaje 404 dla zawodnika drużyny usuniętej', function () {
