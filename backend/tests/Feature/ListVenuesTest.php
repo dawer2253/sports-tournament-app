@@ -1,0 +1,59 @@
+<?php
+
+use App\Models\Tournament;
+use App\Models\User;
+use App\Models\Venue;
+use Spectator\Spectator;
+
+beforeEach(function () {
+    Spectator::using('openapi.yaml');
+});
+
+// 401, 403 i 404 tej trasy pilnuje `SubtreeAuthorizationTest`, razem z każdą
+// inną trasą poddrzewa turnieju. Tu zostaje szczęśliwa ścieżka i izolacja listy.
+
+// Kolejność wstawiania to `stadion`, `Hala`, `Orlik`, `hala`. Sortowanie po
+// `id` dałoby `stadion` na początku, a binarne (wielkie litery przed małymi)
+// — na końcu. Tylko porównanie bez względu na wielkość liter daje kolejność
+// z kontraktu, a dwie „hale" (collation widzi w nich tę samą nazwę)
+// rozstrzyga `id`.
+it('oddaje obiekty po nazwie bez względu na wielkość liter, remis po id, w kształcie z kontraktu', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $stadion = Venue::factory()->for($tournament)->create(['name' => 'stadion', 'address' => null]);
+    $hala = Venue::factory()->for($tournament)->create([
+        'name' => 'Hala',
+        'address' => 'ul. Sosnkowskiego 3, Warszawa',
+    ]);
+    $orlik = Venue::factory()->for($tournament)->create(['name' => 'Orlik']);
+    $halaDruga = Venue::factory()->for($tournament)->create(['name' => 'hala']);
+
+    actingAsOrganizer($organizer)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/venues")
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.*.id', [$hala->id, $halaDruga->id, $orlik->id, $stadion->id])
+        ->assertJsonPath('data.0', [
+            'id' => $hala->id,
+            'tournamentId' => $tournament->id,
+            'name' => 'Hala',
+            'address' => 'ul. Sosnkowskiego 3, Warszawa',
+        ])
+        ->assertJsonPath('data.3.address', null);
+});
+
+// Oba turnieje należą do tego samego organizera, więc policy przepuści
+// żądanie. Obce obiekty odsiewa wyłącznie to, że lista idzie przez relację
+// turnieju z trasy.
+it('nie oddaje obiektów innego turnieju ani usuniętych', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $own = Venue::factory()->for($tournament)->create();
+    Venue::factory()->for($tournament)->create()->delete();
+    Venue::factory()->for(Tournament::factory()->for($organizer))->create();
+
+    actingAsOrganizer($organizer)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/venues")
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.*.id', [$own->id]);
+});

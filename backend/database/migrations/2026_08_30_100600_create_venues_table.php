@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Miejsce rozegrania meczu, należące do turnieju. Soft-delete, bo organizer
  * kasuje obiekty ręcznie i bywa, że przez pomyłkę.
+ *
+ * Bez unikatu na `(tournament_id, name)`: nazwa jest unikalna tylko wśród
+ * żywych obiektów turnieju (decyzja #80), a unikat w bazie liczyłby też
+ * wiersze usunięte miękko. Pilnuje jej walidacja (`VenueRequest`).
  */
 return new class extends Migration
 {
