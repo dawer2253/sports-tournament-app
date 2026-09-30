@@ -32,7 +32,7 @@ class TeamController extends Controller
 
     public function store(StoreTeamRequest $request, Tournament $tournament): JsonResponse
     {
-        $team = $tournament->teams()->create(['name' => $request->validated('name')]);
+        $team = $tournament->teams()->create($request->validated());
 
         return (new TeamResource($team->loadCount('players')))
             ->response()

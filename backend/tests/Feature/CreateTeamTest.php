@@ -35,6 +35,40 @@ it('dodaje drużynę do turnieju z trasy, bez zawodników', function () {
     expect(Team::findOrFail($response->json('data.id'))->tournament_id)->toBe($tournament->id);
 });
 
+// Kolumna `teams.name` ma 120 znaków, tyle co `maxLength` w kontrakcie. Bez
+// reguły `max:120` dłuższa nazwa nie dostałaby 422, tylko 500 z bazy.
+// Polskie litery liczą się po jednym znaku, nie po bajtach.
+it('przyjmuje nazwę na granicy 120 znaków i odrzuca dłuższą', function () {
+    $tournament = Tournament::factory()->create();
+    $longest = str_repeat('ż', 120);
+
+    postTeamTo($tournament, ['name' => $longest])
+        ->assertValidResponse(201)
+        ->assertJsonPath('data.name', $longest);
+
+    postTeamTo($tournament, ['name' => $longest.'a'])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('name');
+
+    expect($tournament->teams()->count())->toBe(1);
+});
+
+// Same spacje obcina `TrimStrings`, a pusty napis zamienia w `null`
+// `ConvertEmptyStringsToNull`, więc wszystkie trzy przypadki to brak nazwy.
+it('odrzuca drużynę bez nazwy', function (array $body) {
+    $tournament = Tournament::factory()->create();
+
+    postTeamTo($tournament, $body)
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.name', ['Pole nazwa jest wymagane.']);
+
+    expect($tournament->teams()->count())->toBe(0);
+})->with([
+    'bez pola' => [[]],
+    'pusty napis' => [['name' => '']],
+    'same spacje' => [['name' => '   ']],
+]);
+
 // Porównanie bez względu na wielkość liter daje collation kolumny, nie kod,
 // a spacje na brzegach obcina globalny `TrimStrings`, zanim ruszy walidacja.
 // Oba mechanizmy siedzą poza Form Requestem, więc przypina je dopiero żądanie.

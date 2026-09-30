@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Group;
 use App\Models\Player;
+use App\Models\Stage;
 use App\Models\Team;
 use Spectator\Spectator;
 
@@ -79,3 +81,26 @@ it('odrzuca pustą nazwę', function (string $name) {
     'pusty napis' => [''],
     'same spacje' => ['   '],
 ]);
+
+// Kontrakt obiecuje, że w v0.1 `groupId` jest tylko do odczytu i zawsze
+// `null`. `group_id` jest w `#[Fillable]`, więc przed zapisem chroni go dziś
+// to, że walidacja przepuszcza samo `name`. Ciało niesie oba zapisy, więc test
+// czerwienieje, gdy któryś trafi do kolumny, także przez `$request->all()`.
+// Grupa należy do tego samego turnieju, więc przypisanie nie odpadłoby na
+// regule przynależności.
+it('ignoruje groupId w ciele żądania', function () {
+    $team = Team::factory()->create(['name' => 'Wilki Bemowo']);
+    $group = Group::factory()->for(Stage::factory()->group()->for($team->tournament))->create();
+
+    actingAsOrganizer($team->tournament->user)
+        ->patchJson("/api/v1/teams/{$team->id}", [
+            'name' => 'Wilki Bemowo II',
+            'groupId' => $group->id,
+            'group_id' => $group->id,
+        ])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.name', 'Wilki Bemowo II')
+        ->assertJsonPath('data.groupId', null);
+
+    expect($team->fresh()->group_id)->toBeNull();
+});

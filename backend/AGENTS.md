@@ -156,6 +156,12 @@ Poza tym:
   celowo nie istnieje.
 - Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
   robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
+- **`Team::delete()` jest nadpisane i owija w transakcję usunięcie drużyny
+  razem z kaskadą na zawodników** — powody w docblockach `Team::booted()`
+  i `Team::delete()`. Nie `deleteOrFail()`, bo transakcję dostaje wtedy tylko
+  wywołujący, który o nim pamięta. Masowe `->delete()` na zapytaniu omija
+  i transakcję, i zdarzenia modelu (także guard), więc drużyny usuwa się
+  pojedynczo.
 
 ## Autoryzacja
 
