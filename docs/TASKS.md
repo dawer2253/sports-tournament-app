@@ -45,6 +45,7 @@ Do zrobienia:
 - [ ] MatchEvent CRUD (typy wg sportu) (J)
 - [ ] Statystyki/strzelcy (agregacja z eventów) (J)
 - [ ] Public: tabela + terminarz + wyniki (po slug) (J)
+  - Turniej w szkicu (`draft`) daje `404` na wszystkich trasach `/public/t/{slug}*`, z tym samym komunikatem co nieznany slug (#82)
   - Etykiety tiebreaków pod tabelą („Sortowanie: …”), bo `PublicTournament` nie dostaje konfiguracji sportu (#117)
 - [ ] Public: branding (logo/kolor) + polling (W)
 - Kamień: publiczny link do pokazania

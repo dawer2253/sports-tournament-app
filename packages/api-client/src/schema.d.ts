@@ -689,6 +689,13 @@ export interface paths {
          * @description Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
          *     `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
          *     panel musi o tym ostrzec przed zapisem.
+         *
+         *     To jedyne miejsce, w którym zmienia się `status` (znaczenie stanów:
+         *     `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
+         *     warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
+         *     nie przechodzi do `draft` z innego stanu — taka próba daje `422` pod
+         *     `status`. Wysłanie `draft` turniejowi, który już jest w `draft`, nie
+         *     jest przejściem, więc zakaz go nie dotyczy.
          */
         patch: {
             parameters: {
@@ -1745,6 +1752,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -1771,6 +1784,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -1817,6 +1836,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -1845,6 +1870,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -1898,6 +1929,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -1946,6 +1983,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -1992,6 +2035,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -2016,6 +2065,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2167,6 +2222,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -2191,6 +2252,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2345,6 +2412,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -2370,6 +2443,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2578,7 +2657,19 @@ export interface components {
          * @enum {string}
          */
         TiebreakerCode: "points" | "head_to_head" | "score_diff" | "score_for" | "score_against" | "wins";
-        /** @enum {string} */
+        /**
+         * @description Stan turnieju.
+         *
+         *     - `draft` — turniej nieopublikowany. Nowy turniej zaczyna w tym stanie.
+         *     - `active` i `finished` — turniej opublikowany. `finished` to
+         *       deklaracja organizera, że rozgrywki się skończyły. Nie blokuje żadnej
+         *       zmiany ani usunięcia.
+         *
+         *     Status ustawia wyłącznie organizer, przez
+         *     `PATCH /tournaments/{tournament}`. Żadna operacja systemu nie zmienia
+         *     go sama.
+         * @enum {string}
+         */
         TournamentStatus: "draft" | "active" | "finished";
         /**
          * @description Używane wyłącznie przy zakładaniu turnieju, żeby wiedzieć jakie fazy
@@ -2856,7 +2947,12 @@ export interface components {
         PublicTournament: {
             name: string;
             slug: string;
-            status: components["schemas"]["TournamentStatus"];
+            /**
+             * @description Podzbiór `TournamentStatus` bez `draft`: szkic nie trafia do
+             *     odpowiedzi publicznej (patrz parametr `Slug`).
+             * @enum {string}
+             */
+            status: "active" | "finished";
             sport: components["schemas"]["SportSummary"];
             branding: components["schemas"]["Branding"];
             stages: components["schemas"]["Stage"][];
@@ -3014,6 +3110,12 @@ export interface components {
         TeamId: number;
         PlayerId: number;
         VenueId: number;
+        /**
+         * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+         *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+         *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+         *     że turniej istnieje.
+         */
         Slug: string;
         /**
          * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
