@@ -57,8 +57,8 @@ const SUBTREE_EXCEPTIONS = [
 /**
  * Parametr trasy → zasób należący do `$owner`. Parametr bez wpisu czerwieni
  * test zamiast go pomijać, więc nowy rodzaj parametru wymaga świadomego
- * dopisania fabryki. Wpisy dla drużyny i zawodnika czekają na trasy CRUD —
- * dzięki nim pierwsza z nich jest sprawdzana od razu, w całości.
+ * dopisania fabryki. Wpis dla zawodnika czeka na trasy CRUD — dzięki niemu
+ * pierwsza z nich jest sprawdzana od razu, w całości.
  *
  * Trasa z dwoma parametrami dostaje zasoby zbudowane niezależnie od siebie.
  * Wystarcza, dopóki żadna trasa nie ma wiązań zawężonych (`scopeBindings`).

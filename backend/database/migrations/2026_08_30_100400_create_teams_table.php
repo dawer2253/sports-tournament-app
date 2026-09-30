@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Schema;
  * (decyzja #8). Soft-delete obsługuje pomyłkę organizera, dopóki guard
  * `finished` nie zamknie sprawy.
  *
- * Bez unikatu na `(tournament_id, name)`: dwie „Rezerwy" w jednym turnieju to
- * nie jest rzecz, na której admin ma dostać błąd z bazy, a przy soft-delete
- * unikat liczyłby też usunięte wiersze.
+ * Bez unikatu na `(tournament_id, name)`: nazwa jest unikalna tylko wśród
+ * żywych drużyn turnieju (decyzja #80), a unikat w bazie liczyłby też wiersze
+ * usunięte miękko. Pilnuje jej walidacja (`TeamRequest`).
  *
  * **Przynależność grupy do tego samego turnieju pilnuje aplikacja, nie baza.**
  * Próbowaliśmy w bazie i się nie da — powód opisuje ADR-0005.
