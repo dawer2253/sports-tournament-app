@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\SportController;
 use App\Http\Controllers\Api\StageController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\TournamentController;
+use App\Http\Controllers\Api\VenueController;
 use Illuminate\Support\Facades\Route;
 
 // Prefiks `api/v1` dokłada `withRouting(apiPrefix: ...)` w bootstrap/app.php,
@@ -48,4 +49,13 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'player');
     Route::delete('/players/{player}', [PlayerController::class, 'destroy'])
         ->can('manage', 'player');
+
+    Route::get('/tournaments/{tournament}/venues', [VenueController::class, 'index'])
+        ->can('manage', 'tournament');
+    Route::post('/tournaments/{tournament}/venues', [VenueController::class, 'store'])
+        ->can('manage', 'tournament');
+    Route::patch('/venues/{venue}', [VenueController::class, 'update'])
+        ->can('manage', 'venue');
+    Route::delete('/venues/{venue}', [VenueController::class, 'destroy'])
+        ->can('manage', 'venue');
 });
