@@ -74,7 +74,10 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 `npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
 `test` — dziś `apps/admin` i `apps/public` (vitest + Testing Library + msw,
 jsdom). Obie aplikacje mają ten sam układ: `vitest.config.ts` osobno od
-`vite.config.ts` oraz `src/test/{server,setup}.ts`.
+`vite.config.ts` oraz `src/test/{server,setup}.ts`. Konfiguracja vitesta
+przypina też `VITE_API_URL` na adres mocka, a `server.ts` bierze `API_URL` stamtąd,
+więc lokalny `.env` wskazujący Laravela nie rozjeżdża klienta z handlerami msw.
+Adresu w testach nie przepisuj z ręki.
 
 Żądania w testach obu aplikacji przechwytuje msw. Jedna pułapka jest na tyle
 kosztowna, że warto o niej wiedzieć przed pierwszym testem: `server.listen()`
