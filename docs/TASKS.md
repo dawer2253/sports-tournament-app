@@ -46,6 +46,7 @@ Do zrobienia:
   - Zawodnik zdarzenia z drużyny zdarzenia, a ta z meczu (422), bo baza tego nie wiąże — inaczej usunięcie drużyny trafia na guard zawodnika, o którym kontrakt milczy (#96)
 - [ ] Statystyki/strzelcy (agregacja z eventów) (J)
 - [ ] Public: tabela + terminarz + wyniki (po slug) (J)
+  - Szkic (`draft`) daje `404` na wszystkich trasach publicznych — reguła w opisie parametru `Slug` w kontrakcie (#82)
   - Etykiety tiebreaków pod tabelą („Sortowanie: …”), bo `PublicTournament` nie dostaje konfiguracji sportu (#117)
 - [ ] Public: branding (logo/kolor) + polling (W)
 - Kamień: publiczny link do pokazania

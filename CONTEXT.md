@@ -25,6 +25,13 @@ Turniej nie jest sezonem ani cyklem: nie istnieje pojęcie "poprzedniej edycji".
 Drużyny i zawodnicy należą do jednego turnieju i nie są między turniejami
 współdzieleni.
 
+Stan turnieju: szkic (`draft`), trwający (`active`), zakończony (`finished`).
+Stan ustawia organizer. Nic w systemie nie zmienia go samo. Turniej w szkicu
+nie jest opublikowany: pod jego publicznym adresem nic nie ma. **Opublikować**
+turniej znaczy przestawić go ze szkicu na trwający. Zakończenie to deklaracja
+organizera, że rozgrywki się skończyły, a nie blokada zmian. Turniej, który ma
+zakończony mecz, nie wraca do szkicu.
+
 ## Slug
 
 Krótki, czytelny identyfikator turnieju używany w publicznym adresie. Unikalny
