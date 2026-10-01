@@ -46,7 +46,8 @@ info:
     - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
-      polskiego nie jest stała, więc nie zaszywaj jej na sztywno.
+      polskiego nie jest stała, więc nie zaszywaj jej na sztywno. Powody:
+      [ADR-0008](../../docs/adr/0008-czas-w-api-idzie-w-utc.md).
     - Parametr zapytania będący tablicą jedzie rozdzielony przecinkiem
       (`style: form`, `explode: false`), np. `?status=draft,active`. Obowiązuje
       to każdy taki parametr, bo `packages/api-client` ustawia serializację raz,
