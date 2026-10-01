@@ -658,7 +658,17 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /** Usuń turniej */
+        /**
+         * Usuń turniej
+         * @description Usuwa turniej na twardo razem z całym poddrzewem: drużynami (także
+         *     usuniętymi wcześniej), zawodnikami, obiektami, fazami i meczami, oraz
+         *     z plikami logo i herbów. Operacji nie da się cofnąć, a `slug` od razu
+         *     się zwalnia.
+         *
+         *     Odrzucane z kodem `422`, jeżeli w turnieju rozegrano choć jeden mecz:
+         *     jego publiczny adres ma działać dalej. Status turnieju nie ma tu
+         *     znaczenia.
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -680,6 +690,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                422: components["responses"]["DeleteBlocked"];
             };
         };
         options?: never;
@@ -1069,7 +1080,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                422: components["responses"]["ValidationError"];
+                422: components["responses"]["DeleteBlocked"];
             };
         };
         options?: never;
@@ -1345,7 +1356,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                422: components["responses"]["ValidationError"];
+                422: components["responses"]["DeleteBlocked"];
             };
         };
         options?: never;
@@ -1553,7 +1564,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                422: components["responses"]["ValidationError"];
+                422: components["responses"]["DeleteBlocked"];
             };
         };
         options?: never;
@@ -3001,6 +3012,25 @@ export interface components {
                  *       "errors": {
                  *         "name": [
                  *           "Pole nazwa jest wymagane."
+                 *         ]
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["ValidationError"];
+            };
+        };
+        /** @description Usunięcie zablokowane przez rozegrane mecze */
+        DeleteBlocked: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.",
+                 *       "errors": {
+                 *         "id": [
+                 *           "Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze."
                  *         ]
                  *       }
                  *     }
