@@ -26,6 +26,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // patrz „Autoryzacja poddrzewa turnieju" w `backend/AGENTS.md`.
     Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])
         ->can('manage', 'tournament');
+    Route::delete('/tournaments/{tournament}', [TournamentController::class, 'destroy'])
+        ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/stages', [StageController::class, 'index'])
         ->can('manage', 'tournament');
 
