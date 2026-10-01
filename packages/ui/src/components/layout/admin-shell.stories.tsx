@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
-import { organizer } from '../../lib/demo-data'
+import { organizer, tournamentList } from '../../lib/demo-data'
 import { AdminShell, type AdminNavKey } from './admin-shell'
 
 const meta = {
@@ -19,49 +19,131 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Bez `navHref` cała nawigacja jest dekoracją — tak wyglądają ekrany w Storybooku. */
+/** Turniej demo w kształcie, w jakim shell go przyjmuje. */
+const turniej = tournamentList[0]!
+
+/** Argumenty shella wewnątrz turnieju, w układzie nagłówka z makiet. */
+const wTurnieju = {
+  tournament: turniej,
+  title: turniej.name,
+  subtitle: `${turniej.sport.name} · /t/${turniej.slug}`,
+}
+
+const SEKCJE = ['Drużyny', 'Obiekty', 'Ustawienia', 'Terminarz', 'Drabinka', 'Statystyki']
+
+/**
+ * Poza turniejem sidebar ma tylko „Turnieje": bez karty turnieju i bez kart
+ * sekcji. Bez `navHref` cała nawigacja jest dekoracją — tak wyglądają ekrany
+ * w Storybooku.
+ */
 export const Domyslny: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByText('Klub Sportowy')).toBeInTheDocument()
 
+    const sidebar = within(canvas.getByRole('navigation', { name: 'Panel' }))
+    await expect(sidebar.getByText('Turnieje')).toBeInTheDocument()
+    await expect(sidebar.queryByText('Turniej')).not.toBeInTheDocument()
+    for (const sekcja of SEKCJE) {
+      await expect(canvas.queryByText(sekcja)).not.toBeInTheDocument()
+    }
+    await expect(canvas.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument()
+
     // Dekoracja to nie to samo co pozycja nieczynna: bez `navHref` żadna pozycja
     // nie jest wyłączona, po prostu nikt nie podał adresów.
-    await expect(canvas.getByText('Drużyny')).not.toHaveAttribute('aria-disabled')
+    await expect(sidebar.getByText('Turnieje')).not.toHaveAttribute('aria-disabled')
     await expect(canvas.queryAllByRole('link')).toHaveLength(0)
   },
 }
 
 /**
- * Aplikacja podaje adresy tylko dla ekranów, które już istnieją. Pozycja bez
+ * W turnieju pod „Turnieje" stoi karta turnieju, a pod tytułem strony karty
+ * sekcji. Tytuł i podtytuł podaje ekran; status turnieju shell stawia po prawej.
+ */
+export const WTurnieju: Story = {
+  args: {
+    ...wTurnieju,
+    active: 'teams',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    // Karta turnieju: nazwa, status i sport.
+    const sidebar = within(canvas.getByRole('navigation', { name: 'Panel' }))
+    await expect(sidebar.getByText('Turnieje')).toBeInTheDocument()
+    await expect(sidebar.getByText(turniej.name)).toBeInTheDocument()
+    await expect(sidebar.getByText('Trwa')).toBeInTheDocument()
+    await expect(sidebar.getByText(turniej.sport.name)).toBeInTheDocument()
+
+    // Sidebar nie ma listy sekcji — sekcje są tylko kartami w nagłówku.
+    for (const sekcja of SEKCJE) {
+      await expect(sidebar.queryByText(sekcja)).not.toBeInTheDocument()
+    }
+
+    const karty = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
+    for (const sekcja of SEKCJE) {
+      await expect(karty.getByText(sekcja)).toBeInTheDocument()
+    }
+    // To nawigacja, nie ARIA `tablist`: aktywną kartę oznacza `aria-current`.
+    await expect(canvas.queryByRole('tablist')).not.toBeInTheDocument()
+    await expect(karty.getByText('Drużyny').closest('a')).toHaveAttribute('aria-current', 'page')
+    await expect(karty.getByText('Obiekty').closest('a')).not.toHaveAttribute('aria-current')
+
+    // Status stoi w nagłówku strony niezależnie od sidebaru, który poniżej `md`
+    // znika.
+    await expect(canvas.getAllByText('Trwa')).toHaveLength(2)
+  },
+}
+
+/**
+ * Aplikacja podaje adresy tylko dla ekranów, które już istnieją. Karta bez
  * adresu nie udaje odnośnika i nie da się w nią wejść z klawiatury.
  */
 export const NawigacjaCzesciowa: Story = {
   args: {
-    navHref: (key: AdminNavKey) => (key === 'dashboard' ? '/' : undefined),
+    ...wTurnieju,
+    active: 'venues',
+    navHref: (key: AdminNavKey) =>
+      ({ dashboard: '/', tournament: '/tournaments/1', teams: '/tournaments/1/teams', venues: '/tournaments/1/venues', settings: '/tournaments/1/settings' } as Partial<Record<AdminNavKey, string>>)[key],
     onNavigate: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
+    const karty = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
 
-    // Pozycja z adresem jest odnośnikiem — i tylko ona.
-    const czynna = canvas.getByRole('link', { name: 'Turnieje' })
-    await expect(czynna).toHaveAttribute('href', '/')
-    await expect(czynna).not.toHaveAttribute('aria-disabled')
-    await expect(canvas.queryAllByRole('link')).toHaveLength(1)
+    // Karty z adresem są odnośnikami — i tylko one.
+    await expect(karty.getAllByRole('link').map((link) => link.textContent)).toEqual(['Drużyny', 'Obiekty', 'Ustawienia'])
+    await expect(karty.getByRole('link', { name: 'Obiekty' })).toHaveAttribute('aria-current', 'page')
 
-    // Pozycja bez adresu nie udaje odnośnika: brak `href` odbiera jej rolę
+    // Karta bez adresu nie udaje odnośnika: brak `href` odbiera jej rolę
     // `link`, więc czytnik ekranu nie ogłosi jej jako czegoś do kliknięcia.
-    const nieczynna = canvas.getByText('Drużyny')
-    await expect(nieczynna).toHaveAttribute('aria-disabled', 'true')
+    const terminarz = karty.getByText('Terminarz').closest('a')!
+    await expect(terminarz).toHaveAttribute('aria-disabled', 'true')
+    await expect(terminarz).toHaveAttribute('title', 'Wkrótce')
 
-    // Kliknięcie w nieczynną pozycję nie prowadzi nigdzie.
-    await userEvent.click(nieczynna)
+    // Z klawiatury: Tab z ostatniej czynnej karty omija nieczynne.
+    karty.getByRole('link', { name: 'Ustawienia' }).focus()
+    await userEvent.tab()
+    for (const sekcja of ['Terminarz', 'Drabinka', 'Statystyki']) {
+      await expect(karty.getByText(sekcja).closest('a')).not.toHaveFocus()
+    }
+
+    // Kliknięcie w nieczynną kartę nie prowadzi nigdzie.
+    await userEvent.click(terminarz)
     await expect(args.onNavigate).not.toHaveBeenCalled()
 
-    await userEvent.click(czynna)
-    await expect(args.onNavigate).toHaveBeenCalledWith('dashboard')
+    await userEvent.click(karty.getByRole('link', { name: 'Drużyny' }))
+    await expect(args.onNavigate).toHaveBeenLastCalledWith('teams')
+
+    // Karta turnieju w sidebarze idzie tą samą drogą co pozycje.
+    const kartaTurnieju = within(canvas.getByRole('navigation', { name: 'Panel' })).getByText(turniej.name).closest('a')!
+    await expect(kartaTurnieju).toHaveAttribute('href', '/tournaments/1')
+    await userEvent.click(kartaTurnieju)
+    await expect(args.onNavigate).toHaveBeenLastCalledWith('tournament')
+
+    await userEvent.click(canvas.getByRole('link', { name: 'Turnieje' }))
+    await expect(args.onNavigate).toHaveBeenLastCalledWith('dashboard')
   },
 }
 

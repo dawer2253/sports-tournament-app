@@ -73,13 +73,18 @@ import { AdminShell } from '../components/layout/admin-shell'
 import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Plus } from 'lucide-react'
+import { organizer, tournamentList } from '../lib/demo-data'
+
+const tournament = tournamentList[0]!     // wiersz turnieju: `sport` to obiekt z `name`
 
 export function AdminExample() {
   return (
     <AdminShell
-      active="teams"                       // podświetla pozycję w nawigacji
-      title="Drużyny"                      // renderowane wersalikami przez <Heading>
-      subtitle="Liga Osiedlowa 2026"
+      user={organizer}                     // wymagany; ekrany w screens/ biorą go przez ShellDemo
+      active="teams"                       // podświetla kartę sekcji
+      tournament={tournament}              // karta turnieju w sidebarze, karty sekcji, status
+      title={tournament.name}              // w turnieju: nazwa turnieju, wersalikami przez <Heading>
+      subtitle={`${tournament.sport.name} · /t/${tournament.slug}`}
       actions={<Button><Plus className="size-4" /> Dodaj drużynę</Button>}
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -1,5 +1,5 @@
 import { Plus, MapPin, Pencil, Trash2 } from 'lucide-react'
-import { ShellDemo } from './shell-demo'
+import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Card } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
@@ -7,10 +7,8 @@ import { venues } from '../lib/demo-data'
 
 export function AdminVenues() {
   return (
-    <ShellDemo
+    <TournamentShellDemo
       active="venues"
-      title="Obiekty"
-      subtitle="Miejsca rozgrywania meczów"
       actions={<Button><Plus className="size-4" /> Dodaj obiekt</Button>}
     >
       <Card className="p-0">
@@ -49,6 +47,6 @@ export function AdminVenues() {
           </TableBody>
         </Table>
       </Card>
-    </ShellDemo>
+    </TournamentShellDemo>
   )
 }

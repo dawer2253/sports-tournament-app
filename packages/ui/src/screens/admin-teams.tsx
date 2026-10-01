@@ -1,8 +1,8 @@
 import { Plus, Pencil } from 'lucide-react'
-import { ShellDemo } from './shell-demo'
+import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { tournament, teams, players } from '../lib/demo-data'
+import { teams, players } from '../lib/demo-data'
 import type { Team, Player } from '../lib/demo-data'
 
 const placeholderPositions = ['Bramkarz', 'Napastnik']
@@ -61,10 +61,8 @@ function TeamCard({ team }: { team: Team }) {
 
 export function AdminTeams() {
   return (
-    <ShellDemo
+    <TournamentShellDemo
       active="teams"
-      title="Drużyny"
-      subtitle={`${tournament.name} · ${teams.length} drużyn`}
       actions={
         <Button>
           <Plus className="size-4" /> Dodaj drużynę
@@ -76,6 +74,6 @@ export function AdminTeams() {
           <TeamCard key={team.id} team={team} />
         ))}
       </div>
-    </ShellDemo>
+    </TournamentShellDemo>
   )
 }

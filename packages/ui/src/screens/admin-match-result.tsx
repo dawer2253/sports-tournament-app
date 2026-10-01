@@ -1,9 +1,10 @@
 import { Plus, Save } from 'lucide-react'
-import { ShellDemo } from './shell-demo'
+import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Card, CardHeader, CardTitle, CardAction, CardContent } from '../components/ui/card'
 import { Input } from '../components/ui/input'
+import { Heading } from '../components/ui/typography'
 import { fixtures } from '../lib/demo-data'
 import type { MatchEvent, MatchStatus } from '../lib/demo-data'
 
@@ -32,11 +33,16 @@ function TeamSide({ abbr, name }: { abbr: string; name: string }) {
 
 export function AdminMatchResult() {
   return (
-    <ShellDemo
-      active="schedule"
-      title="Wynik meczu"
-      subtitle={`Kolejka ${match.round} · ${match.date} · ${match.kickoff} · ${match.venue}`}
-    >
+    <TournamentShellDemo active="schedule">
+      {/* Mecz leży w Terminarzu, więc tytuł strony zostaje nazwą turnieju,
+          a to, który mecz edytujemy, mówi nagłówek treści. */}
+      <div className="mb-4">
+        <Heading level="section">Wynik meczu</Heading>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Kolejka {match.round} · {match.date} · {match.kickoff} · {match.venue}
+        </p>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardContent className="flex flex-col items-center gap-6 py-4">
@@ -111,6 +117,6 @@ export function AdminMatchResult() {
           <Save /> Zapisz
         </Button>
       </div>
-    </ShellDemo>
+    </TournamentShellDemo>
   )
 }
