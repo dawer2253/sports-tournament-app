@@ -73,10 +73,14 @@ import { AdminShell } from '../components/layout/admin-shell'
 import { Card } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Plus } from 'lucide-react'
+import { organizer, tournamentList } from '../lib/demo-data'
+
+const tournament = tournamentList[0]!     // wiersz turnieju: `sport` to obiekt z `name`
 
 export function AdminExample() {
   return (
     <AdminShell
+      user={organizer}                     // wymagany; ekrany w screens/ biorą go przez ShellDemo
       active="teams"                       // podświetla kartę sekcji
       tournament={tournament}              // karta turnieju w sidebarze, karty sekcji, status
       title={tournament.name}              // w turnieju: nazwa turnieju, wersalikami przez <Heading>

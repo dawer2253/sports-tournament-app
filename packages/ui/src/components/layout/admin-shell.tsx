@@ -119,9 +119,10 @@ const sidebarLinkVariants = cva(
   ],
   {
     variants: {
+      // Ikonę stylujemy z rodzica, żeby stan aktywny żył w jednym wariancie.
       active: {
-        true: 'bg-sidebar-accent font-medium text-sidebar-accent-foreground before:opacity-100',
-        false: 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+        true: 'bg-sidebar-accent font-medium text-sidebar-accent-foreground before:opacity-100 [&_svg]:text-primary',
+        false: 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground [&_svg]:text-muted-foreground',
       },
       disabled: { true: 'cursor-default opacity-50 hover:bg-transparent', false: '' },
     },
@@ -142,7 +143,7 @@ const sectionTabVariants = cva(
   {
     variants: {
       active: {
-        true: 'border-primary font-medium text-foreground',
+        true: 'border-primary font-medium text-foreground [&_svg]:text-primary',
         false: 'border-transparent text-muted-foreground hover:text-foreground',
       },
       disabled: { true: 'cursor-default opacity-50 hover:text-muted-foreground', false: '' },
@@ -154,7 +155,7 @@ function TournamentsLink(nav: NavProps) {
   const { isActive, isDisabled, linkProps } = navLink('dashboard', nav)
   return (
     <a {...linkProps} className={sidebarLinkVariants({ active: isActive, disabled: isDisabled })}>
-      <LayoutGrid className={cn('size-4 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} />
+      <LayoutGrid className="size-4 shrink-0" />
       Turnieje
     </a>
   )
@@ -196,7 +197,7 @@ function SectionTabs(nav: NavProps) {
             title={isDisabled ? 'Wkrótce' : undefined}
             className={sectionTabVariants({ active: isActive, disabled: isDisabled })}
           >
-            <Icon className={cn('size-4', isActive && 'text-primary')} />
+            <Icon className="size-4" />
             {label}
           </a>
         )
