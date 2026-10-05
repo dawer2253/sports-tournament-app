@@ -1,6 +1,6 @@
 import { useState, type ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, screen, userEvent } from 'storybook/test'
+import { expect, fn, screen, userEvent, waitFor } from 'storybook/test'
 import { ConfirmDeleteDialog } from './confirm-delete-dialog'
 
 /** Stan `open` po stronie story, jak w `form-dialog.stories.tsx`. */
@@ -42,6 +42,17 @@ export const Domyslny: Story = {
 
     await userEvent.click(screen.getByRole('button', { name: 'Usuń obiekt' }))
     await expect(args.onConfirm).toHaveBeenCalledOnce()
+  },
+}
+
+/** Kontrola do `Wysylanie`, jak `EscZamyka` w `form-dialog.stories.tsx`. */
+export const EscZamyka: Story = {
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog')
+    await userEvent.keyboard('{Escape}')
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false)
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   },
 }
 

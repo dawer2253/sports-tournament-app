@@ -22,14 +22,15 @@ type ConfirmDeleteDialogProps = {
   name: string
   /** Skutek usunięcia. */
   description?: ReactNode
-  error?: ReactNode
+  pending?: boolean
+} & (
+  | { blocked?: false; error?: ReactNode }
   /**
    * Odmowa z guarda: usuwania nie ma co ponawiać, więc znika przycisk akcji,
-   * a „Anuluj" staje się „Zamknij". Powód podaje `error`.
+   * a „Anuluj" staje się „Zamknij". Powód w `error` jest wtedy obowiązkowy.
    */
-  blocked?: boolean
-  pending?: boolean
-}
+  | { blocked: true; error: ReactNode }
+)
 
 /** Potwierdzenie usunięcia bytu z listy. Prezentacyjne, jak `FormDialog`. */
 function ConfirmDeleteDialog({
