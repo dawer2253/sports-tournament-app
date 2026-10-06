@@ -172,6 +172,23 @@ Nie mylić z punktami w tabeli, które drużyna dostaje za wynik meczu (patrz
 _Unikaj_: goals i bramki jako nazwa kanoniczna (to etykieta UI dla piłki),
 points (zajęte przez punkty w tabeli).
 
+## Points (punktacja)
+
+Reguła turnieju, która mówi, ile punktów w tabeli daje drużynie wygrana, remis
+i porażka. Turniej dostaje ją przy zakładaniu jako kopię wartości domyślnych
+sportu, a potem organizer zmienia ją u siebie.
+
+Tabela jest zawsze aktualnym wnioskiem z zakończonych meczów, więc zmiana
+punktacji obejmuje też mecze już rozegrane, a powrót do poprzednich wartości
+odtwarza poprzednią tabelę.
+
+Nie mylić z punktami w wierszu tabeli, które są wynikiem zastosowania
+punktacji, ani ze zdobyczami (`Score`). W kodzie obie pierwsze wielkości
+nazywają się `points`: `Tournament.points` to punktacja, `StandingRow.points`
+to punkty drużyny.
+
+_Unikaj_: „punkty” jako nazwa reguły (to wynik jej zastosowania w tabeli).
+
 ## Standing (tabela)
 
 Klasyfikacja drużyn w obrębie fazy `league` albo pojedynczej grupy. Nie jest
