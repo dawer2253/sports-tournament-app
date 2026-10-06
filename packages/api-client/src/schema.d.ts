@@ -697,7 +697,7 @@ export interface paths {
         head?: never;
         /**
          * Zmień ustawienia turnieju
-         * @description Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
+         * @description Obsługuje też zmianę listy i kolejności tiebreaków (`tiebreakers`) i zmianę
          *     `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
          *     panel musi o tym ostrzec przed zapisem.
          *

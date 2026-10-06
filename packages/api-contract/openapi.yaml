@@ -407,7 +407,7 @@ paths:
       tags: [Tournaments]
       summary: Zmień ustawienia turnieju
       description: |
-        Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
+        Obsługuje też zmianę listy i kolejności tiebreaków (`tiebreakers`) i zmianę
         `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
         panel musi o tym ostrzec przed zapisem.
 
