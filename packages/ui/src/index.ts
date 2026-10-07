@@ -11,6 +11,7 @@ export * from './components/ui/checkbox';
 export * from './components/ui/dialog';
 export * from './components/ui/dropdown-menu';
 export * from './components/ui/empty-state';
+export * from './components/ui/image-file-field';
 export * from './components/ui/input';
 export * from './components/ui/label';
 export * from './components/ui/popover';
@@ -28,6 +29,10 @@ export * from './components/ui/textarea';
 export * from './components/ui/tooltip';
 export * from './components/ui/typography';
 
+export * from './components/data/player-row';
+export * from './components/data/players-table';
+export * from './components/data/team-row';
+export * from './components/data/teams-table';
 export * from './components/data/tournament-row';
 export * from './components/data/tournament-status-badge';
 export * from './components/data/tournaments-table';
@@ -37,6 +42,7 @@ export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
 export * from './components/layout/photo-panel';
 export * from './components/layout/team-crest';
+export * from './components/layout/team-logo';
 
 // PublicShell celowo poza barrel-em: importuje zdjęcia hero, a Vite emituje
 // zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby

@@ -1,79 +1,44 @@
-import { Plus, Pencil } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
-import { teams, players } from '../lib/demo-data'
-import type { Team, Player } from '../lib/demo-data'
+import { TeamsTable, type TeamsTableStatus } from '../components/data/teams-table'
+import type { TeamRow } from '../components/data/team-row'
+import { teamRows } from '../lib/demo-data'
 
-const placeholderPositions = ['Bramkarz', 'Napastnik']
-
-function PlayerRow({ number, name, position }: { number: number | string; name: string; position: string }) {
-  return (
-    <li className="flex items-center gap-3 py-1.5 text-sm">
-      <span className="grid size-6 shrink-0 place-items-center rounded bg-muted text-[10px] font-bold tabular-nums text-muted-foreground">
-        {number}
-      </span>
-      <span className="min-w-0 flex-1 truncate">{name}</span>
-      <span className="shrink-0 text-xs text-muted-foreground">{position}</span>
-    </li>
-  )
+export interface AdminTeamsProps {
+  teams?: TeamRow[]
+  status?: TeamsTableStatus
 }
 
-function TeamCard({ team }: { team: Team }) {
-  const roster: Player[] = players.filter((p) => p.teamId === team.id)
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center gap-3">
-        <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 font-bold text-primary">
-          {team.abbr}
-        </div>
-        <div className="min-w-0 flex-1">
-          <CardTitle className="truncate">{team.name}</CardTitle>
-          <p className="text-xs text-muted-foreground">{team.players} zawodników</p>
-        </div>
-        <Button variant="ghost" size="icon" aria-label={`Edytuj drużynę ${team.name}`}>
-          <Pencil className="size-4" />
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y divide-border">
-          {roster.length > 0
-            ? roster.map((p) => (
-                <PlayerRow key={p.id} number={p.number} name={p.name} position={p.position} />
-              ))
-            : placeholderPositions.map((position, i) => (
-                <PlayerRow
-                  key={i}
-                  number="—"
-                  name={`Zawodnik ${i + 1}`}
-                  position={position}
-                />
-              ))}
-        </ul>
-        <Button variant="ghost" size="sm" className="mt-1 text-primary">
-          <Plus className="size-3.5" /> Dodaj zawodnika
-        </Button>
-      </CardContent>
-    </Card>
-  )
-}
-
-export function AdminTeams() {
+/**
+ * Lista drużyn turnieju (#89 pkt 1). Wiersz jest wyłącznie linkiem do składu:
+ * akcje drużyny stoją w nagłówku drużyny na ekranie składu (pkt 4).
+ */
+export function AdminTeams({ teams = teamRows, status = 'success' }: AdminTeamsProps) {
+  // Przy pustej liście akcję niesie pusty stan tabeli: dwa „Dodaj drużynę"
+  // naraz mówiłyby to samo dwa razy.
+  const isEmpty = status === 'success' && teams.length === 0
   return (
     <TournamentShellDemo
       active="teams"
       actions={
-        <Button>
-          <Plus className="size-4" /> Dodaj drużynę
-        </Button>
+        !isEmpty && (
+          <Button>
+            <Plus className="size-4" /> Dodaj drużynę
+          </Button>
+        )
       }
     >
-      <div className="grid gap-4 lg:grid-cols-2">
-        {teams.map((team) => (
-          <TeamCard key={team.id} team={team} />
-        ))}
-      </div>
+      <TeamsTable
+        teams={teams}
+        status={status}
+        errorMessage="Sprawdź połączenie i spróbuj ponownie."
+        onRetry={() => {}}
+        onCreate={() => {}}
+        // Adres w hashu: kliknięcie w makiecie nie wyprowadza ramki Storybooka
+        // na nieistniejącą stronę.
+        teamHref={(team) => `#/tournaments/1/teams/${team.id}`}
+      />
     </TournamentShellDemo>
   )
 }

@@ -5,35 +5,39 @@ import * as Stories from './admin-teams.stories'
 
 # Drużyny (Admin): specyfikacja
 
-Ekran zarządzania drużynami i ich składami w obrębie jednego turnieju.
+Lista drużyn turnieju. Skład każdej drużyny ma osobny ekran:
+„Ekrany/Admin · Skład drużyny".
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Umożliwić organizatorowi przegląd wszystkich drużyn turnieju oraz zarządzanie każdą drużyną i jej zawodnikami z jednego miejsca.
+Dać organizatorowi przegląd drużyn turnieju, pokazać, której brakuje składu, i wejście w skład każdej z nich. Decyzje: [#89](https://github.com/dawer2253/sports-tournament-app/issues/89).
 
 ## Dane (wejście)
-- `tournament`: nazwa turnieju, sport i adres publiczny w nagłówku strony, wspólnym dla ekranów turnieju.
-- `teams` to lista drużyn: skrót (`abbr`), nazwa (`name`), liczba zawodników (`players`).
-- `players` to zawodnicy przypisani do drużyny przez `teamId`: numer, imię i nazwisko, pozycja.
+- Nagłówek strony wspólny dla ekranów turnieju: nazwa turnieju, sport i adres publiczny, aktywna karta „Drużyny".
+- `teams`: lista `TeamRow` (podzbiór `Team` z kontraktu): `id`, `name`, `logoUrl`, `playersCount`. Jedno żądanie listy, bez składów (#89 pkt 1).
+- Dane demo: `teamRows` z `lib/demo-data.ts`.
 
 ## Reguły
-- Skład drużyny to zawodnicy z `players` odfiltrowani po `teamId`.
-- Drużyny bez wpisów w `players` pokazują 2 pozycje przykładowe (placeholder) zamiast pustej listy.
+- Wiersz pokazuje herb, nazwę i liczbę zawodników. Nazwa jest linkiem do składu (`/tournaments/:id/teams/:teamId`). Wiersz nie ma innych akcji: zmiana nazwy, herb i usunięcie stoją w nagłówku drużyny na ekranie składu (#89 pkt 4).
+- Herb to `TeamLogo`: wgrane logo w stałym pudełku, a przy `logoUrl: null` albo błędzie ładowania herb zastępczy ze skrótem z `teamAbbr` (np. „Wilki Bemowo" → „WB").
+- „Zawodnicy" to sama liczba, bez odmiany.
+- Kolejność drużyn ustala backend (po nazwie).
 
 ## Stany
-- **Pełna lista** (domyślny, powyżej): 8 kart drużyn w siatce dwukolumnowej.
-- **Drużyna z realnym składem**: lista zawodników z numerem, imieniem i pozycją.
-- **Drużyna bez składu**: pozycje przykładowe z numerem „–".
-- **Pusta lista drużyn**: komunikat zachęcający do dodania pierwszej drużyny (TODO).
+- **Pełna lista** (domyślny, powyżej).
+- **Pusta lista**: `EmptyState` z „Dodaj drużynę".
+- **Wczytywanie**: szkielet wierszy, pierwszy pasek ogłasza „Wczytywanie drużyn".
+- **Błąd**: `EmptyState` w wariancie błędu ze „Spróbuj ponownie".
+
+<Canvas of={Stories.Pusta} />
 
 ## Zachowanie
-- Przycisk „Dodaj drużynę" (nagłówek) otwiera formularz nowej drużyny (TODO: dialog).
-- Ikona ołówka na karcie otwiera edycję danych drużyny (TODO: dialog).
-- Przycisk „Dodaj zawodnika" dopisuje zawodnika do składu danej drużyny (TODO: dialog).
-- Responsywność: jedna kolumna na wąskich ekranach, dwie od `lg`.
+- „Dodaj drużynę" otwiera dialog nowej drużyny. Stoi w nagłówku, a przy pustej liście tylko w pustym stanie, żeby nie dublować akcji. Po dodaniu zostajemy na liście, z toastem (#89 pkt 6).
+- Kliknięcie nazwy przechodzi do składu. Kliknięcie z modyfikatorem (np. Ctrl) otwiera skład w nowej karcie.
 
 ## Otwarte pytania
-- Czy usuwanie drużyny/zawodnika dostępne stąd, czy tylko z ekranu edycji?
-- Czy pokazywać zdjęcia/awatary zawodników w składzie?
-- Czy limit zawodników na drużynę jest konfigurowalny per turniej?
+Rozstrzygnięte w #89 pkt 11:
+- Usuwanie drużyny: z nagłówka drużyny na ekranie składu, nie z listy (pkt 4).
+- Awatary zawodników: nie, kontrakt nie ma zdjęcia zawodnika.
+- Limit zawodników: stałe 50; limit per turniej to future work.

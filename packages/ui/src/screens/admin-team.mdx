@@ -1,0 +1,52 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-team.stories'
+
+<Meta of={Stories} />
+
+# Skład drużyny (Admin): specyfikacja
+
+Ekran jednej drużyny: jej nagłówek z akcjami i skład. Wchodzi się tu z
+„Ekrany/Admin · Drużyny".
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Dać organizatorowi jedno miejsce do zarządzania drużyną (nazwa, herb, usunięcie) i jej zawodnikami. Decyzje: [#89](https://github.com/dawer2253/sports-tournament-app/issues/89).
+
+## Dane (wejście)
+- Trasa `/tournaments/:id/teams/:teamId`, dziecko trasy turnieju z aktywną kartą „Drużyny". Tytuł strony to nazwa turnieju (#89 pkt 3).
+- `team`: `TeamRow` z `GET /teams/{team}`: `id`, `name`, `logoUrl`, `playersCount`.
+- `players`: lista `PlayerRow` z `GET /teams/{team}/players`: `id`, `name`, `number`, `position`. Link bezpośredni działa bez listy drużyn.
+- Dane demo: `teamRows` i `teamPlayers` z `lib/demo-data.ts`.
+
+## Reguły
+- Pod kartami stoi link „← Drużyny" do listy, a pod nim nagłówek drużyny: `TeamLogo`, nazwa i akcje.
+- Akcje drużyny: „Zmień nazwę", „Wgraj herb" (bez logo) albo „Zmień herb" (z logo), „Usuń herb" (tylko przy `logoUrl`) i „Usuń drużynę" (#89 pkt 4 i 8).
+- Herb wgrywa się w osobnym oknie z polem pliku z podglądem (`ImageFileField`), z zapisem po odpowiedzi serwera.
+- Skład to `PlayersTable`: Nr („–" przy braku numeru), Imię i nazwisko, Pozycja (pusta przy braku) i akcje. Kolejność ustala backend: numery rosnąco, zawodnicy bez numeru na końcu.
+- Ołówek i kosz w wierszu zawodnika mają w nazwie dostępnej jego imię i nazwisko.
+
+## Stany
+- **Pełny skład, drużyna z herbem** (domyślny, powyżej).
+- **Drużyna bez herbu**: herb zastępczy ze skrótem, „Wgraj herb", bez „Usuń herb".
+- **Pusty skład**: „Brak zawodników" i „Dodaj zawodnika", bez przykładowych pozycji (#89 pkt 10).
+- **Nie ma takiej drużyny**: nieprawidłowe id, 403, 404 i drużyna z innego turnieju dają jeden stan z linkiem do listy (#89 pkt 3). Robi go aplikacja.
+
+<Canvas of={Stories.BezHerbu} />
+
+<Canvas of={Stories.PustySklad} />
+
+## Zachowanie
+- „Dodaj zawodnika" (nad tabelą, a przy pustym składzie tylko w pustym stanie) otwiera dialog jednego zawodnika; ołówek otwiera ten sam dialog z danymi zawodnika, kosz prosi o potwierdzenie (#89 pkt 7).
+  - Formularz sprawdza `zod`em: `name` 1–120 znaków, `number` całkowity 0–999 (puste pole to `null`), `position` do 60 znaków. Pole „Pozycja" jest bez podpowiedzi.
+  - Duplikat numeru daje `422` pod `number`, przy polu. Limit 50 zawodników daje `422` pod `players`, w błędzie formularza. Przycisk nie blokuje się z wyprzedzeniem, bo limity sprawdza serwer.
+  - Po zapisie i po usunięciu odświeżają się skład, drużyna i lista drużyn, bo zmienia się `playersCount`.
+- „Usuń drużynę" prosi o potwierdzenie, które mówi o kaskadzie, np. „Usunie też 12 zawodników." (bez tego zdania przy zerze). Po sukcesie wracamy na listę z toastem, a `422` z guarda włącza tryb zablokowany (#89 pkt 5).
+- „Wgraj herb" / „Zmień herb" otwiera okno z polem pliku i podglądem; okno zamyka się dopiero po odpowiedzi serwera. Aplikacja sprawdza format (`file.type`) i rozmiar (2 MB), wymiary tylko serwer; `422` pod `logo` siada przy polu (#89 pkt 8).
+- „Usuń herb" prosi o potwierdzenie, bo plik przepada.
+
+## Otwarte pytania
+Rozstrzygnięte w #89 pkt 11:
+- Usuwanie drużyny: z nagłówka drużyny na tym ekranie (pkt 4).
+- Awatary zawodników: nie, kontrakt nie ma zdjęcia zawodnika.
+- Limit zawodników: stałe 50; limit per turniej to future work.
