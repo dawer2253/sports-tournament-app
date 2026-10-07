@@ -54,8 +54,8 @@ return new class extends Migration
     {
         $config = DB::table('sports')->where('code', $code)->value('config');
 
-        // Brak sportu to baza bez migracji tworzącej, a nie stan do naprawy
-        // tutaj. Niezmiennik etykiet w `DomainSchemaTest` i tak go wyłapie.
+        // Sportu nie ma tylko w bazie bez migracji tworzącej. Wtedy nie ma
+        // czego uzupełniać, a wstawianie sportów nie należy do tej migracji.
         if ($config === null) {
             return;
         }

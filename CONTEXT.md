@@ -191,9 +191,9 @@ w interfejsie tego turnieju.
 Reguła ustalająca kolejność drużyn, które mają tyle samo punktów. Turniej ma
 uporządkowaną listę takich kryteriów, stosowanych po kolei aż do rozstrzygnięcia.
 
-`head_to_head` (bezpośredni bój) jest szczególnym kryterium: porównuje wyłącznie
+`head_to_head` (bezpośredni mecz) jest szczególnym kryterium: porównuje wyłącznie
 mecze rozegrane między remisującymi drużynami. Jeżeli nie rozstrzyga, stosuje się
-kolejne kryterium z listy, bez ponownego zagłębiania się w bezpośredni bój.
+kolejne kryterium z listy, bez ponownego zawężania do meczów między nimi.
 
 Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
 `score_for`, `score_against`.
