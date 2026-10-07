@@ -31,7 +31,9 @@ export const BezAdresu: Story = {
   args: { venues: venueRows.filter((venue) => venue.address === null) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText('–', { exact: true })).toBeInTheDocument()
+    const venue = venueRows.find((row) => row.address === null)!
+    const row = canvas.getByText(venue.name).closest('tr')!
+    await expect(within(row).getByText('–', { exact: true })).toBeInTheDocument()
   },
 }
 
