@@ -308,6 +308,13 @@ export interface paths {
                          *               "score_for",
                          *               "wins"
                          *             ],
+                         *             "tiebreakerLabels": {
+                         *               "points": "Punkty w tabeli",
+                         *               "head_to_head": "Bezpośredni mecz",
+                         *               "score_diff": "Różnica bramek",
+                         *               "score_for": "Bramki zdobyte",
+                         *               "wins": "Zwycięstwa"
+                         *             },
                          *             "availableStats": [
                          *               "goals",
                          *               "yellowCards",
@@ -352,6 +359,13 @@ export interface paths {
                          *               "score_for",
                          *               "wins"
                          *             ],
+                         *             "tiebreakerLabels": {
+                         *               "points": "Punkty w tabeli",
+                         *               "head_to_head": "Bezpośredni mecz",
+                         *               "score_diff": "Różnica punktów",
+                         *               "score_for": "Zdobyte punkty",
+                         *               "wins": "Zwycięstwa"
+                         *             },
                          *             "availableStats": [
                          *               "points",
                          *               "fouls"
@@ -2566,6 +2580,20 @@ export interface components {
              */
             defaultTiebreakers: components["schemas"]["TiebreakerCode"][];
             availableTiebreakers: components["schemas"]["TiebreakerCode"][];
+            /**
+             * @description Polska etykieta każdego kryterium z `availableTiebreakers` tego
+             *     sportu; klucze to dokładnie `availableTiebreakers`, bez braków
+             *     i bez nadmiaru. Etykieta zależy od sportu, bo kryteria liczone ze
+             *     zdobyczy nazywają zdobycze („Różnica bramek” albo „Różnica
+             *     punktów”). `points` oznacza punkty w tabeli, a nie zdobycze.
+             *
+             *     Klucze są kodami `TiebreakerCode`, ale schemat ich nie zawęża
+             *     przez `propertyNames`: generator klienta to pole pomija, a walidator
+             *     w testach backendu nie rozwiązuje w nim `$ref`.
+             */
+            tiebreakerLabels: {
+                [key: string]: string;
+            };
             availableStats: string[];
         };
         Sport: {

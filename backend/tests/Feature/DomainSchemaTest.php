@@ -179,6 +179,29 @@ it('ma domyślną kolejność tiebreaków per sport, zgodną z kontraktem', func
         ->and(array_diff($basketball->defaultTiebreakers(), $basketball->availableTiebreakers()))->toBe([]);
 });
 
+it('ma etykietę każdego dostępnego tiebreaka i żadnej ponad nie', function () {
+    // #117: panel pokazuje tiebreaki turnieju po etykietach z konfiguracji
+    // sportu. Kryterium dopisane do `availableTiebreakers` bez etykiety
+    // wywróciłoby ekran ustawień, a etykieta bez kryterium to martwa dana —
+    // oba rozjazdy mają wywracać ten test. Pętla idzie po wszystkich sportach
+    // w bazie, więc nowy sport podlega temu samemu niezmiennikowi.
+    $sports = Sport::all();
+
+    expect($sports)->not->toBeEmpty();
+
+    foreach ($sports as $sport) {
+        $labels = $sport->config['tiebreakerLabels'] ?? null;
+
+        expect($labels)->toBeArray("{$sport->code}: brak tiebreakerLabels")
+            ->and(array_keys($labels))->toEqualCanonicalizing($sport->availableTiebreakers(), "{$sport->code}: klucze ≠ availableTiebreakers");
+
+        foreach ($labels as $code => $label) {
+            expect($label)->toBeString()
+                ->and(trim($label))->not->toBe('', "{$sport->code}.{$code}: pusta etykieta");
+        }
+    }
+});
+
 it('zakłada turniej z punktacją i tiebreakami sportu, a nie z pustymi', function () {
     // Punktacja turnieju startuje jako kopia domyślnej dla sportu i dopiero
     // potem organizer ją stroi. Kopiowanie robi na razie factory; przy CRUD-zie

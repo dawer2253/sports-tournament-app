@@ -240,6 +240,12 @@ paths:
                         - { code: red_card, label: Czerwona kartka, hasPlayer: true, stat: redCards }
                       defaultTiebreakers: [points, head_to_head, score_diff, score_for]
                       availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
+                      tiebreakerLabels:
+                        points: Punkty w tabeli
+                        head_to_head: Bezpośredni mecz
+                        score_diff: Różnica bramek
+                        score_for: Bramki zdobyte
+                        wins: Zwycięstwa
                       availableStats: [goals, yellowCards, redCards]
                   - id: 2
                     code: basketball
@@ -252,6 +258,12 @@ paths:
                         - { code: foul, label: Faul, hasPlayer: true, stat: fouls }
                       defaultTiebreakers: [points, head_to_head, score_diff]
                       availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
+                      tiebreakerLabels:
+                        points: Punkty w tabeli
+                        head_to_head: Bezpośredni mecz
+                        score_diff: Różnica punktów
+                        score_for: Zdobyte punkty
+                        wins: Zwycięstwa
                       availableStats: [points, fouls]
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
@@ -2070,7 +2082,7 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, eventTypes, defaultTiebreakers, availableTiebreakers, availableStats]
+      required: [allowsDraw, defaultPoints, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats]
       properties:
         allowsDraw:
           type: boolean
@@ -2089,6 +2101,19 @@ components:
         availableTiebreakers:
           type: array
           items: { $ref: '#/components/schemas/TiebreakerCode' }
+        tiebreakerLabels:
+          type: object
+          description: |
+            Polska etykieta każdego kryterium z `availableTiebreakers` tego
+            sportu; klucze to dokładnie `availableTiebreakers`, bez braków
+            i bez nadmiaru. Etykieta zależy od sportu, bo kryteria liczone ze
+            zdobyczy nazywają zdobycze („Różnica bramek” albo „Różnica
+            punktów”). `points` oznacza punkty w tabeli, a nie zdobycze.
+
+            Klucze są kodami `TiebreakerCode`, ale schemat ich nie zawęża
+            przez `propertyNames`: generator klienta to pole pomija, a walidator
+            w testach backendu nie rozwiązuje w nim `$ref`.
+          additionalProperties: { type: string, minLength: 1 }
         availableStats:
           type: array
           items: { type: string }
