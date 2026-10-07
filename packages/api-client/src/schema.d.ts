@@ -2586,10 +2586,6 @@ export interface components {
              *     i bez nadmiaru. Etykieta zależy od sportu, bo kryteria liczone ze
              *     zdobyczy nazywają zdobycze („Różnica bramek” albo „Różnica
              *     punktów”). `points` oznacza punkty w tabeli, a nie zdobycze.
-             *
-             *     Klucze są kodami `TiebreakerCode`, ale schemat ich nie zawęża
-             *     przez `propertyNames`: generator klienta to pole pomija, a walidator
-             *     w testach backendu nie rozwiązuje w nim `$ref`.
              */
             tiebreakerLabels: {
                 [key: string]: string;
