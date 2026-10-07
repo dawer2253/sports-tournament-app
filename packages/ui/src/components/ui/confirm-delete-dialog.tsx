@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from './dialog'
-import { DialogError, PendingSpinner, guardWhilePending } from './dialog-parts'
+import { DialogError, PendingButton, guardWhilePending } from './dialog-parts'
 
 type ConfirmDeleteDialogProps = {
   open: boolean
@@ -61,10 +61,9 @@ function ConfirmDeleteDialog({
             </Button>
           </DialogClose>
           {!blocked && (
-            <Button type="button" variant="destructive" disabled={pending} onClick={onConfirm}>
-              <PendingSpinner pending={pending} />
+            <PendingButton type="button" variant="destructive" pending={pending} onClick={onConfirm}>
               Usuń {entity}
-            </Button>
+            </PendingButton>
           )}
         </DialogFooter>
       </DialogContent>

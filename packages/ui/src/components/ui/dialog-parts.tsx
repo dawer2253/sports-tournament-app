@@ -1,7 +1,10 @@
 // Części wspólne `FormDialog` i `ConfirmDeleteDialog`. Plik celowo poza
 // barrel-em: to szczegół tych dwóch okien, nie prymityw dla aplikacji.
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { Loader2Icon } from 'lucide-react'
+
+import { cn } from '../../lib/utils'
+import { Button } from './button'
 
 /** Błąd ogólny nad treścią okna (np. odpowiedź serwera bez przypisanego pola). */
 function DialogError({ children }: { children?: ReactNode }) {
@@ -17,9 +20,37 @@ function DialogError({ children }: { children?: ReactNode }) {
   )
 }
 
-/** Spinner na przycisku akcji w trakcie wysyłania. */
-function PendingSpinner({ pending }: { pending?: boolean }) {
-  return pending ? <Loader2Icon aria-hidden className="size-4 animate-spin" /> : null
+/**
+ * Przycisk akcji okna. Przy `pending` pokazuje spinner i ignoruje aktywację,
+ * ale jest wyłączony przez `aria-disabled`, nie `disabled`: przeglądarka zdejmuje
+ * fokus z wyłączonego przycisku, więc fokus wypadałby z okna do `body` w chwili
+ * wysłania (review #133). Zablokowanie kliku blokuje też niejawne wysłanie
+ * formularza Enterem, bo przeglądarka wysyła je jako klik w przycisk `submit`.
+ */
+function PendingButton({
+  pending,
+  onClick,
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof Button> & { pending?: boolean }) {
+  return (
+    <Button
+      {...props}
+      aria-disabled={pending || undefined}
+      className={cn('aria-disabled:pointer-events-none aria-disabled:opacity-50', className)}
+      onClick={(event) => {
+        if (pending) {
+          event.preventDefault()
+          return
+        }
+        onClick?.(event)
+      }}
+    >
+      {pending && <Loader2Icon aria-hidden className="size-4 animate-spin" />}
+      {children}
+    </Button>
+  )
 }
 
 /**
@@ -32,4 +63,4 @@ function guardWhilePending(pending: boolean | undefined, onOpenChange: (open: bo
   }
 }
 
-export { DialogError, PendingSpinner, guardWhilePending }
+export { DialogError, PendingButton, guardWhilePending }

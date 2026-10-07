@@ -23,6 +23,11 @@ function Stateful(args: ComponentProps<typeof FormDialog>) {
   )
 }
 
+/** Przycisk wyłączony atrybutem `disabled` albo `aria-disabled`. */
+function isInactive(button: HTMLElement) {
+  return button.matches(':disabled, [aria-disabled="true"]')
+}
+
 const meta = {
   title: 'UI/Okno formularza',
   component: FormDialog,
@@ -76,8 +81,14 @@ export const Wysylanie: Story = {
   play: async ({ args }) => {
     const dialog = await screen.findByRole('dialog')
 
-    await expect(screen.getByRole('button', { name: 'Dodaj' })).toBeDisabled()
+    // `aria-disabled`, nie `disabled`: wyłączony przycisk gubi fokus (patrz `FokusPrzyWysylaniu`).
+    await expect(screen.getByRole('button', { name: 'Dodaj' })).toHaveAttribute('aria-disabled', 'true')
     await expect(screen.getByRole('button', { name: 'Anuluj' })).toBeDisabled()
+
+    // Enter w polu wysyła formularz niejawnie; przy `pending` nie może wysłać drugi raz.
+    await userEvent.click(screen.getByLabelText('Nazwa'))
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onSubmit).not.toHaveBeenCalled()
 
     await userEvent.keyboard('{Escape}')
     await expect(args.onOpenChange).not.toHaveBeenCalled()
@@ -92,5 +103,69 @@ export const BladOgolny: Story = {
     await expect(screen.getByRole('alert')).toHaveTextContent(
       'Nie udało się zapisać obiektu. Spróbuj ponownie.',
     )
+  },
+}
+
+/** Wysłanie z aplikacji: `onSubmit` włącza `pending`, jak zrobi to hook mutacji. */
+function SubmitSetsPending(args: ComponentProps<typeof FormDialog>) {
+  const [pending, setPending] = useState(false)
+  return (
+    <FormDialog
+      {...args}
+      pending={pending}
+      onSubmit={(event) => {
+        args.onSubmit(event)
+        setPending(true)
+      }}
+    />
+  )
+}
+
+/**
+ * Fokus zostaje na przycisku akcji, gdy ten przechodzi w `pending`. Atrybut
+ * `disabled` zdejmowałby go do `body`: czytnik ekranu traci miejsce, a błąd
+ * z serwera przychodzi do okna, w którym nic nie ma fokusu (review #133).
+ */
+export const FokusPrzyWysylaniu: Story = {
+  parameters: { chromatic: { disableSnapshot: true } },
+  render: (args) => <SubmitSetsPending {...args} />,
+  play: async ({ args }) => {
+    await screen.findByRole('dialog')
+    const submit = screen.getByRole('button', { name: 'Dodaj' })
+
+    await userEvent.click(submit)
+    // Czekamy na `pending` niezależnie od tego, jak przycisk jest wyłączony.
+    await waitFor(() => expect(isInactive(submit)).toBe(true))
+    await expect(document.activeElement).toBe(submit)
+
+    // Enter na przycisku z fokusem nie wysyła drugi raz.
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
+  },
+}
+
+function overlay() {
+  return document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!
+}
+
+/** Kontrola do `KlikObokPrzyWysylaniu`: bez `pending` klik obok zamyka okno. */
+export const KlikObokZamyka: Story = {
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async ({ args }) => {
+    await screen.findByRole('dialog')
+    await userEvent.click(overlay())
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+  },
+}
+
+export const KlikObokPrzyWysylaniu: Story = {
+  args: { pending: true },
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async ({ args }) => {
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(overlay())
+    await expect(args.onOpenChange).not.toHaveBeenCalled()
+    await expect(dialog).toBeInTheDocument()
   },
 }

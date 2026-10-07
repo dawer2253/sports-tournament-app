@@ -18,6 +18,11 @@ function Stateful(args: ComponentProps<typeof ConfirmDeleteDialog>) {
   )
 }
 
+/** Przycisk wyłączony atrybutem `disabled` albo `aria-disabled`. */
+function isInactive(button: HTMLElement) {
+  return button.matches(':disabled, [aria-disabled="true"]')
+}
+
 const meta = {
   title: 'UI/Potwierdzenie usunięcia',
   component: ConfirmDeleteDialog,
@@ -61,8 +66,13 @@ export const Wysylanie: Story = {
   play: async ({ args }) => {
     const dialog = await screen.findByRole('alertdialog')
 
-    await expect(screen.getByRole('button', { name: 'Usuń obiekt' })).toBeDisabled()
+    const confirm = screen.getByRole('button', { name: 'Usuń obiekt' })
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true')
     await expect(screen.getByRole('button', { name: 'Anuluj' })).toBeDisabled()
+
+    confirm.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onConfirm).not.toHaveBeenCalled()
 
     await userEvent.keyboard('{Escape}')
     await expect(args.onOpenChange).not.toHaveBeenCalled()
@@ -97,5 +107,38 @@ export const Zablokowany: Story = {
     await expect(screen.queryByRole('button', { name: 'Usuń obiekt' })).toBeNull()
     await expect(screen.queryByRole('button', { name: 'Anuluj' })).toBeNull()
     await expect(screen.getByRole('button', { name: 'Zamknij' })).toBeEnabled()
+  },
+}
+
+/** `onConfirm` włącza `pending`, jak zrobi to hook mutacji. */
+function ConfirmSetsPending(args: ComponentProps<typeof ConfirmDeleteDialog>) {
+  const [pending, setPending] = useState(false)
+  return (
+    <ConfirmDeleteDialog
+      {...args}
+      pending={pending}
+      onConfirm={() => {
+        args.onConfirm()
+        setPending(true)
+      }}
+    />
+  )
+}
+
+/** Jak `FokusPrzyWysylaniu` w `form-dialog.stories.tsx`. */
+export const FokusPrzyUsuwaniu: Story = {
+  parameters: { chromatic: { disableSnapshot: true } },
+  render: (args) => <ConfirmSetsPending {...args} />,
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog')
+    const confirm = screen.getByRole('button', { name: 'Usuń obiekt' })
+
+    await userEvent.click(confirm)
+    // Czekamy na `pending` niezależnie od tego, jak przycisk jest wyłączony.
+    await waitFor(() => expect(isInactive(confirm)).toBe(true))
+    await expect(document.activeElement).toBe(confirm)
+
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onConfirm).toHaveBeenCalledOnce()
   },
 }

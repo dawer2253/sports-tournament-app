@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from './dialog'
-import { DialogError, PendingSpinner, guardWhilePending } from './dialog-parts'
+import { DialogError, PendingButton, guardWhilePending } from './dialog-parts'
 
 type FormDialogProps = {
   open: boolean
@@ -58,10 +58,9 @@ function FormDialog({
                 Anuluj
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={pending}>
-              <PendingSpinner pending={pending} />
+            <PendingButton type="submit" pending={pending}>
               {submitLabel}
-            </Button>
+            </PendingButton>
           </DialogFooter>
         </form>
       </DialogContent>
