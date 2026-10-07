@@ -17,16 +17,11 @@ const root = path.resolve(import.meta.dirname, '..');
 const input = pathToFileURL(path.join(root, '../api-contract/openapi.yaml'));
 const output = path.join(root, 'src/schema.d.ts');
 
-const BLOB = ts.factory.createTypeReferenceNode(ts.factory.createIdentifier('Blob'));
-const NULL = ts.factory.createLiteralTypeNode(ts.factory.createNull());
+const BLOB_TYPE = ts.factory.createTypeReferenceNode(ts.factory.createIdentifier('Blob'));
 
 const ast = await openapiTS(input, {
   transform(schemaObject) {
-    if (schemaObject.format !== 'binary') return undefined;
-    const nullable =
-      schemaObject.nullable === true ||
-      (Array.isArray(schemaObject.type) && schemaObject.type.includes('null'));
-    return nullable ? ts.factory.createUnionTypeNode([BLOB, NULL]) : BLOB;
+    return schemaObject.format === 'binary' ? BLOB_TYPE : undefined;
   },
 });
 
