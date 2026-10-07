@@ -10,27 +10,34 @@ Ekran administracyjny z listą obiektów (boisk, hal), na których rozgrywane s�
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek: dodawanie, edycję i usuwanie obiektów przypisywanych później do meczów w terminarzu.
+Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek: dodawanie, edycję i usuwanie obiektów przypisywanych później do meczów w terminarzu. Decyzje: [#90](https://github.com/dawer2253/sports-tournament-app/issues/90).
 
 ## Dane (wejście)
-- Lista obiektów: `name` (nazwa), `address` (adres), `matches` (liczba przypisanych meczów).
-- Źródło: `venues` z warstwy danych (docelowo z API turnieju).
+- Nagłówek strony wspólny dla ekranów turnieju: nazwa turnieju, sport i adres publiczny, aktywna karta „Obiekty".
+- `venues`: lista `VenueRow` (podzbiór `Venue` z kontraktu): `id`, `name` (nazwa), `address` (adres, może być `null`).
+- Dane demo: `venueRows` z `lib/demo-data.ts`.
 
 ## Reguły
-- Kolumna „Mecze" pokazuje liczbę meczów przypisanych do obiektu (`tabular-nums`).
-- Nazwa obiektu prezentowana z ikoną `MapPin` i pogrubieniem; adres w kolorze `text-muted-foreground`.
-- Akcje wiersza (edycja, usunięcie) wyrównane do prawej, ikonograficzne.
+- Tabela to `VenuesTable`: kolumny Nazwa i Adres oraz akcje wiersza.
+- Nazwa obiektu prezentowana z ikoną `MapPin` i pogrubieniem; adres w kolorze `text-muted-foreground`, a przy `address: null` „–".
+- Akcje wiersza (edycja `Pencil`, usunięcie `Trash2`) wyrównane do prawej, ikonograficzne. Nazwa dostępna każdego przycisku zawiera nazwę obiektu.
 
 ## Stany
-- **Lista obiektów**: domyślny (powyżej).
-- **Brak obiektów**: pusta tabela z zachętą „Dodaj obiekt" (TODO).
-- **Usuwanie z przypisanymi meczami**: potwierdzenie z ostrzeżeniem, gdy `matches > 0` (TODO).
+- **Pełna lista** (domyślny, powyżej).
+- **Obiekt bez adresu**: w kolumnie Adres „–".
+- **Pusta lista**: `EmptyState` z „Dodaj obiekt".
+- **Wczytywanie**: szkielet wierszy, pierwszy pasek ogłasza „Wczytywanie obiektów".
+- **Błąd**: `EmptyState` w wariancie błędu ze „Spróbuj ponownie".
+- **Usuwanie zablokowane**: serwer odmawia usunięcia (`422`), a okno potwierdzenia pokazuje komunikat i tylko „Zamknij".
+
+<Canvas of={Stories.BezAdresu} />
 
 ## Zachowanie
-- Przycisk „Dodaj obiekt" (ikona `Plus`) w nagłówku otwiera formularz dodawania (TODO: dialog).
+- Przycisk „Dodaj obiekt" (ikona `Plus`) w nagłówku otwiera dialog dodawania. Przy pustej liście stoi tylko w pustym stanie, żeby nie dublować akcji.
 - Edycja (`Pencil`) otwiera formularz z danymi obiektu; usunięcie (`Trash2`) wymaga potwierdzenia.
 - Responsywność: tabela przewijana poziomo na wąskich ekranach.
 
 ## Otwarte pytania
-- Czy usuwanie obiektu z przypisanymi meczami ma być blokowane, czy tylko ostrzegać?
-- Czy dodać pojemność/typ obiektu (boisko vs hala) jako osobne pola?
+Rozstrzygnięte w #90:
+- Usuwanie obiektu z rozegranymi meczami blokuje serwer (guard rozegranych meczów), a panel go nie uprzedza: odmowę pokazuje stan „Usuwanie zablokowane".
+- Pojemność i typ obiektu (boisko vs hala) nie wchodzą.
