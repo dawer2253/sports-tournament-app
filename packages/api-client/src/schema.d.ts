@@ -757,7 +757,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Wgraj logo turnieju */
+        /**
+         * Wgraj logo turnieju
+         * @description Przyjmuje PNG, JPG albo WebP o rozmiarze do 2 MB i wymiarach od 64×64
+         *     do 4096×4096 pikseli, bez wymogu proporcji. O formacie decyduje treść
+         *     pliku, nie nazwa ani rozszerzenie. Obraz jest zapisywany bez
+         *     przetwarzania.
+         *
+         *     Nowy plik zastępuje poprzedni, a poprzedni jest kasowany. Każdy upload
+         *     daje nowy `logoUrl`, więc dotychczasowy adres przestaje działać.
+         *     Naruszenie daje `422` pod `logo`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -771,7 +781,7 @@ export interface paths {
                 content: {
                     "multipart/form-data": {
                         /** Format: binary */
-                        logo: string;
+                        logo: Blob;
                     };
                 };
             };
@@ -782,6 +792,39 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "name": "Liga Osiedlowa 2026",
+                         *         "slug": "liga-osiedlowa-2026",
+                         *         "status": "draft",
+                         *         "sport": {
+                         *           "id": 1,
+                         *           "code": "football",
+                         *           "name": "Piłka nożna"
+                         *         },
+                         *         "branding": {
+                         *           "logoUrl": "http://localhost:8000/storage/tournaments/1/logo/hMbkow7jZDUOi8YzukrkRzF1eY8wqM7DJtNlFrEZ.png",
+                         *           "primaryColor": "#1F7A45"
+                         *         },
+                         *         "points": {
+                         *           "win": 3,
+                         *           "draw": 1,
+                         *           "loss": 0
+                         *         },
+                         *         "tiebreakers": [
+                         *           "points",
+                         *           "head_to_head",
+                         *           "score_diff",
+                         *           "score_for"
+                         *         ],
+                         *         "teamsCount": 0,
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-01T08:00:00+00:00"
+                         *       }
+                         *     }
+                         */
                         "application/json": {
                             data: components["schemas"]["Tournament"];
                         };
@@ -793,7 +836,71 @@ export interface paths {
                 422: components["responses"]["ValidationError"];
             };
         };
-        delete?: never;
+        /**
+         * Usuń logo turnieju
+         * @description Kasuje plik i ustawia `logoUrl` na `null`. Operacja jest idempotentna:
+         *     bez wgranego logo też daje `200`.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tournament: components["parameters"]["TournamentId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Turniej bez logo */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "name": "Liga Osiedlowa 2026",
+                         *         "slug": "liga-osiedlowa-2026",
+                         *         "status": "draft",
+                         *         "sport": {
+                         *           "id": 1,
+                         *           "code": "football",
+                         *           "name": "Piłka nożna"
+                         *         },
+                         *         "branding": {
+                         *           "logoUrl": null,
+                         *           "primaryColor": "#1F7A45"
+                         *         },
+                         *         "points": {
+                         *           "win": 3,
+                         *           "draw": 1,
+                         *           "loss": 0
+                         *         },
+                         *         "tiebreakers": [
+                         *           "points",
+                         *           "head_to_head",
+                         *           "score_diff",
+                         *           "score_for"
+                         *         ],
+                         *         "teamsCount": 0,
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-01T08:00:00+00:00"
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Tournament"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1141,7 +1248,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Wgraj herb drużyny */
+        /**
+         * Wgraj herb drużyny
+         * @description Przyjmuje PNG, JPG albo WebP o rozmiarze do 2 MB i wymiarach od 64×64
+         *     do 4096×4096 pikseli, bez wymogu proporcji. O formacie decyduje treść
+         *     pliku, nie nazwa ani rozszerzenie. Obraz jest zapisywany bez
+         *     przetwarzania.
+         *
+         *     Nowy plik zastępuje poprzedni, a poprzedni jest kasowany. Każdy upload
+         *     daje nowy `logoUrl`, więc dotychczasowy adres przestaje działać.
+         *     Naruszenie daje `422` pod `logo`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1155,7 +1272,7 @@ export interface paths {
                 content: {
                     "multipart/form-data": {
                         /** Format: binary */
-                        logo: string;
+                        logo: Blob;
                     };
                 };
             };
@@ -1166,6 +1283,18 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "tournamentId": 1,
+                         *         "name": "Wilki Bemowo",
+                         *         "logoUrl": "http://localhost:8000/storage/tournaments/1/teams/1/GmvZcUftUF1rp7d6ntSTGxnDGWHVCmrmYYNbs9IG.png",
+                         *         "groupId": null,
+                         *         "playersCount": 3
+                         *       }
+                         *     }
+                         */
                         "application/json": {
                             data: components["schemas"]["Team"];
                         };
@@ -1177,7 +1306,50 @@ export interface paths {
                 422: components["responses"]["ValidationError"];
             };
         };
-        delete?: never;
+        /**
+         * Usuń herb drużyny
+         * @description Kasuje plik i ustawia `logoUrl` na `null`. Operacja jest idempotentna:
+         *     bez wgranego logo też daje `200`.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    team: components["parameters"]["TeamId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Drużyna bez herbu */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "tournamentId": 1,
+                         *         "name": "Wilki Bemowo",
+                         *         "logoUrl": null,
+                         *         "groupId": null,
+                         *         "playersCount": 3
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Team"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2598,7 +2770,11 @@ export interface components {
          */
         TournamentFormat: "league" | "groups_playoff" | "knockout";
         Branding: {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+             *     gdy logo nie wgrano albo je usunięto.
+             */
             logoUrl: string | null;
             primaryColor: string;
         };
@@ -2684,7 +2860,11 @@ export interface components {
             /** Format: int64 */
             tournamentId: number;
             name: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+             *     gdy logo nie wgrano albo je usunięto.
+             */
             logoUrl: string | null;
             /**
              * Format: int64
@@ -2698,7 +2878,11 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+             *     gdy logo nie wgrano albo je usunięto.
+             */
             logoUrl: string | null;
         };
         Player: {
