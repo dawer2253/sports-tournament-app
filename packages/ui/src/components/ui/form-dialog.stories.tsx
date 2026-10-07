@@ -23,11 +23,6 @@ function Stateful(args: ComponentProps<typeof FormDialog>) {
   )
 }
 
-/** Przycisk wyłączony atrybutem `disabled` albo `aria-disabled`. */
-function isInactive(button: HTMLElement) {
-  return button.matches(':disabled, [aria-disabled="true"]')
-}
-
 const meta = {
   title: 'UI/Okno formularza',
   component: FormDialog,
@@ -134,8 +129,7 @@ export const FokusPrzyWysylaniu: Story = {
     const submit = screen.getByRole('button', { name: 'Dodaj' })
 
     await userEvent.click(submit)
-    // Czekamy na `pending` niezależnie od tego, jak przycisk jest wyłączony.
-    await waitFor(() => expect(isInactive(submit)).toBe(true))
+    await waitFor(() => expect(submit).toHaveAttribute('aria-disabled', 'true'))
     await expect(document.activeElement).toBe(submit)
 
     // Enter na przycisku z fokusem nie wysyła drugi raz.
@@ -159,6 +153,7 @@ export const KlikObokZamyka: Story = {
   },
 }
 
+/** Przy `pending` klik obok nie zamyka okna. */
 export const KlikObokPrzyWysylaniu: Story = {
   args: { pending: true },
   parameters: { chromatic: { disableSnapshot: true } },
@@ -167,5 +162,33 @@ export const KlikObokPrzyWysylaniu: Story = {
     await userEvent.click(overlay())
     await expect(args.onOpenChange).not.toHaveBeenCalled()
     await expect(dialog).toBeInTheDocument()
+  },
+}
+
+/**
+ * Blokada siedzi na formularzu, nie tylko na przycisku akcji. Przycisk w polach
+ * bez `type="button"` (np. wyzwalacz pickera) też wysyła formularz, a Enter
+ * w polu wysyła przez pierwszy przycisk `submit` w kolejności drzewa.
+ */
+export const InnyPrzyciskPrzyWysylaniu: Story = {
+  args: {
+    pending: true,
+    children: (
+      <div className="grid gap-2">
+        <Label htmlFor="venue-name">Nazwa</Label>
+        <Input id="venue-name" name="name" defaultValue="Orlik przy SP 12" />
+        <button>Wybierz z mapy</button>
+      </div>
+    ),
+  },
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async ({ args }) => {
+    await screen.findByRole('dialog')
+
+    await userEvent.click(screen.getByLabelText('Nazwa'))
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Wybierz z mapy' }))
+
+    await expect(args.onSubmit).not.toHaveBeenCalled()
   },
 }

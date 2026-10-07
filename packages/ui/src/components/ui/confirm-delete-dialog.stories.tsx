@@ -18,11 +18,6 @@ function Stateful(args: ComponentProps<typeof ConfirmDeleteDialog>) {
   )
 }
 
-/** Przycisk wyłączony atrybutem `disabled` albo `aria-disabled`. */
-function isInactive(button: HTMLElement) {
-  return button.matches(':disabled, [aria-disabled="true"]')
-}
-
 const meta = {
   title: 'UI/Potwierdzenie usunięcia',
   component: ConfirmDeleteDialog,
@@ -134,11 +129,37 @@ export const FokusPrzyUsuwaniu: Story = {
     const confirm = screen.getByRole('button', { name: 'Usuń obiekt' })
 
     await userEvent.click(confirm)
-    // Czekamy na `pending` niezależnie od tego, jak przycisk jest wyłączony.
-    await waitFor(() => expect(isInactive(confirm)).toBe(true))
+    await waitFor(() => expect(confirm).toHaveAttribute('aria-disabled', 'true'))
     await expect(document.activeElement).toBe(confirm)
 
     await userEvent.keyboard('{Enter}')
     await expect(args.onConfirm).toHaveBeenCalledOnce()
+  },
+}
+
+function overlay() {
+  return document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!
+}
+
+/** Kontrola do `KlikObokPrzyUsuwaniu`: bez `pending` klik obok zamyka okno. */
+export const KlikObokZamyka: Story = {
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog')
+    await userEvent.click(overlay())
+    await expect(args.onOpenChange).toHaveBeenCalledWith(false)
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  },
+}
+
+/** Przy `pending` klik obok nie zamyka okna. */
+export const KlikObokPrzyUsuwaniu: Story = {
+  args: { pending: true },
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async ({ args }) => {
+    const dialog = await screen.findByRole('alertdialog')
+    await userEvent.click(overlay())
+    await expect(args.onOpenChange).not.toHaveBeenCalled()
+    await expect(dialog).toBeInTheDocument()
   },
 }

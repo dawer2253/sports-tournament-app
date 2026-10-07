@@ -45,7 +45,18 @@ function FormDialog({
   return (
     <Dialog open={open} onOpenChange={guardWhilePending(pending, onOpenChange)}>
       <DialogContent showCloseButton={false}>
-        <form onSubmit={onSubmit} className="grid gap-4">
+        <form
+          // Blokada na formularzu, nie tylko na przycisku akcji: wysłać go może
+          // też Enter w polu albo przycisk z `children` bez `type="button"`.
+          onSubmit={(event) => {
+            if (pending) {
+              event.preventDefault()
+              return
+            }
+            onSubmit(event)
+          }}
+          className="grid gap-4"
+        >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             {description && <DialogDescription>{description}</DialogDescription>}
