@@ -73,6 +73,10 @@ export const Skroty: Story = {
     for (const [name, abbr] of ABBREVIATIONS) {
       await expect(teamAbbr(name)).toBe(abbr)
     }
+    // Spacja na brzegu przed jedynym słowem: bez odfiltrowania pustych słów
+    // skrótem byłoby samo „L". W „  Wilki   Bemowo " puste słowo i tak ginie
+    // przy łączeniu liter, więc tamten przypadek tego nie łapie.
+    await expect(teamAbbr('  Legia')).toBe('LEG')
     const canvas = within(canvasElement)
     await expect(canvas.getAllByRole('listitem')).toHaveLength(ABBREVIATIONS.length)
   },

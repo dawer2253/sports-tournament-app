@@ -25,6 +25,8 @@ export const Domyslny: Story = {
 
     await expect(canvas.getByRole('button', { name: 'Zmień herb' })).toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: 'Usuń herb' })).toBeInTheDocument()
+    // Przy niepustym składzie „Dodaj zawodnika" stoi nad tabelą (#112 pkt 6).
+    await expect(canvas.getAllByRole('button', { name: 'Dodaj zawodnika' })).toHaveLength(1)
   },
 }
 
