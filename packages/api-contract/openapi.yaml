@@ -422,6 +422,13 @@ paths:
         Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
         `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
         panel musi o tym ostrzec przed zapisem.
+
+        Zmienia też `status` (znaczenie stanów i to, kto je ustawia:
+        `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
+        warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
+        nie przechodzi do `draft` z innego stanu — taka próba daje `422`
+        z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
+        w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
       requestBody:
         required: true
         content:
@@ -1961,6 +1968,11 @@ components:
       name: slug
       in: path
       required: true
+      description: |
+        Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+        każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+        samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+        że turniej istnieje.
       schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
     IfNoneMatch:
       name: If-None-Match
@@ -2228,6 +2240,17 @@ components:
 
     TournamentStatus:
       type: string
+      description: |
+        Stan turnieju.
+
+        - `draft` — turniej nieopublikowany. Nowy turniej zaczyna w tym stanie.
+        - `active` i `finished` — turniej opublikowany. `finished` to
+          deklaracja organizera, że rozgrywki się skończyły. Nie blokuje żadnej
+          zmiany ani usunięcia.
+
+        Status ustawia wyłącznie organizer, przez
+        `PATCH /tournaments/{tournament}`. Żadna operacja systemu nie zmienia
+        go sama.
       enum: [draft, active, finished]
 
     TournamentFormat:
@@ -2585,7 +2608,12 @@ components:
       properties:
         name: { type: string }
         slug: { type: string }
-        status: { $ref: '#/components/schemas/TournamentStatus' }
+        status:
+          type: string
+          description: |
+            Podzbiór `TournamentStatus` bez `draft`: szkic nie trafia do
+            odpowiedzi publicznej (patrz parametr `Slug`).
+          enum: [active, finished]
         sport: { $ref: '#/components/schemas/SportSummary' }
         branding: { $ref: '#/components/schemas/Branding' }
         stages:
