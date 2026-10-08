@@ -2,18 +2,18 @@ import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { firstFieldErrors, isValidationError } from '@tournament/api-client';
 import { toast } from '@tournament/ui';
 import { useState } from 'react';
-import { applyApiError, type SetFieldError } from './form-errors';
+import { apiErrorMessage, applyApiError, type SetFieldError } from './form-errors';
 
 /**
- * Teksty jednego rodzaju bytu listy. Całe zdania, a nie odmiana jednego słowa:
- * „Tej drużyny” i „Tego obiektu” różnią się rodzajem, nie tylko końcówką, więc
- * składanie ich w hooku skończyłoby się słownikiem gramatycznym.
+ * Teksty jednego rodzaju bytu listy. Toasty sukcesu hook składa sam z biernika,
+ * bo „Dodano”, „Zapisano” i „Usunięto” nie odmieniają się przez rodzaj. Teksty
+ * po `404` są całymi zdaniami: „Tej drużyny” i „Tego obiektu” różnią się
+ * rodzajem, nie samą końcówką.
  */
-export type ListEntity = {
+export type ListTexts = {
   /**
    * Biernik, małą literą: „obiekt”, „drużynę”, „zawodnika”. Ten sam, który
-   * dostaje `entity` w `ConfirmDeleteDialog`. Hook składa z niego toasty
-   * „Dodano …”, „Zapisano …” i „Usunięto … „{nazwa}”.”.
+   * dostaje `entity` w `ConfirmDeleteDialog`.
    */
   accusative: string;
   /** Toast po `404` przy usuwaniu, np. „Obiekt został już usunięty.” */
@@ -35,13 +35,13 @@ type Change = { name: string; request: ApiCall };
 type RemoveError = { blocked: true; error: string } | { blocked?: false; error?: string };
 
 type Options = {
-  entity: ListEntity;
+  texts: ListTexts;
   /**
    * Klucze zapytań do unieważnienia po zmianie: lista, a przy drużynach także
    * `['tournament', id]`, bo z niego idzie `teamsCount`.
    */
   invalidate: readonly QueryKey[];
-  /** Zamyka okno. Usunięcie drużyny z ekranu składu wraca tu na listę drużyn. */
+  /** Zamyka okno; przy usunięciu drużyny z ekranu składu wraca też na listę drużyn. */
   onDone: () => void;
 };
 
@@ -51,16 +51,18 @@ type FormTarget<TField extends string> = {
   setError: SetFieldError<TField>;
 };
 
-type ListRemove = {
+type ListSave = {
   /** Żądanie w drodze; idzie do `pending` okna, które wtedy nie daje się zamknąć. */
+  pending: boolean;
+  create: (change: Change) => Promise<void>;
+  update: (change: Change) => Promise<void>;
+};
+
+type ListRemove = {
+  /** Jak w `ListSave`. */
   pending: boolean;
   remove: (change: Change) => Promise<void>;
   removeError: RemoveError;
-};
-
-type ListSave = ListRemove & {
-  create: (change: Change) => Promise<void>;
-  update: (change: Change) => Promise<void>;
 };
 
 const SAVE_FAILED = 'Nie udało się zapisać. Spróbuj ponownie.';
@@ -76,8 +78,8 @@ async function send(request: ApiCall): Promise<{ status: number; error?: unknown
   }
 }
 
-// Po statusie, a nie po `error`: `openapi-fetch` daje pusty napis jako `error`
-// odpowiedzi bez ciała, więc `if (error)` wziąłby ją za sukces.
+// Po statusie, a nie po `error`: odpowiedź błędu bez ciała daje w `openapi-fetch`
+// `error` równe `undefined` albo pustemu napisowi, a `if (error)` wziąłby ją za sukces.
 function isOk(status: number) {
   return status >= 200 && status < 300;
 }
@@ -91,55 +93,52 @@ function isOutage(status: number) {
   return status === 0 || status >= 500;
 }
 
-function messageOf(error: unknown): string {
-  return typeof error === 'object' && error !== null && 'message' in error
-    ? String(error.message)
-    : '';
-}
-
 /**
  * Zapis i usuwanie bytu listy w panelu (obiekty, drużyny, zawodnicy) — wzorzec
  * z #86, opisany w `apps/admin/AGENTS.md`, sekcja „Edycja list”.
  *
  * Zapis jest po odpowiedzi, nie optymistyczny: okno czeka na serwer i zamyka
  * się dopiero po sukcesie, bo tylko w otwartym oknie błąd pola ma gdzie usiąść.
- * Zamyka się też dopiero na odświeżonej liście, żeby organizer nie zobaczył jej
- * na chwilę bez bytu, który właśnie dodał.
  *
- * Hook woła komponent okna, nie ekranu: stan (`pending`, błąd, blokada) ma żyć
- * tyle co okno, żeby błąd z jednego otwarcia nie wrócił przy następnym.
+ * Hook wywołuje komponent okna, a nie ekran: stan (`pending`, błąd, blokada) ma
+ * żyć tyle co okno, żeby błąd z jednego otwarcia nie wrócił przy następnym.
  * Okno formularza podaje `form` i woła `create` albo `update`; okno potwierdzenia
  * nie podaje `form` i woła `remove`.
  *
- * | Odpowiedź         | `create` / `update`                  | `remove`                          |
- * |-------------------|--------------------------------------|-----------------------------------|
- * | `2xx`             | toast, odświeżenie, zamknięcie       | to samo                           |
- * | `422`             | `applyApiError`: pole albo `root`    | pod `id` (guard): tryb zablokowany |
- * | `404`             | `update`: jak sukces, toast `gone`   | jak sukces, toast `alreadyDeleted` |
- * | `5xx`, sieć       | komunikat ogólny w `root`            | komunikat ogólny, „Usuń” zostaje  |
- * | inne `4xx`        | tekst serwera w `root`               | tekst serwera, „Usuń” zostaje     |
+ * | Odpowiedź   | `create` / `update`                          | `remove`                           |
+ * |-------------|----------------------------------------------|------------------------------------|
+ * | `2xx`       | odświeżenie, zamknięcie, toast               | zamknięcie, toast, odświeżenie     |
+ * | `422`       | `applyApiError`: pole albo `root`            | pod `id` (guard): tryb zablokowany |
+ * | `404`       | `update`: jak `2xx`, ostrzeżenie `gone`      | jak `2xx`, toast `alreadyDeleted`  |
+ * | `5xx`, sieć | komunikat ogólny w `root`                    | komunikat ogólny, „Usuń” zostaje   |
+ * | inne `4xx`  | tekst serwera w `root`                       | tekst serwera, „Usuń” zostaje      |
  *
- * `404` przy `create` nie jest „tego bytu już nie ma”: bytu jeszcze nie było,
+ * `404` przy `create` nie znaczy „tego bytu już nie ma”: bytu jeszcze nie było,
  * a zniknął turniej. Idzie więc jak inne `4xx`.
+ *
+ * Kolejność zamknięcia i odświeżenia jest różna celowo. Zapis zamyka okno na
+ * już odświeżonej liście, żeby organizer nie zobaczył jej na chwilę bez bytu,
+ * który właśnie dodał. Usunięcie najpierw zamyka, bo `onDone` może zdejmować
+ * cały ekran usuniętego bytu (drużyna na ekranie składu). Gdyby jego klucz
+ * wpadł mimo wszystko pod `invalidate`, odświeżenie przed wyjściem dopytałoby
+ * o byt, którego już nie ma, i mignęło stanem „Nie ma takiej drużyny”.
  */
 export function useListMutation<TField extends string>(
   options: Options & { form: FormTarget<TField> },
 ): ListSave;
 export function useListMutation(options: Options): ListRemove;
 export function useListMutation<TField extends string>({
-  entity,
+  texts,
   invalidate,
   onDone,
   form,
-}: Options & { form?: FormTarget<TField> }): ListSave {
+}: Options & { form?: FormTarget<TField> }): ListSave & ListRemove {
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [removeError, setRemoveError] = useState<RemoveError>({});
 
-  async function finish(message: string, variant: 'success' | 'warning' = 'success') {
+  async function refresh() {
     await Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-    onDone();
-    toast[variant](message);
   }
 
   async function save(mode: 'create' | 'update', { name, request }: Change) {
@@ -148,15 +147,19 @@ export function useListMutation<TField extends string>({
       const { status, error } = await send(request);
 
       if (isOk(status)) {
+        await refresh();
+        onDone();
         const verb = mode === 'create' ? 'Dodano' : 'Zapisano';
-        await finish(`${verb} ${entity.accusative} „${name}”.`);
+        toast.success(`${verb} ${texts.accusative} „${name}”.`);
         return;
       }
 
       // Zmiany nie zapisano, więc to ostrzeżenie, nie sukces. Okno i tak się
-      // zamyka: poprawiać nie ma czego, a lista po odświeżeniu pokaże, czemu.
+      // zamyka: poprawiać nie ma czego, a odświeżona lista pokaże, czemu.
       if (status === 404 && mode === 'update') {
-        await finish(entity.gone, 'warning');
+        await refresh();
+        onDone();
+        toast.warning(texts.gone);
         return;
       }
 
@@ -177,14 +180,11 @@ export function useListMutation<TField extends string>({
     try {
       const { status, error } = await send(request);
 
-      if (isOk(status)) {
-        await finish(`Usunięto ${entity.accusative} „${name}”.`);
-        return;
-      }
-
-      // Ktoś usunął byt wcześniej: cel organizera jest osiągnięty.
-      if (status === 404) {
-        await finish(entity.alreadyDeleted);
+      // `404`: ktoś usunął byt wcześniej, więc cel organizera jest osiągnięty.
+      if (isOk(status) || status === 404) {
+        onDone();
+        toast.success(isOk(status) ? `Usunięto ${texts.accusative} „${name}”.` : texts.alreadyDeleted);
+        await refresh();
         return;
       }
 
@@ -195,7 +195,7 @@ export function useListMutation<TField extends string>({
         return;
       }
 
-      setRemoveError({ error: (!isOutage(status) && messageOf(error)) || REMOVE_FAILED });
+      setRemoveError({ error: (!isOutage(status) && apiErrorMessage(error)) || REMOVE_FAILED });
     } finally {
       setPending(false);
     }

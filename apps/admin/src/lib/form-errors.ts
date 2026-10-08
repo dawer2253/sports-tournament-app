@@ -58,10 +58,12 @@ export function applyApiError<TField extends string>(
     return;
   }
 
-  const message =
-    typeof error === 'object' && error !== null && 'message' in error
-      ? String((error as { message: unknown }).message)
-      : '';
+  setError('root', { message: apiErrorMessage(error) || fallbackMessage });
+}
 
-  setError('root', { message: message || fallbackMessage });
+/** `message` z odpowiedzi błędu albo pusty napis, gdy go nie ma. */
+export function apiErrorMessage(error: unknown): string {
+  return typeof error === 'object' && error !== null && 'message' in error
+    ? String(error.message)
+    : '';
 }

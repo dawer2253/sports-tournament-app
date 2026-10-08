@@ -56,7 +56,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
       {/* Jeden na cały panel, poza routerem: toast po zapisie przeżywa zamknięcie
-          okna i przejście na inną trasę (usunięcie drużyny wraca na listę). */}
+          okna i przejście na inną trasę (po usunięciu drużyny panel wraca na listę). */}
       <Toaster />
     </QueryClientProvider>
   </StrictMode>,

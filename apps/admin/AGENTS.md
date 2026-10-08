@@ -26,23 +26,28 @@ jest jego jedynym opisem dla kodu.
   - woła go komponent okna, renderowany warunkowo, nie ekran — stan błędu żyje
     tyle co okno;
   - okno formularza podaje `form: { fields, setError }` i woła `create` albo
-    `update`; potwierdzenie podaje samo `entity`, `invalidate` i `onDone`, woła
+    `update`; potwierdzenie podaje tylko `texts`, `invalidate` i `onDone`, woła
     `remove` i rozkłada `removeError` na propsy `ConfirmDeleteDialog`;
   - `invalidate` to lista, a przy drużynach także `['tournament', id]`, bo
-    stamtąd idzie `teamsCount`;
-  - teksty bytu (`ListEntity`) są całymi zdaniami, bo rodzaj gramatyczny
-    zmienia więcej niż końcówkę.
+    stamtąd idzie `teamsCount`. Klucze pasują po prefiksie, więc
+    `['tournament', id]` odświeża też wszystko, co leży pod nim;
+  - przy usuwaniu `invalidate` obejmuje tylko to, co zostaje: listę i turniej.
+    Klucze usuniętego bytu (drużyna i jej skład na ekranie składu) leżą poza
+    tymi prefiksami, bo odświeżone dostałyby `404`, a ich ekran i tak znika
+    w `onDone`;
+  - `texts` (`ListTexts`) to biernik do toastów sukcesu i dwa całe zdania na
+    `404`, bo w nich rodzaj gramatyczny zmienia więcej niż końcówkę.
 
   Oba okna złożone tak, jak złoży je ekran, są w `use-list-mutation.test.tsx`.
 - **Toasty** rysuje jeden `Toaster` w `main.tsx`. `toast` bierz z
-  `@tournament/ui`, bo tylko ta sama kopia `sonner` trafia do tego `Toaster`.
-  Test ekranu montuje własny `<Toaster />` obok strony.
+  `@tournament/ui`: do tego `Toaster` dociera tylko `toast` z tej samej kopii
+  `sonner`. Test ekranu montuje własny `<Toaster />` obok strony.
 
 Odrzucone w #86 i dlaczego:
 
 - **Zapis optymistyczny.** Okno zamknięte przed odpowiedzią nie ma gdzie
-  pokazać błędu pola, więc zostaje toast z cofnięciem. Kolejność listy ustala
-  backend, więc wstawianie wpisu do cache'u musiałoby ją powtarzać.
+  pokazać błędu pola, więc zostałby tylko toast z cofnięciem. Kolejność listy
+  ustala backend, więc wstawianie wpisu do cache'u musiałoby ją powtarzać.
 - **Edycja w wierszu.** Nie zmieści formularza zawodnika i jest słaba na
   telefonie.
 - **Panel boczny.** Dwa pola nie potrzebują pół ekranu.

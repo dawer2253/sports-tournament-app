@@ -1,26 +1,34 @@
 import { QueryClient, QueryClientProvider, useQuery, type QueryKey } from '@tanstack/react-query';
-import type { Venue } from '@tournament/api-client';
+import type { Team, Venue } from '@tournament/api-client';
 import { ConfirmDeleteDialog, FormDialog, Input, Label, Toaster } from '@tournament/ui';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, delay, http } from 'msw';
 import { useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
 import { API_URL as API, server } from '../test/server';
 import { api } from './api';
-import { useListMutation, type ListEntity } from './use-list-mutation';
+import { useListMutation, type ListTexts } from './use-list-mutation';
 
 const TOURNAMENT_ID = 1;
 const VENUES_KEY = ['tournament', TOURNAMENT_ID, 'venues'];
 
-const VENUE: ListEntity = {
+const VENUE_TEXTS: ListTexts = {
   accusative: 'obiekt',
   alreadyDeleted: 'Obiekt został już usunięty.',
   gone: 'Tego obiektu już nie ma.',
 };
 
+const TEAM_TEXTS: ListTexts = {
+  accusative: 'drużynę',
+  alreadyDeleted: 'Drużyna została już usunięta.',
+  gone: 'Tej drużyny już nie ma.',
+};
+
 const BEMOWO: Venue = { id: 1, tournamentId: TOURNAMENT_ID, name: 'Boisko Bemowo', address: null };
+const URSUS: Venue = { id: 2, tournamentId: TOURNAMENT_ID, name: 'Hala Ursus', address: null };
 
 /**
  * Lista obiektów „pod oknem”, tak jak na ekranie. Odpytuje msw naprawdę, więc
@@ -53,7 +61,7 @@ type DialogProps = { onClose: () => void; invalidate: QueryKey[] };
 function VenueFormDialog({ venue, onClose, invalidate }: DialogProps & { venue: Venue | null }) {
   const form = useForm<{ name: string }>({ defaultValues: { name: venue?.name ?? '' } });
   const mutation = useListMutation({
-    entity: VENUE,
+    texts: VENUE_TEXTS,
     invalidate,
     onDone: onClose,
     form: { fields: ['name'], setError: form.setError },
@@ -103,7 +111,7 @@ function VenueFormDialog({ venue, onClose, invalidate }: DialogProps & { venue: 
 
 /** Okno potwierdzenia usunięcia obiektu, złożone tak, jak złoży je ekran. */
 function VenueDeleteDialog({ venue, onClose, invalidate }: DialogProps & { venue: Venue }) {
-  const mutation = useListMutation({ entity: VENUE, invalidate, onDone: onClose });
+  const mutation = useListMutation({ texts: VENUE_TEXTS, invalidate, onDone: onClose });
 
   return (
     <ConfirmDeleteDialog
@@ -117,7 +125,7 @@ function VenueDeleteDialog({ venue, onClose, invalidate }: DialogProps & { venue
           request: () => api.DELETE('/venues/{venue}', { params: { path: { venue: venue.id } } }),
         })
       }
-      entity={VENUE.accusative}
+      entity={VENUE_TEXTS.accusative}
       name={venue.name}
       pending={mutation.pending}
       {...mutation.removeError}
@@ -234,10 +242,7 @@ describe('useListMutation — dodawanie i edycja', () => {
     server.use(
       http.post(`${API}/tournaments/${TOURNAMENT_ID}/venues`, async () => {
         await new Promise<void>((resolve) => (respond = resolve));
-        return HttpResponse.json(
-          { data: { id: 2, tournamentId: TOURNAMENT_ID, name: 'Hala Ursus', address: null } },
-          { status: 201 },
-        );
+        return HttpResponse.json({ data: URSUS }, { status: 201 });
       }),
     );
 
@@ -361,9 +366,8 @@ describe('useListMutation — dodawanie i edycja', () => {
         if (attempts === 1) {
           return HttpResponse.json({ message: 'Wewnętrzny błąd serwera.' }, { status: 500 });
         }
-        const created = { id: 2, tournamentId: TOURNAMENT_ID, name: 'Hala Ursus', address: null };
-        venues.push(created);
-        return HttpResponse.json({ data: created }, { status: 201 });
+        venues.push(URSUS);
+        return HttpResponse.json({ data: URSUS }, { status: 201 });
       }),
     );
 
@@ -399,10 +403,7 @@ describe('useListMutation — dodawanie i edycja', () => {
     serveVenues([]);
     server.use(
       http.post(`${API}/tournaments/${TOURNAMENT_ID}/venues`, () =>
-        HttpResponse.json(
-          { data: { id: 2, tournamentId: TOURNAMENT_ID, name: 'Hala Ursus', address: null } },
-          { status: 201 },
-        ),
+        HttpResponse.json({ data: URSUS }, { status: 201 }),
       ),
     );
 
@@ -435,8 +436,9 @@ describe('useListMutation — usuwanie', () => {
     await user.click(screen.getByRole('button', { name: 'Usuń obiekt' }));
 
     await dialogClosed('alertdialog');
-    expect(screen.getByTestId('venues')).not.toHaveTextContent('Boisko Bemowo');
     expect(await screen.findByText('Usunięto obiekt „Boisko Bemowo”.')).toBeInTheDocument();
+    // Lista odświeża się już po zamknięciu — powód przy kolejności w hooku.
+    await waitFor(() => expect(screen.getByTestId('venues')).not.toHaveTextContent('Boisko Bemowo'));
   });
 
   it('`422` z guarda blokuje okno: powód serwera i samo „Zamknij”', async () => {
@@ -480,9 +482,9 @@ describe('useListMutation — usuwanie', () => {
     await user.click(screen.getByRole('button', { name: 'Usuń obiekt' }));
 
     await dialogClosed('alertdialog');
-    expect(screen.getByTestId('venues')).not.toHaveTextContent('Boisko Bemowo');
     expect(await screen.findByText('Obiekt został już usunięty.')).toBeInTheDocument();
     expect(screen.queryByText(/^Usunięto/)).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('venues')).not.toHaveTextContent('Boisko Bemowo'));
   });
 
   it('`500` daje ogólny komunikat w oknie, a ponowienie usuwa', async () => {
@@ -510,8 +512,104 @@ describe('useListMutation — usuwanie', () => {
     await user.click(screen.getByRole('button', { name: 'Usuń obiekt' }));
 
     await dialogClosed('alertdialog');
-    expect(screen.getByTestId('venues')).not.toHaveTextContent('Boisko Bemowo');
     expect(await screen.findByText('Usunięto obiekt „Boisko Bemowo”.')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('venues')).not.toHaveTextContent('Boisko Bemowo'));
+  });
+
+  it('usunięcie bytu, na którego ekranie stoimy, najpierw z niego wychodzi, potem odświeża', async () => {
+    // Drużyna z ekranu składu (#89): po sukcesie `onDone` wraca na listę drużyn.
+    // Odświeżenie przed wyjściem dopytałoby o usuniętą drużynę, dostało `404`
+    // i mignęło stanem „Nie ma takiej drużyny”.
+    const team: Team = {
+      id: 3,
+      tournamentId: TOURNAMENT_ID,
+      name: 'Wilki Bemowo',
+      logoUrl: null,
+      groupId: null,
+      playersCount: 12,
+    };
+    let deleted = false;
+    let teamRequests = 0;
+    server.use(
+      http.get(`${API}/teams/${team.id}`, () => {
+        teamRequests += 1;
+        return deleted
+          ? HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 })
+          : HttpResponse.json({ data: team });
+      }),
+      http.delete(`${API}/teams/${team.id}`, () => {
+        deleted = true;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const teamKey = ['tournament', TOURNAMENT_ID, 'teams', team.id];
+
+    function TeamHeader() {
+      const shown = useQuery({
+        queryKey: teamKey,
+        queryFn: async () => {
+          const { data, error } = await api.GET('/teams/{team}', {
+            params: { path: { team: team.id } },
+          });
+          if (error) throw new Error(error.message);
+          return data.data;
+        },
+      });
+      return <h1>{shown.data?.name ?? (shown.isError ? 'Nie ma takiej drużyny' : '…')}</h1>;
+    }
+
+    function TeamDeleteDialog({ onDone }: { onDone: () => void }) {
+      // Najgorszy przypadek: prefiks turnieju obejmuje też klucz usuniętej drużyny.
+      // `AGENTS.md` każe tego unikać; kolejność w hooku jest drugą linią obrony.
+      const mutation = useListMutation({
+        texts: TEAM_TEXTS,
+        invalidate: [['tournament', TOURNAMENT_ID]],
+        onDone,
+      });
+      return (
+        <ConfirmDeleteDialog
+          open
+          onOpenChange={() => {}}
+          onConfirm={() =>
+            void mutation.remove({
+              name: team.name,
+              request: () => api.DELETE('/teams/{team}', { params: { path: { team: team.id } } }),
+            })
+          }
+          entity={TEAM_TEXTS.accusative}
+          name={team.name}
+          pending={mutation.pending}
+          {...mutation.removeError}
+        />
+      );
+    }
+
+    function SquadScreen() {
+      const [onSquad, setOnSquad] = useState(true);
+      if (!onSquad) return <p>Lista drużyn</p>;
+      // `flushSync` zdejmuje ekran od razu, więc test widzi samą kolejność
+      // w hooku: przy odświeżeniu przed `onDone` drużyna zostałaby dopytana.
+      return (
+        <>
+          <TeamHeader />
+          <TeamDeleteDialog onDone={() => flushSync(() => setOnSquad(false))} />
+        </>
+      );
+    }
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <SquadScreen />
+        <Toaster />
+      </QueryClientProvider>,
+    );
+    const user = userEvent.setup();
+    await screen.findByText('Wilki Bemowo');
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+
+    expect(await screen.findByText('Lista drużyn')).toBeInTheDocument();
+    expect(await screen.findByText('Usunięto drużynę „Wilki Bemowo”.')).toBeInTheDocument();
+    expect(teamRequests).toBe(1);
   });
 
   it('błąd sieci daje ten sam komunikat i zostawia „Usuń” do ponowienia', async () => {
