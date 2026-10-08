@@ -94,6 +94,17 @@ Uczestnik turnieju. Należy do jednego turnieju. Dwie drużyny o tej samej nazwi
 w dwóch turniejach to dwa niepowiązane byty. W obrębie jednego turnieju nazwa
 drużyny się nie powtarza.
 
+## Logo (logo, herb)
+
+Obraz, który organizer wgrywa dla turnieju albo dla drużyny. W kodzie i w API
+oba nazywają się `logo`, a „herb” to wyłącznie etykieta UI dla logo drużyny.
+
+Brak logo jest stanem poprawnym, nie błędem. Drużynę bez logo UI oznacza herbem
+zastępczym (`TeamCrest` w design systemie), który nie jest logo, tylko jego
+zastępstwem.
+
+_Unikaj_: `crest` jako nazwy pola albo bytu w API i w bazie.
+
 ## Player (zawodnik)
 
 Osoba przypisana do drużyny. Istnieje po to, żeby przypisywać jej zdarzenia
