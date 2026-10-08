@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { applyApiError } from './form-errors';
 
 const FIELDS = ['name', 'sportId', 'format'] as const;
+const FALLBACK = 'Nie udało się zapisać. Spróbuj ponownie.';
 
 describe('applyApiError', () => {
   it('sadza błąd 422 przy polu, którego dotyczy', () => {
@@ -11,6 +12,7 @@ describe('applyApiError', () => {
       { message: 'Podane dane są nieprawidłowe.', errors: { name: ['Pole nazwa jest wymagane.'] } },
       FIELDS,
       setError,
+      FALLBACK,
     );
 
     expect(setError).toHaveBeenCalledExactlyOnceWith('name', {
@@ -25,6 +27,7 @@ describe('applyApiError', () => {
       { message: 'Podane dane są nieprawidłowe.', errors: { name: ['Pierwszy.', 'Drugi.'] } },
       FIELDS,
       setError,
+      FALLBACK,
     );
 
     expect(setError).toHaveBeenCalledWith('name', { message: 'Pierwszy.' });
@@ -40,6 +43,7 @@ describe('applyApiError', () => {
       },
       FIELDS,
       setError,
+      FALLBACK,
     );
 
     expect(setError).toHaveBeenCalledWith('name', { message: 'Nazwa zajęta.' });
@@ -56,6 +60,7 @@ describe('applyApiError', () => {
       },
       FIELDS,
       setError,
+      FALLBACK,
     );
 
     expect(setError).toHaveBeenCalledWith('name', { message: 'Nazwa zajęta.' });
@@ -71,6 +76,7 @@ describe('applyApiError', () => {
       { message: 'Podane dane są nieprawidłowe.', errors: { startDate: ['Data jest wymagana.'] } },
       FIELDS,
       setError,
+      FALLBACK,
     );
 
     expect(setError).toHaveBeenCalledExactlyOnceWith('root', { message: 'Data jest wymagana.' });
@@ -79,27 +85,44 @@ describe('applyApiError', () => {
   it('zwykły błąd z samym `message` idzie do `root`', () => {
     const setError = vi.fn();
 
-    applyApiError({ message: 'Nie udało się połączyć z serwerem.' }, FIELDS, setError);
+    applyApiError({ message: 'Nie udało się połączyć z serwerem.' }, FIELDS, setError, FALLBACK);
 
     expect(setError).toHaveBeenCalledExactlyOnceWith('root', {
       message: 'Nie udało się połączyć z serwerem.',
     });
   });
 
-  it('podstawia własny komunikat po polsku, gdy API nie przysłało żadnego', () => {
+  it('podstawia komunikat zastępczy od wołającego, gdy API nie przysłało żadnego', () => {
     const setError = vi.fn();
 
-    applyApiError(undefined, FIELDS, setError);
+    applyApiError(undefined, FIELDS, setError, 'Nie udało się zapisać obiektu.');
+
+    // Tekst zależy od ekranu: ten sam błąd przy obiekcie nie może mówić
+    // o zakładaniu turnieju.
+    expect(setError).toHaveBeenCalledExactlyOnceWith('root', {
+      message: 'Nie udało się zapisać obiektu.',
+    });
+  });
+
+  it('podstawia komunikat zastępczy także przy 422 bez komunikatu i bez pól', () => {
+    const setError = vi.fn();
+
+    applyApiError({ message: '', errors: {} }, FIELDS, setError, 'Nie udało się zapisać obiektu.');
 
     expect(setError).toHaveBeenCalledExactlyOnceWith('root', {
-      message: 'Nie udało się założyć turnieju. Spróbuj ponownie.',
+      message: 'Nie udało się zapisać obiektu.',
     });
   });
 
   it('nie zostawia formularza bez komunikatu, gdy 422 przyszło z pustą mapą pól', () => {
     const setError = vi.fn();
 
-    applyApiError({ message: 'Podane dane są nieprawidłowe.', errors: {} }, FIELDS, setError);
+    applyApiError(
+      { message: 'Podane dane są nieprawidłowe.', errors: {} },
+      FIELDS,
+      setError,
+      FALLBACK,
+    );
 
     expect(setError).toHaveBeenCalledExactlyOnceWith('root', {
       message: 'Podane dane są nieprawidłowe.',

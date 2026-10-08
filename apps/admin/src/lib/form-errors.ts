@@ -1,15 +1,12 @@
 import { firstFieldErrors, isValidationError } from '@tournament/api-client';
 
-/** Komunikat, gdy API nie przysłało żadnego — organizer nie może zostać z pustym ekranem. */
-const FALLBACK_MESSAGE = 'Nie udało się założyć turnieju. Spróbuj ponownie.';
-
 /**
  * Minimalny kształt `setError` z react-hook-form: nazwa pola albo `root`
  * i komunikat. Generyk po nazwach pól, a nie po typie formularza, bo tylko tyle
  * ta funkcja potrzebuje — i dzięki temu `UseFormSetError` wchodzi tu bez
  * rzutowania.
  */
-type SetFieldError<TField extends string> = (
+export type SetFieldError<TField extends string> = (
   field: TField | 'root',
   error: { message: string },
 ) => void;
@@ -23,11 +20,15 @@ type SetFieldError<TField extends string> = (
  * przyciskiem. Milczący formularz jest gorszy niż komunikat w złym miejscu.
  *
  * @param fields nazwy pól, które formularz umie podświetlić
+ * @param fallbackMessage komunikat, gdy API nie przysłało żadnego — organizer
+ *   nie może zostać z pustym ekranem. Podaje go ekran, bo tylko on wie, czego
+ *   nie udało się zrobić.
  */
 export function applyApiError<TField extends string>(
   error: unknown,
   fields: readonly TField[],
   setError: SetFieldError<TField>,
+  fallbackMessage: string,
 ): void {
   if (isValidationError(error)) {
     const entries = Object.entries(firstFieldErrors(error));
@@ -51,7 +52,7 @@ export function applyApiError<TField extends string>(
 
     // 422 z pustą mapą pól: zostaje komunikat ogólny.
     if (known.length === 0) {
-      setError('root', { message: error.message || FALLBACK_MESSAGE });
+      setError('root', { message: error.message || fallbackMessage });
     }
 
     return;
@@ -62,5 +63,5 @@ export function applyApiError<TField extends string>(
       ? String((error as { message: unknown }).message)
       : '';
 
-  setError('root', { message: message || FALLBACK_MESSAGE });
+  setError('root', { message: message || fallbackMessage });
 }
