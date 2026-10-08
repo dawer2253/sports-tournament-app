@@ -33,11 +33,12 @@ Dać organizatorowi przegląd drużyn turnieju, pokazać, której brakuje skład
 <Canvas of={Stories.Pusta} />
 
 ## Zachowanie
-- „Dodaj drużynę" otwiera dialog nowej drużyny. Stoi w nagłówku, a przy pustej liście tylko w pustym stanie, żeby nie dublować akcji. Po dodaniu zostajemy na liście, z toastem (#89 pkt 6).
+- „Dodaj drużynę" otwiera dialog nowej drużyny. Stoi w nagłówku tylko przy wczytanej, niepustej liście, jak „Nowy turniej" w panelu (#28): przy pustej liście akcję niesie pusty stan, a przy wczytywaniu i błędzie liczy się ponowienie. Po dodaniu zostajemy na liście, z toastem (#89 pkt 6).
 - Kliknięcie nazwy przechodzi do składu. Kliknięcie z modyfikatorem (np. Ctrl) otwiera skład w nowej karcie.
 
 ## Otwarte pytania
 Rozstrzygnięte w #89 pkt 11:
 - Usuwanie drużyny: z nagłówka drużyny na ekranie składu, nie z listy (pkt 4).
+- Usuwanie zawodnika: kosz w jego wierszu na ekranie składu, obok ołówka do edycji, jak w obiektach (#86, #89 pkt 4).
 - Awatary zawodników: nie, kontrakt nie ma zdjęcia zawodnika.
 - Limit zawodników: stałe 50; limit per turniej to future work.

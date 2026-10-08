@@ -40,7 +40,8 @@ export const teams: Team[] = [
 ]
 
 // Herb demo w adresie `data:`, żeby makiety nie zależały od sieci ani od
-// assetów pakietu. Kolory to treść obrazka (jak w pliku klubu), nie chroma UI.
+// assetów pakietu. Kolory to treść obrazka (jak w pliku klubu), nie chroma UI
+// (wyjątek z reguły kolorów w `packages/ui/AGENTS.md`).
 export const demoTeamLogoUrl =
   'data:image/svg+xml,' +
   encodeURIComponent(
@@ -69,7 +70,8 @@ export const rosterTeam: TeamRow = teamRows.find((team) => team.id === 1)!
 
 // Skład `rosterTeam` w kształcie `PlayerRow`. Numer i pozycja są opcjonalne,
 // więc część zawodników ich nie ma. Długość równa się `playersCount` tej
-// drużyny. Kolejność jak z API: numery rosnąco, bez numeru na końcu po nazwisku.
+// drużyny. Kolejność jak z API: numery rosnąco, a zawodnicy bez numeru na
+// końcu po pełnej nazwie (`name`), czyli w praktyce po imieniu.
 export const teamPlayers: PlayerRow[] = [
   { id: 1, name: 'Marek Lis', number: 1, position: 'Bramkarz' },
   { id: 2, name: 'Michał Nowak', number: 4, position: 'Obrońca' },

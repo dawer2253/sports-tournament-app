@@ -15,14 +15,15 @@ export interface AdminTeamsProps {
  * akcje drużyny stoją w nagłówku drużyny na ekranie składu (pkt 4).
  */
 export function AdminTeams({ teams = teamRows, status = 'success' }: AdminTeamsProps) {
-  // Przy pustej liście akcję niesie pusty stan tabeli: dwa „Dodaj drużynę"
-  // naraz mówiłyby to samo dwa razy.
-  const isEmpty = status === 'success' && teams.length === 0
+  // Przycisk w nagłówku tylko przy wczytanej, niepustej liście, jak „Nowy
+  // turniej" w panelu (#28). Przy pustej liście akcję niesie pusty stan, a przy
+  // błędzie i wczytywaniu liczy się ponowienie, nie dodawanie kolejnej drużyny.
+  const showCreate = status === 'success' && teams.length > 0
   return (
     <TournamentShellDemo
       active="teams"
       actions={
-        !isEmpty && (
+        showCreate && (
           <Button>
             <Plus className="size-4" /> Dodaj drużynę
           </Button>

@@ -80,6 +80,8 @@ Kolejność w sidebarze: `Wprowadzenie → Fundamenty → UI → Ekrany`.
   `text-muted-foreground`…), nigdy hexy. Motyw „pitch": jedna zieleń marki
   (`--primary` / `--brand`) to jedyny nasycony kolor chromy; reszta to
   neutralna, chłodna rampa; wielobarwność wyłącznie w danych (`--chart-1..5`).
+  Wyjątek: treść obrazka w danych demo i stories (np. logo w adresie `data:`)
+  ma własne kolory, jak plik wgrany przez klub, bo nie jest chromą interfejsu.
 - **Dark mode** — każdy token ma wariant w `.dark`; testuj oba przełącznikiem
   „Motyw" w toolbarze Storybooka.
 - **Klasy zawsze przez `cn()`**; warianty komponentów przez

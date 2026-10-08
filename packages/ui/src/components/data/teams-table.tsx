@@ -27,8 +27,10 @@ export interface TeamsTableProps {
    */
   teamHref: (team: TeamRow) => string
   /**
-   * Przejęcie kliknięcia w nazwę, np. przez router — na wzór `onNavigate`
-   * w `AdminShell`. Bez niego link działa samym `href`.
+   * Przejęcie kliknięcia w nazwę, np. przez router. W odróżnieniu od
+   * `onNavigate` w `AdminShell`, który przejmuje każde kliknięcie, kliknięcie
+   * z modyfikatorem albo środkowym przyciskiem zostaje przeglądarce (nowa
+   * karta). Bez tego propsa link działa samym `href`.
    */
   onOpenTeam?: (team: TeamRow) => void
 }

@@ -38,10 +38,18 @@ export const Pusta: Story = {
   },
 }
 
+/** Przy wczytywaniu i błędzie nagłówek nie ma „Dodaj drużynę" (#28). */
+const bezAkcjiWNaglowku: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  await expect(canvas.queryByRole('button', { name: 'Dodaj drużynę' })).not.toBeInTheDocument()
+}
+
 export const Wczytywanie: Story = {
   args: { teams: [], status: 'pending' },
+  play: bezAkcjiWNaglowku,
 }
 
 export const Blad: Story = {
   args: { teams: [], status: 'error' },
+  play: bezAkcjiWNaglowku,
 }
