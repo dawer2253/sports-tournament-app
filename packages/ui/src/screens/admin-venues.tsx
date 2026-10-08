@@ -12,13 +12,16 @@ export interface AdminVenuesProps {
 
 /** Lista obiektów turnieju (#90): nazwa i adres, bez liczby meczów. */
 export function AdminVenues({ venues = venueRows, status = 'success' }: AdminVenuesProps) {
-  // Przy pustej liście akcję niesie pusty stan tabeli, jak na liście drużyn.
-  const isEmpty = status === 'success' && venues.length === 0
+  // Przycisk w nagłówku tylko przy wczytanej, niepustej liście, jak „Nowy
+  // turniej" w panelu (#28) i lista drużyn. Przy pustej liście akcję niesie
+  // pusty stan, a przy błędzie i wczytywaniu liczy się ponowienie, nie
+  // dodawanie kolejnego obiektu.
+  const showCreate = status === 'success' && venues.length > 0
   return (
     <TournamentShellDemo
       active="venues"
       actions={
-        !isEmpty && (
+        showCreate && (
           <Button>
             <Plus className="size-4" /> Dodaj obiekt
           </Button>

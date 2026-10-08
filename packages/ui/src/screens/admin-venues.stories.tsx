@@ -23,6 +23,8 @@ export const Domyslny: Story = {
     await expect(canvas.getAllByRole('row')).toHaveLength(venueRows.length + 1)
     // Kontrakt nie ma liczby meczów obiektu (#90).
     await expect(canvas.queryByRole('columnheader', { name: 'Mecze' })).not.toBeInTheDocument()
+    // Przy wczytanej, niepustej liście akcja stoi w nagłówku (#115).
+    await expect(canvas.getAllByRole('button', { name: 'Dodaj obiekt' })).toHaveLength(1)
   },
 }
 
@@ -47,10 +49,18 @@ export const Pusta: Story = {
   },
 }
 
+/** Przy wczytywaniu i błędzie nagłówek nie ma „Dodaj obiekt" (#28). */
+const noCreateInHeader: Story['play'] = async ({ canvasElement }) => {
+  const canvas = within(canvasElement)
+  await expect(canvas.queryByRole('button', { name: 'Dodaj obiekt' })).not.toBeInTheDocument()
+}
+
 export const Wczytywanie: Story = {
   args: { venues: [], status: 'pending' },
+  play: noCreateInHeader,
 }
 
 export const Blad: Story = {
   args: { venues: [], status: 'error' },
+  play: noCreateInHeader,
 }
