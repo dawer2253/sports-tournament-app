@@ -82,6 +82,13 @@ class Tournament extends Model
     public const MAX_TEAMS = 128;
 
     /**
+     * Najwięcej żywych obiektów w turnieju (decyzja #80, opis `POST
+     * /tournaments/{tournament}/venues` w kontrakcie). Zmienia się razem
+     * z kontraktem.
+     */
+    public const MAX_VENUES = 32;
+
+    /**
      * Zakłada turniej organizera jako szkic, razem z fazami wynikającymi
      * z formatu, w jednej transakcji.
      *
