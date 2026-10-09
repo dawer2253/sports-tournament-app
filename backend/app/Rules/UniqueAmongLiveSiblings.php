@@ -14,7 +14,7 @@ use Illuminate\Validation\Rules\Unique;
  * Fabryka, a nie własne `ValidationRule`: zwraca zwykłe `Rule::unique`, więc
  * błąd idzie pod `<pole>.unique` i komunikat z `messages()` requestu działa
  * bez zmian. Unikalności nie pilnuje indeks, więc obowiązuje to samo
- * zastrzeżenie o wyścigu co przy limicie dzieci (`LimitsChildren`).
+ * zastrzeżenie o wyścigu co przy limicie dzieci (`ChildLimit`).
  */
 final class UniqueAmongLiveSiblings
 {

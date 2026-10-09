@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests\Venues;
 
-use App\Http\Requests\Concerns\LimitsChildren;
 use App\Models\Tournament;
+use App\Rules\ChildLimit;
 use Illuminate\Validation\Validator;
 
 class StoreVenueRequest extends VenueRequest
 {
-    use LimitsChildren;
-
     /**
      * @return array<string, mixed>
      */
@@ -32,7 +30,7 @@ class StoreVenueRequest extends VenueRequest
     public function after(): array
     {
         return [
-            $this->childLimit(
+            ChildLimit::check(
                 $this->tournament()->venues(),
                 Tournament::MAX_VENUES,
                 'venues',

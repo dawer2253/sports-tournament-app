@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Concerns;
+namespace App\Rules;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\Validator;
@@ -18,12 +18,12 @@ use Illuminate\Validation\Validator;
  * wiersza rodzica byłaby tu na wyrost. To samo dotyczy unikalności wśród
  * żywego rodzeństwa (`UniqueAmongLiveSiblings`), której nie pilnuje indeks.
  */
-trait LimitsChildren
+final class ChildLimit
 {
     /**
      * @return callable(Validator): void
      */
-    protected function childLimit(HasMany $children, int $max, string $errorKey, string $message): callable
+    public static function check(HasMany $children, int $max, string $errorKey, string $message): callable
     {
         return function (Validator $validator) use ($children, $max, $errorKey, $message): void {
             if ($children->count() >= $max) {

@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests\Players;
 
-use App\Http\Requests\Concerns\LimitsChildren;
 use App\Models\Team;
+use App\Rules\ChildLimit;
 use Illuminate\Validation\Validator;
 
 class StorePlayerRequest extends PlayerRequest
 {
-    use LimitsChildren;
-
     /**
      * @return array<string, mixed>
      */
@@ -28,7 +26,7 @@ class StorePlayerRequest extends PlayerRequest
     public function after(): array
     {
         return [
-            $this->childLimit(
+            ChildLimit::check(
                 $this->team()->players(),
                 Team::MAX_PLAYERS,
                 'players',

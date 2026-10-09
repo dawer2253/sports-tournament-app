@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests\Teams;
 
-use App\Http\Requests\Concerns\LimitsChildren;
 use App\Models\Tournament;
+use App\Rules\ChildLimit;
 use Illuminate\Validation\Validator;
 
 class StoreTeamRequest extends TeamRequest
 {
-    use LimitsChildren;
-
     /**
      * @return array<string, mixed>
      */
@@ -26,7 +24,7 @@ class StoreTeamRequest extends TeamRequest
     public function after(): array
     {
         return [
-            $this->childLimit(
+            ChildLimit::check(
                 $this->tournament()->teams(),
                 Tournament::MAX_TEAMS,
                 'teams',
