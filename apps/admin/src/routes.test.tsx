@@ -62,14 +62,13 @@ function tournamentEndpoint(respond: () => Response) {
  */
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { router, user: userEvent.setup() };
+  return { router, queryClient, user: userEvent.setup() };
 }
 
 function sectionTabs() {
@@ -238,6 +237,54 @@ describe('trasy turnieju', () => {
       'page',
     );
     expect(calls).toBe(2);
+  });
+});
+
+describe('odświeżenie turnieju w tle', () => {
+  // Ekrany sekcji unieważniają `['tournament', id]` po zmianie drużyn (`teamsCount`).
+  // Chwilowy błąd serwera przy takim odświeżeniu nie może zdjąć organizerowi
+  // sekcji, na której pracuje.
+  it('błąd serwera zostawia sekcję z ostatnio wczytanym turniejem', async () => {
+    let calls = 0;
+    tournamentEndpoint(() => {
+      calls += 1;
+      return calls === 1
+        ? HttpResponse.json({ data: TOURNAMENT })
+        : HttpResponse.json({ message: 'Serwer nie odpowiada.' }, { status: 500 });
+    });
+
+    const { queryClient } = renderAt('/tournaments/7/teams');
+    await screen.findByText('Ta sekcja jeszcze powstaje');
+
+    await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });
+
+    expect(calls).toBe(2);
+    // React dorysowuje stan zapytania asynchronicznie, więc samo `queryByText`
+    // zaraz po odświeżeniu przeszłoby także na kodzie, który sekcję zdejmuje.
+    // Czekamy na stan błędu i wymagamy, żeby się nie pojawił.
+    await expect(
+      screen.findByText('Nie udało się wczytać turnieju', undefined, { timeout: 300 }),
+    ).rejects.toThrow();
+    expect(screen.getByText('Ta sekcja jeszcze powstaje')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Puchar Zimowy' })).toBeInTheDocument();
+  });
+
+  it('404 przy odświeżeniu daje „nie ma”, bo turniej zniknął naprawdę', async () => {
+    let calls = 0;
+    tournamentEndpoint(() => {
+      calls += 1;
+      return calls === 1
+        ? HttpResponse.json({ data: TOURNAMENT })
+        : HttpResponse.json({ message: 'Zasób nie istnieje.' }, { status: 404 });
+    });
+
+    const { queryClient } = renderAt('/tournaments/7/teams');
+    await screen.findByText('Ta sekcja jeszcze powstaje');
+
+    await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });
+
+    expect(await screen.findByText('Nie ma takiego turnieju')).toBeInTheDocument();
+    expect(screen.queryByText('Ta sekcja jeszcze powstaje')).not.toBeInTheDocument();
   });
 });
 

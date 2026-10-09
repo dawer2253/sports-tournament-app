@@ -66,6 +66,12 @@ export function TournamentLayout() {
         action={<Button onClick={goToList}>Wróć do listy turniejów</Button>}
       />
     );
+  } else if (tournament.data) {
+    // Dane przed błędem: nieudane odświeżenie w tle (np. po unieważnieniu
+    // `['tournament', id]` przy zmianie drużyn) nie zdejmuje otwartej sekcji
+    // razem z oknem, w którym organizer właśnie pracuje. Zostaje ostatni
+    // wczytany turniej, a następne odświeżenie spróbuje znowu.
+    return <Outlet context={tournament.data} />;
   } else if (tournament.isError) {
     content = (
       <EmptyState
@@ -79,7 +85,7 @@ export function TournamentLayout() {
         }
       />
     );
-  } else if (tournament.isPending) {
+  } else {
     content = (
       <Card aria-busy="true" aria-label="Wczytywanie turnieju">
         <CardContent>
@@ -87,8 +93,6 @@ export function TournamentLayout() {
         </CardContent>
       </Card>
     );
-  } else {
-    return <Outlet context={tournament.data} />;
   }
 
   return (
@@ -100,5 +104,11 @@ export function TournamentLayout() {
 
 /** Turniej wczytany przez `TournamentLayout`, dla ekranów sekcji. */
 export function useTournament(): Tournament {
-  return useOutletContext<Tournament>();
+  const tournament = useOutletContext<Tournament | undefined>();
+  // Bez tego ekran wpięty poza trasą `/tournaments/:id` dostałby `undefined`
+  // otypowane jako turniej i wywróciłby się dopiero na pierwszym polu.
+  if (!tournament) {
+    throw new Error('useTournament() działa tylko w sekcji pod TournamentLayout.');
+  }
+  return tournament;
 }
