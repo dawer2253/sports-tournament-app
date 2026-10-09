@@ -250,6 +250,23 @@ describe('Obiekty — dodawanie', () => {
     expect(screen.getByLabelText('Nazwa')).toHaveValue('');
     expect(screen.getByLabelText('Nazwa')).not.toHaveAttribute('aria-invalid');
   });
+  it('za długą nazwę zgłasza przy polu zamiast ucinać ją po cichu', async () => {
+    // Bez `maxLength` na polu: wklejona za długa nazwa zostaje w całości,
+    // a organizer widzi, o ile przekroczył limit, zamiast tracić końcówkę.
+    serveVenues([BEMOWO]);
+    const user = renderVenues();
+
+    await venuesTable();
+    await user.click(screen.getByRole('button', { name: 'Dodaj obiekt' }));
+    await user.click(screen.getByLabelText('Nazwa'));
+    await user.paste('a'.repeat(121));
+    expect(screen.getByLabelText('Nazwa')).toHaveValue('a'.repeat(121));
+    await user.click(screen.getByRole('button', { name: 'Dodaj' }));
+
+    expect(await screen.findByLabelText('Nazwa')).toHaveAccessibleDescription(
+      'Nazwa może mieć najwyżej 120 znaków.',
+    );
+  });
 });
 
 describe('Obiekty — edycja', () => {
@@ -329,7 +346,7 @@ describe('Obiekty — usuwanie', () => {
   });
 
   it('`422` pod `id` daje komunikat serwera i tylko „Zamknij”, a obiekt zostaje na liście', async () => {
-    serveVenues([BEMOWO, URSUS]);
+    const state = serveVenues([BEMOWO, URSUS]);
     const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma powiązane rozegrane mecze.';
     server.use(
       http.delete(`${API}/venues/${BEMOWO.id}`, () =>
@@ -351,6 +368,8 @@ describe('Obiekty — usuwanie', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Zamknij' }));
     await dialogClosed('alertdialog');
     expect(screen.getByRole('table')).toHaveTextContent('Boisko Bemowo');
+    // Odmowa niczego nie zmieniła, więc lista nie idzie po nowe dane.
+    expect(state.requests).toBe(1);
   });
 
   it('`404` działa jak sukces: okno znika z toastem, a lista się odświeża', async () => {

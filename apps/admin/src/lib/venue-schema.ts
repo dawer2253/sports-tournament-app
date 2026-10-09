@@ -30,6 +30,6 @@ export type VenueFormValues = z.input<typeof venueSchema>;
 export type VenueValues = z.output<typeof venueSchema>;
 
 /** Wartości startowe formularza: dane obiektu przy edycji, puste pola przy dodawaniu. */
-export function venueValues(venue: Venue | null): VenueFormValues {
+export function venueValues(venue: Pick<Venue, 'name' | 'address'> | null): VenueFormValues {
   return { name: venue?.name ?? '', address: venue?.address ?? '' };
 }

@@ -1,7 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import type { Tournament, Venue } from '@tournament/api-client';
-import { Button, ConfirmDeleteDialog, FormDialog, Input, Label, VenuesTable } from '@tournament/ui';
+import type { Tournament } from '@tournament/api-client';
+import {
+  Button,
+  ConfirmDeleteDialog,
+  FormDialog,
+  Input,
+  Label,
+  VenuesTable,
+  type VenueRow,
+} from '@tournament/ui';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,7 +38,10 @@ function venuesKey(tournamentId: number) {
 }
 
 /** Otwarte okno: formularz (`venue: null` to dodawanie) albo potwierdzenie usunięcia. */
-type OpenDialog = { kind: 'form'; venue: Venue | null } | { kind: 'delete'; venue: Venue } | null;
+type OpenDialog =
+  | { kind: 'form'; venue: VenueRow | null }
+  | { kind: 'delete'; venue: VenueRow }
+  | null;
 
 /**
  * Obiekty turnieju (#116, decyzje w #90): lista z `VenuesTable`, dodawanie
@@ -78,9 +89,9 @@ export function TournamentVenuesPage() {
         errorMessage={venues.error?.message}
         onRetry={() => void venues.refetch()}
         onCreate={() => setDialog({ kind: 'form', venue: null })}
-        // `VenuesTable` oddaje `VenueRow`, a okna potrzebują całego `Venue`.
-        onEdit={(row) => setDialog({ kind: 'form', venue: findVenue(venues.data, row.id) })}
-        onDelete={(row) => setDialog({ kind: 'delete', venue: findVenue(venues.data, row.id) })}
+        // Okna biorą `VenueRow`: id, nazwa i adres to wszystko, czego potrzebują.
+        onEdit={(venue) => setDialog({ kind: 'form', venue })}
+        onDelete={(venue) => setDialog({ kind: 'delete', venue })}
       />
 
       {/* Okna renderowane warunkowo: stan hooka (błąd, blokada) żyje tyle co okno. */}
@@ -94,16 +105,9 @@ export function TournamentVenuesPage() {
   );
 }
 
-/** Wiersz tabeli pochodzi z tej samej listy, więc obiekt o jego `id` w niej jest. */
-function findVenue(venues: Venue[] | undefined, id: number): Venue {
-  const venue = venues?.find((candidate) => candidate.id === id);
-  if (!venue) throw new Error(`Brak obiektu ${id} na wczytanej liście.`);
-  return venue;
-}
-
 type DialogProps = { tournament: Tournament; onClose: () => void };
 
-function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: Venue | null }) {
+function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: VenueRow | null }) {
   const form = useForm<VenueFormValues, unknown, VenueValues>({
     resolver: zodResolver(venueSchema),
     defaultValues: venueValues(venue),
@@ -150,7 +154,6 @@ function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: 
         <Input
           id="venue-name"
           autoFocus
-          maxLength={120}
           aria-invalid={errors.name ? true : undefined}
           aria-describedby={errors.name ? 'venue-name-error' : undefined}
           {...form.register('name')}
@@ -165,7 +168,6 @@ function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: 
         <Label htmlFor="venue-address">Adres</Label>
         <Input
           id="venue-address"
-          maxLength={255}
           aria-invalid={errors.address ? true : undefined}
           aria-describedby={errors.address ? 'venue-address-error' : undefined}
           {...form.register('address')}
@@ -180,7 +182,7 @@ function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: 
   );
 }
 
-function VenueDeleteDialog({ tournament, venue, onClose }: DialogProps & { venue: Venue }) {
+function VenueDeleteDialog({ tournament, venue, onClose }: DialogProps & { venue: VenueRow }) {
   const mutation = useListMutation({
     texts: VENUE_TEXTS,
     invalidate: [venuesKey(tournament.id)],
