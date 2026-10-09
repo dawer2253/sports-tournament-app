@@ -106,6 +106,8 @@ export const Zaawansowane: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Zaawansowane' }))
     const input = canvas.getByLabelText('Kolor (hex)')
     await expect(input).toHaveValue('#1F7A45')
+    // Ostrzeżenie stoi pod polem hex, więc jego brak sprawdzamy przy otwartym polu.
+    await expect(canvas.queryByText(/może być nieczytelny/)).not.toBeInTheDocument()
     await expect(canvas.getByLabelText('Wybierz kolor')).toHaveAttribute('type', 'color')
 
     await userEvent.clear(input)

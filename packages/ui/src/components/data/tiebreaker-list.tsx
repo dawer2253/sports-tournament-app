@@ -1,9 +1,4 @@
-export interface TiebreakerItem {
-  /** Kod z `Tournament.tiebreakers`, np. `head_to_head`. */
-  code: string
-  /** Etykieta z `SportConfig.tiebreakerLabels` (#117). */
-  label: string
-}
+import type { TiebreakerItem } from './tiebreaker-item'
 
 export interface TiebreakerListProps {
   /** Tiebreaki w kolejności priorytetu: pierwszy rozstrzyga pierwszy. */

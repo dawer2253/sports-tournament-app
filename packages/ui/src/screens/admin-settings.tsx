@@ -3,7 +3,7 @@ import { AlertTriangle, Trash2, Upload } from 'lucide-react'
 import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
-import { BrandColorPicker } from '../components/ui/brand-color-picker'
+import { BrandColorPicker, DEFAULT_BRAND_COLOR } from '../components/ui/brand-color-picker'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Separator } from '../components/ui/separator'
@@ -14,8 +14,6 @@ import type { TournamentRow } from '../components/data/tournament-row'
 import { TournamentLogo } from '../components/layout/tournament-logo'
 import { sportSettings, tournament } from '../lib/demo-data'
 
-/** Domyślny kolor turnieju z backendu (`Tournament::DEFAULT_PRIMARY_COLOR`). */
-const DEFAULT_PRIMARY_COLOR = '#1F7A45'
 /** Panel zna adres strony publicznej z `VITE_PUBLIC_URL` (#91 pkt 3). */
 const PUBLIC_ORIGIN = 'http://localhost:5174'
 
@@ -38,14 +36,15 @@ export function AdminSettings({
   status = 'active',
   sport = 'football',
   logoUrl = null,
-  primaryColor = DEFAULT_PRIMARY_COLOR,
+  primaryColor = DEFAULT_BRAND_COLOR,
   slug: initialSlug = tournament.slug,
 }: AdminSettingsProps) {
   const config = sportSettings[sport]
   const [color, setColor] = React.useState(primaryColor)
   const [slug, setSlug] = React.useState(initialSlug)
   const [points, setPoints] = React.useState(config.defaultPoints)
-  const [logoFailed, setLogoFailed] = React.useState(false)
+  // Jak w `ImageWithFallback`: pamiętamy adres, który zawiódł, a nie flagę.
+  const [failedLogoUrl, setFailedLogoUrl] = React.useState<string | null>(null)
 
   // W szkicu strona i tak daje `404`, więc ostrzeżenie tylko w opublikowanym.
   const slugWarning = status !== 'draft' && slug !== tournament.slug
@@ -74,11 +73,11 @@ export function AdminSettings({
             <TournamentLogo
               logoUrl={logoUrl}
               color={color}
-              onError={() => setLogoFailed(true)}
+              onError={() => setFailedLogoUrl(logoUrl)}
               className="size-16"
             />
             <div className="grid gap-2">
-              {logoFailed && (
+              {logoUrl !== null && failedLogoUrl === logoUrl && (
                 <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <AlertTriangle className="size-4" /> Nie udało się wczytać logo
                 </p>

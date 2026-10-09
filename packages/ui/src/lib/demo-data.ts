@@ -2,6 +2,7 @@
 
 import type { PlayerRow } from '../components/data/player-row'
 import type { TeamRow } from '../components/data/team-row'
+import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
 
@@ -251,7 +252,7 @@ export type DemoSportSettings = {
   name: string
   allowsDraw: boolean
   defaultPoints: { win: number; draw: number; loss: number }
-  tiebreakers: { code: string; label: string }[]
+  tiebreakers: TiebreakerItem[]
 }
 
 export const sportSettings: Record<'football' | 'basketball', DemoSportSettings> = {

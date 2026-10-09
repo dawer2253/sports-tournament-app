@@ -27,7 +27,7 @@ const TRANSITIONS: Record<TournamentStatus, { target: TournamentStatus; label: s
 const EFFECT: Record<TournamentStatus, string> = {
   draft: 'Turniej nie jest opublikowany: strona publiczna nie istnieje.',
   active: 'Turniej jest opublikowany: kibice widzą terminarz, wyniki i tabelę.',
-  finished: 'Rozgrywki się skończyły. Strona publiczna działa, a wyniki nadal można poprawiać.',
+  finished: 'Rozgrywki się skończyły, ale strona publiczna działa, a wyniki nadal można poprawiać.',
 }
 
 export interface TournamentStatusCardProps {

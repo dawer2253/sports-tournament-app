@@ -31,6 +31,9 @@ export const BRAND_PALETTES: readonly BrandPalette[] = [
   { name: 'Cegła', hex: '#B4471B' },
 ]
 
+/** Domyślny kolor turnieju, czyli paleta „Murawa”. */
+export const DEFAULT_BRAND_COLOR = BRAND_PALETTES[0]!.hex
+
 /** Próg WCAG AA dla zwykłego tekstu. */
 const MIN_CONTRAST = 4.5
 const WHITE = '#FFFFFF'
@@ -127,7 +130,7 @@ export function BrandColorPicker({
               id={hexId}
               value={value}
               onChange={(event) => onChange(event.target.value)}
-              placeholder="#1F7A45"
+              placeholder={DEFAULT_BRAND_COLOR}
               spellCheck={false}
               autoComplete="off"
               className="max-w-36 font-mono"

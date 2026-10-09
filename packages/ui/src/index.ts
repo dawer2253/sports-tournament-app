@@ -38,6 +38,7 @@ export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/team-row';
 export * from './components/data/teams-table';
+export * from './components/data/tiebreaker-item';
 export * from './components/data/tiebreaker-list';
 export * from './components/data/tournament-row';
 export * from './components/data/tournament-status-badge';
