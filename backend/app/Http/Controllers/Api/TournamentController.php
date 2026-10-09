@@ -99,7 +99,7 @@ class TournamentController extends Controller
             }
 
             throw ValidationException::withMessages([
-                'slug' => $request->messages()['slug.unique'],
+                'slug' => UpdateTournamentRequest::SLUG_TAKEN_MESSAGE,
             ]);
         }
 

@@ -169,6 +169,30 @@ it('odrzuca kolor spoza wzorca', function (string $color) {
     'spoza hex' => ['#1G7A45'],
 ]);
 
+// Kontrakt nie wymaga w `branding` żadnego pola, więc pusty obiekt jest
+// poprawny i niczego nie zmienia.
+it('przyjmuje pusty branding bez zmian', function () {
+    $tournament = Tournament::factory()->create(['primary_color' => '#1F7A45']);
+
+    patchTournament($tournament, ['branding' => (object) []])
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.branding.primaryColor', '#1F7A45');
+
+    expect($tournament->fresh()->primary_color)->toBe('#1F7A45');
+});
+
+it('odrzuca branding, który nie jest obiektem', function (mixed $branding) {
+    $tournament = Tournament::factory()->create();
+
+    patchTournament($tournament, ['branding' => $branding])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('branding');
+})->with([
+    'null' => [null],
+    'napis' => ['#1F7A45'],
+]);
+
 // `logoUrl` nie występuje w `TournamentUpdate.branding`
 // (`additionalProperties: false`) — logo wgrywa osobna trasa.
 it('odrzuca logoUrl w brandingu', function () {
@@ -207,19 +231,19 @@ it('przechodzi między stanami bez warunków wstępnych', function (string $from
     'draft → draft z meczem' => ['draft', 'draft', true],
 ]);
 
-it('nie cofa do draft turnieju z rozegranym meczem', function (string $from) {
+it('nie cofa do draft turnieju z zakończonym meczem', function (string $from) {
     $tournament = withFinishedMatch(Tournament::factory()->create(['status' => $from]));
 
     patchTournament($tournament, ['status' => 'draft'])
         ->assertValidRequest()
         ->assertValidResponse(422)
-        ->assertJsonPath('errors.status', ['Turniej ma rozegrany mecz, więc nie może wrócić do szkicu.']);
+        ->assertJsonPath('errors.status', ['Turniej ma zakończony mecz, więc nie może wrócić do szkicu.']);
 
     expect($tournament->fresh()->status)->toBe($from);
 })->with(['active', 'finished']);
 
-// Mecz zaplanowany nie blokuje powrotu do szkicu — liczy się tylko rozegrany.
-it('cofa do draft turniej z meczem nierozegranym', function () {
+// Mecz zaplanowany nie blokuje powrotu do szkicu — liczy się tylko zakończony.
+it('cofa do draft turniej z meczem niezakończonym', function () {
     $tournament = Tournament::factory()->create(['status' => 'active']);
     GameMatch::factory()->for(Round::factory()->for(Stage::factory()->for($tournament)))->create();
 
@@ -436,7 +460,7 @@ it('odrzuca pustą listę pod tiebreakers', function () {
 
 // --- niezależność od statusu i meczów (#87) ---------------------------------
 
-it('zmienia punktację i tiebreaki niezależnie od statusu i rozegranych meczów', function (string $status, bool $finishedMatch) {
+it('zmienia punktację i tiebreaki niezależnie od statusu i zakończonych meczów', function (string $status, bool $finishedMatch) {
     $tournament = Tournament::factory()->create(['status' => $status]);
 
     if ($finishedMatch) {
@@ -452,9 +476,9 @@ it('zmienia punktację i tiebreaki niezależnie od statusu i rozegranych meczów
         ->assertJsonPath('data.points', ['win' => 2, 'draw' => 1, 'loss' => 0])
         ->assertJsonPath('data.tiebreakers', ['points', 'wins']);
 })->with([
-    'aktywny z rozegranym meczem' => ['active', true],
-    'zakończony' => ['finished', false],
-    'zakończony z rozegranym meczem' => ['finished', true],
+    'active z zakończonym meczem' => ['active', true],
+    'finished' => ['finished', false],
+    'finished z zakończonym meczem' => ['finished', true],
 ]);
 
 it('trzyma kody tiebreaków zgodne z enumem TiebreakerCode w kontrakcie', function () {

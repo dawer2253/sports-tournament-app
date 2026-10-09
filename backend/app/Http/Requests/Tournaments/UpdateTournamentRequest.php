@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Tournaments;
 
+use App\Models\Sport;
 use App\Models\Tournament;
 use Closure;
 use Illuminate\Support\Arr;
@@ -15,16 +16,19 @@ use Illuminate\Validation\Validator;
  * za `sometimes`.
  *
  * Poza powrotem do `draft` żadna reguła nie zależy od statusu turnieju ani od
- * rozegranych meczów: punktację i tiebreaki wolno zmieniać zawsze (#87).
+ * zakończonych meczów: punktację i tiebreaki wolno zmieniać zawsze (#87).
  */
 class UpdateTournamentRequest extends TournamentRequest
 {
+    /** Kolizja sluga — z walidacji i z wyścigu o unikalny indeks w kontrolerze. */
+    public const SLUG_TAKEN_MESSAGE = 'Ten adres ma już inny turniej.';
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
-        $allowsDraw = $this->tournament()->sport->allowsDraw();
+        $allowsDraw = $this->sport()->allowsDraw();
 
         return [
             'name' => ['sometimes', 'required', ...$this->nameRules()],
@@ -38,8 +42,9 @@ class UpdateTournamentRequest extends TournamentRequest
             ],
             'status' => ['sometimes', 'required', 'string', Rule::in(Tournament::STATUSES)],
             // `additionalProperties: false` w kontrakcie: `logoUrl` tu nie
-            // występuje, bo logo wgrywa osobna trasa.
-            'branding' => ['sometimes', 'required', 'array:primaryColor'],
+            // występuje, bo logo wgrywa osobna trasa. Bez `required`, bo
+            // kontrakt nie wymaga `primaryColor`, więc `{}` niczego nie zmienia.
+            'branding' => ['sometimes', 'array:primaryColor'],
             'branding.primaryColor' => ['sometimes', 'required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             // Punktacja przychodzi w komplecie albo wcale.
             'points' => ['sometimes', 'required', 'array'],
@@ -80,7 +85,7 @@ class UpdateTournamentRequest extends TournamentRequest
      */
     private function tiebreakerRule(): Closure
     {
-        $available = $this->tournament()->sport->availableTiebreakers();
+        $available = $this->sport()->availableTiebreakers();
 
         return function (string $attribute, mixed $value, Closure $fail) use ($available): void {
             if (! in_array($value, Tournament::TIEBREAKER_CODES, true)) {
@@ -135,7 +140,7 @@ class UpdateTournamentRequest extends TournamentRequest
             return;
         }
 
-        $validator->errors()->add('status', 'Turniej ma rozegrany mecz, więc nie może wrócić do szkicu.');
+        $validator->errors()->add('status', 'Turniej ma zakończony mecz, więc nie może wrócić do szkicu.');
     }
 
     /**
@@ -152,7 +157,7 @@ class UpdateTournamentRequest extends TournamentRequest
 
         ['win' => $win, 'draw' => $draw, 'loss' => $loss] = $this->input('points');
 
-        if (! $this->tournament()->sport->allowsDraw()) {
+        if (! $this->sport()->allowsDraw()) {
             if ($loss >= $win) {
                 $validator->errors()->add('points', 'Porażka musi dawać mniej punktów niż wygrana.');
             }
@@ -226,7 +231,7 @@ class UpdateTournamentRequest extends TournamentRequest
     {
         return [
             'slug.regex' => 'Adres może zawierać tylko małe litery bez polskich znaków, cyfry i pojedyncze myślniki między nimi.',
-            'slug.unique' => 'Ten adres ma już inny turniej.',
+            'slug.unique' => self::SLUG_TAKEN_MESSAGE,
             'branding.primaryColor.regex' => 'Kolor podaj w formacie #RRGGBB.',
             'tiebreakers.min' => 'Lista kryteriów musi mieć co najmniej jedną pozycję.',
         ];
@@ -235,5 +240,10 @@ class UpdateTournamentRequest extends TournamentRequest
     private function tournament(): Tournament
     {
         return $this->route('tournament');
+    }
+
+    private function sport(): Sport
+    {
+        return $this->tournament()->sport;
     }
 }
