@@ -24,7 +24,7 @@ use Illuminate\Testing\TestResponse;
  *
  * @return array<string, string>
  */
-function datesIn(TestResponse $response): array
+function dateLikeStringsIn(TestResponse $response): array
 {
     return collect(Arr::dot($response->json()))
         ->filter(fn ($value) => is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}T/', $value))
@@ -37,7 +37,7 @@ function datesIn(TestResponse $response): array
  */
 function expectEveryDateInUtc(TestResponse $response, array $expectedPaths): void
 {
-    $dates = datesIn($response);
+    $dates = dateLikeStringsIn($response);
 
     expect(array_keys($dates))->toContain(...$expectedPaths);
 
