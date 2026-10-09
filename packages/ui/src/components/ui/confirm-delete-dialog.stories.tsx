@@ -1,6 +1,7 @@
 import { useState, type ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, screen, userEvent, waitFor } from 'storybook/test'
+import { expectDarkPortal } from '../../test/theme'
 import { ConfirmDeleteDialog } from './confirm-delete-dialog'
 
 /** Stan `open` po stronie story, jak w `form-dialog.stories.tsx`. */
@@ -161,5 +162,15 @@ export const KlikObokPrzyUsuwaniu: Story = {
     await userEvent.click(overlay())
     await expect(args.onOpenChange).not.toHaveBeenCalled()
     await expect(dialog).toBeInTheDocument()
+  },
+}
+
+/** Ciemny motyw w portalu, jak `CiemnyMotyw` w `form-dialog.stories.tsx` (#136). */
+export const CiemnyMotyw: Story = {
+  globals: { theme: 'dark' },
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async () => {
+    await screen.findByRole('alertdialog')
+    await expectDarkPortal('[data-slot="dialog-content"]')
   },
 }

@@ -1,6 +1,7 @@
 import { useState, type ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, screen, userEvent, waitFor } from 'storybook/test'
+import { expectDarkPortal } from '../../test/theme'
 import { FormDialog } from './form-dialog'
 import { Input } from './input'
 import { Label } from './label'
@@ -190,5 +191,19 @@ export const InnyPrzyciskPrzyWysylaniu: Story = {
     await userEvent.click(screen.getByRole('button', { name: 'Wybierz z mapy' }))
 
     await expect(args.onSubmit).not.toHaveBeenCalled()
+  },
+}
+
+/**
+ * Okno renderuje się w portalu Radixa, poza drzewem story, więc ciemny motyw
+ * musi leżeć na `<html>` (#136). Zdjęcie klasy na chwilę pokazuje, że tło okna
+ * naprawdę od niej zależy. Bez snapshotu: ciemne snapshoty to osobna decyzja.
+ */
+export const CiemnyMotyw: Story = {
+  globals: { theme: 'dark' },
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async () => {
+    await screen.findByRole('dialog')
+    await expectDarkPortal('[data-slot="dialog-content"]')
   },
 }
