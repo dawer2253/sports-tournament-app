@@ -5,8 +5,8 @@ import { TeamPage } from './pages/team';
 import { TeamsPage } from './pages/teams';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentLayout } from './pages/tournament-layout';
-import { TournamentSectionPlaceholder } from './pages/tournament-section-placeholder';
 import { TournamentSettingsPage } from './pages/tournament-settings';
+import { TournamentVenuesPage } from './pages/tournament-venues';
 import { TournamentsPage } from './pages/tournaments';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -57,7 +57,7 @@ export const routes: RouteObject[] = [
       // Skład jest dzieckiem turnieju, a nie listy: lista nie ma `Outlet`, a skład
       // zastępuje ją w całości, z tą samą aktywną kartą „Drużyny” (#89 pkt 3).
       { path: 'teams/:teamId', element: <TeamPage /> },
-      { path: 'venues', element: <TournamentSectionPlaceholder section="venues" /> },
+      { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
     ],
   },
