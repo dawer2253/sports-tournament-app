@@ -188,7 +188,7 @@ Nie mylić z punktami w tabeli, które drużyna dostaje za wynik meczu (patrz
 "punkty".
 
 _Unikaj_: goals i bramki jako nazwa kanoniczna (to etykieta UI dla piłki),
-points (zajęte przez punkty w tabeli).
+points (zajęte przez punktację i punkty w tabeli, patrz `Points`).
 
 ## Points (punktacja)
 
