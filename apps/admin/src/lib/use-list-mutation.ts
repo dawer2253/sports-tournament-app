@@ -100,8 +100,8 @@ function isOutage(status: number) {
 }
 
 /**
- * Zapis i usuwanie bytu listy w panelu (obiekty, drużyny, zawodnicy; usuwanie
- * także dla całego turnieju) — wzorzec z #86, opisany w `apps/admin/AGENTS.md`, sekcja „Edycja list”.
+ * Zapis i usuwanie bytu listy w panelu (obiekty, drużyny, zawodnicy) — wzorzec
+ * z #86, opisany w `apps/admin/AGENTS.md`, sekcja „Edycja list”.
  *
  * Zapis jest po odpowiedzi, nie optymistyczny: okno czeka na serwer i zamyka
  * się dopiero po sukcesie, bo tylko w otwartym oknie błąd pola ma gdzie usiąść.

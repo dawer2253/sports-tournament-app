@@ -24,19 +24,23 @@ function DialogError({ children }: { children?: ReactNode }) {
  * ale jest wyłączony przez `aria-disabled`, nie `disabled`: przeglądarka zdejmuje
  * fokus z wyłączonego przycisku, więc fokus wypadałby z okna do `body` w chwili
  * wysłania (review #133). Wygląd `aria-disabled` daje `buttonVariants`.
+ *
+ * `inactive` gasi przycisk tak samo, ale bez spinnera: na stałe, po odpowiedzi,
+ * której ponowienie nic nie zmieni.
  */
 function PendingButton({
   pending,
+  inactive,
   onClick,
   children,
   ...props
-}: ComponentProps<typeof Button> & { pending?: boolean }) {
+}: ComponentProps<typeof Button> & { pending?: boolean; inactive?: boolean }) {
   return (
     <Button
       {...props}
-      aria-disabled={pending || undefined}
+      aria-disabled={pending || inactive || undefined}
       onClick={(event) => {
-        if (pending) {
+        if (pending || inactive) {
           event.preventDefault()
           return
         }

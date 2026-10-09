@@ -134,18 +134,26 @@ export const PotwierdzenieNazwa: Story = {
   },
 }
 
-/** Odmowa przy turnieju z rozegranymi meczami: pola do potwierdzenia już nie ma. */
-export const PotwierdzenieNazwaZablokowane: Story = {
+/**
+ * Odmowa przy turnieju z rozegranymi meczami (#103): przycisk zostaje, ale
+ * zgaszony, nawet przy zgodnej nazwie.
+ */
+export const PotwierdzenieNazwaZgaszone: Story = {
   args: {
     ...PotwierdzenieNazwa.args,
-    blocked: true,
+    confirmDisabled: true,
     error: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.',
   },
-  play: async () => {
+  play: async ({ args }) => {
     await screen.findByRole('alertdialog')
-    await expect(screen.queryByRole('textbox')).toBeNull()
-    await expect(screen.queryByRole('button', { name: 'Usuń turniej' })).toBeNull()
-    await expect(screen.getByRole('button', { name: 'Zamknij' })).toBeEnabled()
+    await userEvent.type(screen.getByRole('textbox'), 'Liga Osiedlowa 2026')
+    const confirm = screen.getByRole('button', { name: 'Usuń turniej' })
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true')
+
+    confirm.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onConfirm).not.toHaveBeenCalled()
+    await expect(screen.getByRole('button', { name: 'Anuluj' })).toBeEnabled()
   },
 }
 

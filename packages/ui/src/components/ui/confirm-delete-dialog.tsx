@@ -29,6 +29,12 @@ type ConfirmDeleteDialogProps = {
    * działa dopiero przy zgodności po `trim()`, z rozróżnianiem wielkości liter.
    */
   confirmByName?: boolean
+  /**
+   * Odmowa, przy której przycisk akcji zostaje widoczny, ale zgaszony (usunięcie
+   * turnieju z rozegranymi meczami, #103). Powód idzie w `error`. Fokus zostaje
+   * na przycisku, bo gasi go `aria-disabled`.
+   */
+  confirmDisabled?: boolean
   pending?: boolean
 } & (
   | { blocked?: false; error?: ReactNode }
@@ -61,6 +67,7 @@ function ConfirmDeleteContent({
   name,
   description,
   confirmByName,
+  confirmDisabled,
   error,
   blocked,
   pending,
@@ -102,6 +109,7 @@ function ConfirmDeleteContent({
             type="button"
             variant="destructive"
             pending={pending}
+            inactive={confirmDisabled}
             disabled={!confirmed}
             onClick={onConfirm}
           >

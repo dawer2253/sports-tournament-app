@@ -18,7 +18,11 @@ import { useBlocker } from 'react-router';
 export const SKIP_UNSAVED_GUARD = { skipUnsavedGuard: true } as const;
 
 function skipsGuard(state: unknown): boolean {
-  return typeof state === 'object' && state !== null && Object.keys(SKIP_UNSAVED_GUARD)[0]! in state;
+  return (
+    typeof state === 'object' &&
+    state !== null &&
+    (state as Partial<typeof SKIP_UNSAVED_GUARD>).skipUnsavedGuard === true
+  );
 }
 
 /**

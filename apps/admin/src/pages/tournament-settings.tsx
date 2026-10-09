@@ -45,7 +45,6 @@ import {
   tournamentSettingsSchema,
   type TournamentSettingsValues,
 } from '../lib/tournament-settings-schema';
-import { useListMutation } from '../lib/use-list-mutation';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
 
@@ -131,34 +130,75 @@ function DangerZone({ tournament }: { tournament: Tournament }) {
   );
 }
 
+const DELETE_FAILED = 'Nie udało się usunąć turnieju. Spróbuj ponownie.';
+
+/** Odmowa w oknie: `final`, gdy ponowienie nic nie zmieni i przycisk gaśnie. */
+type DeleteRefusal = { message: string; final: boolean };
+
 /**
- * Okno potwierdzenia z przepisaniem nazwy. Odpowiedzi rozkłada
- * `useListMutation`: `204` i `404` wychodzą na listę, `422` (rozegrane mecze)
- * zostawia okno zablokowane, sieć i `5xx` dają ponowienie.
+ * Okno potwierdzenia z przepisaniem nazwy. Odpowiedzi (#103):
  *
- * Po usunięciu `invalidate` obejmuje tylko listę. `['tournament', id]` znika
- * z cache'u dopiero po wyjściu z ekranu: wcześniej trasa turnieju dopytałaby
- * o niego od nowa i dostała `404`.
+ * | Odpowiedź           | Skutek                                                  |
+ * |---------------------|---------------------------------------------------------|
+ * | `2xx`, `404`        | wyjście na listę, toast, odświeżenie listy              |
+ * | `422`               | okno zostaje, `message` w alercie, przycisk gaśnie       |
+ * | sieć, `5xx`, reszta | okno zostaje, komunikat ogólny, można ponowić           |
+ *
+ * Nie idzie przez `useListMutation`, bo ten pokazuje przy `422` komunikat pola
+ * `id` i chowa przycisk, a przy `403` tekst serwera; ekran usuwania turnieju
+ * ma w obu miejscach inne zachowanie.
+ *
+ * `['tournament', id]` znika z cache'u dopiero po wyjściu z ekranu: wcześniej
+ * trasa turnieju dopytałaby o niego od nowa i dostała `404`.
  */
 function DeleteTournamentDialog({ tournament, onClose }: { tournament: Tournament; onClose: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const mutation = useListMutation({
-    texts: {
-      accusative: 'turniej',
-      alreadyDeleted: 'Turniej został już usunięty.',
-      gone: 'Tego turnieju już nie ma.',
-    },
-    invalidate: [['tournaments']],
-    onDone: () => {
-      // Niezapisane zmiany w formularzu nie mają już czego dotyczyć. Cache
-      // dopiero po przejściu: `navigate` routera danych oddaje obietnicę, ale
-      // w typie bywa też `void`, stąd `Promise.resolve`.
-      void Promise.resolve(navigate('/', { state: SKIP_UNSAVED_GUARD })).then(() =>
-        queryClient.removeQueries({ queryKey: ['tournament', tournament.id], exact: true }),
-      );
-    },
-  });
+  const [pending, setPending] = useState(false);
+  const [refusal, setRefusal] = useState<DeleteRefusal | null>(null);
+
+  async function leave(message: string) {
+    // Niezapisane zmiany w formularzu nie mają już czego dotyczyć.
+    await navigate('/', { state: SKIP_UNSAVED_GUARD });
+    queryClient.removeQueries({ queryKey: ['tournament', tournament.id], exact: true });
+    toast.success(message);
+    await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+  }
+
+  async function remove() {
+    setPending(true);
+    // Ponowienie zaczyna od czystego okna; nowy błąd wróci z odpowiedzią.
+    setRefusal(null);
+    try {
+      let result;
+      try {
+        result = await api.DELETE('/tournaments/{tournament}', {
+          params: { path: { tournament: tournament.id } },
+        });
+      } catch (cause) {
+        // `fetch` bez odpowiedzi (sieć) odrzuca `TypeError`; inne wyjątki lecą dalej.
+        if (cause instanceof TypeError) {
+          setRefusal({ message: DELETE_FAILED, final: false });
+          return;
+        }
+        throw cause;
+      }
+
+      const { error, response } = result;
+      // `404`: ktoś usunął turniej wcześniej, więc cel organizera jest osiągnięty.
+      if (response.ok || response.status === 404) {
+        await leave(response.ok ? `Usunięto turniej „${tournament.name}”.` : 'Turniej został już usunięty.');
+        return;
+      }
+      if (response.status === 422) {
+        setRefusal({ message: apiErrorMessage(error) || DELETE_FAILED, final: true });
+        return;
+      }
+      setRefusal({ message: DELETE_FAILED, final: false });
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <ConfirmDeleteDialog
@@ -166,13 +206,7 @@ function DeleteTournamentDialog({ tournament, onClose }: { tournament: Tournamen
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      onConfirm={() =>
-        void mutation.remove({
-          name: tournament.name,
-          request: () =>
-            api.DELETE('/tournaments/{tournament}', { params: { path: { tournament: tournament.id } } }),
-        })
-      }
+      onConfirm={() => void remove()}
       entity="turniej"
       name={tournament.name}
       description={
@@ -182,8 +216,9 @@ function DeleteTournamentDialog({ tournament, onClose }: { tournament: Tournamen
         </>
       }
       confirmByName
-      pending={mutation.pending}
-      {...mutation.removeError}
+      confirmDisabled={refusal?.final}
+      error={refusal?.message}
+      pending={pending}
     />
   );
 }
