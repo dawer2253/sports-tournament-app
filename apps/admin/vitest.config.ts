@@ -20,6 +20,7 @@ export default defineConfig({
     // Vitest czyta `.env` przez Vite, a `AGENTS.md` każe tam wpisać adres Laravela,
     // żeby przełączyć aplikację z mocka. Bez przypięcia klient strzelałby pod inny
     // host niż handlery msw i `onUnhandledRequest: 'error'` wywalałby cały zestaw.
-    env: { VITE_API_URL: 'http://127.0.0.1:4010' },
+    // `VITE_PUBLIC_URL` z tego samego powodu: asercje linków do strony turnieju.
+    env: { VITE_API_URL: 'http://127.0.0.1:4010', VITE_PUBLIC_URL: 'http://localhost:5174' },
   },
 });

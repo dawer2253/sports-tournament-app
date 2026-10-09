@@ -4,6 +4,7 @@ import { LoginPage } from './pages/login';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentLayout } from './pages/tournament-layout';
 import { TournamentSectionPlaceholder } from './pages/tournament-section-placeholder';
+import { TournamentSettingsPage } from './pages/tournament-settings';
 import { TournamentsPage } from './pages/tournaments';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
@@ -52,7 +53,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <Navigate to="teams" replace /> },
       { path: 'teams', element: <TournamentSectionPlaceholder section="teams" /> },
       { path: 'venues', element: <TournamentSectionPlaceholder section="venues" /> },
-      { path: 'settings', element: <TournamentSectionPlaceholder section="settings" /> },
+      { path: 'settings', element: <TournamentSettingsPage /> },
     ],
   },
 ];
