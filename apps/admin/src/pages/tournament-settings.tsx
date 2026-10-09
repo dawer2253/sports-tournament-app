@@ -20,6 +20,7 @@ import {
   EmptyState,
   FormDialog,
   Heading,
+  ImageFileField,
   Input,
   isHexColor,
   Label,
@@ -30,7 +31,7 @@ import {
   TournamentStatusCard,
   toast,
 } from '@tournament/ui';
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, Trash2, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
@@ -38,6 +39,7 @@ import { AdminPage } from '../components/admin-page';
 import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
+import { logoFileError, TOURNAMENT_LOGO } from '../lib/logo-file';
 import { publicTournamentUrl } from '../lib/public-url';
 import {
   tournamentSettingsUpdate,
@@ -326,7 +328,9 @@ function StatusSection({ tournament }: { tournament: Tournament }) {
 }
 
 /**
- * Podgląd logo w kolorze z formularza. Wgrywanie i usuwanie wnosi #120.
+ * Logo w kolorze z formularza, z wgrywaniem i usuwaniem w oknach (#120). Oba
+ * zapisy kładą odpowiedź do `['tournament', id]`, a formularz ustawień bierze
+ * z niej tylko pola, których organizer nie ruszył (`keepDirtyValues`).
  *
  * Jak w `ImageWithFallback`: pamiętamy adres, który zawiódł, a nie flagę, więc
  * nowy adres po wgraniu logo zaczyna bez komunikatu.
@@ -334,6 +338,8 @@ function StatusSection({ tournament }: { tournament: Tournament }) {
 function LogoCard({ tournament, color }: { tournament: Tournament; color: string }) {
   const { logoUrl } = tournament.branding;
   const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<'upload' | 'delete' | null>(null);
+  const close = () => setDialog(null);
 
   return (
     <Card>
@@ -348,13 +354,177 @@ function LogoCard({ tournament, color }: { tournament: Tournament; color: string
           onError={() => setFailedLogoUrl(logoUrl)}
           className="size-16"
         />
-        {logoUrl !== null && failedLogoUrl === logoUrl && (
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <AlertTriangle className="size-4" /> Nie udało się wczytać logo
-          </p>
-        )}
+        <div className="grid gap-2">
+          {logoUrl !== null && failedLogoUrl === logoUrl && (
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <AlertTriangle className="size-4" /> Nie udało się wczytać logo
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setDialog('upload')}>
+              <Upload className="size-4" /> {logoUrl ? 'Zmień logo' : 'Wgraj logo'}
+            </Button>
+            {logoUrl && (
+              <Button variant="ghost" onClick={() => setDialog('delete')}>
+                <Trash2 className="size-4" /> Usuń logo
+              </Button>
+            )}
+          </div>
+        </div>
       </CardContent>
+      {/* Okna renderowane warunkowo: wybrany plik i błąd żyją tyle co okno. */}
+      {dialog === 'upload' && <LogoUploadDialog tournament={tournament} color={color} onClose={close} />}
+      {dialog === 'delete' && <LogoDeleteDialog tournament={tournament} onClose={close} />}
     </Card>
+  );
+}
+
+const UPLOAD_FAILED = 'Nie udało się wgrać logo. Spróbuj ponownie.';
+const DELETE_LOGO_FAILED = 'Nie udało się usunąć logo. Spróbuj ponownie.';
+
+/**
+ * Okno wgrywania. Wybór pliku niczego nie wysyła; `POST` idzie dopiero po
+ * „Zapisz" i po walidacji klienta (`logoFileError`), więc GIF czy plik 3 MB
+ * nie robią żądania. `422` pod `logo` (np. wymiary, które sprawdza tylko
+ * serwer) siada przy polu, a okno zostaje otwarte.
+ */
+function LogoUploadDialog({
+  tournament,
+  color,
+  onClose,
+}: {
+  tournament: Tournament;
+  color: string;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<{ logo: File | null }>({ defaultValues: { logo: null } });
+
+  async function onSubmit({ logo }: { logo: File | null }) {
+    // `validate` w `Controller` przepuszcza tylko plik.
+    if (!logo) return;
+
+    let result;
+    try {
+      result = await api.POST('/tournaments/{tournament}/logo', {
+        params: { path: { tournament: tournament.id } },
+        body: { logo },
+        // `FormData` bez ręcznego `Content-Type`: granicę dokłada przeglądarka.
+        bodySerializer: (body) => {
+          const data = new FormData();
+          data.append('logo', body.logo);
+          return data;
+        },
+      });
+    } catch (cause) {
+      if (cause instanceof TypeError) {
+        setError('root', { message: UPLOAD_FAILED });
+        return;
+      }
+      throw cause;
+    }
+
+    const { data, error, response } = result;
+    if (!data) {
+      applyApiError(response.status >= 500 ? undefined : error, ['logo'], setError, UPLOAD_FAILED);
+      return;
+    }
+
+    queryClient.setQueryData(['tournament', tournament.id], data.data);
+    toast.success('Zapisano logo.');
+    onClose();
+    await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+  }
+
+  return (
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      onSubmit={(event) => void handleSubmit(onSubmit)(event)}
+      title={tournament.branding.logoUrl ? 'Zmień logo' : 'Wgraj logo'}
+      submitLabel="Zapisz"
+      error={errors.root?.message}
+      pending={isSubmitting}
+    >
+      <Controller
+        control={control}
+        name="logo"
+        rules={{ validate: (file) => logoFileError(file, TOURNAMENT_LOGO) ?? true }}
+        render={({ field, fieldState }) => (
+          <ImageFileField
+            label="Plik z logo"
+            value={field.value}
+            onChange={field.onChange}
+            currentUrl={tournament.branding.logoUrl}
+            hint="PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px."
+            error={fieldState.error?.message}
+            fallback={<TournamentLogo logoUrl={null} color={color} className="size-full" />}
+            disabled={isSubmitting}
+          />
+        )}
+      />
+    </FormDialog>
+  );
+}
+
+/** Usunięcie logo. Operacja jest idempotentna, więc `200` przychodzi też wtedy, gdy logo już zniknęło. */
+function LogoDeleteDialog({ tournament, onClose }: { tournament: Tournament; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [pending, setPending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  async function remove() {
+    setPending(true);
+    setFailure(null);
+    try {
+      let result;
+      try {
+        result = await api.DELETE('/tournaments/{tournament}/logo', {
+          params: { path: { tournament: tournament.id } },
+        });
+      } catch (cause) {
+        if (cause instanceof TypeError) {
+          setFailure(DELETE_LOGO_FAILED);
+          return;
+        }
+        throw cause;
+      }
+
+      const { data, error, response } = result;
+      if (!data) {
+        setFailure((response.status < 500 && apiErrorMessage(error)) || DELETE_LOGO_FAILED);
+        return;
+      }
+
+      queryClient.setQueryData(['tournament', tournament.id], data.data);
+      toast.success('Usunięto logo.');
+      onClose();
+      await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <ConfirmDeleteDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      onConfirm={() => void remove()}
+      entity="logo turnieju"
+      name={tournament.name}
+      description="Plik zostanie skasowany, a w jego miejsce wejdzie domyślne logo w kolorze turnieju."
+      error={failure ?? undefined}
+      pending={pending}
+    />
   );
 }
 

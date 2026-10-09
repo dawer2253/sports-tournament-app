@@ -366,6 +366,208 @@ describe('ustawienia turnieju: status', () => {
   });
 });
 
+describe('ustawienia turnieju: logo', () => {
+  const LOGO_URL = 'http://localhost:8000/storage/tournaments/7/logo/nowe.png';
+
+  /** Plik o zadanym typie i rozmiarze; treść nie ma znaczenia, liczy się `type` i `size`. */
+  function logoFile(type: string, size = 1024, name = 'logo.png') {
+    return new File([new Uint8Array(size)], name, { type });
+  }
+
+  /**
+   * Logo po stronie „serwera": `POST` zapisuje, co przyszło w `FormData`,
+   * i oddaje turniej z nowym adresem, chyba że test poda własną odpowiedź.
+   * `DELETE` zeruje `logoUrl`. Pusta lista `uploads` to „nie poszło żądanie".
+   */
+  function logoApi(initial: Tournament, upload?: () => Response | undefined) {
+    let current = initial;
+    const uploads: { contentType: string | null; logo: FormDataEntryValue | null; keys: string[] }[] = [];
+    const deletes: string[] = [];
+    server.use(
+      http.get(`${API}/tournaments/:id`, () => HttpResponse.json({ data: current })),
+      http.post(`${API}/tournaments/:id/logo`, async ({ request }) => {
+        const contentType = request.headers.get('Content-Type');
+        const form = await request.formData();
+        uploads.push({ contentType, logo: form.get('logo'), keys: [...form.keys()] });
+        const custom = upload?.();
+        if (custom) return custom;
+        current = { ...current, branding: { ...current.branding, logoUrl: LOGO_URL } };
+        return HttpResponse.json({ data: current });
+      }),
+      http.delete(`${API}/tournaments/:id/logo`, ({ params }) => {
+        deletes.push(String(params.id));
+        current = { ...current, branding: { ...current.branding, logoUrl: null } };
+        return HttpResponse.json({ data: current });
+      }),
+    );
+    return { uploads, deletes };
+  }
+
+  const logoCard = () =>
+    screen.getByText('Logo', { selector: '[data-slot="card-title"]' }).closest('[data-slot="card"]') as HTMLElement;
+
+  /**
+   * `applyAccept: false`, bo inaczej user-event sam odfiltruje GIF po atrybucie
+   * `accept` i do walidacji klienta dotarłby pusty wybór.
+   */
+  async function openUpload(name: 'Wgraj logo' | 'Zmień logo') {
+    const user = userEvent.setup({ applyAccept: false });
+    await user.click(within(logoCard()).getByRole('button', { name }));
+    const dialog = await screen.findByRole('dialog', { name });
+    return { user, dialog };
+  }
+
+  it('bez logo jest „Wgraj logo", a „Usuń logo" nie istnieje', async () => {
+    tournamentApi(FOOTBALL);
+    await renderSettings();
+
+    const card = within(logoCard());
+    expect(card.getByRole('button', { name: 'Wgraj logo' })).toBeInTheDocument();
+    expect(card.queryByRole('button', { name: 'Zmień logo' })).not.toBeInTheDocument();
+    expect(card.queryByRole('button', { name: 'Usuń logo' })).not.toBeInTheDocument();
+    expect(logoCard().querySelector('[data-slot="tournament-logo-default"]')).not.toBeNull();
+  });
+
+  it.each([
+    ['GIF', logoFile('image/gif', 1024, 'logo.gif'), 'Logo musi być plikiem PNG, JPG albo WebP.'],
+    ['plik 3 MB', logoFile('image/png', 3 * 1024 * 1024), 'Logo może mieć najwyżej 2 MB.'],
+  ] as const)('%s zatrzymuje klient: komunikat przy polu i bez żądania', async (_, file, message) => {
+    const { uploads } = logoApi(FOOTBALL);
+    await renderSettings();
+
+    const { user, dialog } = await openUpload('Wgraj logo');
+    const input = within(dialog).getByLabelText('Plik z logo');
+    await user.upload(input, file);
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(uploads).toEqual([]);
+  });
+
+  it('„Zapisz" bez wybranego pliku prosi o plik i niczego nie wysyła', async () => {
+    const { uploads } = logoApi(FOOTBALL);
+    await renderSettings();
+
+    const { user, dialog } = await openUpload('Wgraj logo');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(dialog).findByText('Wybierz plik z logo.')).toBeInTheDocument();
+    expect(uploads).toEqual([]);
+  });
+
+  it('wybór pliku niczego nie wysyła; „Zapisz" wysyła FormData z samym polem logo', async () => {
+    const { uploads } = logoApi(FOOTBALL);
+    await renderSettings();
+
+    const { user, dialog } = await openUpload('Wgraj logo');
+    const file = logoFile('image/png', 2048, 'herb-osiedla.png');
+    await user.upload(within(dialog).getByLabelText('Plik z logo'), file);
+    expect(uploads).toEqual([]);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await screen.findByText('Zapisano logo.')).toBeInTheDocument();
+    expect(uploads).toHaveLength(1);
+    const [{ contentType, logo, keys }] = uploads as [(typeof uploads)[number]];
+    expect(keys).toEqual(['logo']);
+    // Granicę multipart dokłada przeglądarka, nie panel ani klient JSON.
+    expect(contentType).toMatch(/^multipart\/form-data; boundary=/);
+    expect(logo).toBeInstanceOf(File);
+    expect((logo as File).name).toBe('herb-osiedla.png');
+    expect((logo as File).size).toBe(2048);
+
+    expect(screen.queryByRole('dialog', { name: 'Wgraj logo' })).not.toBeInTheDocument();
+    // Nowe logo z odpowiedzi: przyciski karty odpowiadają turniejowi z logo.
+    const card = within(logoCard());
+    expect(card.getByRole('button', { name: 'Zmień logo' })).toBeInTheDocument();
+    expect(card.getByRole('button', { name: 'Usuń logo' })).toBeInTheDocument();
+    expect(logoCard().querySelector('img')).toHaveAttribute('src', LOGO_URL);
+  });
+
+  it('422 pod logo siada przy polu, a okno zostaje otwarte', async () => {
+    const message = 'Logo musi mieć od 64×64 do 4096×4096 pikseli.';
+    const { uploads } = logoApi(FOOTBALL, () => validationError({ logo: [message] }));
+    await renderSettings();
+
+    const { user, dialog } = await openUpload('Wgraj logo');
+    const input = within(dialog).getByLabelText('Plik z logo');
+    await user.upload(input, logoFile('image/png'));
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
+    expect(uploads).toHaveLength(1);
+    expect(screen.getByRole('dialog', { name: 'Wgraj logo' })).toBeInTheDocument();
+    // Karta pod oknem (ukryta przed czytnikiem, stąd `hidden`) dalej mówi o turnieju bez logo.
+    expect(within(logoCard()).getByRole('button', { name: 'Wgraj logo', hidden: true })).toBeInTheDocument();
+  });
+
+  it.each([
+    ['500', () => HttpResponse.json({ message: 'Wewnętrzny błąd serwera.' }, { status: 500 })],
+    ['sieć', () => HttpResponse.error()],
+  ] as const)('%s zostawia okno z ogólnym komunikatem', async (_, failure) => {
+    logoApi(FOOTBALL, failure);
+    await renderSettings();
+
+    const { user, dialog } = await openUpload('Wgraj logo');
+    await user.upload(within(dialog).getByLabelText('Plik z logo'), logoFile('image/png'));
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Nie udało się wgrać logo. Spróbuj ponownie.');
+  });
+
+  it('wpisana, niezapisana nazwa zostaje po wgraniu logo', async () => {
+    logoApi(FOOTBALL);
+    const { user: formUser } = await renderSettings();
+
+    await retype(formUser, nameField(), 'Nowa nazwa');
+    const { user, dialog } = await openUpload('Wgraj logo');
+    await user.upload(within(dialog).getByLabelText('Plik z logo'), logoFile('image/webp', 1024, 'logo.webp'));
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await screen.findByText('Zapisano logo.');
+    await waitFor(() => expect(within(logoCard()).getByRole('button', { name: 'Zmień logo' })).toBeInTheDocument());
+    expect(nameField()).toHaveValue('Nowa nazwa');
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it('„Usuń logo" pyta o potwierdzenie, a po DELETE karta pokazuje domyślne logo', async () => {
+    const { deletes } = logoApi({ ...FOOTBALL, branding: { ...FOOTBALL.branding, logoUrl: LOGO_URL } });
+    const { user } = await renderSettings();
+
+    expect(logoCard().querySelector('img')).toHaveAttribute('src', LOGO_URL);
+    await user.click(within(logoCard()).getByRole('button', { name: 'Usuń logo' }));
+    const dialog = await screen.findByRole('alertdialog', { name: 'Usunąć logo turnieju „Liga Osiedlowa 2026”?' });
+    expect(deletes).toEqual([]);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Usuń logo turnieju' }));
+
+    expect(await screen.findByText('Usunięto logo.')).toBeInTheDocument();
+    expect(deletes).toEqual(['7']);
+    await waitFor(() => expect(logoCard().querySelector('img')).toBeNull());
+    expect(logoCard().querySelector('[data-slot="tournament-logo-default"]')).not.toBeNull();
+    expect(within(logoCard()).queryByRole('button', { name: 'Usuń logo' })).not.toBeInTheDocument();
+    expect(within(logoCard()).getByRole('button', { name: 'Wgraj logo' })).toBeInTheDocument();
+  });
+
+  it('obrazek, który się nie ładuje, daje domyślne logo z napisem, a przyciski działają dalej', async () => {
+    logoApi({ ...FOOTBALL, branding: { ...FOOTBALL.branding, logoUrl: LOGO_URL } });
+    const { user } = await renderSettings();
+
+    // jsdom nie ładuje obrazków, więc błąd ładowania wywołujemy ręcznie.
+    act(() => {
+      logoCard().querySelector('img')!.dispatchEvent(new Event('error'));
+    });
+
+    expect(within(logoCard()).getByText('Nie udało się wczytać logo')).toBeInTheDocument();
+    expect(logoCard().querySelector('[data-slot="tournament-logo-default"]')).not.toBeNull();
+    await user.click(within(logoCard()).getByRole('button', { name: 'Zmień logo' }));
+    expect(await screen.findByRole('dialog', { name: 'Zmień logo' })).toBeInTheDocument();
+  });
+});
+
 describe('ustawienia turnieju: niezapisane zmiany', () => {
   function teamsTab() {
     return within(screen.getByRole('navigation', { name: 'Sekcje turnieju' })).getByRole('link', {
