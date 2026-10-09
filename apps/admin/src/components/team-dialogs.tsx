@@ -3,7 +3,7 @@ import type { Team } from '@tournament/api-client';
 import { ConfirmDeleteDialog, FormDialog, ImageFileField, TeamLogo } from '@tournament/ui';
 import { Controller, useForm } from 'react-hook-form';
 import { api } from '../lib/api';
-import { LOGO_FILE_HINT, logoFileError, TEAM_LOGO } from '../lib/logo-file';
+import { LOGO_FILE_HINT, logoFileError, logoFormData, TEAM_LOGO } from '../lib/logo-file';
 import { TEAM_LOGO_TEXTS, TEAM_TEXTS, teamKeys } from '../lib/team-queries';
 import { teamSchema, type TeamValues } from '../lib/team-schema';
 import { useListMutation } from '../lib/use-list-mutation';
@@ -154,12 +154,7 @@ export function TeamLogoDialog({ tournamentId, team, onClose }: TeamLogoDialogPr
         api.POST('/teams/{team}/logo', {
           params: { path: { team: team.id } },
           body: { logo },
-          // `FormData` bez ręcznego `Content-Type`: granicę dokłada przeglądarka.
-          bodySerializer: (body) => {
-            const data = new FormData();
-            data.append('logo', body.logo);
-            return data;
-          },
+          bodySerializer: logoFormData,
         }),
     });
   });

@@ -33,8 +33,8 @@ export const WILKI: Team = {
   playersCount: 2,
 };
 
-/** Adres herbu po wgraniu; jak w przykładzie kontraktu, więc pod mockiem się nie ładuje. */
-export const CREST_URL = 'http://localhost:8000/storage/tournaments/7/teams/3/herb.png';
+/** Adres logo drużyny po wgraniu; jak w przykładzie kontraktu, więc pod mockiem się nie ładuje. */
+export const TEAM_LOGO_URL = 'http://localhost:8000/storage/tournaments/7/teams/3/herb.png';
 
 export const SOKOLY: Team = { ...WILKI, id: 4, name: 'Sokoły Ursus', playersCount: 0 };
 
@@ -137,7 +137,7 @@ export function serveTeams({
       state.players = state.players.filter((p) => p.teamId !== Number(team));
       return new HttpResponse(null, { status: 204 });
     }),
-    route('post', '/teams/:team/logo', ({ team }) => setLogo(Number(team), CREST_URL)),
+    route('post', '/teams/:team/logo', ({ team }) => setLogo(Number(team), TEAM_LOGO_URL)),
     // Idempotentne jak w kontrakcie: bez herbu też `200`.
     route('delete', '/teams/:team/logo', ({ team }) => setLogo(Number(team), null)),
     route('get', '/teams/:team/players', ({ team }) =>

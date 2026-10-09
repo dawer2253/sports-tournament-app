@@ -39,7 +39,7 @@ import { AdminPage } from '../components/admin-page';
 import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
-import { LOGO_FILE_HINT, logoFileError, TOURNAMENT_LOGO } from '../lib/logo-file';
+import { LOGO_FILE_HINT, logoFileError, logoFormData, TOURNAMENT_LOGO } from '../lib/logo-file';
 import { publicTournamentUrl } from '../lib/public-url';
 import {
   tournamentSettingsUpdate,
@@ -414,12 +414,7 @@ function LogoUploadDialog({
       result = await api.POST('/tournaments/{tournament}/logo', {
         params: { path: { tournament: tournament.id } },
         body: { logo },
-        // `FormData` bez ręcznego `Content-Type`: granicę dokłada przeglądarka.
-        bodySerializer: (body) => {
-          const data = new FormData();
-          data.append('logo', body.logo);
-          return data;
-        },
+        bodySerializer: logoFormData,
       });
     } catch (cause) {
       if (cause instanceof TypeError) {

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { HttpResponse, delay } from 'msw';
 import { describe, expect, it } from 'vitest';
 import {
-  CREST_URL,
+  TEAM_LOGO_URL,
   KOWAL,
   NOWAK,
   SOKOLY,
@@ -381,10 +381,10 @@ describe('zawodnicy', () => {
 });
 
 describe('herb drużyny', () => {
-  const WITH_CREST = { ...WILKI, logoUrl: CREST_URL };
+  const WITH_LOGO = { ...WILKI, logoUrl: TEAM_LOGO_URL };
   const MB = 1024 * 1024;
 
-  function crestFile(type: string, size = 1024, name = 'herb.png') {
+  function logoFile(type: string, size = 1024, name = 'herb.png') {
     return new File([new Uint8Array(size)], name, { type });
   }
 
@@ -416,18 +416,18 @@ describe('herb drużyny', () => {
   });
 
   it('z herbem jest „Zmień herb” i „Usuń herb”', async () => {
-    serveTeams({ teams: [WITH_CREST, SOKOLY] });
+    serveTeams({ teams: [WITH_LOGO, SOKOLY] });
     await renderSquad();
 
     expect(screen.getByRole('button', { name: 'Zmień herb' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Usuń herb' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Wgraj herb' })).not.toBeInTheDocument();
-    expect(headerLogo().querySelector('img')).toHaveAttribute('src', CREST_URL);
+    expect(headerLogo().querySelector('img')).toHaveAttribute('src', TEAM_LOGO_URL);
   });
 
   it.each([
-    ['GIF', crestFile('image/gif', 1024, 'herb.gif'), 'Herb musi być plikiem PNG, JPG albo WebP.'],
-    ['plik 3 MB', crestFile('image/png', 3 * MB), 'Herb może mieć najwyżej 2 MB.'],
+    ['GIF', logoFile('image/gif', 1024, 'herb.gif'), 'Herb musi być plikiem PNG, JPG albo WebP.'],
+    ['plik 3 MB', logoFile('image/png', 3 * MB), 'Herb może mieć najwyżej 2 MB.'],
   ] as const)('%s zatrzymuje klient: komunikat przy polu i bez żądania', async (_, file, message) => {
     const { requests } = serveTeams();
     await renderSquad();
@@ -466,7 +466,7 @@ describe('herb drużyny', () => {
     const { invalidateQueries } = await renderSquad();
 
     const { user, dialog, input } = await openUpload('Wgraj herb');
-    await user.upload(input, crestFile('image/png', 2048, 'wilki.png'));
+    await user.upload(input, logoFile('image/png', 2048, 'wilki.png'));
     expect(requests['POST /teams/3/logo']).toBeUndefined();
     await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
 
@@ -484,13 +484,13 @@ describe('herb drużyny', () => {
 
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['team', 3] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tournament', 7, 'teams'] });
-    expect(headerLogo().querySelector('img')).toHaveAttribute('src', CREST_URL);
+    expect(headerLogo().querySelector('img')).toHaveAttribute('src', TEAM_LOGO_URL);
     expect(screen.getByRole('button', { name: 'Zmień herb' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Usuń herb' })).toBeInTheDocument();
   });
 
   it('herb, który się nie ładuje (jak pod mockiem), daje herb zastępczy', async () => {
-    serveTeams({ teams: [WITH_CREST, SOKOLY] });
+    serveTeams({ teams: [WITH_LOGO, SOKOLY] });
     await renderSquad();
 
     // jsdom nie ładuje obrazków, więc błąd ładowania wywołujemy ręcznie.
@@ -509,7 +509,7 @@ describe('herb drużyny', () => {
     await renderSquad();
 
     const { user, dialog, input } = await openUpload('Wgraj herb');
-    await user.upload(input, crestFile('image/png'));
+    await user.upload(input, logoFile('image/png'));
     await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
 
     await waitFor(() => expect(input).toHaveAccessibleDescription(expect.stringContaining(message)));
@@ -526,7 +526,7 @@ describe('herb drużyny', () => {
     await renderSquad();
 
     const { user, dialog, input } = await openUpload('Wgraj herb');
-    await user.upload(input, crestFile('image/png'));
+    await user.upload(input, logoFile('image/png'));
     await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
@@ -546,7 +546,7 @@ describe('herb drużyny', () => {
     await renderSquad();
 
     const { user, dialog, input } = await openUpload('Wgraj herb');
-    await user.upload(input, crestFile('image/png'));
+    await user.upload(input, logoFile('image/png'));
     await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
 
     expect(await screen.findByText('Tej drużyny już nie ma.')).toBeInTheDocument();
@@ -555,7 +555,7 @@ describe('herb drużyny', () => {
   });
 
   it('„Usuń herb” pyta o potwierdzenie, a po `DELETE` nagłówek pokazuje herb zastępczy', async () => {
-    const { requests } = serveTeams({ teams: [WITH_CREST, SOKOLY] });
+    const { requests } = serveTeams({ teams: [WITH_LOGO, SOKOLY] });
     const { user, invalidateQueries } = await renderSquad();
 
     await user.click(screen.getByRole('button', { name: 'Usuń herb' }));
@@ -578,7 +578,7 @@ describe('herb drużyny', () => {
 
   it('`500` przy usuwaniu zostawia okno z komunikatem i herb w nagłówku', async () => {
     serveTeams({
-      teams: [WITH_CREST, SOKOLY],
+      teams: [WITH_LOGO, SOKOLY],
       override: {
         'DELETE /teams/3/logo': () =>
           HttpResponse.json({ message: 'Wewnętrzny błąd serwera.' }, { status: 500 }),
@@ -593,6 +593,6 @@ describe('herb drużyny', () => {
     expect(await within(dialog).findByRole('alert')).toHaveTextContent(
       'Nie udało się usunąć. Spróbuj ponownie.',
     );
-    expect(headerLogo().querySelector('img')).toHaveAttribute('src', CREST_URL);
+    expect(headerLogo().querySelector('img')).toHaveAttribute('src', TEAM_LOGO_URL);
   });
 });
