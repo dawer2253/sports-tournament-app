@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { cn } from '../../lib/utils'
+import { ImageWithFallback } from './image-with-fallback'
 import { Input } from './input'
 import { Label } from './label'
 
@@ -71,28 +72,15 @@ export function ImageFileField({
     if (value === null && inputRef.current) inputRef.current.value = ''
   }, [value])
 
-  // Jak w `TeamLogo`: pamiętamy adres, który się nie załadował, więc nowy
-  // adres dostaje szansę bez zerowania flagi.
-  const [failedUrl, setFailedUrl] = React.useState<string | null>(null)
   const shownUrl = previewUrl ?? currentUrl
-  const showImage = shownUrl !== null && shownUrl !== failedUrl
 
   const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(' ') || undefined
 
   return (
     <div data-slot="image-file-field" className={cn('flex items-start gap-4', className)}>
       <span className="grid size-16 shrink-0 place-items-center rounded-lg border bg-muted/40 p-1.5">
-        {showImage ? (
-          // Dekoracja: pole ma etykietę, a wybrany plik nazywa sam input.
-          <img
-            src={shownUrl}
-            alt=""
-            className="size-full object-contain"
-            onError={() => setFailedUrl(shownUrl)}
-          />
-        ) : (
-          fallback
-        )}
+        {/* Dekoracja: pole ma etykietę, a wybrany plik nazywa sam input. */}
+        <ImageWithFallback src={shownUrl} fallback={fallback} />
       </span>
       <div className="grid min-w-0 flex-1 gap-1.5">
         <Label htmlFor={inputId}>{label}</Label>
