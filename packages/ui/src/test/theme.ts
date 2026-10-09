@@ -9,8 +9,10 @@ import { expect } from 'storybook/test'
  */
 export async function expectDarkPortal(selector: string) {
   const root = document.documentElement
-  const element = document.querySelector<HTMLElement>(selector)!
+  const element = document.querySelector<HTMLElement>(selector)
+  await expect(element).toBeInTheDocument()
   await expect(root).toHaveClass('dark')
+  if (!element) return
 
   // Okna mają `transition-all`: bez tego odczyt po zdjęciu klasy łapałby
   // wartość startową przejścia, czyli nadal ciemną.
