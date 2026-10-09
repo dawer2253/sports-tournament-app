@@ -8,7 +8,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { setToken } from '../lib/session';
 import { routes } from '../routes';
-import { API_URL as API, server } from '../test/server';
+import { API_URL as API, PUBLIC_URL, server } from '../test/server';
 
 const ME = {
   data: { id: 1, name: 'Dawid Patko', email: 'dawid@example.com', createdAt: '2026-09-01T10:00:00+02:00' },
@@ -311,7 +311,7 @@ describe('ustawienia turnieju: slug', () => {
     await retype(user, slugField(), 'liga-2027');
 
     expect(screen.queryByText(/przestanie działać/)).not.toBeInTheDocument();
-    expect(screen.getByText('http://localhost:5174/t/liga-2027')).toBeInTheDocument();
+    expect(screen.getByText(`${PUBLIC_URL}/t/liga-2027`)).toBeInTheDocument();
   });
 });
 
@@ -361,7 +361,7 @@ describe('ustawienia turnieju: status', () => {
 
     expect(screen.getByRole('link', { name: /Otwórz stronę/ })).toHaveAttribute(
       'href',
-      'http://localhost:5174/t/liga-osiedlowa-2026',
+      `${PUBLIC_URL}/t/liga-osiedlowa-2026`,
     );
   });
 });

@@ -68,17 +68,20 @@ export function TournamentSettingsPage() {
     // Sport turnieju spoza listy to ten sam kłopot co padnięte żądanie:
     // formularza nie ma z czego złożyć.
     form = (
-      <EmptyState
-        variant="error"
-        icon={<AlertTriangle />}
-        title="Nie udało się wczytać ustawień sportu"
-        description={sports.error?.message}
-        action={
-          <Button variant="outline" onClick={() => void sports.refetch()}>
-            Spróbuj ponownie
-          </Button>
-        }
-      />
+      <>
+        <LogoCard tournament={tournament} color={tournament.branding.primaryColor} />
+        <EmptyState
+          variant="error"
+          icon={<AlertTriangle />}
+          title="Nie udało się wczytać ustawień sportu"
+          description={sports.error?.message}
+          action={
+            <Button variant="outline" onClick={() => void sports.refetch()}>
+              Spróbuj ponownie
+            </Button>
+          }
+        />
+      </>
     );
   } else {
     form = (
@@ -278,16 +281,15 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     resetOptions: { keepDirtyValues: true },
   });
 
-  // W sporcie bez remisów pola „Remis" nie ma, więc jego błąd z serwera
-  // nie miałby gdzie usiąść: idzie wtedy nad przycisk.
+  // W sporcie bez remisów pola „Remis" nie ma. Jego błąd z serwera nie
+  // miałby gdzie usiąść, więc nie ma go też w `errorFields`: idzie nad przycisk.
+  const pointFields = POINT_FIELDS.filter(({ key }) => allowsDraw || key !== 'draw');
   const errorFields = [
     'name',
     'slug',
     'branding.primaryColor',
     'points',
-    'points.win',
-    ...(allowsDraw ? (['points.draw'] as const) : []),
-    'points.loss',
+    ...pointFields.map(({ key }) => `points.${key}` as const),
   ] as const;
 
   async function onSubmit(values: TournamentSettingsValues) {
@@ -339,7 +341,6 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
   const slug = watch('slug');
   // W szkicu strona i tak daje `404`, więc stary adres nie ma czego stracić.
   const slugWarning = tournament.status !== 'draft' && slug !== tournament.slug;
-  const pointFields = POINT_FIELDS.filter(({ key }) => allowsDraw || key !== 'draw');
   const pointsError = errors.points?.message;
 
   return (

@@ -26,3 +26,6 @@ export const API_URL = apiUrl;
  * handlera.
  */
 export const server = setupServer();
+
+/** Adres strony publicznej, przypięty w `vitest.config.ts` obok `VITE_API_URL`. */
+export const PUBLIC_URL = import.meta.env.VITE_PUBLIC_URL;
