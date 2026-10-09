@@ -63,6 +63,8 @@ export const Pusty: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
+    await expect(canvas.getByText('Turniej nie ma jeszcze drużyn')).toBeInTheDocument()
+    await expect(canvas.getByText('Dodaj drużyny, a składy uzupełnisz później.')).toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Dodaj drużynę' }))
     await expect(args.onCreate).toHaveBeenCalled()
   },
@@ -78,6 +80,8 @@ export const Blad: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await expect(canvas.getByText('Nie udało się wczytać drużyn')).toBeInTheDocument()
+    await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
     await expect(canvas.getByText('Nie udało się pobrać drużyn.')).toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Spróbuj ponownie' }))
     await expect(args.onRetry).toHaveBeenCalled()

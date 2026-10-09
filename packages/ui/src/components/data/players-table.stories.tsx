@@ -84,6 +84,8 @@ export const Blad: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await expect(canvas.getByText('Nie udało się wczytać zawodników')).toBeInTheDocument()
+    await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
     await expect(canvas.getByText('Nie udało się pobrać składu.')).toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Spróbuj ponownie' }))
     await expect(args.onRetry).toHaveBeenCalled()
