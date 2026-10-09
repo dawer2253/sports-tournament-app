@@ -1,9 +1,9 @@
-import type { Player, Team, Tournament } from '@tournament/api-client';
-import type { PlayerRow, TeamRow, TournamentRow } from '@tournament/ui';
+import type { Player, Team, Tournament, Venue } from '@tournament/api-client';
+import type { PlayerRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
- * `TeamRow`, `PlayerRow`) z kontraktem.
+ * `TeamRow`, `PlayerRow`, `VenueRow`) z kontraktem.
  *
  * `packages/ui` nie zna klienta API (patrz `packages/ui/AGENTS.md`), więc
  * każdy wiersz jest ręcznie przepisanym podzbiorem typu z kontraktu. Sam z siebie
@@ -15,7 +15,7 @@ import type { PlayerRow, TeamRow, TournamentRow } from '@tournament/ui';
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni wiersz
  * w `packages/ui/src/components/data/` (`tournament-row.ts`, `team-row.ts`,
- * `player-row.ts`).
+ * `player-row.ts`, `venue-row.ts`).
  */
 
 /**
@@ -36,3 +36,11 @@ export const contractFitsTeamRow: ContractFitsTeamRow = true;
 type ContractFitsPlayerRow = Player extends PlayerRow ? true : never;
 
 export const contractFitsPlayerRow: ContractFitsPlayerRow = true;
+
+/**
+ * Obiekt z kontraktu daje się pokazać jako wiersz `VenuesTable`. Łapie zmianę
+ * nazwy pola i to, że `address` przestaje dopuszczać `null` albo zmienia typ.
+ */
+type ContractFitsVenueRow = Venue extends VenueRow ? true : never;
+
+export const contractFitsVenueRow: ContractFitsVenueRow = true;

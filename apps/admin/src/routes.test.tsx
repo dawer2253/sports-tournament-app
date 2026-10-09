@@ -40,6 +40,8 @@ beforeEach(() => {
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
     // Drużyny są ekranem domyślnym turnieju; ich treść sprawdza `pages/teams.test.tsx`.
     http.get(`${API}/tournaments/:id/teams`, () => HttpResponse.json({ data: [] })),
+    // Obiekty służą tu za zwykłą sekcję; ich treść sprawdza `pages/tournament-venues.test.tsx`.
+    http.get(`${API}/tournaments/:id/venues`, () => HttpResponse.json({ data: [] })),
   );
 });
 
@@ -258,7 +260,7 @@ describe('odświeżenie turnieju w tle', () => {
     });
 
     const { queryClient } = renderAt('/tournaments/7/venues');
-    await screen.findByText('Ta sekcja jeszcze powstaje');
+    await screen.findByText('Turniej nie ma jeszcze obiektów');
 
     await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });
 
@@ -269,7 +271,7 @@ describe('odświeżenie turnieju w tle', () => {
     await expect(
       screen.findByText('Nie udało się wczytać turnieju', undefined, { timeout: 300 }),
     ).rejects.toThrow();
-    expect(screen.getByText('Ta sekcja jeszcze powstaje')).toBeInTheDocument();
+    expect(screen.getByText('Turniej nie ma jeszcze obiektów')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Puchar Zimowy' })).toBeInTheDocument();
   });
 
@@ -283,12 +285,12 @@ describe('odświeżenie turnieju w tle', () => {
     });
 
     const { queryClient } = renderAt('/tournaments/7/venues');
-    await screen.findByText('Ta sekcja jeszcze powstaje');
+    await screen.findByText('Turniej nie ma jeszcze obiektów');
 
     await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });
 
     expect(await screen.findByText('Nie ma takiego turnieju')).toBeInTheDocument();
-    expect(screen.queryByText('Ta sekcja jeszcze powstaje')).not.toBeInTheDocument();
+    expect(screen.queryByText('Turniej nie ma jeszcze obiektów')).not.toBeInTheDocument();
   });
 });
 
