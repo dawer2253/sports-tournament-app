@@ -1,6 +1,6 @@
 import type { Tournament } from '@tournament/api-client';
 import { describe, expect, it } from 'vitest';
-import { settingsUpdate, settingsValues, tournamentSettingsSchema } from './tournament-settings-schema';
+import { tournamentSettingsUpdate, tournamentSettingsValues, tournamentSettingsSchema } from './tournament-settings-schema';
 
 const SAVED: Tournament = {
   id: 7,
@@ -16,7 +16,7 @@ const SAVED: Tournament = {
   updatedAt: '2026-09-01T10:00:00+02:00',
 };
 
-const valid = settingsValues(SAVED);
+const valid = tournamentSettingsValues(SAVED);
 
 /** Komunikaty pod danym kluczem (np. `points` albo `points.win`). */
 function messagesAt(allowsDraw: boolean, input: unknown, path: string): string[] {
@@ -56,26 +56,26 @@ describe('tournamentSettingsSchema', () => {
   });
 });
 
-describe('settingsUpdate', () => {
+describe('tournamentSettingsUpdate', () => {
   it('bez zmian daje puste ciało', () => {
-    expect(settingsUpdate(valid, SAVED, true)).toEqual({});
+    expect(tournamentSettingsUpdate(valid, SAVED, true)).toEqual({});
   });
 
   it('wysyła tylko zmienione pola, a branding w kształcie z kontraktu', () => {
     expect(
-      settingsUpdate({ ...valid, slug: 'liga-2027', branding: { primaryColor: '#1D4E89' } }, SAVED, true),
+      tournamentSettingsUpdate({ ...valid, slug: 'liga-2027', branding: { primaryColor: '#1D4E89' } }, SAVED, true),
     ).toEqual({ slug: 'liga-2027', branding: { primaryColor: '#1D4E89' } });
   });
 
   it('points idzie w komplecie, gdy zmieniło się jedno pole', () => {
-    expect(settingsUpdate({ ...valid, points: { win: 4, draw: 1, loss: 0 } }, SAVED, true)).toEqual({
+    expect(tournamentSettingsUpdate({ ...valid, points: { win: 4, draw: 1, loss: 0 } }, SAVED, true)).toEqual({
       points: { win: 4, draw: 1, loss: 0 },
     });
   });
 
   it('bez remisów wysyła draw: 0', () => {
     const saved = { ...SAVED, points: { win: 2, draw: 0, loss: 1 } };
-    expect(settingsUpdate({ ...valid, points: { win: 3, draw: 5, loss: 1 } }, saved, false)).toEqual({
+    expect(tournamentSettingsUpdate({ ...valid, points: { win: 3, draw: 5, loss: 1 } }, saved, false)).toEqual({
       points: { win: 3, draw: 0, loss: 1 },
     });
   });

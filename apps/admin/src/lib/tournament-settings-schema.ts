@@ -59,7 +59,7 @@ export function tournamentSettingsSchema(allowsDraw: boolean) {
 export type TournamentSettingsValues = z.output<ReturnType<typeof tournamentSettingsSchema>>;
 
 /** Wartości formularza z turnieju, jak przyszedł z API. */
-export function settingsValues(tournament: Tournament): TournamentSettingsValues {
+export function tournamentSettingsValues(tournament: Tournament): TournamentSettingsValues {
   return {
     name: tournament.name,
     slug: tournament.slug,
@@ -83,7 +83,7 @@ function samePoints(a: Points, b: Points) {
  * nazwa z dopisaną spacją jest dla formularza zmianą, a po przycięciu przez
  * schemat — już nie.
  */
-export function settingsUpdate(
+export function tournamentSettingsUpdate(
   values: TournamentSettingsValues,
   saved: Tournament,
   allowsDraw: boolean,

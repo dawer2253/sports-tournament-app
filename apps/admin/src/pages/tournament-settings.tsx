@@ -20,6 +20,7 @@ import {
   FormDialog,
   Heading,
   Input,
+  isHexColor,
   Label,
   Separator,
   Skeleton,
@@ -37,8 +38,8 @@ import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
 import { publicTournamentUrl } from '../lib/public-url';
 import {
-  settingsUpdate,
-  settingsValues,
+  tournamentSettingsUpdate,
+  tournamentSettingsValues,
   tournamentSettingsSchema,
   type TournamentSettingsValues,
 } from '../lib/tournament-settings-schema';
@@ -250,7 +251,7 @@ const POINT_FIELDS = [
 
 /**
  * Formularz ustawień z jednym „Zapisz zmiany". `PATCH` niesie tylko zmienione
- * pola (`settingsUpdate`), a odpowiedź wraca do `['tournament', id]`, więc
+ * pola (`tournamentSettingsUpdate`), a odpowiedź wraca do `['tournament', id]`, więc
  * nagłówek od razu pokazuje nową nazwę i adres.
  *
  * Turniej odświeżony z zewnątrz (status, logo, refetch) przychodzi przez
@@ -273,7 +274,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     formState: { errors, isDirty, isSubmitting },
   } = useForm<TournamentSettingsValues>({
     resolver: zodResolver(schema),
-    values: settingsValues(tournament),
+    values: tournamentSettingsValues(tournament),
     resetOptions: { keepDirtyValues: true },
   });
 
@@ -290,11 +291,11 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
   ] as const;
 
   async function onSubmit(values: TournamentSettingsValues) {
-    const body = settingsUpdate(values, tournament, allowsDraw);
+    const body = tournamentSettingsUpdate(values, tournament, allowsDraw);
     // Formularz bywa „brudny" bez zmiany, np. przez spację na końcu nazwy,
     // którą schemat przycina. Nie ma czego wysyłać.
     if (Object.keys(body).length === 0) {
-      reset(settingsValues(tournament));
+      reset(tournamentSettingsValues(tournament));
       return;
     }
 
@@ -322,7 +323,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
     // Najpierw formularz, potem cache: nowy turniej przychodzi wtedy przez
     // `values` do formularza, który nie ma już brudnych pól.
-    reset(settingsValues(data.data));
+    reset(tournamentSettingsValues(data.data));
     queryClient.setQueryData(['tournament', tournament.id], data.data);
     toast.success('Zapisano zmiany.');
     await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
@@ -345,7 +346,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     <>
       <LogoCard
         tournament={tournament}
-        color={/^#[0-9A-Fa-f]{6}$/.test(color) ? color : tournament.branding.primaryColor}
+        color={isHexColor(color) ? color : tournament.branding.primaryColor}
       />
 
       <form onSubmit={(event) => void handleSubmit(onSubmit)(event)} noValidate>
