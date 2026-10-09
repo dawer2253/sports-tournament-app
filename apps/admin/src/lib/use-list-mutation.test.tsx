@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, useQuery, type QueryKey } from '@tanstack/react-query';
 import type { Team, Venue } from '@tournament/api-client';
 import { ConfirmDeleteDialog, FormDialog, Input, Label, Toaster } from '@tournament/ui';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, delay, http } from 'msw';
 import { useState, type ReactNode } from 'react';
@@ -422,7 +422,7 @@ describe('useListMutation — dodawanie i edycja', () => {
 });
 
 describe('useListMutation — usuwanie', () => {
-  it('po usunięciu zamyka okno na odświeżonej liście i pokazuje toast', async () => {
+  it('po usunięciu zamyka okno, pokazuje toast, a potem odświeża listę', async () => {
     const venues = serveVenues([BEMOWO]);
     server.use(
       http.delete(`${API}/venues/${BEMOWO.id}`, () => {
@@ -623,5 +623,34 @@ describe('useListMutation — usuwanie', () => {
       'Nie udało się usunąć. Spróbuj ponownie.',
     );
     expect(screen.getByRole('button', { name: 'Usuń obiekt' })).not.toHaveAttribute('aria-disabled');
+  });
+});
+
+describe('useListMutation — błąd w kodzie wywołania', () => {
+  // Tylko `TypeError` z `fetch` znaczy „brak sieci”. Inny wyjątek to błąd
+  // programisty i ma polecieć dalej, a nie skończyć się „Spróbuj ponownie”.
+  it('wyjątek inny niż sieciowy nie jest brany za brak sieci', async () => {
+    const onDone = vi.fn();
+    const { result } = renderHook(
+      () => useListMutation({ texts: VENUE_TEXTS, invalidate: [VENUES_KEY], onDone }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <QueryClientProvider client={new QueryClient()}>{children}</QueryClientProvider>
+        ),
+      },
+    );
+
+    await act(async () => {
+      await expect(
+        result.current.remove({
+          name: 'Boisko Bemowo',
+          request: () => Promise.reject(new Error('Literówka w ścieżce')),
+        }),
+      ).rejects.toThrow('Literówka w ścieżce');
+    });
+
+    expect(onDone).not.toHaveBeenCalled();
+    expect(result.current.removeError).toEqual({});
+    expect(result.current.pending).toBe(false);
   });
 });

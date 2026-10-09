@@ -73,8 +73,12 @@ async function send(request: ApiCall): Promise<{ status: number; error?: unknown
   try {
     const { response, error } = await request();
     return { status: response.status, error };
-  } catch {
-    return { status: 0 };
+  } catch (cause) {
+    // `fetch` bez odpowiedzi odrzuca `TypeError`. Każdy inny wyjątek to błąd
+    // w kodzie wywołania, a nie sieć: niech poleci dalej, zamiast schować się
+    // pod „Spróbuj ponownie”.
+    if (cause instanceof TypeError) return { status: 0 };
+    throw cause;
   }
 }
 
@@ -118,7 +122,8 @@ function isOutage(status: number) {
  *
  * Kolejność zamknięcia i odświeżenia jest różna celowo. Zapis zamyka okno na
  * już odświeżonej liście, żeby organizer nie zobaczył jej na chwilę bez bytu,
- * który właśnie dodał. Usunięcie najpierw zamyka, bo `onDone` może zdejmować
+ * który właśnie dodał. Kosztem jest to, że przy wolnym odświeżeniu okno dłużej
+ * stoi w `pending`; przyjmujemy to, bo zapis i tak już się udał. Usunięcie najpierw zamyka, bo `onDone` może zdejmować
  * cały ekran usuniętego bytu (drużyna na ekranie składu). Gdyby jego klucz
  * wpadł mimo wszystko pod `invalidate`, odświeżenie przed wyjściem dopytałoby
  * o byt, którego już nie ma, i mignęło stanem „Nie ma takiej drużyny”.
