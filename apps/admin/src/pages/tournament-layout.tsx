@@ -20,15 +20,14 @@ import { parseRouteId } from '../lib/route-id';
 export function TournamentLayout() {
   const navigate = useNavigate();
   const params = useParams();
-  const id = parseRouteId(params.id) ?? 0;
-  const validId = id > 0;
+  const id = parseRouteId(params.id);
 
   const tournament = useQuery({
     queryKey: ['tournament', id],
-    enabled: validId,
+    enabled: id !== null,
     queryFn: async () => {
       const { data, error, response } = await api.GET('/tournaments/{tournament}', {
-        params: { path: { tournament: id } },
+        params: { path: { tournament: id! } },
       });
       if (error) throw new ApiError(error.message, response.status);
       return data.data;
@@ -39,7 +38,7 @@ export function TournamentLayout() {
     void navigate('/');
   }
 
-  const notFound = !validId || isNotFound(tournament.error);
+  const notFound = id === null || isNotFound(tournament.error);
 
   let content;
   if (notFound) {

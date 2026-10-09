@@ -17,7 +17,7 @@ type PlayerDialogProps = {
  * Zmiana składu zmienia `playersCount`, a ten widać w drużynie (zdanie
  * o kaskadzie przy jej usuwaniu) i na liście drużyn.
  */
-function squadKeys(tournamentId: number, teamId: number) {
+function playerChangeKeys(tournamentId: number, teamId: number) {
   return [teamKeys.players(teamId), teamKeys.team(teamId), teamKeys.list(tournamentId)];
 }
 
@@ -38,7 +38,7 @@ export function PlayerFormDialog({
   });
   const mutation = useListMutation({
     texts: PLAYER_TEXTS,
-    invalidate: squadKeys(tournamentId, teamId),
+    invalidate: playerChangeKeys(tournamentId, teamId),
     onDone: onClose,
     // Limit składu przychodzi pod `players`, którego formularz nie zna, więc
     // hook sadza go nad formularzem.
@@ -103,7 +103,7 @@ export function PlayerDeleteDialog({
 }: PlayerDialogProps & { player: PlayerRow }) {
   const mutation = useListMutation({
     texts: PLAYER_TEXTS,
-    invalidate: squadKeys(tournamentId, teamId),
+    invalidate: playerChangeKeys(tournamentId, teamId),
     onDone: onClose,
   });
 

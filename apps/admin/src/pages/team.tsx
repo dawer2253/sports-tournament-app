@@ -71,7 +71,7 @@ export function TeamPage() {
     );
   } else if (team.data) {
     content = (
-      <Squad
+      <TeamView
         team={team.data}
         players={players.data ?? []}
         playersStatus={players.status}
@@ -151,7 +151,7 @@ export function TeamPage() {
   );
 }
 
-type SquadProps = {
+type TeamViewProps = {
   team: Team;
   players: Player[];
   playersStatus: 'pending' | 'error' | 'success';
@@ -165,7 +165,7 @@ type SquadProps = {
 };
 
 /** Nagłówek drużyny z jej akcjami i skład, jak w makiecie „Admin · Skład drużyny”. */
-function Squad({
+function TeamView({
   team,
   players,
   playersStatus,
@@ -176,7 +176,7 @@ function Squad({
   onCreatePlayer,
   onEditPlayer,
   onDeletePlayer,
-}: SquadProps) {
+}: TeamViewProps) {
   return (
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">

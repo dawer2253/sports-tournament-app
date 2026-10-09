@@ -327,6 +327,8 @@ describe('zawodnicy', () => {
     await waitFor(() =>
       expect(screen.queryByRole('cell', { name: KOWAL.name })).not.toBeInTheDocument(),
     );
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['players', 3] });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['team', 3] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tournament', 7, 'teams'] });
   });
 });
