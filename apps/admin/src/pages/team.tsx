@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import type { Player, Team } from '@tournament/api-client';
 import {
   Button,
@@ -9,18 +10,18 @@ import {
   type PlayerRow,
 } from '@tournament/ui';
 import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { PlayerDeleteDialog, PlayerFormDialog } from '../components/player-dialogs';
 import { TeamDeleteDialog, TeamNameDialog } from '../components/team-dialogs';
 import { isNotFound } from '../lib/api-error';
 import { parseRouteId } from '../lib/route-id';
-import { usePlayers, useTeam } from '../lib/team-queries';
+import { teamKeys, usePlayers, useTeam } from '../lib/team-queries';
 import { useTournament } from './tournament-layout';
 
 /** Otwarte okno ekranu; jedno naraz, więc jeden stan zamiast flagi na każde. */
-type Dialog =
+type OpenDialog =
   | { kind: 'rename' }
   | { kind: 'delete-team' }
   | { kind: 'player'; player?: PlayerRow }
@@ -34,13 +35,37 @@ type Dialog =
 export function TeamPage() {
   const tournament = useTournament();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const teamId = parseRouteId(useParams().teamId);
   const team = useTeam(teamId);
   const players = usePlayers(teamId);
-  const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [dialog, setDialog] = useState<OpenDialog | null>(null);
 
   const listPath = `/tournaments/${tournament.id}/teams`;
   const close = useCallback(() => setDialog(null), []);
+
+  /**
+   * Usuniętą drużynę i jej skład wyrzucamy z cache'u przy zdjęciu ekranu.
+   * Zostawione pokazałyby po „Wstecz” usuniętą drużynę z aktywnymi akcjami,
+   * zanim odświeżenie przy montowaniu dostanie `404`. Wcześniej nie można:
+   * dopóki ekran stoi, jego zapytania zbudowałyby wpis od nowa i dopytały
+   * o drużynę, której już nie ma — tak samo jak przy unieważnieniu.
+   */
+  const deletedTeamId = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      const id = deletedTeamId.current;
+      if (id === null) return;
+      queryClient.removeQueries({ queryKey: teamKeys.team(id) });
+      queryClient.removeQueries({ queryKey: teamKeys.players(id) });
+    },
+    [queryClient],
+  );
+
+  function leaveDeletedTeam(id: number) {
+    deletedTeamId.current = id;
+    void navigate(listPath);
+  }
 
   // Stabilne między renderami: `PlayersTable` memoizuje kolumny po obu funkcjach.
   const editPlayer = useCallback((player: PlayerRow) => setDialog({ kind: 'player', player }), []);
@@ -50,10 +75,14 @@ export function TeamPage() {
   );
 
   // Drużyna z innego turnieju to adres sklejony ręcznie albo nieaktualny. Panel
-  // nie pokazuje jej pod cudzym turniejem, tylko tak jak 403 i 404.
+  // nie pokazuje jej pod cudzym turniejem, tylko tak jak 403 i 404. Jej skład
+  // i tak zostaje pobrany, bo idzie równolegle z drużyną; nie trafia na ekran.
+  // 403 i 404 składu to ta sama drużyna, która zniknęła między żądaniami, więc
+  // ponowienie w tabeli niczego by nie dało.
   const notFound =
     teamId === null ||
     isNotFound(team.error) ||
+    isNotFound(players.error) ||
     (team.data !== undefined && team.data.tournamentId !== tournament.id);
 
   let content;
@@ -126,7 +155,7 @@ export function TeamPage() {
               tournamentId={tournament.id}
               team={team.data}
               onClose={close}
-              onDeleted={() => void navigate(listPath)}
+              onDeleted={() => leaveDeletedTeam(teamId)}
             />
           )}
           {dialog?.kind === 'player' && (

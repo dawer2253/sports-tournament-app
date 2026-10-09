@@ -47,7 +47,7 @@ export function validationError(errors: Record<string, string[]>) {
   return HttpResponse.json({ message, errors }, { status: 422 });
 }
 
-type Override = (request: Request) => Response | Promise<Response> | undefined;
+type Override = (request: Request) => Response | undefined | Promise<Response | undefined>;
 
 /**
  * Turniej, jego drużyny i składy po stronie „serwera”. Zapis w handlerze zmienia

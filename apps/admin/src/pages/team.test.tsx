@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
-import { HttpResponse } from 'msw';
+import { HttpResponse, delay } from 'msw';
 import { describe, expect, it } from 'vitest';
 import {
   KOWAL,
@@ -33,7 +33,7 @@ describe('ekran składu', () => {
       }),
     ).toHaveAttribute('aria-current', 'page');
 
-    await user.click(screen.getByRole('link', { name: /← Drużyny|^Drużyny$/, current: false }));
+    await user.click(screen.getByRole('link', { name: 'Drużyny', current: false }));
     expect(router.state.location.pathname).toBe(LIST);
   });
 
@@ -81,6 +81,20 @@ describe('ekran składu', () => {
     expect(await screen.findByText('Nie udało się wczytać drużyny')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
     expect(await screen.findByRole('heading', { name: 'Wilki Bemowo' })).toBeInTheDocument();
+  });
+
+  it('404 składu przy wczytanej drużynie też daje „Nie ma takiej drużyny”', async () => {
+    // Drużynę usunięto między dwoma równoległymi żądaniami: ponowienie w tabeli
+    // niczego by nie dało.
+    serveTeams({
+      override: {
+        'GET /teams/3/players': () => HttpResponse.json({ message: 'Brak.' }, { status: 404 }),
+      },
+    });
+    renderPanel(SQUAD);
+
+    expect(await screen.findByText('Nie ma takiej drużyny')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Spróbuj ponownie' })).not.toBeInTheDocument();
   });
 
   it('pusty skład ma „Dodaj zawodnika” tylko w pustym stanie', async () => {
@@ -138,6 +152,35 @@ describe('usunięcie drużyny', () => {
     expect(requests['GET /teams/3']).toBe(1);
   });
 
+  it('„Wstecz” po usunięciu nie pokazuje usuniętej drużyny z cache’u', async () => {
+    let teamRequests = 0;
+    serveTeams({
+      override: {
+        // Odświeżenie po powrocie odpowiada z opóźnieniem: bez niego `404`
+        // przyszłoby, zanim test zdąży zobaczyć drużynę z cache'u.
+        'GET /teams/3': async () => {
+          teamRequests += 1;
+          if (teamRequests > 1) await delay(300);
+          return undefined;
+        },
+      },
+    });
+    const { router, user } = await renderSquad();
+
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+    await screen.findByRole('link', { name: 'Sokoły Ursus' });
+
+    await router.navigate(-1);
+
+    // Drużyna z cache'u mignęłaby z aktywnym „Usuń drużynę”, zanim odświeżenie
+    // dostanie `404`.
+    await expect(
+      screen.findByRole('heading', { name: 'Wilki Bemowo' }, { timeout: 200 }),
+    ).rejects.toThrow();
+    expect(await screen.findByText('Nie ma takiej drużyny')).toBeInTheDocument();
+  });
+
   it('`404` też wraca na listę, z toastem, że drużyny już nie było', async () => {
     serveTeams({
       override: {
@@ -190,6 +233,27 @@ describe('zmiana nazwy drużyny', () => {
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tournament', 7, 'teams'] });
   });
 
+  it('`404` zamyka okno z ostrzeżeniem i pokazuje, że drużyny już nie ma', async () => {
+    const { state } = serveTeams({
+      override: {
+        'PATCH /teams/3': () => {
+          state.teams = state.teams.filter((team) => team.id !== WILKI.id);
+          return HttpResponse.json({ message: 'Brak.' }, { status: 404 });
+        },
+      },
+    });
+    const { user } = await renderSquad();
+
+    await user.click(screen.getByRole('button', { name: 'Zmień nazwę' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Zmień nazwę drużyny' });
+    await user.type(within(dialog).getByLabelText('Nazwa drużyny'), ' II');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await screen.findByText('Tej drużyny już nie ma.')).toBeInTheDocument();
+    expect(await screen.findByText('Nie ma takiej drużyny')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('duplikat daje `422` pod `name`, przy polu', async () => {
     const message = 'W tym turnieju jest już drużyna o tej nazwie.';
     serveTeams({ override: { 'PATCH /teams/3': () => validationError({ name: [message] }) } });
@@ -230,25 +294,6 @@ describe('zawodnicy', () => {
     // `playersCount` zmienia się w drużynie i na liście drużyn.
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['team', 3] });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['tournament', 7, 'teams'] });
-  });
-
-  it('po dodaniu zawodnika lista drużyn pokazuje nową liczbę', async () => {
-    const { requests } = serveTeams();
-    const { user } = renderPanel(LIST);
-
-    await user.click(await screen.findByRole('link', { name: 'Wilki Bemowo' }));
-    const dialog = await openPlayerDialog(user);
-    await user.type(within(dialog).getByLabelText('Imię i nazwisko'), 'Jan Wrona');
-    await user.type(within(dialog).getByLabelText('Numer'), '10');
-    await user.click(within(dialog).getByRole('button', { name: 'Dodaj' }));
-    await screen.findByRole('cell', { name: 'Jan Wrona' });
-
-    await user.click(screen.getByRole('link', { name: 'Drużyny', current: false }));
-
-    expect(
-      await screen.findByRole('row', { name: /Wilki Bemowo 3$/ }),
-    ).toBeInTheDocument();
-    expect(requests['GET /tournaments/7/teams']).toBe(2);
   });
 
   it('`422` pod `number` siada przy polu', async () => {

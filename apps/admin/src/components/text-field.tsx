@@ -8,9 +8,10 @@ type TextFieldProps = ComponentProps<typeof Input> & {
 };
 
 /**
- * Pole okna edycji listy: etykieta, pole i błąd pod nim. Błąd jest opisem pola
+ * Pole tekstowe formularza: etykieta, pole i błąd pod nim. Błąd jest opisem pola
  * (`aria-describedby`), więc czytnik ekranu przeczyta go razem z etykietą.
  * Id pola powstaje tu, bo okien jest kilka, a pola w nich nazywają się tak samo.
+ * Starsze formularze (kreator, ustawienia) mają ten układ jeszcze wypisany ręcznie.
  */
 export function TextField({ label, error, ...inputProps }: TextFieldProps) {
   const id = useId();

@@ -70,10 +70,10 @@ export function usePlayers(teamId: number | null) {
     queryKey: teamKeys.players(teamId ?? 0),
     enabled: teamId !== null,
     queryFn: async () => {
-      const { data, error } = await api.GET('/teams/{team}/players', {
+      const { data, error, response } = await api.GET('/teams/{team}/players', {
         params: { path: { team: teamId! } },
       });
-      if (error) throw new Error(error.message);
+      if (error) throw new ApiError(error.message, response.status);
       return data.data;
     },
   });
