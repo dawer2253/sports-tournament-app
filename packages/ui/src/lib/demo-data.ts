@@ -3,6 +3,7 @@
 import type { PlayerRow } from '../components/data/player-row'
 import type { TeamRow } from '../components/data/team-row'
 import type { TournamentRow } from '../components/data/tournament-row'
+import type { VenueRow } from '../components/data/venue-row'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type FormResult = 'W' | 'D' | 'L'
@@ -224,12 +225,12 @@ export const bracketLargeWinner =
     ? bracketLarge.at(-1)!.matches[0].home!
     : bracketLarge.at(-1)!.matches[0].away!
 
-export type Venue = { id: number; name: string; address: string; matches: number }
-
-export const venues: Venue[] = [
-  { id: 1, name: 'Boisko A', address: 'ul. Sportowa 1', matches: 18 },
-  { id: 2, name: 'Boisko B', address: 'ul. Parkowa 12', matches: 14 },
-  { id: 3, name: 'Hala Miejska', address: 'ul. Główna 5', matches: 6 },
+// Obiekty turnieju w kształcie `VenueRow`. Hala bez adresu pokazuje stan
+// `address: null`, który kontrakt dopuszcza.
+export const venueRows: VenueRow[] = [
+  { id: 1, name: 'Boisko A', address: 'ul. Sportowa 1' },
+  { id: 2, name: 'Boisko B', address: 'ul. Parkowa 12' },
+  { id: 3, name: 'Hala Miejska', address: null },
 ]
 
 // Kryteria rozstrzygające turnieju demo, w kolejności stosowania. Etykiety
