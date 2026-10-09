@@ -16,6 +16,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  ConfirmDeleteDialog,
   EmptyState,
   FormDialog,
   Heading,
@@ -29,11 +30,12 @@ import {
   TournamentStatusCard,
   toast,
 } from '@tournament/ui';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router';
 import { AdminPage } from '../components/admin-page';
-import { UnsavedChangesGuard } from '../components/unsaved-changes-guard';
+import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
 import { publicTournamentUrl } from '../lib/public-url';
@@ -43,6 +45,7 @@ import {
   tournamentSettingsSchema,
   type TournamentSettingsValues,
 } from '../lib/tournament-settings-schema';
+import { useListMutation } from '../lib/use-list-mutation';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
 
@@ -97,17 +100,89 @@ export function TournamentSettingsPage() {
       <div className="max-w-2xl space-y-6">
         <StatusSection tournament={tournament} />
         {form}
-        <Card className="ring-destructive/40">
-          <CardHeader>
-            <CardTitle>Strefa zagrożenia</CardTitle>
-            <CardDescription>
-              Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć.
-            </CardDescription>
-          </CardHeader>
-          {/* Przycisk „Usuń turniej" i okno potwierdzenia wnosi #103. */}
-        </Card>
+        <DangerZone tournament={tournament} />
       </div>
     </AdminPage>
+  );
+}
+
+/**
+ * Usuwanie turnieju (#83, #103). Przycisk jest zawsze aktywny: `Tournament`
+ * nie mówi, czy rozegrano mecze, więc odmowę (`422`) pokazuje dopiero okno.
+ */
+function DangerZone({ tournament }: { tournament: Tournament }) {
+  const [deleting, setDeleting] = useState(false);
+
+  return (
+    <Card className="ring-destructive/40">
+      <CardHeader>
+        <CardTitle>Strefa zagrożenia</CardTitle>
+        <CardDescription>
+          Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="destructive" onClick={() => setDeleting(true)}>
+          <Trash2 className="size-4" /> Usuń turniej
+        </Button>
+      </CardContent>
+      {deleting && <DeleteTournamentDialog tournament={tournament} onClose={() => setDeleting(false)} />}
+    </Card>
+  );
+}
+
+/**
+ * Okno potwierdzenia z przepisaniem nazwy. Odpowiedzi rozkłada
+ * `useListMutation`: `204` i `404` wychodzą na listę, `422` (rozegrane mecze)
+ * zostawia okno zablokowane, sieć i `5xx` dają ponowienie.
+ *
+ * Po usunięciu `invalidate` obejmuje tylko listę. `['tournament', id]` znika
+ * z cache'u dopiero po wyjściu z ekranu: wcześniej trasa turnieju dopytałaby
+ * o niego od nowa i dostała `404`.
+ */
+function DeleteTournamentDialog({ tournament, onClose }: { tournament: Tournament; onClose: () => void }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const mutation = useListMutation({
+    texts: {
+      accusative: 'turniej',
+      alreadyDeleted: 'Turniej został już usunięty.',
+      gone: 'Tego turnieju już nie ma.',
+    },
+    invalidate: [['tournaments']],
+    onDone: () => {
+      // Niezapisane zmiany w formularzu nie mają już czego dotyczyć.
+      void Promise.resolve(navigate('/', { state: SKIP_UNSAVED_GUARD })).then(() =>
+        queryClient.removeQueries({ queryKey: ['tournament', tournament.id], exact: true }),
+      );
+    },
+  });
+
+  return (
+    <ConfirmDeleteDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      onConfirm={() =>
+        void mutation.remove({
+          name: tournament.name,
+          request: () =>
+            api.DELETE('/tournaments/{tournament}', { params: { path: { tournament: tournament.id } } }),
+        })
+      }
+      entity="turniej"
+      name={tournament.name}
+      description={
+        <>
+          Znikną drużyny, zawodnicy, obiekty, mecze i wgrane pliki. Tego nie da się cofnąć. Adres
+          /t/{tournament.slug} od razu się zwolni.
+        </>
+      }
+      confirmByName
+      pending={mutation.pending}
+      {...mutation.removeError}
+    />
   );
 }
 

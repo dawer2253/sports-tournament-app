@@ -106,6 +106,49 @@ export const Zablokowany: Story = {
   },
 }
 
+/**
+ * Usunięcie całego turnieju: przycisk działa dopiero po przepisaniu nazwy,
+ * po `trim()` i z rozróżnianiem wielkości liter.
+ */
+export const PotwierdzenieNazwa: Story = {
+  args: {
+    entity: 'turniej',
+    name: 'Liga Osiedlowa 2026',
+    description: 'Znikną drużyny, zawodnicy, obiekty, mecze i wgrane pliki. Tego nie da się cofnąć.',
+    confirmByName: true,
+  },
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog', { name: 'Usunąć turniej „Liga Osiedlowa 2026”?' })
+    const field = screen.getByLabelText('Wpisz „Liga Osiedlowa 2026”, aby potwierdzić')
+    const confirm = screen.getByRole('button', { name: 'Usuń turniej' })
+    await expect(confirm).toBeDisabled()
+
+    await userEvent.type(field, 'liga osiedlowa 2026')
+    await expect(confirm).toBeDisabled()
+
+    await userEvent.clear(field)
+    await userEvent.type(field, ' Liga Osiedlowa 2026 ')
+    await expect(confirm).toBeEnabled()
+    await userEvent.click(confirm)
+    await expect(args.onConfirm).toHaveBeenCalledOnce()
+  },
+}
+
+/** Odmowa przy turnieju z rozegranymi meczami: pola do potwierdzenia już nie ma. */
+export const PotwierdzenieNazwaZablokowane: Story = {
+  args: {
+    ...PotwierdzenieNazwa.args,
+    blocked: true,
+    error: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.',
+  },
+  play: async () => {
+    await screen.findByRole('alertdialog')
+    await expect(screen.queryByRole('textbox')).toBeNull()
+    await expect(screen.queryByRole('button', { name: 'Usuń turniej' })).toBeNull()
+    await expect(screen.getByRole('button', { name: 'Zamknij' })).toBeEnabled()
+  },
+}
+
 /** `onConfirm` włącza `pending`, jak zrobi to hook mutacji. */
 function ConfirmSetsPending(args: ComponentProps<typeof ConfirmDeleteDialog>) {
   const [pending, setPending] = useState(false)
