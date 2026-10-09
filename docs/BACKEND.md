@@ -45,6 +45,17 @@ czerwone testy nie zależały od pliku spoza repo.
 klonie nie ma. Bez tabel aplikacja zwraca **500 na każdym żądaniu**. `migrate`
 jest idempotentne, więc przy kolejnych `make up` tylko przelatuje.
 
+Po migracjach `make up` robi `artisan storage:link`, czyli dowiązanie
+`public/storage` → `storage/app/public`. Przez nie idą logo turniejów i herby
+drużyn: `logoUrl` wskazuje `http://localhost:8000/storage/...`, a bez dowiązania
+taki adres trafia do Laravela i kończy się **403** (research
+[`upload-obrazow-laravel.md`](research/upload-obrazow-laravel.md) §2.3).
+Dowiązanie jest gitignorowane i absolutne, liczone w kontenerze
+(`/var/www/html/...`), więc na hoście wskazuje w pustkę — tak ma być, pliki
+serwuje kontener. Dlatego nie siedzi w skrypcie Composera: `make install`
+uruchamia Composera w innym kontenerze, z backendem pod `/opt`. Przy
+istniejącym dowiązaniu komenda wypisuje „already exists" i idzie dalej.
+
 Aplikacja odpowiada pod `http://localhost:8000` — `/` to health check zwracający
 `{"status":"ok"}`. Backend oddaje wyłącznie JSON, bez warstwy widoków (szkieletowy
 front na Vite został usunięty, patrz [`BACKEND-INSTALACJA.md`](BACKEND-INSTALACJA.md)).

@@ -47,9 +47,15 @@ install: backend/vendor ## bootstrap czystego klonu (.env + composer install + k
 # w bazie (SESSION_DRIVER=database), więc bez tabel aplikacja zwraca 500 na
 # każdym żądaniu. Baza żyje w wolumenie Dockera, którego na czystym klonie nie
 # ma. `migrate` jest idempotentne, a Sail czeka na healthcheck MySQL-a.
-up: backend/vendor ## start kontenerów (PHP, MySQL) + migracje
+#
+# `storage:link` wystawia dysk `public` (logo, herby) pod `/storage`. Odpala
+# w kontenerze, bo dowiązanie jest absolutne, a backend leży tam pod inną
+# ścieżką niż w kontenerze Composera z `install`. Przy istniejącym dowiązaniu
+# wypisuje „already exists" i kończy się sukcesem, więc powtórne `up` przechodzi.
+up: backend/vendor ## start kontenerów (PHP, MySQL) + migracje + dowiązanie storage
 	$(SAIL) up -d
 	$(SAIL) artisan migrate --force
+	$(SAIL) artisan storage:link
 
 down: ## zatrzymanie kontenerów
 	$(SAIL) down

@@ -153,7 +153,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.5'
-          extensions: pdo_mysql, mbstring, bcmath, intl
+          # `gd` jawnie: `UploadedFile::fake()->image()` w testach logo bez niego
+          # rzuca `LogicException`, a domyślny zestaw obrazu runnera może się zmienić.
+          extensions: pdo_mysql, mbstring, bcmath, intl, gd
           coverage: none
 
       - name: Katalog cache'u Composera

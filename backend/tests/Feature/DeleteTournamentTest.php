@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\PublicFileCleanupException;
 use App\Models\GameMatch;
 use App\Models\Group;
 use App\Models\MatchEvent;
@@ -11,6 +12,9 @@ use App\Models\Tournament;
 use App\Models\User;
 use App\Models\Venue;
 use Database\Factories\GameMatchFactory;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Exceptions;
+use Illuminate\Support\Facades\Storage;
 use Spectator\Spectator;
 
 beforeEach(function () {
@@ -84,6 +88,29 @@ function tournamentDeletionRowsLeft(array $subtree): array
 function expectTournamentDeletionSubtreeIntact(array $subtree): void
 {
     expect(tournamentDeletionRowsLeft($subtree))->toBe(array_map(count(...), $subtree));
+}
+
+/**
+ * Logo turnieju i herby dwóch drużyn, z których jedna jest potem usunięta
+ * miękko. Wgrane przez API, żeby pliki leżały tam, gdzie kładzie je upload.
+ * Zwraca katalog turnieju na dysku `public`.
+ */
+function tournamentDeletionFiles(Tournament $tournament): string
+{
+    $upload = fn (string $uri) => actingAsOrganizer($tournament->user)
+        ->post($uri, ['logo' => UploadedFile::fake()->image('logo.png', 128, 128)], multipartHeaders())
+        ->assertValidRequest()
+        ->assertValidResponse(200);
+
+    $teams = Team::factory()->for($tournament)->count(2)->create();
+    $upload("/api/v1/tournaments/{$tournament->id}/logo");
+    $teams->each(fn (Team $team) => $upload("/api/v1/teams/{$team->id}/logo"));
+    $teams->last()->delete();
+
+    $directory = "tournaments/{$tournament->id}";
+    expect(Storage::disk('public')->allFiles($directory))->toHaveCount(3);
+
+    return $directory;
 }
 
 it('usuwa turniej i oddaje 204, a potem turniej daje 404', function () {
@@ -179,4 +206,50 @@ it('usuwa turniej ze statusem finished, jeżeli nie rozegrano w nim meczu', func
         ->assertValidResponse(204);
 
     expect(Tournament::find($tournament->id))->toBeNull();
+});
+
+// Pełny cykl z #83: katalog turnieju znika w całości, razem z herbem drużyny
+// usuniętej wcześniej miękko, a katalog innego turnieju zostaje.
+it('kasuje katalog turnieju z logo i herbami, także drużyny usuniętej miękko', function () {
+    fakePublicDisk();
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $otherTournament = Tournament::factory()->for($organizer)->create();
+    $directory = tournamentDeletionFiles($tournament);
+    $otherDirectory = tournamentDeletionFiles($otherTournament);
+
+    actingAsOrganizer($organizer)
+        ->deleteJson("/api/v1/tournaments/{$tournament->id}")
+        ->assertValidResponse(204);
+
+    Storage::disk('public')->assertMissing($directory);
+    expect(Storage::disk('public')->allFiles($otherDirectory))->toHaveCount(3);
+});
+
+it('nie rusza katalogu turnieju, którego nie można usunąć', function () {
+    fakePublicDisk();
+    $tournament = Tournament::factory()->create();
+    $directory = tournamentDeletionFiles($tournament);
+    tournamentDeletionSubtree($tournament, withFinishedMatch: true);
+
+    actingAsOrganizer($tournament->user)
+        ->deleteJson("/api/v1/tournaments/{$tournament->id}")
+        ->assertValidResponse(422);
+
+    expect(Storage::disk('public')->allFiles($directory))->toHaveCount(3);
+});
+
+it('zgłasza nieudane skasowanie katalogu do report() i oddaje 204', function () {
+    fakePublicDisk();
+    Exceptions::fake();
+    $tournament = Tournament::factory()->create();
+    $directory = tournamentDeletionFiles($tournament);
+    failDeletionsOnPublicDisk();
+
+    actingAsOrganizer($tournament->user)
+        ->deleteJson("/api/v1/tournaments/{$tournament->id}")
+        ->assertValidResponse(204);
+
+    expect(Tournament::find($tournament->id))->toBeNull();
+    Exceptions::assertReported(fn (PublicFileCleanupException $e): bool => str_contains($e->getMessage(), "„{$directory}”"));
 });
