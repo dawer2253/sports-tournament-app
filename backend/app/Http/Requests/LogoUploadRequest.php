@@ -13,8 +13,8 @@ use Illuminate\Foundation\Http\FormRequest;
  * na treść pliku, nie na nazwę. `bail` zostawia pod `logo` jeden komunikat,
  * bo plik, który nie jest obrazem, nie ma też wymiarów.
  *
- * Komunikaty dają podklasy, bo różnią się odmianą rzeczownika („logo",
- * „herbem", „herbu").
+ * Podklasy dają tylko odmianę rzeczownika w komunikatach („logo", „herbem",
+ * „herbu").
  */
 abstract class LogoUploadRequest extends FormRequest
 {
@@ -49,24 +49,34 @@ abstract class LogoUploadRequest extends FormRequest
     }
 
     /**
+     * Teksty z #111, pkt 5. Liczby idą ze stałych, żeby zmiana limitu była
+     * jedną edycją; odmianę rzeczownika dają podklasy.
+     *
      * @return array<string, string>
      */
     public function messages(): array
     {
-        $messages = $this->logoMessages();
+        ['subject' => $subject, 'instrumental' => $instrumental, 'genitive' => $genitive] = $this->nounForms();
+        $megabytes = self::MAX_KILOBYTES / 1024;
+        $min = self::MIN_DIMENSION.'×'.self::MIN_DIMENSION;
+        $max = self::MAX_DIMENSION.'×'.self::MAX_DIMENSION;
+        $format = "{$subject} musi być plikiem PNG, JPG albo WebP.";
 
         return [
-            'logo.required' => $messages['required'],
-            'logo.file' => $messages['format'],
-            'logo.mimes' => $messages['format'],
-            'logo.max' => $messages['max'],
-            'logo.dimensions' => $messages['dimensions'],
-            'logo.uploaded' => $messages['uploaded'],
+            'logo.required' => "Wybierz plik z {$instrumental}.",
+            'logo.file' => $format,
+            'logo.mimes' => $format,
+            'logo.max' => "{$subject} może mieć najwyżej {$megabytes} MB.",
+            'logo.dimensions' => "{$subject} musi mieć od {$min} do {$max} pikseli.",
+            'logo.uploaded' => "Nie udało się wgrać {$genitive}. Sprawdź, czy plik ma najwyżej {$megabytes} MB.",
         ];
     }
 
     /**
-     * @return array{required: string, format: string, max: string, dimensions: string, uploaded: string}
+     * Rzeczownik w trzech przypadkach: „Logo musi…", „plik z logo",
+     * „wgrać logo".
+     *
+     * @return array{subject: string, instrumental: string, genitive: string}
      */
-    abstract protected function logoMessages(): array;
+    abstract protected function nounForms(): array;
 }

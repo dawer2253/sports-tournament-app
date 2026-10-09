@@ -14,13 +14,19 @@ class TournamentLogoController extends Controller
     {
         $tournament->replaceLogo($request->file('logo'));
 
-        return new TournamentResource($tournament->load('sport')->loadCount('teams'));
+        return $this->resource($tournament);
     }
 
     public function destroy(Tournament $tournament): TournamentResource
     {
         $tournament->removeLogo();
 
+        return $this->resource($tournament);
+    }
+
+    /** Resource wymaga dociągniętych relacji i liczników (docblock TournamentResource). */
+    private function resource(Tournament $tournament): TournamentResource
+    {
         return new TournamentResource($tournament->load('sport')->loadCount('teams'));
     }
 }

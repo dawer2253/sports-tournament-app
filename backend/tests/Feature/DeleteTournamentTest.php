@@ -99,7 +99,8 @@ function tournamentDeletionFiles(Tournament $tournament): string
 {
     $upload = fn (string $uri) => actingAsOrganizer($tournament->user)
         ->post($uri, ['logo' => UploadedFile::fake()->image('logo.png', 128, 128)], multipartHeaders())
-        ->assertOk();
+        ->assertValidRequest()
+        ->assertValidResponse(200);
 
     $teams = Team::factory()->for($tournament)->count(2)->create();
     $upload("/api/v1/tournaments/{$tournament->id}/logo");

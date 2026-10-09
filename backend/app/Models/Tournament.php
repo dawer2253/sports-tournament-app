@@ -98,12 +98,12 @@ class Tournament extends Model
      * Zdarzenie `deleted`, nie `deleting`: guard odpala w `deleting`, więc
      * turniej z rozegranym meczem nie dochodzi tu wcale i jego pliki zostają.
      * Kasowanie idzie po commicie, a jego porażka trafia do `report()` bez
-     * zmiany odpowiedzi (`HasLogo::deletePublicPathAfterCommit()`).
+     * zmiany odpowiedzi (`DeletesPublicFilesAfterCommit`, wnoszone przez `HasLogo`).
      */
     protected static function booted(): void
     {
         static::deleted(function (self $tournament): void {
-            self::deletePublicPathAfterCommit($tournament->storageDirectory(), directory: true);
+            self::deletePublicDirectoryAfterCommit($tournament->storageDirectory());
         });
     }
 

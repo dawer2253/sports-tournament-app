@@ -2,9 +2,7 @@
 
 namespace App\Models\Concerns;
 
-use App\Exceptions\PublicFileCleanupException;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
@@ -17,13 +15,13 @@ use Throwable;
  * Nazwę pliku nadaje `store()` (40 losowych znaków i rozszerzenie z treści),
  * więc każdy upload daje nowy adres i nie trzeba wersji w adresie.
  *
- * Stary plik znika dopiero po commicie: wycofana transakcja nie może zostawić
- * wiersza wskazującego skasowany plik. Nieudane kasowanie idzie do
- * `report()`, a odpowiedź zostaje sukcesem — sierota na dysku jest tańsza niż
- * błąd po zapisanej zmianie.
+ * Stary plik znika dopiero po commicie, a nieudane kasowanie idzie do
+ * `report()` (`DeletesPublicFilesAfterCommit`).
  */
 trait HasLogo
 {
+    use DeletesPublicFilesAfterCommit;
+
     /** Katalog na dysku `public`, w którym ląduje plik. */
     abstract protected function logoDirectory(): string;
 
@@ -56,7 +54,7 @@ trait HasLogo
             throw $exception;
         }
 
-        self::deletePublicPathAfterCommit($previousPath);
+        self::deletePublicFileAfterCommit($previousPath);
     }
 
     /** Bez logo nic się nie dzieje — operacja jest idempotentna (kontrakt). */
@@ -70,35 +68,6 @@ trait HasLogo
 
         $this->forceFill(['logo_path' => null])->save();
 
-        self::deletePublicPathAfterCommit($previousPath);
-    }
-
-    /**
-     * Kasuje plik albo cały katalog po commicie bieżącej transakcji, a bez
-     * transakcji od razu. Dysk ma `'throw' => false`, więc porażkę zgłasza
-     * zwracając `false`, ale łapany jest też wyjątek — na wypadek dysku
-     * skonfigurowanego inaczej.
-     */
-    protected static function deletePublicPathAfterCommit(?string $path, bool $directory = false): void
-    {
-        if ($path === null) {
-            return;
-        }
-
-        DB::afterCommit(function () use ($path, $directory): void {
-            $disk = Storage::disk('public');
-
-            try {
-                $deleted = $directory ? $disk->deleteDirectory($path) : $disk->delete($path);
-            } catch (Throwable $exception) {
-                report(PublicFileCleanupException::for($path, $exception));
-
-                return;
-            }
-
-            if (! $deleted) {
-                report(PublicFileCleanupException::for($path));
-            }
-        });
+        self::deletePublicFileAfterCommit($previousPath);
     }
 }

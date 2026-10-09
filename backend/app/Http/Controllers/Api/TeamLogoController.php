@@ -14,13 +14,19 @@ class TeamLogoController extends Controller
     {
         $team->replaceLogo($request->file('logo'));
 
-        return new TeamResource($team->loadCount('players'));
+        return $this->resource($team);
     }
 
     public function destroy(Team $team): TeamResource
     {
         $team->removeLogo();
 
+        return $this->resource($team);
+    }
+
+    /** Resource wymaga dociągniętych relacji i liczników (docblock TeamResource). */
+    private function resource(Team $team): TeamResource
+    {
         return new TeamResource($team->loadCount('players'));
     }
 }
