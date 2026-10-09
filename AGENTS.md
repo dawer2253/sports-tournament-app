@@ -168,6 +168,28 @@ Domyślne, kanoniczne etykiety (`needs-triage`, `needs-info`, `ready-for-agent`,
 Single-context: `CONTEXT.md` + `docs/adr/` w rootcie. Zobacz
 [`docs/agents/domain.md`](docs/agents/domain.md).
 
+### Krojenie ticketów
+
+Dotyczy planowania (`/to-tickets`, `/to-spec`, `/wayfinder`, ręczne rozpisywanie
+pracy w trackerze). **Ticket wykonawczy obejmuje jedną funkcjonalność w całości**:
+kontrakt, backend, design system i ekran w aplikacji idą w jednym issue i jednym
+PR-ze, a nie jako osobne „API: …", „Backend: …", „DS: …", „Admin: …".
+
+- Nie rozdrabniaj. Wolimy mniej, za to obszerniejszych ticketów — każdy osobny
+  ticket to osobny PR, osobny przegląd i osobne czekanie na merge, a praca ma iść
+  szybciej.
+- Granica ticketu to granica funkcjonalności widocznej dla użytkownika
+  („organizator usuwa turniej"), nie granica warstwy ani katalogu.
+- Kolejność z sekcji [Kontrakt API](#kontrakt-api) obowiązuje dalej, tyle że jako
+  kolejne commity w obrębie jednego PR-a. Prefiks commita wybierasz per commit.
+- Wskazówkę skilla `to-tickets`, by krój był „wąski" i mieścił się w jednym
+  oknie kontekstu, czytaj jako górną granicę, nie cel. Dziel dopiero wtedy, gdy
+  funkcjonalność naprawdę się nie mieści, i dziel na mniejsze funkcjonalności,
+  nigdy na warstwy.
+- Osobny ticket dla jednej warstwy ma sens tylko wtedy, gdy nie niesie żadnej
+  funkcjonalności sam z siebie i blokuje kilka innych (np. wspólny komponent
+  design systemu, z którego skorzysta kilka ekranów, albo szeroki refactor).
+
 ### Twierdzenia o stanie repo
 
 Dotyczy wszystkiego, co agent publikuje poza kodem: briefów triage'owych,

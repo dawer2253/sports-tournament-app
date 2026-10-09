@@ -1,6 +1,7 @@
 import { useState, type ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, screen, userEvent, waitFor } from 'storybook/test'
+import { expectDarkPortal } from '../../test/theme'
 import { FormDialog } from './form-dialog'
 import { Input } from './input'
 import { Label } from './label'
@@ -190,5 +191,18 @@ export const InnyPrzyciskPrzyWysylaniu: Story = {
     await userEvent.click(screen.getByRole('button', { name: 'Wybierz z mapy' }))
 
     await expect(args.onSubmit).not.toHaveBeenCalled()
+  },
+}
+
+/**
+ * Ciemny motyw w portalu (#136), szczegóły przy `expectDarkPortal`. Bez
+ * snapshotu: ciemne snapshoty Chromatica to osobna decyzja.
+ */
+export const CiemnyMotyw: Story = {
+  globals: { theme: 'dark' },
+  parameters: { chromatic: { disableSnapshot: true } },
+  play: async () => {
+    await screen.findByRole('dialog')
+    await expectDarkPortal('[data-slot="dialog-content"]')
   },
 }

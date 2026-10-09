@@ -41,7 +41,7 @@ src/
 Kolejność w Storybooku: **Wprowadzenie → Fundamenty → UI → Ekrany**.
 
 ## Ekrany
-- **Admin:** Logowanie, Dashboard, Kreator turnieju, Drużyny, Terminarz, Wynik meczu, Drabinka, Obiekty, Statystyki, Branding i ustawienia.
+- **Admin:** Logowanie, Dashboard, Kreator turnieju, Drużyny, Terminarz, Wynik meczu, Drabinka, Obiekty, Statystyki, Ustawienia.
 - **Public:** Przegląd, Tabela, Terminarz, Wyniki, Drabinka, Strzelcy.
 
 Każdy ekran ma stronę specyfikacji (`.mdx`) w formacie: Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania.

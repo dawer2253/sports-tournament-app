@@ -1,6 +1,10 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
+import type { PlayerRow } from '../components/data/player-row'
+import type { TeamRow } from '../components/data/team-row'
+import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
+import type { VenueRow } from '../components/data/venue-row'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type FormResult = 'W' | 'D' | 'L'
@@ -37,15 +41,52 @@ export const teams: Team[] = [
   { id: 8, name: 'Burza', abbr: 'BU', players: 12 },
 ]
 
-export type Player = { id: number; name: string; number: number; position: string; teamId: number }
+// Herb demo w adresie `data:`, żeby makiety nie zależały od sieci ani od
+// assetów pakietu. Kolory to treść obrazka (jak w pliku klubu), nie chroma UI
+// (wyjątek z reguły kolorów w `packages/ui/AGENTS.md`).
+export const demoTeamLogoUrl =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">' +
+      '<circle cx="24" cy="24" r="22" fill="#0f766e"/>' +
+      '<circle cx="24" cy="24" r="15" fill="none" stroke="#f8fafc" stroke-width="3"/>' +
+      '<path d="M24 13l3.2 7 7.6.7-5.8 5 1.8 7.4L24 29.2l-6.6 3.9 1.8-7.4-5.8-5 7.6-.7z" fill="#f8fafc"/>' +
+      '</svg>',
+  )
 
-export const players: Player[] = [
-  { id: 1, name: 'Jan Kowalski', number: 9, position: 'Napastnik', teamId: 1 },
-  { id: 2, name: 'Piotr Zieliński', number: 10, position: 'Pomocnik', teamId: 1 },
-  { id: 3, name: 'Marek Lis', number: 1, position: 'Bramkarz', teamId: 1 },
-  { id: 4, name: 'Adam Wójcik', number: 7, position: 'Skrzydłowy', teamId: 4 },
-  { id: 5, name: 'Michał Nowak', number: 4, position: 'Obrońca', teamId: 4 },
-  { id: 6, name: 'Tomasz Mazur', number: 11, position: 'Napastnik', teamId: 2 },
+// Lista drużyn w kształcie `TeamRow`, czyli tak, jak oddaje ją kontrakt.
+// Czerpie z `teams`, żeby nazwy zgadzały się z resztą makiet, i stoi
+// w kolejności z API, czyli po nazwie. Herb ma tylko FC Górka: reszta pokazuje
+// herb zastępczy, jak przy świeżym turnieju.
+export const teamRows: TeamRow[] = teams
+  .map((team) => ({
+    id: team.id,
+    name: team.name,
+    logoUrl: team.id === 1 ? demoTeamLogoUrl : null,
+    playersCount: team.players,
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name, 'pl'))
+
+// Drużyna ekranu składu: ta z herbem i z pełnym składem w `teamPlayers`.
+export const rosterTeam: TeamRow = teamRows.find((team) => team.id === 1)!
+
+// Skład `rosterTeam` w kształcie `PlayerRow`. Numer i pozycja są opcjonalne,
+// więc część zawodników ich nie ma. Długość równa się `playersCount` tej
+// drużyny. Kolejność jak z API: numery rosnąco, a zawodnicy bez numeru na
+// końcu po pełnej nazwie (`name`), czyli w praktyce po imieniu.
+export const teamPlayers: PlayerRow[] = [
+  { id: 1, name: 'Marek Lis', number: 1, position: 'Bramkarz' },
+  { id: 2, name: 'Michał Nowak', number: 4, position: 'Obrońca' },
+  { id: 3, name: 'Kamil Dąbrowski', number: 5, position: 'Obrońca' },
+  { id: 4, name: 'Paweł Szymański', number: 6, position: 'Pomocnik' },
+  { id: 5, name: 'Adam Wójcik', number: 7, position: 'Skrzydłowy' },
+  { id: 6, name: 'Krzysztof Wróbel', number: 8, position: 'Pomocnik' },
+  { id: 7, name: 'Jan Kowalski', number: 9, position: 'Napastnik' },
+  { id: 8, name: 'Piotr Zieliński', number: 10, position: 'Pomocnik' },
+  { id: 9, name: 'Tomasz Mazur', number: 11, position: 'Napastnik' },
+  { id: 10, name: 'Łukasz Kamiński', number: 23, position: null },
+  { id: 11, name: 'Bartosz Lewandowski', number: null, position: 'Obrońca' },
+  { id: 12, name: 'Grzegorz Wiśniewski', number: null, position: null },
 ]
 
 export type StandingRow = {
@@ -185,12 +226,12 @@ export const bracketLargeWinner =
     ? bracketLarge.at(-1)!.matches[0].home!
     : bracketLarge.at(-1)!.matches[0].away!
 
-export type Venue = { id: number; name: string; address: string; matches: number }
-
-export const venues: Venue[] = [
-  { id: 1, name: 'Boisko A', address: 'ul. Sportowa 1', matches: 18 },
-  { id: 2, name: 'Boisko B', address: 'ul. Parkowa 12', matches: 14 },
-  { id: 3, name: 'Hala Miejska', address: 'ul. Główna 5', matches: 6 },
+// Obiekty turnieju w kształcie `VenueRow`. Hala bez adresu pokazuje stan
+// `address: null`, który kontrakt dopuszcza.
+export const venueRows: VenueRow[] = [
+  { id: 1, name: 'Boisko A', address: 'ul. Sportowa 1' },
+  { id: 2, name: 'Boisko B', address: 'ul. Parkowa 12' },
+  { id: 3, name: 'Hala Miejska', address: null },
 ]
 
 // Kryteria rozstrzygające turnieju demo, w kolejności stosowania. Etykiety
@@ -202,6 +243,41 @@ export const tiebreakers = [
   { key: 'score_diff', label: 'Różnica bramek' },
   { key: 'score_for', label: 'Bramki zdobyte' },
 ]
+
+// Ustawienia turnieju w sporcie demo, w kształcie `SportConfig` z kontraktu
+// (przykład `GET /sports`), ograniczone do tego, co pokazuje ekran ustawień.
+// Tiebreaki to domyślna kolejność sportu z etykietami z `tiebreakerLabels`
+// (#117) — nie z `tiebreakers` wyżej, które mówią językiem strony publicznej.
+export type DemoSportSettings = {
+  name: string
+  allowsDraw: boolean
+  defaultPoints: { win: number; draw: number; loss: number }
+  tiebreakers: TiebreakerItem[]
+}
+
+export const sportSettings: Record<'football' | 'basketball', DemoSportSettings> = {
+  football: {
+    name: 'Piłka nożna',
+    allowsDraw: true,
+    defaultPoints: { win: 3, draw: 1, loss: 0 },
+    tiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica bramek' },
+      { code: 'score_for', label: 'Bramki zdobyte' },
+    ],
+  },
+  basketball: {
+    name: 'Koszykówka',
+    allowsDraw: false,
+    defaultPoints: { win: 2, draw: 0, loss: 1 },
+    tiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica punktów' },
+    ],
+  },
+}
 
 export const formColor: Record<FormResult, string> = {
   W: 'bg-primary',
