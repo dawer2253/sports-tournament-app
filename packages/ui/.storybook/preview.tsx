@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/react-vite'
 import '../src/index.css'
+import { ThemeRoot, type Theme } from './theme-root'
 
 const preview: Preview = {
   parameters: {
@@ -26,13 +27,16 @@ const preview: Preview = {
   initialGlobals: { theme: 'light' },
   decorators: [
     (Story, context) => {
-      const theme = context.globals.theme ?? 'light'
+      const theme: Theme = context.globals.theme ?? 'light'
+      // Wewnętrzny `div` zostaje mimo tła z `body`: na stronie Docs podgląd
+      // story leży na białym tle Storybooka, więc bez niego jasny tekst
+      // ciemnego motywu lądowałby na bieli.
       return (
-        <div className={theme === 'dark' ? 'dark' : ''}>
+        <ThemeRoot theme={theme}>
           <div className="bg-background text-foreground">
             <Story />
           </div>
-        </div>
+        </ThemeRoot>
       )
     },
   ],

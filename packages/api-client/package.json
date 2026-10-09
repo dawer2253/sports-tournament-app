@@ -10,7 +10,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "openapi-typescript ../api-contract/openapi.yaml --output src/schema.d.ts",
+    "generate": "node scripts/generate.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

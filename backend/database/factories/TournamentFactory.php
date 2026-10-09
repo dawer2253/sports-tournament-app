@@ -27,7 +27,7 @@ class TournamentFactory extends Factory
             'sport_id' => $sport->id,
             'name' => 'Liga Osiedlowa '.fake()->year(),
             'slug' => fake()->unique()->slug(3),
-            'logo_url' => null,
+            'logo_path' => null,
             'primary_color' => fake()->hexColor(),
             'points' => $sport->defaultPoints(),
             'tiebreakers' => $sport->defaultTiebreakers(),

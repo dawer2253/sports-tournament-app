@@ -308,6 +308,13 @@ export interface paths {
                          *               "score_for",
                          *               "wins"
                          *             ],
+                         *             "tiebreakerLabels": {
+                         *               "points": "Punkty w tabeli",
+                         *               "head_to_head": "Bezpośredni mecz",
+                         *               "score_diff": "Różnica bramek",
+                         *               "score_for": "Bramki zdobyte",
+                         *               "wins": "Zwycięstwa"
+                         *             },
                          *             "availableStats": [
                          *               "goals",
                          *               "yellowCards",
@@ -352,6 +359,13 @@ export interface paths {
                          *               "score_for",
                          *               "wins"
                          *             ],
+                         *             "tiebreakerLabels": {
+                         *               "points": "Punkty w tabeli",
+                         *               "head_to_head": "Bezpośredni mecz",
+                         *               "score_diff": "Różnica punktów",
+                         *               "score_for": "Zdobyte punkty",
+                         *               "wins": "Zwycięstwa"
+                         *             },
                          *             "availableStats": [
                          *               "points",
                          *               "fouls"
@@ -700,6 +714,13 @@ export interface paths {
          * @description Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
          *     `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
          *     panel musi o tym ostrzec przed zapisem.
+         *
+         *     Zmienia też `status` (znaczenie stanów i to, kto je ustawia:
+         *     `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
+         *     warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
+         *     nie przechodzi do `draft` z innego stanu — taka próba daje `422`
+         *     z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
+         *     w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
          */
         patch: {
             parameters: {
@@ -757,7 +778,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Wgraj logo turnieju */
+        /**
+         * Wgraj logo turnieju
+         * @description Przyjmuje PNG, JPG albo WebP o rozmiarze do 2 MB i wymiarach od 64×64
+         *     do 4096×4096 pikseli, bez wymogu proporcji. O formacie decyduje treść
+         *     pliku, nie nazwa ani rozszerzenie. Obraz jest zapisywany bez
+         *     przetwarzania.
+         *
+         *     Nowy plik zastępuje poprzedni, a poprzedni jest kasowany. Każdy upload
+         *     daje nowy `logoUrl`, więc dotychczasowy adres przestaje działać.
+         *     Naruszenie daje `422` pod `logo`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -771,7 +802,7 @@ export interface paths {
                 content: {
                     "multipart/form-data": {
                         /** Format: binary */
-                        logo: string;
+                        logo: Blob;
                     };
                 };
             };
@@ -782,6 +813,39 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "name": "Liga Osiedlowa 2026",
+                         *         "slug": "liga-osiedlowa-2026",
+                         *         "status": "draft",
+                         *         "sport": {
+                         *           "id": 1,
+                         *           "code": "football",
+                         *           "name": "Piłka nożna"
+                         *         },
+                         *         "branding": {
+                         *           "logoUrl": "http://localhost:8000/storage/tournaments/1/logo/hMbkow7jZDUOi8YzukrkRzF1eY8wqM7DJtNlFrEZ.png",
+                         *           "primaryColor": "#1F7A45"
+                         *         },
+                         *         "points": {
+                         *           "win": 3,
+                         *           "draw": 1,
+                         *           "loss": 0
+                         *         },
+                         *         "tiebreakers": [
+                         *           "points",
+                         *           "head_to_head",
+                         *           "score_diff",
+                         *           "score_for"
+                         *         ],
+                         *         "teamsCount": 0,
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-01T08:00:00+00:00"
+                         *       }
+                         *     }
+                         */
                         "application/json": {
                             data: components["schemas"]["Tournament"];
                         };
@@ -793,7 +857,71 @@ export interface paths {
                 422: components["responses"]["ValidationError"];
             };
         };
-        delete?: never;
+        /**
+         * Usuń logo turnieju
+         * @description Kasuje plik i ustawia `logoUrl` na `null`. Operacja jest idempotentna:
+         *     bez wgranego logo też daje `200`.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tournament: components["parameters"]["TournamentId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Turniej bez logo */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "name": "Liga Osiedlowa 2026",
+                         *         "slug": "liga-osiedlowa-2026",
+                         *         "status": "draft",
+                         *         "sport": {
+                         *           "id": 1,
+                         *           "code": "football",
+                         *           "name": "Piłka nożna"
+                         *         },
+                         *         "branding": {
+                         *           "logoUrl": null,
+                         *           "primaryColor": "#1F7A45"
+                         *         },
+                         *         "points": {
+                         *           "win": 3,
+                         *           "draw": 1,
+                         *           "loss": 0
+                         *         },
+                         *         "tiebreakers": [
+                         *           "points",
+                         *           "head_to_head",
+                         *           "score_diff",
+                         *           "score_for"
+                         *         ],
+                         *         "teamsCount": 0,
+                         *         "createdAt": "2026-09-01T08:00:00+00:00",
+                         *         "updatedAt": "2026-09-01T08:00:00+00:00"
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Tournament"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1141,7 +1269,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Wgraj herb drużyny */
+        /**
+         * Wgraj herb drużyny
+         * @description Przyjmuje PNG, JPG albo WebP o rozmiarze do 2 MB i wymiarach od 64×64
+         *     do 4096×4096 pikseli, bez wymogu proporcji. O formacie decyduje treść
+         *     pliku, nie nazwa ani rozszerzenie. Obraz jest zapisywany bez
+         *     przetwarzania.
+         *
+         *     Nowy plik zastępuje poprzedni, a poprzedni jest kasowany. Każdy upload
+         *     daje nowy `logoUrl`, więc dotychczasowy adres przestaje działać.
+         *     Naruszenie daje `422` pod `logo`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1155,7 +1293,7 @@ export interface paths {
                 content: {
                     "multipart/form-data": {
                         /** Format: binary */
-                        logo: string;
+                        logo: Blob;
                     };
                 };
             };
@@ -1166,6 +1304,18 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "tournamentId": 1,
+                         *         "name": "Wilki Bemowo",
+                         *         "logoUrl": "http://localhost:8000/storage/tournaments/1/teams/1/GmvZcUftUF1rp7d6ntSTGxnDGWHVCmrmYYNbs9IG.png",
+                         *         "groupId": null,
+                         *         "playersCount": 3
+                         *       }
+                         *     }
+                         */
                         "application/json": {
                             data: components["schemas"]["Team"];
                         };
@@ -1177,7 +1327,50 @@ export interface paths {
                 422: components["responses"]["ValidationError"];
             };
         };
-        delete?: never;
+        /**
+         * Usuń herb drużyny
+         * @description Kasuje plik i ustawia `logoUrl` na `null`. Operacja jest idempotentna:
+         *     bez wgranego logo też daje `200`.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    team: components["parameters"]["TeamId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Drużyna bez herbu */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "tournamentId": 1,
+                         *         "name": "Wilki Bemowo",
+                         *         "logoUrl": null,
+                         *         "groupId": null,
+                         *         "playersCount": 3
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Team"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1756,6 +1949,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -1782,6 +1981,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -1828,6 +2033,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -1856,6 +2067,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -1909,6 +2126,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -1957,6 +2180,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2003,6 +2232,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -2027,6 +2262,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2178,6 +2419,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -2202,6 +2449,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2356,6 +2609,12 @@ export interface paths {
                 "If-None-Match"?: components["parameters"]["IfNoneMatch"];
             };
             path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
                 slug: components["parameters"]["Slug"];
             };
             cookie?: never;
@@ -2381,6 +2640,12 @@ export interface paths {
                     "If-None-Match"?: components["parameters"]["IfNoneMatch"];
                 };
                 path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
                     slug: components["parameters"]["Slug"];
                 };
                 cookie?: never;
@@ -2566,6 +2831,16 @@ export interface components {
              */
             defaultTiebreakers: components["schemas"]["TiebreakerCode"][];
             availableTiebreakers: components["schemas"]["TiebreakerCode"][];
+            /**
+             * @description Polska etykieta każdego kryterium z `availableTiebreakers` tego
+             *     sportu; klucze to dokładnie `availableTiebreakers`, bez braków
+             *     i bez nadmiaru. Etykieta zależy od sportu, bo kryteria liczone ze
+             *     zdobyczy nazywają zdobycze („Różnica bramek” albo „Różnica
+             *     punktów”). `points` oznacza punkty w tabeli, a nie zdobycze.
+             */
+            tiebreakerLabels: {
+                [key: string]: string;
+            };
             availableStats: string[];
         };
         Sport: {
@@ -2589,7 +2864,19 @@ export interface components {
          * @enum {string}
          */
         TiebreakerCode: "points" | "head_to_head" | "score_diff" | "score_for" | "score_against" | "wins";
-        /** @enum {string} */
+        /**
+         * @description Stan turnieju.
+         *
+         *     - `draft` — turniej nieopublikowany. Nowy turniej zaczyna w tym stanie.
+         *     - `active` i `finished` — turniej opublikowany. `finished` to
+         *       deklaracja organizera, że rozgrywki się skończyły. Nie blokuje żadnej
+         *       zmiany ani usunięcia.
+         *
+         *     Status ustawia wyłącznie organizer, przez
+         *     `PATCH /tournaments/{tournament}`. Żadna operacja systemu nie zmienia
+         *     go sama.
+         * @enum {string}
+         */
         TournamentStatus: "draft" | "active" | "finished";
         /**
          * @description Używane wyłącznie przy zakładaniu turnieju, żeby wiedzieć jakie fazy
@@ -2598,7 +2885,11 @@ export interface components {
          */
         TournamentFormat: "league" | "groups_playoff" | "knockout";
         Branding: {
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+             *     gdy logo nie wgrano albo je usunięto.
+             */
             logoUrl: string | null;
             primaryColor: string;
         };
@@ -2684,7 +2975,11 @@ export interface components {
             /** Format: int64 */
             tournamentId: number;
             name: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+             *     gdy logo nie wgrano albo je usunięto.
+             */
             logoUrl: string | null;
             /**
              * Format: int64
@@ -2698,7 +2993,11 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+             *     gdy logo nie wgrano albo je usunięto.
+             */
             logoUrl: string | null;
         };
         Player: {
@@ -2867,7 +3166,12 @@ export interface components {
         PublicTournament: {
             name: string;
             slug: string;
-            status: components["schemas"]["TournamentStatus"];
+            /**
+             * @description Podzbiór `TournamentStatus` bez `draft`: szkic nie trafia do
+             *     odpowiedzi publicznej (patrz parametr `Slug`).
+             * @enum {string}
+             */
+            status: "active" | "finished";
             sport: components["schemas"]["SportSummary"];
             branding: components["schemas"]["Branding"];
             stages: components["schemas"]["Stage"][];
@@ -3044,6 +3348,12 @@ export interface components {
         TeamId: number;
         PlayerId: number;
         VenueId: number;
+        /**
+         * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+         *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+         *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+         *     że turniej istnieje.
+         */
         Slug: string;
         /**
          * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem

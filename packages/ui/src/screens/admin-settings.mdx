@@ -1,0 +1,82 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-settings.stories'
+
+<Meta of={Stories} />
+
+# Ustawienia turnieju (Admin): specyfikacja
+
+Ekran, na którym organizer publikuje turniej, ustawia jego publiczną tożsamość
+(nazwa, adres, kolor, logo) i punktację. Decyzje: [#91](https://github.com/dawer2253/sports-tournament-app/issues/91).
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pozwolić organizatorowi opublikować i zakończyć turniej, ustawić nazwę, adres
+`/t/{slug}`, kolor wiodący i logo strony publicznej oraz punktację za mecz.
+Kolejność tiebreaków jest na razie tylko do odczytu.
+
+## Dane (wejście)
+- `tournament.status`: stan turnieju (`draft`, `active`, `finished`).
+- `tournament.name`, `tournament.slug`: nazwa i segment adresu publicznego.
+- `tournament.branding.primaryColor`: kolor wiodący `#RRGGBB`.
+- `tournament.branding.logoUrl`: adres logo albo `null`.
+- `tournament.points`, `tournament.tiebreakers`: punktacja i kolejność rozstrzygania remisów.
+- Konfiguracja sportu z `GET /sports`: `allowsDraw`, `defaultPoints`, `tiebreakerLabels`.
+  `Tournament.sport` to tylko `SportSummary`, więc ekran bierze ją osobno.
+
+## Układ i zapis
+Ekran ma **trzy miejsca zapisu**, każde z jasnym zakresem:
+
+1. **Status**: karta z przyciskami, zapis od razu po kliknięciu.
+2. **Logo**: „Wgraj logo” / „Zmień logo” otwiera okno z polem pliku i własnym „Zapisz”;
+   „Usuń logo” idzie przez okno potwierdzenia.
+3. **Formularz** (Dane, Wygląd, Punktacja z tiebreakami): jeden „Zapisz zmiany”
+   na końcu, który wysyła **tylko zmienione pola** (`points` zawsze w komplecie).
+
+Na dole „Strefa zagrożenia” z „Usuń turniej” ([#103](https://github.com/dawer2253/sports-tournament-app/issues/103)).
+
+## Reguły
+- **Status.** Szkic: „Opublikuj”. Trwa: „Zakończ” i „Cofnij do szkicu”.
+  Zakończony: „Wznów” i „Cofnij do szkicu”. Przejście `draft → finished` nie ma
+  przycisku, choć kontrakt je dopuszcza. Link „Otwórz stronę” stoi tylko przy
+  turnieju opublikowanym, bo w szkicu prowadziłby do `404`.
+- **Slug**: małe litery, cyfry i myślniki, **unikalny globalnie**. Zmiana
+  unieważnia dotychczasowy adres bez przekierowania. Ostrzeżenie pod polem
+  pojawia się tylko w turnieju opublikowanym — szkic i tak nie ma strony.
+- **Kolor**: sześć gotowych palet (pierwsza to „Murawa” `#1F7A45`, domyślny kolor
+  turnieju) albo dowolny hex w trybie „Zaawansowane”. Każda paleta ma z bielą
+  kontrast co najmniej 4.5:1. Hex ze słabszym kontrastem daje ostrzeżenie, nie
+  błąd. Nazwa palety się nie zapisuje: panel rozpoznaje ją po hexie.
+- **Logo**: PNG, JPG albo WebP do 2 MB, od 64×64 do 4096×4096 px
+  ([#88](https://github.com/dawer2253/sports-tournament-app/issues/88)). Bez logo
+  ekran pokazuje **domyślne logo** (puchar na kolorze z formularza), które istnieje
+  tylko w UI: w API zostaje `logoUrl: null`.
+- **Punktacja**: w sporcie bez remisów nie ma pola „Remis”, a wysyłane jest `draw: 0`.
+- **Tiebreaki** są do odczytu, z etykietami z konfiguracji sportu. Zmiana
+  kolejności przyjdzie później.
+
+## Stany
+- **Domyślny**: turniej opublikowany, bez logo (powyżej).
+- **Szkic**: tylko „Opublikuj”, bez linku do strony; zmiana adresu nie ostrzega.
+- **Zmieniony slug**: alert „Dotychczasowy adres /t/{stary} przestanie działać. Przekierowania nie będzie.”
+- **Z logo** i **logo, które się nie ładuje**: przy błędzie ładowania domyślne logo i napis „Nie udało się wczytać logo”.
+- **Słaby kontrast**: kolor spoza palet, otwarty tryb zaawansowany i ostrzeżenie.
+- **Koszykówka**: bez pola „Remis”, etykiety tiebreaków koszykarskie.
+
+<Canvas of={Stories.ZmienionySlug} />
+<Canvas of={Stories.SlabyKontrast} />
+
+## Zachowanie
+- Przycisk statusu zapisuje od razu. Powrót do szkicu potwierdza okno, bo tylko on
+  ukrywa stronę; po opublikowaniu aplikacja pokazuje toast z linkiem.
+- Kliknięcie palety zmienia kolor w formularzu i tło domyślnego logo; niczego nie zapisuje.
+- „Przywróć domyślne dla sportu” ustawia pola punktacji na `defaultPoints` i sam niczego nie zapisuje.
+- Po zapisie formularz resetuje się do odpowiedzi. Wyjście z niezapisanymi
+  zmianami pyta o potwierdzenie.
+
+## Otwarte pytania
+Wszystkie rozstrzygnął [#91](https://github.com/dawer2253/sports-tournament-app/issues/91):
+
+- ~~Czy kolor wiodący ma być wyłącznie z palety?~~ Palety plus dowolny hex w trybie zaawansowanym.
+- ~~Jakie formaty i rozmiar logo?~~ PNG, JPG albo WebP do 2 MB, od 64×64 do 4096×4096 px (#88).
+- ~~Czy przy zmianie sluga utrzymujemy przekierowanie?~~ Nie: stary adres przestaje działać.

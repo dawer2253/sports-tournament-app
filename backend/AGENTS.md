@@ -263,12 +263,23 @@ Jak handler przerabia wyjątki na odpowiedzi — zwłaszcza **pułapkę przy
 `abort(404, '...')`** — opisuje „Backend oddaje wyłącznie JSON" wyżej.
 
 **Czas w odpowiedziach idzie w UTC**, więc każda data wychodzi z offsetem
-`+00:00`; tak stanowią „Konwencje" w kontrakcie. Wymusza to
+`+00:00`; tak stanowią „Konwencje" w kontrakcie. Strefę UTC daje
 [`config/app.php`](config/app.php) (`'timezone' => 'UTC'`, wpisane na sztywno,
 bez `env()`) — kontrakt niesie samą gwarancję, bez tego szczegółu, żeby front
-nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją do
-podjęcia tutaj, nie edycją jednej linijki w configu, i pociąga za sobą wszystkie
-przykłady w `openapi.yaml`.
+nie czytał w niej konfiguracji backendu. Zmiana strefy jest więc decyzją, nie
+edycją jednej linijki w configu, i pociąga za sobą wszystkie przykłady
+w `openapi.yaml` — powody UTC i brak `env()` opisuje
+[ADR 0008](../docs/adr/0008-czas-w-api-idzie-w-utc.md). Przeczytaj go, zanim
+napiszesz pierwszy endpoint przyjmujący datę: **Eloquent przy zapisie nie
+przelicza strefy**, a reguły dla wejścia stoją w ADR-ze. **Każda data w
+zasobie przechodzi przez `formatDate()`** z traitu
+[`FormatsDates`](app/Http/Resources/Concerns/FormatsDates.php) — to jedyne
+miejsce, które nadaje format `+00:00` (przelicza też na UTC i przepuszcza
+`null`). Nie wstawiaj do tablicy zasobu surowego Carbona ani własnego
+`toIso8601String()`: surowy Carbon wyjdzie jako `…000000Z`, a Spectator go
+przepuści, bo to też poprawny `date-time`. Złapie go dopiero
+[`DateFormatTest`](tests/Feature/DateFormatTest.php), który sprawdza każdą datę
+w ciele odpowiedzi — nowy endpoint z datą dopisz do niego.
 
 **Tablicowy parametr query jedzie po przecinku** (`?status=draft,active`), bo
 powtórzony klucz gubi w PHP wszystko poza ostatnią wartością

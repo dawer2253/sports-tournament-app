@@ -46,6 +46,9 @@ Storybook na `:6006`), więc podgląd działa bez konfiguracji.
 - `lib/utils.ts` — `cn()` (clsx + tailwind-merge).
 - `lib/demo-data.ts` — **jedno źródło** danych mock dla wszystkich ekranów
   (docelowo z API). Dokładając ekran, dane bierz stąd; nowe encje dopisuj tu.
+- `test/` — pomocnicze asercje dla funkcji `play` w stories (np.
+  `expectDarkPortal` w `theme.ts`). Nie myl z `src/test/` w aplikacjach, gdzie
+  leży setup msw.
 
 ## Wzorzec ekranu — trójka plików
 
@@ -80,6 +83,9 @@ Kolejność w sidebarze: `Wprowadzenie → Fundamenty → UI → Ekrany`.
   `text-muted-foreground`…), nigdy hexy. Motyw „pitch": jedna zieleń marki
   (`--primary` / `--brand`) to jedyny nasycony kolor chromy; reszta to
   neutralna, chłodna rampa; wielobarwność wyłącznie w danych (`--chart-1..5`).
+  Wyjątek: treść obrazka w danych demo i stories (np. logo w adresie `data:`)
+  ma własne kolory, jak plik wgrany przez organizera, bo nie jest chromą
+  interfejsu.
 - **Dark mode** — każdy token ma wariant w `.dark`; testuj oba przełącznikiem
   „Motyw" w toolbarze Storybooka.
 - **Klasy zawsze przez `cn()`**; warianty komponentów przez

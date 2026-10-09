@@ -5,7 +5,10 @@ use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\SportController;
 use App\Http\Controllers\Api\StageController;
 use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\TeamLogoController;
 use App\Http\Controllers\Api\TournamentController;
+use App\Http\Controllers\Api\TournamentLogoController;
+use App\Http\Controllers\Api\VenueController;
 use Illuminate\Support\Facades\Route;
 
 // Prefiks `api/v1` dokłada `withRouting(apiPrefix: ...)` w bootstrap/app.php,
@@ -26,6 +29,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // patrz „Autoryzacja poddrzewa turnieju" w `backend/AGENTS.md`.
     Route::get('/tournaments/{tournament}', [TournamentController::class, 'show'])
         ->can('manage', 'tournament');
+    Route::delete('/tournaments/{tournament}', [TournamentController::class, 'destroy'])
+        ->can('manage', 'tournament');
+    Route::post('/tournaments/{tournament}/logo', [TournamentLogoController::class, 'store'])
+        ->can('manage', 'tournament');
+    Route::delete('/tournaments/{tournament}/logo', [TournamentLogoController::class, 'destroy'])
+        ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/stages', [StageController::class, 'index'])
         ->can('manage', 'tournament');
 
@@ -40,6 +49,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
         ->can('manage', 'team');
 
+    Route::post('/teams/{team}/logo', [TeamLogoController::class, 'store'])
+        ->can('manage', 'team');
+    Route::delete('/teams/{team}/logo', [TeamLogoController::class, 'destroy'])
+        ->can('manage', 'team');
+
     Route::get('/teams/{team}/players', [PlayerController::class, 'index'])
         ->can('manage', 'team');
     Route::post('/teams/{team}/players', [PlayerController::class, 'store'])
@@ -48,4 +62,13 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'player');
     Route::delete('/players/{player}', [PlayerController::class, 'destroy'])
         ->can('manage', 'player');
+
+    Route::get('/tournaments/{tournament}/venues', [VenueController::class, 'index'])
+        ->can('manage', 'tournament');
+    Route::post('/tournaments/{tournament}/venues', [VenueController::class, 'store'])
+        ->can('manage', 'tournament');
+    Route::patch('/venues/{venue}', [VenueController::class, 'update'])
+        ->can('manage', 'venue');
+    Route::delete('/venues/{venue}', [VenueController::class, 'destroy'])
+        ->can('manage', 'venue');
 });

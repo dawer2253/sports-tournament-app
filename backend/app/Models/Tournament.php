@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\GuardsFinishedMatches;
+use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,12 +23,13 @@ use Illuminate\Support\Str;
  */
 #[Fillable([
     'user_id', 'sport_id', 'slug', 'name',
-    'logo_url', 'primary_color', 'points', 'tiebreakers', 'status',
+    'logo_path', 'primary_color', 'points', 'tiebreakers', 'status',
 ])]
 class Tournament extends Model
 {
     use GuardsFinishedMatches;
     use HasFactory;
+    use HasLogo;
 
     /**
      * Kolor marki nowego turnieju. Stała w kodzie, a nie config ani wartość
@@ -82,6 +84,30 @@ class Tournament extends Model
     public const MAX_TEAMS = 128;
 
     /**
+     * Najwięcej żywych obiektów w turnieju (decyzja #80, opis `POST
+     * /tournaments/{tournament}/venues` w kontrakcie). Zmienia się razem
+     * z kontraktem.
+     */
+    public const MAX_VENUES = 32;
+
+    /**
+     * Po usunięciu znika cały katalog turnieju: logo i herby wszystkich
+     * drużyn, także usuniętych wcześniej miękko (#83, #111). Wiersze kaskaduje
+     * baza, więc pliki to jedyne, co trzeba sprzątnąć ręcznie.
+     *
+     * Zdarzenie `deleted`, nie `deleting`: guard odpala w `deleting`, więc
+     * turniej z rozegranym meczem nie dochodzi tu wcale i jego pliki zostają.
+     * Kasowanie idzie po commicie, a jego porażka trafia do `report()` bez
+     * zmiany odpowiedzi (`DeletesPublicFilesAfterCommit`, wnoszone przez `HasLogo`).
+     */
+    protected static function booted(): void
+    {
+        static::deleted(function (self $tournament): void {
+            self::deletePublicDirectoryAfterCommit($tournament->storageDirectory());
+        });
+    }
+
+    /**
      * Zakłada turniej organizera jako szkic, razem z fazami wynikającymi
      * z formatu, w jednej transakcji.
      *
@@ -126,7 +152,7 @@ class Tournament extends Model
             'sport_id' => $sport->id,
             'name' => $name,
             'slug' => $slug,
-            'logo_url' => null,
+            'logo_path' => null,
             'primary_color' => self::DEFAULT_PRIMARY_COLOR,
             'points' => $sport->defaultPoints(),
             'tiebreakers' => $sport->defaultTiebreakers(),
@@ -230,6 +256,25 @@ class Tournament extends Model
     public function matches(): HasManyThrough
     {
         return $this->hasManyThrough(GameMatch::class, Stage::class);
+    }
+
+    /**
+     * Katalog turnieju na dysku `public`: logo i herby wszystkich drużyn,
+     * także usuniętych miękko. Znika w całości razem z turniejem.
+     */
+    public function storageDirectory(): string
+    {
+        return self::storageDirectoryFor($this->id);
+    }
+
+    public static function storageDirectoryFor(int $tournamentId): string
+    {
+        return "tournaments/{$tournamentId}";
+    }
+
+    protected function logoDirectory(): string
+    {
+        return $this->storageDirectory().'/logo';
     }
 
     public function hasFinishedMatches(): bool

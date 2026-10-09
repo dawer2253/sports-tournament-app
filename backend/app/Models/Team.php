@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\GuardsFinishedMatches;
+use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,11 +17,12 @@ use Illuminate\Support\Facades\DB;
  * Uczestnik turnieju. Dwie drużyny o tej samej nazwie w dwóch turniejach to
  * dwa niepowiązane byty (decyzja #8).
  */
-#[Fillable(['tournament_id', 'group_id', 'name', 'logo_url'])]
+#[Fillable(['tournament_id', 'group_id', 'name', 'logo_path'])]
 class Team extends Model
 {
     use GuardsFinishedMatches;
     use HasFactory;
+    use HasLogo;
     use SoftDeletes;
 
     /**
@@ -111,6 +113,15 @@ class Team extends Model
     public function groupBelongsToSameTournament(?Group $group): bool
     {
         return $group === null || $group->tournament_id === $this->tournament_id;
+    }
+
+    /**
+     * Pod katalogiem turnieju, żeby usunięcie turnieju zabrało herb razem
+     * z resztą jego plików. Miękkie usunięcie drużyny herbu nie rusza (#111).
+     */
+    protected function logoDirectory(): string
+    {
+        return Tournament::storageDirectoryFor($this->tournament_id)."/teams/{$this->id}";
     }
 
     public function hasFinishedMatches(): bool

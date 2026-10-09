@@ -77,4 +77,15 @@ class TournamentController extends Controller
     {
         return new TournamentResource($tournament->load('sport')->loadCount('teams'));
     }
+
+    /**
+     * Guard z rozegranym meczem daje 422 (`FinishedMatchGuardException`),
+     * a poddrzewo kaskaduje baza. Status turnieju nie ma znaczenia (#83).
+     */
+    public function destroy(Tournament $tournament): Response
+    {
+        $tournament->delete();
+
+        return response()->noContent();
+    }
 }

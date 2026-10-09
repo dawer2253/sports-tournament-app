@@ -3,7 +3,9 @@
 use App\Models\Sport;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
 
@@ -63,6 +65,51 @@ function contractErrorMessage(string $response): string
     expect($message)->toBeString()->not->toBeEmpty();
 
     return $message;
+}
+
+/**
+ * Podróbka dysku `public` z prawdziwym `url`. Goły `Storage::fake('public')`
+ * gubi `url` dysku, więc adres pliku wychodzi względny i Spectator odrzuca go
+ * na `format: uri` (research `docs/research/upload-obrazow-laravel.md` §2.4).
+ */
+function fakePublicDisk(): void
+{
+    Storage::fake('public', ['url' => config('filesystems.disks.public.url')]);
+}
+
+/**
+ * Podmienia podróbkę dysku `public` na taką, której kasowanie zawodzi tak jak
+ * prawdziwy dysk z `'throw' => false`: zwraca `false`. Zapis i odczyt działają
+ * dalej, na tym samym katalogu. Wywołaj po `fakePublicDisk()`.
+ */
+function failDeletionsOnPublicDisk(): void
+{
+    $disk = Storage::disk('public');
+
+    Storage::set('public', new class($disk->getDriver(), $disk->getAdapter(), $disk->getConfig()) extends FilesystemAdapter
+    {
+        public function delete($paths): bool
+        {
+            return false;
+        }
+
+        public function deleteDirectory($directory): bool
+        {
+            return false;
+        }
+    });
+}
+
+/**
+ * Nagłówki żądania z plikiem. Spectator waliduje ciało tylko wtedy, gdy
+ * `Content-Type` jest dosłownie kluczem z kontraktu, bez `boundary`
+ * (research §5.1). `Accept` każe oddać błędy jako JSON.
+ *
+ * @return array<string, string>
+ */
+function multipartHeaders(): array
+{
+    return ['Content-Type' => 'multipart/form-data', 'Accept' => 'application/json'];
 }
 
 /**

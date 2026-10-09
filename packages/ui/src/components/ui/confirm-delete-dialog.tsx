@@ -1,0 +1,75 @@
+import type { ReactNode } from 'react'
+
+import { Button } from './button'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './dialog'
+import { DialogError, PendingButton, guardWhilePending } from './dialog-parts'
+
+type ConfirmDeleteDialogProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onConfirm: () => void
+  /** Rodzaj bytu w bierniku: „obiekt", „drużynę", „zawodnika". */
+  entity: string
+  /** Nazwa usuwanego bytu, cytowana w pytaniu. */
+  name: string
+  /** Skutek usunięcia. */
+  description?: ReactNode
+  pending?: boolean
+} & (
+  | { blocked?: false; error?: ReactNode }
+  /**
+   * Odmowa z guarda: usuwania nie ma co ponawiać, więc znika przycisk akcji,
+   * a „Anuluj" staje się „Zamknij". Powód w `error` jest wtedy obowiązkowy.
+   */
+  | { blocked: true; error: ReactNode }
+)
+
+/** Potwierdzenie usunięcia bytu z listy. Prezentacyjne, jak `FormDialog`. */
+function ConfirmDeleteDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+  entity,
+  name,
+  description,
+  error,
+  blocked,
+  pending,
+}: ConfirmDeleteDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={guardWhilePending(pending, onOpenChange)}>
+      <DialogContent role="alertdialog" showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>
+            Usunąć {entity} „{name}”?
+          </DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
+        </DialogHeader>
+        <DialogError>{error}</DialogError>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline" disabled={pending}>
+              {blocked ? 'Zamknij' : 'Anuluj'}
+            </Button>
+          </DialogClose>
+          {!blocked && (
+            <PendingButton type="button" variant="destructive" pending={pending} onClick={onConfirm}>
+              Usuń {entity}
+            </PendingButton>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export { ConfirmDeleteDialog }
+export type { ConfirmDeleteDialogProps }
