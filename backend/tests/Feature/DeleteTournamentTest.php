@@ -17,8 +17,9 @@ beforeEach(function () {
     Spectator::using('openapi.yaml');
 });
 
-// 401, 403 i 404 tej trasy pilnuje `SubtreeAuthorizationTest`. Decyzje, które
-// ten plik przypina, zapadły w #83.
+// 401 i 403 tej trasy pilnuje `SubtreeAuthorizationTest`. Jego przypadek 404
+// (zasób usunięty miękko) trasę pomija, bo turniej nie ma `SoftDeletes`, więc
+// 404 sprawdza ten plik. Decyzje, które ten plik przypina, zapadły w #83.
 
 /**
  * Pełne poddrzewo turnieju, z drużyną usuniętą miękko i jej zawodnikiem.
@@ -99,6 +100,23 @@ it('usuwa turniej i oddaje 204, a potem turniej daje 404', function () {
         ->assertValidResponse(404);
 
     expect(Tournament::find($tournament->id))->toBeNull();
+});
+
+// Panel traktuje 404 przy usuwaniu jak sukces (#83), np. po drugim kliknięciu
+// albo gdy turniej usunięto w innej karcie — więc drugie usunięcie ma dać
+// zwykłe 404 z kontraktu, a nie 500.
+it('oddaje 404, gdy turniej już usunięto', function () {
+    $tournament = Tournament::factory()->create();
+
+    actingAsOrganizer($tournament->user)
+        ->deleteJson("/api/v1/tournaments/{$tournament->id}")
+        ->assertValidResponse(204);
+
+    actingAsOrganizer($tournament->user)
+        ->deleteJson("/api/v1/tournaments/{$tournament->id}")
+        ->assertValidRequest()
+        ->assertValidResponse(404)
+        ->assertExactJson(['message' => contractErrorMessage('NotFound')]);
 });
 
 // Kaskadę robi baza, więc test czyta tabele z pominięciem soft-deletes.
