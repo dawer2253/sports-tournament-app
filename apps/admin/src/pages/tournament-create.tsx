@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Sport, TournamentCreate } from '@tournament/api-client';
 import { Button, Card, CardContent, EmptyState, Input, Label, Skeleton } from '@tournament/ui';
 import { AlertTriangle } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
   tournamentCreateSchema,
   type TournamentCreateValues,
 } from '../lib/tournament-create-schema';
+import { useSports } from '../lib/use-sports';
 
 /** Pola, które formularz umie podświetlić przy błędzie walidacji z API. */
 const ERROR_FIELDS = ['name', 'sportId', 'format'] as const;
@@ -35,17 +36,7 @@ export function TournamentCreatePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const sports = useQuery({
-    queryKey: ['sports'],
-    queryFn: async () => {
-      const { data, error } = await api.GET('/sports');
-      if (error) throw new Error(error.message);
-      return data.data;
-    },
-    // Lista sportów jest predefiniowana w systemie i nie zmienia się w trakcie
-    // pracy z panelem, więc nie ma po co odpytywać jej przy każdym wejściu.
-    staleTime: Infinity,
-  });
+  const sports = useSports();
 
   const {
     control,
