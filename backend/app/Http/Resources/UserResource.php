@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\FormatsDates;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class UserResource extends JsonResource
 {
+    use FormatsDates;
+
     /**
      * @return array<string, mixed>
      */
@@ -20,9 +23,7 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            // Kontrakt wymaga ISO 8601 z offsetem, a nie domyślnego formatu
-            // Laravela (`Y-m-d\TH:i:s.u\Z`).
-            'createdAt' => $this->created_at->toIso8601String(),
+            'createdAt' => $this->formatDate($this->created_at),
         ];
     }
 }

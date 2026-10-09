@@ -271,10 +271,15 @@ edycją jednej linijki w configu, i pociąga za sobą wszystkie przykłady
 w `openapi.yaml` — powody UTC i brak `env()` opisuje
 [ADR 0008](../docs/adr/0008-czas-w-api-idzie-w-utc.md). Przeczytaj go, zanim
 napiszesz pierwszy endpoint przyjmujący datę: **Eloquent przy zapisie nie
-przelicza strefy**, a reguły dla wejścia stoją w ADR-ze. Sam format `+00:00`
-daje dziś ręczne `toIso8601String()` w `UserResource` i `TournamentResource`:
-**surowy Carbon w zasobie wyjdzie jako `…000000Z`** i Spectator go przepuści
-(co z tym zrobić — ADR, „Decyzja").
+przelicza strefy**, a reguły dla wejścia stoją w ADR-ze. **Każda data w
+zasobie przechodzi przez `formatDate()`** z traitu
+[`FormatsDates`](app/Http/Resources/Concerns/FormatsDates.php) — to jedyne
+miejsce, które nadaje format `+00:00` (przelicza też na UTC i przepuszcza
+`null`). Nie wstawiaj do tablicy zasobu surowego Carbona ani własnego
+`toIso8601String()`: surowy Carbon wyjdzie jako `…000000Z`, a Spectator go
+przepuści, bo to też poprawny `date-time`. Złapie go dopiero
+[`DateFormatTest`](tests/Feature/DateFormatTest.php), który sprawdza każdą datę
+w ciele odpowiedzi — nowy endpoint z datą dopisz do niego.
 
 **Tablicowy parametr query jedzie po przecinku** (`?status=draft,active`), bo
 powtórzony klucz gubi w PHP wszystko poza ostatnią wartością

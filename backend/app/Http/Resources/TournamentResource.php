@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\FormatsDates;
 use App\Models\Tournament;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -14,6 +15,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class TournamentResource extends JsonResource
 {
+    use FormatsDates;
+
     /**
      * @return array<string, mixed>
      */
@@ -36,8 +39,8 @@ class TournamentResource extends JsonResource
             'points' => $this->points,
             'tiebreakers' => $this->tiebreakers,
             'teamsCount' => $this->teams_count,
-            'createdAt' => $this->created_at->toIso8601String(),
-            'updatedAt' => $this->updated_at->toIso8601String(),
+            'createdAt' => $this->formatDate($this->created_at),
+            'updatedAt' => $this->formatDate($this->updated_at),
         ];
     }
 }
