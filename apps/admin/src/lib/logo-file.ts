@@ -19,6 +19,20 @@ const MAX_BYTES = MAX_MEGABYTES * 1024 * 1024;
 export type LogoNounForms = { subject: string; instrumental: string };
 
 export const TOURNAMENT_LOGO: LogoNounForms = { subject: 'Logo', instrumental: 'logo' };
+export const TEAM_LOGO: LogoNounForms = { subject: 'Herb', instrumental: 'herbem' };
+
+/** Podpowiedź pod polem pliku: wszystkie wymagania kontraktu, także wymiary. */
+export const LOGO_FILE_HINT = 'PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px.';
+
+/**
+ * `bodySerializer` wgrywania logo i herbu: `FormData` z samym polem `logo`.
+ * Bez ręcznego `Content-Type`, bo granicę multipart dokłada przeglądarka.
+ */
+export function logoFormData({ logo }: { logo: Blob }): FormData {
+  const data = new FormData();
+  data.append('logo', logo);
+  return data;
+}
 
 /** Komunikat błędu pliku albo `undefined`, gdy plik może iść do serwera. */
 export function logoFileError(file: File | null, { subject, instrumental }: LogoNounForms): string | undefined {
