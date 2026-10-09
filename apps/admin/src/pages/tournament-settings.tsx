@@ -151,7 +151,9 @@ function DeleteTournamentDialog({ tournament, onClose }: { tournament: Tournamen
     },
     invalidate: [['tournaments']],
     onDone: () => {
-      // Niezapisane zmiany w formularzu nie mają już czego dotyczyć.
+      // Niezapisane zmiany w formularzu nie mają już czego dotyczyć. Cache
+      // dopiero po przejściu: `navigate` routera danych oddaje obietnicę, ale
+      // w typie bywa też `void`, stąd `Promise.resolve`.
       void Promise.resolve(navigate('/', { state: SKIP_UNSAVED_GUARD })).then(() =>
         queryClient.removeQueries({ queryKey: ['tournament', tournament.id], exact: true }),
       );

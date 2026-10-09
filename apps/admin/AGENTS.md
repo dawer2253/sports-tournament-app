@@ -39,6 +39,10 @@ jest jego jedynym opisem dla kodu.
     `404`, bo w nich rodzaj gramatyczny zmienia więcej niż końcówkę.
 
   Oba okna złożone tak, jak złoży je ekran, są w `use-list-mutation.test.tsx`.
+- **Usuwanie całego turnieju** (ekran ustawień, #103) idzie tą samą drogą:
+  `useListMutation` bez `form` i `ConfirmDeleteDialog` z `confirmByName`.
+  `invalidate` to sama lista, a `onDone` wychodzi na `/` ze stanem
+  `SKIP_UNSAVED_GUARD` i dopiero potem zdejmuje `['tournament', id]` z cache'u.
 - **Toasty** rysuje jeden `Toaster` w `main.tsx`. `toast` bierz z
   `@tournament/ui`: do tego `Toaster` dociera tylko `toast` z tej samej kopii
   `sonner`. Test ekranu montuje własny `<Toaster />` obok strony.

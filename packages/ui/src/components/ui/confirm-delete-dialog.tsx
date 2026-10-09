@@ -39,7 +39,10 @@ type ConfirmDeleteDialogProps = {
   | { blocked: true; error: ReactNode }
 )
 
-/** Potwierdzenie usunięcia bytu z listy. Prezentacyjne, jak `FormDialog`. */
+/**
+ * Potwierdzenie usunięcia bytu z listy albo całego turnieju (z `confirmByName`).
+ * Prezentacyjne, jak `FormDialog`.
+ */
 function ConfirmDeleteDialog({ open, onOpenChange, pending, ...props }: ConfirmDeleteDialogProps) {
   return (
     <Dialog open={open} onOpenChange={guardWhilePending(pending, onOpenChange)}>
