@@ -18,6 +18,9 @@ import {
 /** Pola, które formularz umie podświetlić przy błędzie walidacji z API. */
 const ERROR_FIELDS = ['name', 'sportId', 'format'] as const;
 
+/** Komunikat, gdy API nie przysłało żadnego. */
+const SAVE_FAILED = 'Nie udało się założyć turnieju. Spróbuj ponownie.';
+
 /**
  * Emoji przy sporcie, jak w makiecie. Kontrakt nie przysyła ikony, a `code` jest
  * skończonym enumem, więc mapa siedzi po stronie panelu. Sport spoza mapy
@@ -65,7 +68,7 @@ export function TournamentCreatePage() {
     const { error } = await api.POST('/tournaments', { body });
 
     if (error) {
-      applyApiError(error, ERROR_FIELDS, setError);
+      applyApiError(error, ERROR_FIELDS, setError, SAVE_FAILED);
       return;
     }
 
