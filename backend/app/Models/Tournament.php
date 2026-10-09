@@ -48,6 +48,16 @@ class Tournament extends Model
     public const STATUSES = ['draft', 'active', 'finished'];
 
     /**
+     * Kryteria kolejności w tabeli, w kolejności z kontraktu (`TiebreakerCode`).
+     * Które z nich wolno użyć w turnieju, mówi dopiero sport
+     * (`Sport::availableTiebreakers()`). Zgodność z kontraktem pilnuje test
+     * w `UpdateTournamentTest`.
+     *
+     * @var list<string>
+     */
+    public const TIEBREAKER_CODES = ['points', 'head_to_head', 'score_diff', 'score_for', 'score_against', 'wins'];
+
+    /**
      * Fazy, które powstają przy zakładaniu turnieju w danym formacie:
      * [type, name]; `order` wynika z pozycji. Format poza tym nie istnieje —
      * nie jest kolumną turnieju, a po założeniu o strukturze mówią wyłącznie
@@ -138,11 +148,17 @@ class Tournament extends Model
             try {
                 return DB::transaction(fn () => self::createWithStages($organizer, $sport, $name, $slug, $format));
             } catch (UniqueConstraintViolationException $violation) {
-                if (! str_contains($violation->getMessage(), self::SLUG_UNIQUE_INDEX)) {
+                if (! self::isSlugCollision($violation)) {
                     throw $violation;
                 }
             }
         }
+    }
+
+    /** Czy naruszenie unikatu dotyczy sluga, a nie innego indeksu. */
+    public static function isSlugCollision(UniqueConstraintViolationException $violation): bool
+    {
+        return str_contains($violation->getMessage(), self::SLUG_UNIQUE_INDEX);
     }
 
     private static function createWithStages(User $organizer, Sport $sport, string $name, string $slug, string $format): self

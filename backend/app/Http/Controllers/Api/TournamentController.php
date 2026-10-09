@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tournaments\IndexTournamentRequest;
 use App\Http\Requests\Tournaments\StoreTournamentRequest;
+use App\Http\Requests\Tournaments\UpdateTournamentRequest;
 use App\Http\Resources\TournamentResource;
 use App\Models\Sport;
 use App\Models\Tournament;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 
 class TournamentController extends Controller
 {
@@ -75,6 +78,31 @@ class TournamentController extends Controller
 
     public function show(Tournament $tournament): TournamentResource
     {
+        return new TournamentResource($tournament->load('sport')->loadCount('teams'));
+    }
+
+    /**
+     * Zmienia tylko pola, które przyszły; puste ciało oddaje turniej bez zmian.
+     *
+     * Wolność sluga sprawdza walidacja, ale sprawdzenie i zapis to dwa kroki.
+     * Równoległe żądanie, które zajmie slug pomiędzy nimi, odbija się od
+     * unikalnego indeksu — wtedy oddajemy ten sam `422` pod `slug` co
+     * walidacja, a nie `500`.
+     */
+    public function update(UpdateTournamentRequest $request, Tournament $tournament): TournamentResource
+    {
+        try {
+            $tournament->update($request->tournamentAttributes());
+        } catch (UniqueConstraintViolationException $violation) {
+            if (! Tournament::isSlugCollision($violation)) {
+                throw $violation;
+            }
+
+            throw ValidationException::withMessages([
+                'slug' => UpdateTournamentRequest::SLUG_TAKEN_MESSAGE,
+            ]);
+        }
+
         return new TournamentResource($tournament->load('sport')->loadCount('teams'));
     }
 
