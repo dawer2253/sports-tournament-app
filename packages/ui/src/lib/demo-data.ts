@@ -243,6 +243,41 @@ export const tiebreakers = [
   { key: 'score_for', label: 'Bramki zdobyte' },
 ]
 
+// Ustawienia turnieju w sporcie demo, w kształcie `SportConfig` z kontraktu
+// (przykład `GET /sports`), ograniczone do tego, co pokazuje ekran ustawień.
+// Tiebreaki to domyślna kolejność sportu z etykietami z `tiebreakerLabels`
+// (#117) — nie z `tiebreakers` wyżej, które mówią językiem strony publicznej.
+export type DemoSportSettings = {
+  name: string
+  allowsDraw: boolean
+  defaultPoints: { win: number; draw: number; loss: number }
+  tiebreakers: { code: string; label: string }[]
+}
+
+export const sportSettings: Record<'football' | 'basketball', DemoSportSettings> = {
+  football: {
+    name: 'Piłka nożna',
+    allowsDraw: true,
+    defaultPoints: { win: 3, draw: 1, loss: 0 },
+    tiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica bramek' },
+      { code: 'score_for', label: 'Bramki zdobyte' },
+    ],
+  },
+  basketball: {
+    name: 'Koszykówka',
+    allowsDraw: false,
+    defaultPoints: { win: 2, draw: 0, loss: 1 },
+    tiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica punktów' },
+    ],
+  },
+}
+
 export const formColor: Record<FormResult, string> = {
   W: 'bg-primary',
   D: 'bg-muted-foreground',
