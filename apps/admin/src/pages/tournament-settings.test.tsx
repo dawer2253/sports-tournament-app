@@ -409,3 +409,144 @@ describe('ustawienia turnieju: niezapisane zmiany', () => {
     expect(screen.queryByRole('dialog', { name: 'Masz niezapisane zmiany' })).not.toBeInTheDocument();
   });
 });
+
+describe('ustawienia turnieju: usuwanie', () => {
+  /**
+   * Lista turniejów po stronie „serwera": `DELETE` zdejmuje z niej turniej,
+   * chyba że test poda własną odpowiedź. `GET /tournaments` oddaje to, co
+   * zostało, więc „turnieju nie ma na liście" sprawdza odświeżenie listy.
+   */
+  function deleteApi(remove?: () => Response | undefined) {
+    let tournaments = [FOOTBALL];
+    const deletes: string[] = [];
+    tournamentApi(FOOTBALL);
+    server.use(
+      http.get(`${API}/tournaments`, () =>
+        HttpResponse.json({
+          data: tournaments,
+          meta: { currentPage: 1, lastPage: 1, perPage: 20, total: tournaments.length },
+        }),
+      ),
+      http.delete(`${API}/tournaments/:id`, ({ params }) => {
+        deletes.push(String(params.id));
+        const custom = remove?.();
+        if (custom) return custom;
+        tournaments = tournaments.filter(({ id }) => String(id) !== params.id);
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    return deletes;
+  }
+
+  async function openDialog(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'Usuń turniej' }));
+    return screen.findByRole('alertdialog', { name: 'Usunąć turniej „Liga Osiedlowa 2026”?' });
+  }
+
+  const confirmField = (dialog: HTMLElement) => within(dialog).getByLabelText(/aby potwierdzić/);
+  const confirmButton = (dialog: HTMLElement) => within(dialog).getByRole('button', { name: 'Usuń turniej' });
+
+  /** Otwiera okno, przepisuje nazwę i klika „Usuń turniej"; oddaje okno. */
+  async function confirmDelete(user: ReturnType<typeof userEvent.setup>) {
+    const dialog = await openDialog(user);
+    await user.type(confirmField(dialog), 'Liga Osiedlowa 2026');
+    await user.click(confirmButton(dialog));
+    return dialog;
+  }
+
+  it('okno opisuje skutki, a „Usuń turniej" działa dopiero przy nazwie co do wielkości liter', async () => {
+    const deletes = deleteApi();
+    const { user } = await renderSettings();
+
+    const dialog = await openDialog(user);
+    expect(dialog).toHaveTextContent(/nie da się cofnąć/);
+    expect(dialog).toHaveTextContent('/t/liga-osiedlowa-2026');
+    expect(confirmButton(dialog)).toBeDisabled();
+
+    await user.type(confirmField(dialog), 'liga osiedlowa 2026');
+    expect(confirmButton(dialog)).toBeDisabled();
+
+    // Spacje na brzegach nie przeszkadzają, wielkość liter tak.
+    await retype(user, confirmField(dialog), '  Liga Osiedlowa 2026 ');
+    expect(confirmButton(dialog)).toBeEnabled();
+    expect(deletes).toEqual([]);
+  });
+
+  it('204 prowadzi na listę z toastem, turnieju na niej nie ma, a z cache znika', async () => {
+    const deletes = deleteApi();
+    const { user, router, queryClient } = await renderSettings();
+
+    await confirmDelete(user);
+
+    expect(await screen.findByText('Usunięto turniej „Liga Osiedlowa 2026”.')).toBeInTheDocument();
+    expect(deletes).toEqual(['7']);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(await screen.findByText('Nie masz jeszcze turniejów')).toBeInTheDocument();
+    // Cofnięcie w przeglądarce ma zapytać API, a nie pokazać turniej z pamięci.
+    expect(queryClient.getQueryData(['tournament', 7])).toBeUndefined();
+  });
+
+  it('niezapisane zmiany w formularzu nie zatrzymują wyjścia po usunięciu', async () => {
+    deleteApi();
+    const { user, router } = await renderSettings();
+
+    await retype(user, nameField(), 'Nowa nazwa');
+    await confirmDelete(user);
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(screen.queryByRole('dialog', { name: 'Masz niezapisane zmiany' })).not.toBeInTheDocument();
+  });
+
+  it('422 zostawia otwarte okno z message z odpowiedzi i gasi „Usuń turniej"', async () => {
+    const message = 'Nie można usunąć: turniej ma rozegrane mecze.';
+    // `message` różny od `errors.id`, żeby było widać, który idzie do alertu.
+    const deletes = deleteApi(() =>
+      HttpResponse.json({ message, errors: { id: ['Komunikat pola.'] } }, { status: 422 }),
+    );
+    const { user, router } = await renderSettings();
+
+    const dialog = await confirmDelete(user);
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
+    const button = confirmButton(dialog);
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    // Fokus zostaje na przycisku, nie wypada z okna.
+    expect(button).toHaveFocus();
+    await user.click(button);
+    expect(deletes).toEqual(['7']);
+    expect(router.state.location.pathname).toBe('/tournaments/7/settings');
+  });
+
+  it('404 prowadzi na listę z toastem „Turniej został już usunięty."', async () => {
+    deleteApi(() => HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 }));
+    const { user, router } = await renderSettings();
+
+    await confirmDelete(user);
+
+    expect(await screen.findByText('Turniej został już usunięty.')).toBeInTheDocument();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+  });
+
+  it.each([
+    ['500', () => HttpResponse.json({ message: 'Wewnętrzny błąd serwera.' }, { status: 500 })],
+    ['403', () => HttpResponse.json({ message: 'Brak dostępu do zasobu.' }, { status: 403 })],
+    ['sieć', () => HttpResponse.error()],
+  ] as const)('%s pokazuje ogólny komunikat, a „Usuń turniej" da się kliknąć ponownie', async (_, failure) => {
+    let fail = true;
+    const deletes = deleteApi(() => (fail ? failure() : undefined));
+    const { user, router } = await renderSettings();
+
+    const dialog = await confirmDelete(user);
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      'Nie udało się usunąć turnieju. Spróbuj ponownie.',
+    );
+    expect(confirmButton(dialog)).toBeEnabled();
+    expect(confirmButton(dialog)).not.toHaveAttribute('aria-disabled');
+
+    fail = false;
+    await user.click(confirmButton(dialog));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+    expect(deletes).toEqual(['7', '7']);
+  });
+});

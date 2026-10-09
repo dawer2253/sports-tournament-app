@@ -11,6 +11,21 @@ import { useEffect } from 'react';
 import { useBlocker } from 'react-router';
 
 /**
+ * Stan nawigacji, której strażnik nie zatrzymuje: `navigate(to, { state:
+ * SKIP_UNSAVED_GUARD })`. Np. wyjście po usunięciu turnieju — jego
+ * niezapisanych zmian nie ma już czego zapisać.
+ */
+export const SKIP_UNSAVED_GUARD = { skipUnsavedGuard: true } as const;
+
+function skipsGuard(state: unknown): boolean {
+  return (
+    typeof state === 'object' &&
+    state !== null &&
+    (state as Partial<typeof SKIP_UNSAVED_GUARD>).skipUnsavedGuard === true
+  );
+}
+
+/**
  * Pytanie o niezapisane zmiany przed wyjściem z ekranu formularza.
  *
  * Nawigację wewnątrz panelu (karty sekcji, sidebar, „Wstecz") łapie
@@ -24,7 +39,8 @@ import { useBlocker } from 'react-router';
 export function UnsavedChangesGuard({ when }: { when: boolean }) {
   // Zmiana samego zapytania albo kotwicy nie zdejmuje ekranu, więc nie pyta.
   const blocker = useBlocker(
-    ({ currentLocation, nextLocation }) => when && currentLocation.pathname !== nextLocation.pathname,
+    ({ currentLocation, nextLocation }) =>
+      when && currentLocation.pathname !== nextLocation.pathname && !skipsGuard(nextLocation.state),
   );
 
   useEffect(() => {

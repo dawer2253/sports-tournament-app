@@ -16,6 +16,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
+  ConfirmDeleteDialog,
   EmptyState,
   FormDialog,
   Heading,
@@ -29,11 +30,12 @@ import {
   TournamentStatusCard,
   toast,
 } from '@tournament/ui';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router';
 import { AdminPage } from '../components/admin-page';
-import { UnsavedChangesGuard } from '../components/unsaved-changes-guard';
+import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
 import { publicTournamentUrl } from '../lib/public-url';
@@ -97,17 +99,127 @@ export function TournamentSettingsPage() {
       <div className="max-w-2xl space-y-6">
         <StatusSection tournament={tournament} />
         {form}
-        <Card className="ring-destructive/40">
-          <CardHeader>
-            <CardTitle>Strefa zagrożenia</CardTitle>
-            <CardDescription>
-              Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć.
-            </CardDescription>
-          </CardHeader>
-          {/* Przycisk „Usuń turniej" i okno potwierdzenia wnosi #103. */}
-        </Card>
+        <DangerZone tournament={tournament} />
       </div>
     </AdminPage>
+  );
+}
+
+/**
+ * Usuwanie turnieju (#83, #103). Przycisk jest zawsze aktywny: `Tournament`
+ * nie mówi, czy rozegrano mecze, więc odmowę (`422`) pokazuje dopiero okno.
+ */
+function DangerZone({ tournament }: { tournament: Tournament }) {
+  const [deleting, setDeleting] = useState(false);
+
+  return (
+    <Card className="ring-destructive/40">
+      <CardHeader>
+        <CardTitle>Strefa zagrożenia</CardTitle>
+        <CardDescription>
+          Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="destructive" onClick={() => setDeleting(true)}>
+          <Trash2 className="size-4" /> Usuń turniej
+        </Button>
+      </CardContent>
+      {deleting && <DeleteTournamentDialog tournament={tournament} onClose={() => setDeleting(false)} />}
+    </Card>
+  );
+}
+
+const DELETE_FAILED = 'Nie udało się usunąć turnieju. Spróbuj ponownie.';
+
+/** Odmowa w oknie: `final`, gdy ponowienie nic nie zmieni i przycisk gaśnie. */
+type DeleteRefusal = { message: string; final: boolean };
+
+/**
+ * Okno potwierdzenia z przepisaniem nazwy. Odpowiedzi (#103):
+ *
+ * | Odpowiedź           | Skutek                                                  |
+ * |---------------------|---------------------------------------------------------|
+ * | `2xx`, `404`        | wyjście na listę, toast, odświeżenie listy              |
+ * | `422`               | okno zostaje, `message` w alercie, przycisk gaśnie       |
+ * | sieć, `5xx`, reszta | okno zostaje, komunikat ogólny, można ponowić           |
+ *
+ * Nie idzie przez `useListMutation`, bo ten pokazuje przy `422` komunikat pola
+ * `id` i chowa przycisk, a przy `403` tekst serwera; ekran usuwania turnieju
+ * ma w obu miejscach inne zachowanie.
+ *
+ * `['tournament', id]` znika z cache'u dopiero po wyjściu z ekranu: wcześniej
+ * trasa turnieju dopytałaby o niego od nowa i dostała `404`.
+ */
+function DeleteTournamentDialog({ tournament, onClose }: { tournament: Tournament; onClose: () => void }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [pending, setPending] = useState(false);
+  const [refusal, setRefusal] = useState<DeleteRefusal | null>(null);
+
+  async function leave(message: string) {
+    // Niezapisane zmiany w formularzu nie mają już czego dotyczyć.
+    await navigate('/', { state: SKIP_UNSAVED_GUARD });
+    queryClient.removeQueries({ queryKey: ['tournament', tournament.id], exact: true });
+    toast.success(message);
+    await queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+  }
+
+  async function remove() {
+    setPending(true);
+    // Ponowienie zaczyna od czystego okna; nowy błąd wróci z odpowiedzią.
+    setRefusal(null);
+    try {
+      let result;
+      try {
+        result = await api.DELETE('/tournaments/{tournament}', {
+          params: { path: { tournament: tournament.id } },
+        });
+      } catch (cause) {
+        // `fetch` bez odpowiedzi (sieć) odrzuca `TypeError`; inne wyjątki lecą dalej.
+        if (cause instanceof TypeError) {
+          setRefusal({ message: DELETE_FAILED, final: false });
+          return;
+        }
+        throw cause;
+      }
+
+      const { error, response } = result;
+      // `404`: ktoś usunął turniej wcześniej, więc cel organizera jest osiągnięty.
+      if (response.ok || response.status === 404) {
+        await leave(response.ok ? `Usunięto turniej „${tournament.name}”.` : 'Turniej został już usunięty.');
+        return;
+      }
+      if (response.status === 422) {
+        setRefusal({ message: apiErrorMessage(error) || DELETE_FAILED, final: true });
+        return;
+      }
+      setRefusal({ message: DELETE_FAILED, final: false });
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <ConfirmDeleteDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      onConfirm={() => void remove()}
+      entity="turniej"
+      name={tournament.name}
+      description={
+        <>
+          Znikną drużyny, zawodnicy, obiekty, mecze i wgrane pliki. Tego nie da się cofnąć. Adres
+          /t/{tournament.slug} od razu się zwolni.
+        </>
+      }
+      confirmByName
+      confirmDisabled={refusal?.final}
+      error={refusal?.message}
+      pending={pending}
+    />
   );
 }
 

@@ -106,6 +106,57 @@ export const Zablokowany: Story = {
   },
 }
 
+/**
+ * Usunięcie całego turnieju: przycisk działa dopiero po przepisaniu nazwy,
+ * po `trim()` i z rozróżnianiem wielkości liter.
+ */
+export const PotwierdzenieNazwa: Story = {
+  args: {
+    entity: 'turniej',
+    name: 'Liga Osiedlowa 2026',
+    description: 'Znikną drużyny, zawodnicy, obiekty, mecze i wgrane pliki. Tego nie da się cofnąć.',
+    confirmByName: true,
+  },
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog', { name: 'Usunąć turniej „Liga Osiedlowa 2026”?' })
+    const field = screen.getByLabelText('Wpisz „Liga Osiedlowa 2026”, aby potwierdzić')
+    const confirm = screen.getByRole('button', { name: 'Usuń turniej' })
+    await expect(confirm).toBeDisabled()
+
+    await userEvent.type(field, 'liga osiedlowa 2026')
+    await expect(confirm).toBeDisabled()
+
+    await userEvent.clear(field)
+    await userEvent.type(field, ' Liga Osiedlowa 2026 ')
+    await expect(confirm).toBeEnabled()
+    await userEvent.click(confirm)
+    await expect(args.onConfirm).toHaveBeenCalledOnce()
+  },
+}
+
+/**
+ * Odmowa przy turnieju z rozegranymi meczami (#103): przycisk zostaje, ale
+ * zgaszony, nawet przy zgodnej nazwie.
+ */
+export const PotwierdzenieNazwaZgaszone: Story = {
+  args: {
+    ...PotwierdzenieNazwa.args,
+    confirmDisabled: true,
+    error: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.',
+  },
+  play: async ({ args }) => {
+    await screen.findByRole('alertdialog')
+    await userEvent.type(screen.getByRole('textbox'), 'Liga Osiedlowa 2026')
+    const confirm = screen.getByRole('button', { name: 'Usuń turniej' })
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true')
+
+    confirm.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onConfirm).not.toHaveBeenCalled()
+    await expect(screen.getByRole('button', { name: 'Anuluj' })).toBeEnabled()
+  },
+}
+
 /** `onConfirm` włącza `pending`, jak zrobi to hook mutacji. */
 function ConfirmSetsPending(args: ComponentProps<typeof ConfirmDeleteDialog>) {
   const [pending, setPending] = useState(false)
