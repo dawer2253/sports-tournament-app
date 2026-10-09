@@ -46,7 +46,8 @@ info:
     - Daty w ISO 8601 z offsetem. **W odpowiedziach offset jest zawsze
       `+00:00`** — czas idzie w UTC. Przeliczenie na czas lokalny należy do
       klienta i musi brać pod uwagę zmianę czasu: różnica względem czasu
-      polskiego nie jest stała, więc nie zaszywaj jej na sztywno.
+      polskiego nie jest stała, więc nie zaszywaj jej na sztywno. Powody:
+      [ADR-0008](../../docs/adr/0008-czas-w-api-idzie-w-utc.md).
     - Parametr zapytania będący tablicą jedzie rozdzielony przecinkiem
       (`style: form`, `explode: false`), np. `?status=draft,active`. Obowiązuje
       to każdy taki parametr, bo `packages/api-client` ustawia serializację raz,
@@ -240,6 +241,12 @@ paths:
                         - { code: red_card, label: Czerwona kartka, hasPlayer: true, stat: redCards }
                       defaultTiebreakers: [points, head_to_head, score_diff, score_for]
                       availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
+                      tiebreakerLabels:
+                        points: Punkty w tabeli
+                        head_to_head: Bezpośredni mecz
+                        score_diff: Różnica bramek
+                        score_for: Bramki zdobyte
+                        wins: Zwycięstwa
                       availableStats: [goals, yellowCards, redCards]
                   - id: 2
                     code: basketball
@@ -252,6 +259,12 @@ paths:
                         - { code: foul, label: Faul, hasPlayer: true, stat: fouls }
                       defaultTiebreakers: [points, head_to_head, score_diff]
                       availableTiebreakers: [points, head_to_head, score_diff, score_for, wins]
+                      tiebreakerLabels:
+                        points: Punkty w tabeli
+                        head_to_head: Bezpośredni mecz
+                        score_diff: Różnica punktów
+                        score_for: Zdobyte punkty
+                        wins: Zwycięstwa
                       availableStats: [points, fouls]
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
@@ -411,6 +424,13 @@ paths:
         `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
         panel musi o tym ostrzec przed zapisem.
 
+        Zmienia też `status` (znaczenie stanów i to, kto je ustawia:
+        `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
+        warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
+        nie przechodzi do `draft` z innego stanu — taka próba daje `422`
+        z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
+        w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
+
         Punktację (`points`) i tiebreaki (`tiebreakers`) wolno zmieniać zawsze,
         niezależnie od statusu turnieju i od rozegranych meczów. Tabela liczy
         się przy odczycie, więc zmiana obejmuje też mecze już rozegrane.
@@ -461,6 +481,15 @@ paths:
     post:
       tags: [Tournaments]
       summary: Wgraj logo turnieju
+      description: |
+        Przyjmuje PNG, JPG albo WebP o rozmiarze do 2 MB i wymiarach od 64×64
+        do 4096×4096 pikseli, bez wymogu proporcji. O formacie decyduje treść
+        pliku, nie nazwa ani rozszerzenie. Obraz jest zapisywany bez
+        przetwarzania.
+
+        Nowy plik zastępuje poprzedni, a poprzedni jest kasowany. Każdy upload
+        daje nowy `logoUrl`, więc dotychczasowy adres przestaje działać.
+        Naruszenie daje `422` pod `logo`.
       requestBody:
         required: true
         content:
@@ -480,10 +509,55 @@ paths:
                 required: [data]
                 properties:
                   data: { $ref: '#/components/schemas/Tournament' }
+              example:
+                data:
+                  id: 1
+                  name: Liga Osiedlowa 2026
+                  slug: liga-osiedlowa-2026
+                  status: draft
+                  sport: { id: 1, code: football, name: Piłka nożna }
+                  branding: { logoUrl: http://localhost:8000/storage/tournaments/1/logo/hMbkow7jZDUOi8YzukrkRzF1eY8wqM7DJtNlFrEZ.png, primaryColor: '#1F7A45' }
+                  points: { win: 3, draw: 1, loss: 0 }
+                  tiebreakers: [points, head_to_head, score_diff, score_for]
+                  teamsCount: 0
+                  createdAt: '2026-09-01T08:00:00+00:00'
+                  updatedAt: '2026-09-01T08:00:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Tournaments]
+      summary: Usuń logo turnieju
+      description: |
+        Kasuje plik i ustawia `logoUrl` na `null`. Operacja jest idempotentna:
+        bez wgranego logo też daje `200`.
+      responses:
+        '200':
+          description: Turniej bez logo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Tournament' }
+              example:
+                data:
+                  id: 1
+                  name: Liga Osiedlowa 2026
+                  slug: liga-osiedlowa-2026
+                  status: draft
+                  sport: { id: 1, code: football, name: Piłka nożna }
+                  branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                  points: { win: 3, draw: 1, loss: 0 }
+                  tiebreakers: [points, head_to_head, score_diff, score_for]
+                  teamsCount: 0
+                  createdAt: '2026-09-01T08:00:00+00:00'
+                  updatedAt: '2026-09-01T08:00:00+00:00'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /tournaments/{tournament}/stages:
     parameters:
@@ -660,6 +734,15 @@ paths:
     post:
       tags: [Teams]
       summary: Wgraj herb drużyny
+      description: |
+        Przyjmuje PNG, JPG albo WebP o rozmiarze do 2 MB i wymiarach od 64×64
+        do 4096×4096 pikseli, bez wymogu proporcji. O formacie decyduje treść
+        pliku, nie nazwa ani rozszerzenie. Obraz jest zapisywany bez
+        przetwarzania.
+
+        Nowy plik zastępuje poprzedni, a poprzedni jest kasowany. Każdy upload
+        daje nowy `logoUrl`, więc dotychczasowy adres przestaje działać.
+        Naruszenie daje `422` pod `logo`.
       requestBody:
         required: true
         content:
@@ -679,10 +762,33 @@ paths:
                 required: [data]
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
+              example:
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: http://localhost:8000/storage/tournaments/1/teams/1/GmvZcUftUF1rp7d6ntSTGxnDGWHVCmrmYYNbs9IG.png, groupId: null, playersCount: 3 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Teams]
+      summary: Usuń herb drużyny
+      description: |
+        Kasuje plik i ustawia `logoUrl` na `null`. Operacja jest idempotentna:
+        bez wgranego logo też daje `200`.
+      responses:
+        '200':
+          description: Drużyna bez herbu
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Team' }
+              example:
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   /teams/{team}/players:
     parameters:
@@ -1867,6 +1973,11 @@ components:
       name: slug
       in: path
       required: true
+      description: |
+        Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+        każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+        samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+        że turniej istnieje.
       schema: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$' }
     IfNoneMatch:
       name: If-None-Match
@@ -2084,7 +2195,7 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, eventTypes, defaultTiebreakers, availableTiebreakers, availableStats]
+      required: [allowsDraw, defaultPoints, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats]
       properties:
         allowsDraw:
           type: boolean
@@ -2103,6 +2214,15 @@ components:
         availableTiebreakers:
           type: array
           items: { $ref: '#/components/schemas/TiebreakerCode' }
+        tiebreakerLabels:
+          type: object
+          description: |
+            Polska etykieta każdego kryterium z `availableTiebreakers` tego
+            sportu; klucze to dokładnie `availableTiebreakers`, bez braków
+            i bez nadmiaru. Etykieta zależy od sportu, bo kryteria liczone ze
+            zdobyczy nazywają zdobycze („Różnica bramek” albo „Różnica
+            punktów”). `points` oznacza punkty w tabeli, a nie zdobycze.
+          additionalProperties: { type: string, minLength: 1 }
         availableStats:
           type: array
           items: { type: string }
@@ -2135,6 +2255,17 @@ components:
 
     TournamentStatus:
       type: string
+      description: |
+        Stan turnieju.
+
+        - `draft` — turniej nieopublikowany. Nowy turniej zaczyna w tym stanie.
+        - `active` i `finished` — turniej opublikowany. `finished` to
+          deklaracja organizera, że rozgrywki się skończyły. Nie blokuje żadnej
+          zmiany ani usunięcia.
+
+        Status ustawia wyłącznie organizer, przez
+        `PATCH /tournaments/{tournament}`. Żadna operacja systemu nie zmienia
+        go sama.
       enum: [draft, active, finished]
 
     TournamentFormat:
@@ -2148,7 +2279,12 @@ components:
       type: object
       required: [logoUrl, primaryColor]
       properties:
-        logoUrl: { type: [string, 'null'], format: uri }
+        logoUrl:
+          type: [string, 'null']
+          format: uri
+          description: |
+            Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+            gdy logo nie wgrano albo je usunięto.
         primaryColor:
           type: string
           pattern: '^#[0-9A-Fa-f]{6}$'
@@ -2263,7 +2399,12 @@ components:
         id: { type: integer, format: int64 }
         tournamentId: { type: integer, format: int64 }
         name: { type: string }
-        logoUrl: { type: [string, 'null'], format: uri }
+        logoUrl:
+          type: [string, 'null']
+          format: uri
+          description: |
+            Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+            gdy logo nie wgrano albo je usunięto.
         groupId:
           type: [integer, 'null']
           format: int64
@@ -2279,7 +2420,12 @@ components:
       properties:
         id: { type: integer, format: int64 }
         name: { type: string }
-        logoUrl: { type: [string, 'null'], format: uri }
+        logoUrl:
+          type: [string, 'null']
+          format: uri
+          description: |
+            Adres absolutny pliku. Zmienia się przy każdym uploadzie. `null`,
+            gdy logo nie wgrano albo je usunięto.
 
     Player:
       type: object
@@ -2486,7 +2632,12 @@ components:
       properties:
         name: { type: string }
         slug: { type: string }
-        status: { $ref: '#/components/schemas/TournamentStatus' }
+        status:
+          type: string
+          description: |
+            Podzbiór `TournamentStatus` bez `draft`: szkic nie trafia do
+            odpowiedzi publicznej (patrz parametr `Slug`).
+          enum: [active, finished]
         sport: { $ref: '#/components/schemas/SportSummary' }
         branding: { $ref: '#/components/schemas/Branding' }
         stages:

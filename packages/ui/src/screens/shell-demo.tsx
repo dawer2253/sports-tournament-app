@@ -1,4 +1,5 @@
 import { AdminShell, type AdminSectionKey, type AdminShellProps } from '../components/layout/admin-shell'
+import type { TournamentRow } from '../components/data/tournament-row'
 import { organizer, tournamentList } from '../lib/demo-data'
 
 /**
@@ -23,14 +24,22 @@ const demoTournament = tournamentList[0]!
  * wszystkich ekranów turnieju: tytuł to nazwa turnieju, podtytuł to sport
  * i adres publiczny, a sekcję pokazuje aktywna karta, nie tytuł.
  */
-export function TournamentShellDemo(
-  props: Omit<AdminShellProps, 'user' | 'tournament' | 'title' | 'subtitle' | 'active'> & { active: AdminSectionKey },
-) {
+export function TournamentShellDemo({
+  status = demoTournament.status,
+  sportName = demoTournament.sport.name,
+  ...props
+}: Omit<AdminShellProps, 'user' | 'tournament' | 'title' | 'subtitle' | 'active'> & {
+  active: AdminSectionKey
+  /** Stan turnieju demo, gdy ekran pokazuje inny niż domyślny (np. szkic). */
+  status?: TournamentRow['status']
+  /** Sport turnieju demo, gdy ekran pokazuje inny niż domyślny. */
+  sportName?: string
+}) {
   return (
     <ShellDemo
-      tournament={demoTournament}
+      tournament={{ ...demoTournament, status, sport: { name: sportName } }}
       title={demoTournament.name}
-      subtitle={`${demoTournament.sport.name} · /t/${demoTournament.slug}`}
+      subtitle={`${sportName} · /t/${demoTournament.slug}`}
       {...props}
     />
   )

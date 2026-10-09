@@ -27,7 +27,7 @@ class TeamResource extends JsonResource
             'id' => $this->id,
             'tournamentId' => $this->tournament_id,
             'name' => $this->name,
-            'logoUrl' => $this->logo_url,
+            'logoUrl' => $this->logoUrl(),
             'groupId' => $this->group_id,
             'playersCount' => $this->players_count,
         ];

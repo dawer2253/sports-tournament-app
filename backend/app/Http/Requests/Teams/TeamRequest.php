@@ -4,8 +4,8 @@ namespace App\Http\Requests\Teams;
 
 use App\Models\Team;
 use App\Models\Tournament;
+use App\Rules\UniqueAmongLiveSiblings;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * Wspólne reguły nazwy drużyny dla `POST` i `PATCH` — kontrakt mówi o nich
@@ -35,10 +35,7 @@ abstract class TeamRequest extends FormRequest
         return [
             'string',
             'max:120',
-            Rule::unique('teams')
-                ->where('tournament_id', $this->tournament()->id)
-                ->whereNull('deleted_at')
-                ->ignore($this->ignoredTeam()),
+            UniqueAmongLiveSiblings::rule('teams', 'name', 'tournament_id', $this->tournament(), $this->ignoredTeam()),
         ];
     }
 

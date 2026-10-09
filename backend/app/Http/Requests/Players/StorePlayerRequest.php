@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Players;
 
 use App\Models\Team;
+use App\Rules\ChildLimit;
 use Illuminate\Validation\Validator;
 
 class StorePlayerRequest extends PlayerRequest
@@ -20,24 +21,17 @@ class StorePlayerRequest extends PlayerRequest
     }
 
     /**
-     * Limit to stan drużyny, nie pole z ciała, więc błąd idzie pod `players`
-     * (tak stanowi kontrakt). `players()` pomija zawodników usuniętych
-     * miękko. Wyścig między sprawdzeniem a zapisem jest akceptowalny z tego
-     * samego powodu co przy limicie drużyn (`StoreTeamRequest`).
-     *
      * @return list<callable(Validator): void>
      */
     public function after(): array
     {
         return [
-            function (Validator $validator): void {
-                if ($this->team()->players()->count() >= Team::MAX_PLAYERS) {
-                    $validator->errors()->add(
-                        'players',
-                        'Drużyna ma już '.Team::MAX_PLAYERS.' zawodników, to górny limit.',
-                    );
-                }
-            },
+            ChildLimit::check(
+                $this->team()->players(),
+                Team::MAX_PLAYERS,
+                'players',
+                'Drużyna ma już '.Team::MAX_PLAYERS.' zawodników, to górny limit.',
+            ),
         ];
     }
 

@@ -25,6 +25,13 @@ Turniej nie jest sezonem ani cyklem: nie istnieje pojęcie "poprzedniej edycji".
 Drużyny i zawodnicy należą do jednego turnieju i nie są między turniejami
 współdzieleni.
 
+Stan turnieju: szkic (`draft`), trwający (`active`), zakończony (`finished`).
+Stan ustawia organizer. Nic w systemie nie zmienia go samo. Turniej w szkicu
+nie jest opublikowany: pod jego publicznym adresem nic nie ma. **Opublikować**
+turniej znaczy przestawić go ze szkicu na trwający. Zakończenie to deklaracja
+organizera, że rozgrywki się skończyły, a nie blokada zmian. Turniej, który ma
+zakończony mecz, nie wraca do szkicu.
+
 ## Slug
 
 Krótki, czytelny identyfikator turnieju używany w publicznym adresie. Unikalny
@@ -93,6 +100,17 @@ jest w obu przypadkach ta sama, więc w kodzie i w API występuje wyłącznie na
 Uczestnik turnieju. Należy do jednego turnieju. Dwie drużyny o tej samej nazwie
 w dwóch turniejach to dwa niepowiązane byty. W obrębie jednego turnieju nazwa
 drużyny się nie powtarza.
+
+## Logo (logo, herb)
+
+Obraz, który organizer wgrywa dla turnieju albo dla drużyny. W kodzie i w API
+oba nazywają się `logo`, a „herb” to wyłącznie etykieta UI dla logo drużyny.
+
+Brak logo jest stanem poprawnym, nie błędem. Drużynę bez logo UI oznacza herbem
+zastępczym (`TeamCrest` w design systemie), który nie jest logo, tylko jego
+zastępstwem.
+
+_Unikaj_: `crest` jako nazwy pola albo bytu w API i w bazie.
 
 ## Player (zawodnik)
 
@@ -208,9 +226,9 @@ w interfejsie tego turnieju.
 Reguła ustalająca kolejność drużyn, które mają tyle samo punktów. Turniej ma
 uporządkowaną listę takich kryteriów, stosowanych po kolei aż do rozstrzygnięcia.
 
-`head_to_head` (bezpośredni bój) jest szczególnym kryterium: porównuje wyłącznie
+`head_to_head` (bezpośredni mecz) jest szczególnym kryterium: porównuje wyłącznie
 mecze rozegrane między remisującymi drużynami. Jeżeli nie rozstrzyga, stosuje się
-kolejne kryterium z listy, bez ponownego zagłębiania się w bezpośredni bój.
+kolejne kryterium z listy, bez ponownego zawężania do meczów między nimi.
 
 Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
 `score_for`, `score_against`.

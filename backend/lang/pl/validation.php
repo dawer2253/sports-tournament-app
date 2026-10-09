@@ -206,6 +206,7 @@ return [
         'passwordConfirmation' => 'powtórzone hasło',
         'sportId' => 'sport',
         'format' => 'format',
+        'address' => 'adres',
         'number' => 'numer',
         'position' => 'pozycja',
     ],
