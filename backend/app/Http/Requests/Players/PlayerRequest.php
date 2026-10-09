@@ -4,8 +4,8 @@ namespace App\Http\Requests\Players;
 
 use App\Models\Player;
 use App\Models\Team;
+use App\Rules\UniqueAmongLiveSiblings;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * Wspólne reguły pól zawodnika dla `POST` i `PATCH` — kontrakt mówi o nich
@@ -48,10 +48,7 @@ abstract class PlayerRequest extends FormRequest
             'nullable',
             'integer:strict',
             'between:0,999',
-            Rule::unique('players', 'number')
-                ->where('team_id', $this->team()->id)
-                ->whereNull('deleted_at')
-                ->ignore($this->ignoredPlayer()),
+            UniqueAmongLiveSiblings::rule('players', 'number', 'team_id', $this->team(), $this->ignoredPlayer()),
         ];
     }
 

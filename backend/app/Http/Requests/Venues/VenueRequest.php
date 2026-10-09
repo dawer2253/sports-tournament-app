@@ -4,8 +4,8 @@ namespace App\Http\Requests\Venues;
 
 use App\Models\Tournament;
 use App\Models\Venue;
+use App\Rules\UniqueAmongLiveSiblings;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 /**
  * Wspólne reguły pól obiektu dla `POST` i `PATCH` — kontrakt mówi o nich
@@ -35,10 +35,7 @@ abstract class VenueRequest extends FormRequest
         return [
             'string',
             'max:120',
-            Rule::unique('venues')
-                ->where('tournament_id', $this->tournament()->id)
-                ->whereNull('deleted_at')
-                ->ignore($this->ignoredVenue()),
+            UniqueAmongLiveSiblings::rule('venues', 'name', 'tournament_id', $this->tournament(), $this->ignoredVenue()),
         ];
     }
 
