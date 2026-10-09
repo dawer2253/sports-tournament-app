@@ -33,6 +33,9 @@ export const WILKI: Team = {
   playersCount: 2,
 };
 
+/** Adres herbu po wgraniu; jak w przykładzie kontraktu, więc pod mockiem się nie ładuje. */
+export const CREST_URL = 'http://localhost:8000/storage/tournaments/7/teams/3/herb.png';
+
 export const SOKOLY: Team = { ...WILKI, id: 4, name: 'Sokoły Ursus', playersCount: 0 };
 
 export const NOWAK: Player = { id: 11, teamId: WILKI.id, name: 'Marek Nowak', number: 9, position: 'napastnik' };
@@ -53,7 +56,8 @@ type Override = (request: Request) => Response | undefined | Promise<Response | 
  * Turniej, jego drużyny i składy po stronie „serwera”. Zapis w handlerze zmienia
  * te tablice, więc odświeżony widok pokazuje stan po zapisie. `requests` liczy
  * żądania po metodzie i ścieżce (np. `GET /tournaments/7`), a `bodies` zbiera
- * ciała zapisów — asercja „nie poszło żadne żądanie” to brak wpisu.
+ * ciała zapisów — asercja „nie poszło żadne żądanie” to brak wpisu. Ciało
+ * multipart (herb) trafia tam jako `FormData`, reszta jako JSON.
  *
  * `override` podmienia odpowiedź jednego żądania (klucz jak w `requests`),
  * a `undefined` z niego oddaje głos domyślnemu handlerowi.
@@ -85,7 +89,11 @@ export function serveTeams({
       const resolved = path.replace(/:(\w+)/g, (_, key: string) => String(params[key]));
       const key = `${method.toUpperCase()} ${resolved}`;
       requests[key] = (requests[key] ?? 0) + 1;
-      const body = method === 'post' || method === 'patch' ? await request.clone().json() : undefined;
+      const multipart = request.headers.get('content-type')?.startsWith('multipart/form-data');
+      const body =
+        method === 'post' || method === 'patch'
+          ? await (multipart ? request.clone().formData() : request.clone().json())
+          : undefined;
       if (body !== undefined) (bodies[key] ??= []).push(body);
       const custom = await override[key]?.(request);
       return custom ?? respond(params as Record<string, string>, body);
@@ -93,6 +101,13 @@ export function serveTeams({
   }
 
   const notFound = () => HttpResponse.json({ message: 'Zasób nie istnieje.' }, { status: 404 });
+
+  function setLogo(teamId: number, logoUrl: string | null) {
+    const index = state.teams.findIndex((t) => t.id === teamId);
+    if (index < 0) return notFound();
+    state.teams[index] = { ...state.teams[index]!, logoUrl };
+    return HttpResponse.json({ data: withCount(state.teams[index]!) });
+  }
 
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
@@ -122,6 +137,9 @@ export function serveTeams({
       state.players = state.players.filter((p) => p.teamId !== Number(team));
       return new HttpResponse(null, { status: 204 });
     }),
+    route('post', '/teams/:team/logo', ({ team }) => setLogo(Number(team), CREST_URL)),
+    // Idempotentne jak w kontrakcie: bez herbu też `200`.
+    route('delete', '/teams/:team/logo', ({ team }) => setLogo(Number(team), null)),
     route('get', '/teams/:team/players', ({ team }) =>
       HttpResponse.json({ data: state.players.filter((p) => p.teamId === Number(team)) }),
     ),

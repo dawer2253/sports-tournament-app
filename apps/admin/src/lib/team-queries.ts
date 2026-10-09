@@ -27,6 +27,17 @@ export const TEAM_TEXTS: ListTexts = {
   gone: 'Tej drużyny już nie ma.',
 };
 
+/**
+ * Herb ma te same toasty co drużyna, z „herb drużyny” w bierniku. `404` mówi
+ * o drużynie, nie o herbie: usuwanie herbu jest idempotentne, więc `404` daje
+ * tylko drużyna, której już nie ma.
+ */
+export const TEAM_LOGO_TEXTS: ListTexts = {
+  accusative: 'herb drużyny',
+  alreadyDeleted: TEAM_TEXTS.gone,
+  gone: TEAM_TEXTS.gone,
+};
+
 export const PLAYER_TEXTS: ListTexts = {
   accusative: 'zawodnika',
   alreadyDeleted: 'Zawodnik został już usunięty.',

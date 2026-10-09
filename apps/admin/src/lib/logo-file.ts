@@ -19,6 +19,10 @@ const MAX_BYTES = MAX_MEGABYTES * 1024 * 1024;
 export type LogoNounForms = { subject: string; instrumental: string };
 
 export const TOURNAMENT_LOGO: LogoNounForms = { subject: 'Logo', instrumental: 'logo' };
+export const TEAM_LOGO: LogoNounForms = { subject: 'Herb', instrumental: 'herbem' };
+
+/** Podpowiedź pod polem pliku: wszystkie wymagania kontraktu, także wymiary. */
+export const LOGO_FILE_HINT = 'PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px.';
 
 /** Komunikat błędu pliku albo `undefined`, gdy plik może iść do serwera. */
 export function logoFileError(file: File | null, { subject, instrumental }: LogoNounForms): string | undefined {

@@ -9,12 +9,17 @@ import {
   TeamLogo,
   type PlayerRow,
 } from '@tournament/ui';
-import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ImageMinus, ImageUp, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { PlayerDeleteDialog, PlayerFormDialog } from '../components/player-dialogs';
-import { TeamDeleteDialog, TeamNameDialog } from '../components/team-dialogs';
+import {
+  TeamDeleteDialog,
+  TeamLogoDeleteDialog,
+  TeamLogoDialog,
+  TeamNameDialog,
+} from '../components/team-dialogs';
 import { isNotFound } from '../lib/api-error';
 import { parseRouteId } from '../lib/route-id';
 import { teamKeys, usePlayers, useTeam } from '../lib/team-queries';
@@ -23,6 +28,8 @@ import { useTournament } from './tournament-layout';
 /** Otwarte okno ekranu; jedno naraz, więc jeden stan zamiast flagi na każde. */
 type OpenDialog =
   | { kind: 'rename' }
+  | { kind: 'logo' }
+  | { kind: 'delete-logo' }
   | { kind: 'delete-team' }
   | { kind: 'player'; player?: PlayerRow }
   | { kind: 'delete-player'; player: PlayerRow };
@@ -30,7 +37,7 @@ type OpenDialog =
 /**
  * Skład drużyny, `/tournaments/:id/teams/:teamId` (#89 pkt 3). Ekran stoi
  * w karcie „Drużyny”: tytuł to nazwa turnieju, a drużynę pokazuje jej własny
- * nagłówek pod kartami, razem z jej akcjami (pkt 4). Herb dochodzi w #114.
+ * nagłówek pod kartami, razem z jej akcjami (pkt 4), w tym herbem (#114).
  */
 export function TeamPage() {
   const tournament = useTournament();
@@ -107,6 +114,8 @@ export function TeamPage() {
         playersError={players.error?.message}
         onRetryPlayers={() => void players.refetch()}
         onRename={() => setDialog({ kind: 'rename' })}
+        onUploadLogo={() => setDialog({ kind: 'logo' })}
+        onDeleteLogo={() => setDialog({ kind: 'delete-logo' })}
         onDelete={() => setDialog({ kind: 'delete-team' })}
         onCreatePlayer={() => setDialog({ kind: 'player' })}
         onEditPlayer={editPlayer}
@@ -150,6 +159,12 @@ export function TeamPage() {
           {dialog?.kind === 'rename' && (
             <TeamNameDialog tournamentId={tournament.id} team={team.data} onClose={close} />
           )}
+          {dialog?.kind === 'logo' && (
+            <TeamLogoDialog tournamentId={tournament.id} team={team.data} onClose={close} />
+          )}
+          {dialog?.kind === 'delete-logo' && (
+            <TeamLogoDeleteDialog tournamentId={tournament.id} team={team.data} onClose={close} />
+          )}
           {dialog?.kind === 'delete-team' && (
             <TeamDeleteDialog
               tournamentId={tournament.id}
@@ -187,6 +202,8 @@ type TeamViewProps = {
   playersError?: string;
   onRetryPlayers: () => void;
   onRename: () => void;
+  onUploadLogo: () => void;
+  onDeleteLogo: () => void;
   onDelete: () => void;
   onCreatePlayer: () => void;
   onEditPlayer: (player: PlayerRow) => void;
@@ -201,6 +218,8 @@ function TeamView({
   playersError,
   onRetryPlayers,
   onRename,
+  onUploadLogo,
+  onDeleteLogo,
   onDelete,
   onCreatePlayer,
   onEditPlayer,
@@ -219,6 +238,15 @@ function TeamView({
           <Button variant="outline" onClick={onRename}>
             <Pencil className="size-4" /> Zmień nazwę
           </Button>
+          <Button variant="outline" onClick={onUploadLogo}>
+            <ImageUp className="size-4" /> {team.logoUrl ? 'Zmień herb' : 'Wgraj herb'}
+          </Button>
+          {/* Tylko przy wgranym herbie: przy herbie zastępczym nie ma czego usuwać. */}
+          {team.logoUrl && (
+            <Button variant="outline" onClick={onDeleteLogo}>
+              <ImageMinus className="size-4" /> Usuń herb
+            </Button>
+          )}
           <Button variant="destructive" onClick={onDelete}>
             <Trash2 className="size-4" /> Usuń drużynę
           </Button>
