@@ -3,10 +3,9 @@
 namespace App\Http\Requests\Tournaments;
 
 use App\Models\Tournament;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class StoreTournamentRequest extends FormRequest
+class StoreTournamentRequest extends TournamentRequest
 {
     /**
      * @return array<string, mixed>
@@ -14,7 +13,7 @@ class StoreTournamentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:160'],
+            'name' => ['required', ...$this->nameRules()],
             // Nieistniejący sport to błędna wartość pola, więc 422 na `sportId`,
             // a nie 404 — to zostaje dla zasobu wskazanego w adresie.
             'sportId' => ['required', 'integer', 'exists:sports,id'],

@@ -66,6 +66,17 @@ it('oddaje daty turnieju z GET /tournaments/{tournament} w +00:00', function () 
     expectEveryDateInUtc($response, ['data.createdAt', 'data.updatedAt']);
 });
 
+it('oddaje daty turnieju z PATCH /tournaments/{tournament} w +00:00', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+
+    $response = actingAsOrganizer($organizer)
+        ->patchJson("/api/v1/tournaments/{$tournament->id}", ['name' => 'Liga Osiedlowa 2026/27'])
+        ->assertOk();
+
+    expectEveryDateInUtc($response, ['data.createdAt', 'data.updatedAt']);
+});
+
 it('oddaje daty turniejów z listy GET /tournaments w +00:00', function () {
     $organizer = User::factory()->create();
     Tournament::factory()->count(2)->for($organizer)->create();
