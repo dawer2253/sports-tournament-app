@@ -1,22 +1,16 @@
-import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table'
-import { AlertTriangle, Users } from 'lucide-react'
+import { createColumnHelper } from '@tanstack/react-table'
+import { Users } from 'lucide-react'
 import * as React from 'react'
 import { TeamLogo } from '../layout/team-logo'
-import { Button } from '../ui/button'
-import { EmptyState } from '../ui/empty-state'
-import { Skeleton } from '../ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
+import { DataTable, type DataTableFeatures, type DataTableStatus } from './data-table'
 import type { TeamRow } from './team-row'
 
 export type { TeamRow }
 
-/** Stan pobierania danych — nazwy jak `status` z TanStack Query. */
-export type TeamsTableStatus = 'pending' | 'error' | 'success'
-
 export interface TeamsTableProps {
   teams: TeamRow[]
   /** Domyślnie `success`: dane są już w ręku. */
-  status?: TeamsTableStatus
+  status?: DataTableStatus
   errorMessage?: string
   onRetry?: () => void
   /** Akcja w stanie pustym. Bez niej zostaje sam komunikat. */
@@ -35,16 +29,7 @@ export interface TeamsTableProps {
   onOpenTeam?: (team: TeamRow) => void
 }
 
-/**
- * `className` z `meta` trafia i do nagłówka, i do komórek kolumny, żeby obie
- * strony tabeli nie rozjechały się przy zmianie.
- */
-interface TeamColumnMeta {
-  className?: string
-}
-
-const features = tableFeatures({ columnMeta: {} as TeamColumnMeta })
-const helper = createColumnHelper<typeof features, TeamRow>()
+const helper = createColumnHelper<DataTableFeatures, TeamRow>()
 
 /**
  * Kliknięcie z modyfikatorem albo środkowym przyciskiem zostaje przeglądarce:
@@ -90,11 +75,9 @@ function teamColumns(
   ])
 }
 
-const SKELETON_ROWS = 3
-
 export function TeamsTable({
   teams,
-  status = 'success',
+  status,
   errorMessage,
   onRetry,
   onCreate,
@@ -102,74 +85,23 @@ export function TeamsTable({
   onOpenTeam,
 }: TeamsTableProps) {
   const columns = React.useMemo(() => teamColumns(teamHref, onOpenTeam), [teamHref, onOpenTeam])
-  const table = useTable({ features, columns, data: teams })
-
-  if (status === 'error') {
-    return (
-      <EmptyState
-        variant="error"
-        icon={<AlertTriangle />}
-        title="Nie udało się wczytać drużyn"
-        description={errorMessage}
-        action={
-          onRetry && (
-            <Button variant="outline" onClick={onRetry}>
-              Spróbuj ponownie
-            </Button>
-          )
-        }
-      />
-    )
-  }
-
-  if (status === 'success' && teams.length === 0) {
-    return (
-      <EmptyState
-        icon={<Users />}
-        title="Turniej nie ma jeszcze drużyn"
-        description="Dodaj drużyny, a składy uzupełnisz później."
-        action={onCreate && <Button onClick={onCreate}>Dodaj drużynę</Button>}
-      />
-    )
-  }
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id} className={header.column.columnDef.meta?.className}>
-                <table.FlexRender header={header} />
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {status === 'pending'
-          ? Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <TableRow key={index}>
-                <TableCell colSpan={columns.length}>
-                  {/* Tylko pierwszy pasek ogłasza ładowanie, jak w `TournamentsTable`. */}
-                  <Skeleton
-                    role={index === 0 ? 'status' : undefined}
-                    aria-label={index === 0 ? 'Wczytywanie drużyn' : undefined}
-                    className="h-7 w-full"
-                  />
-                </TableCell>
-              </TableRow>
-            ))
-          : table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
-                    <table.FlexRender cell={cell} />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-      </TableBody>
-    </Table>
+    <DataTable
+      data={teams}
+      columns={columns}
+      status={status}
+      errorTitle="Nie udało się wczytać drużyn"
+      errorMessage={errorMessage}
+      onRetry={onRetry}
+      empty={{
+        icon: <Users />,
+        title: 'Turniej nie ma jeszcze drużyn',
+        description: 'Dodaj drużyny, a składy uzupełnisz później.',
+        createLabel: 'Dodaj drużynę',
+      }}
+      onCreate={onCreate}
+      loadingLabel="Wczytywanie drużyn"
+    />
   )
 }
