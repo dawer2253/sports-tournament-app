@@ -46,6 +46,9 @@ Storybook na `:6006`), więc podgląd działa bez konfiguracji.
 - `lib/utils.ts` — `cn()` (clsx + tailwind-merge).
 - `lib/demo-data.ts` — **jedno źródło** danych mock dla wszystkich ekranów
   (docelowo z API). Dokładając ekran, dane bierz stąd; nowe encje dopisuj tu.
+- `test/` — pomocnicze asercje dla funkcji `play` w stories (np.
+  `expectDarkPortal` w `theme.ts`). Nie myl z `src/test/` w aplikacjach, gdzie
+  leży setup msw.
 
 ## Wzorzec ekranu — trójka plików
 

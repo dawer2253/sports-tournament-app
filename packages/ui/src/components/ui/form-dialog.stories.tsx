@@ -195,9 +195,8 @@ export const InnyPrzyciskPrzyWysylaniu: Story = {
 }
 
 /**
- * Okno renderuje się w portalu Radixa, poza drzewem story, więc ciemny motyw
- * musi leżeć na `<html>` (#136). Zdjęcie klasy na chwilę pokazuje, że tło okna
- * naprawdę od niej zależy. Bez snapshotu: ciemne snapshoty to osobna decyzja.
+ * Ciemny motyw w portalu (#136), szczegóły przy `expectDarkPortal`. Bez
+ * snapshotu: ciemne snapshoty Chromatica to osobna decyzja.
  */
 export const CiemnyMotyw: Story = {
   globals: { theme: 'dark' },
