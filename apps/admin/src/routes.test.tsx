@@ -36,7 +36,11 @@ const SECTION_PATHS = ['teams', 'venues', 'settings'];
 beforeEach(() => {
   // Trasy panelu stoją za `RequireAuth`, a bez tokenu każdy test lądowałby na logowaniu.
   setToken('1|token');
-  server.use(http.get(`${API}/me`, () => HttpResponse.json(ME)));
+  server.use(
+    http.get(`${API}/me`, () => HttpResponse.json(ME)),
+    // Drużyny są ekranem domyślnym turnieju; ich treść sprawdza `pages/teams.test.tsx`.
+    http.get(`${API}/tournaments/:id/teams`, () => HttpResponse.json({ data: [] })),
+  );
 });
 
 /**
@@ -253,7 +257,7 @@ describe('odświeżenie turnieju w tle', () => {
         : HttpResponse.json({ message: 'Serwer nie odpowiada.' }, { status: 500 });
     });
 
-    const { queryClient } = renderAt('/tournaments/7/teams');
+    const { queryClient } = renderAt('/tournaments/7/venues');
     await screen.findByText('Ta sekcja jeszcze powstaje');
 
     await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });
@@ -278,7 +282,7 @@ describe('odświeżenie turnieju w tle', () => {
         : HttpResponse.json({ message: 'Zasób nie istnieje.' }, { status: 404 });
     });
 
-    const { queryClient } = renderAt('/tournaments/7/teams');
+    const { queryClient } = renderAt('/tournaments/7/venues');
     await screen.findByText('Ta sekcja jeszcze powstaje');
 
     await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });

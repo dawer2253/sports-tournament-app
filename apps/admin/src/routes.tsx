@@ -1,6 +1,8 @@
 import { Navigate, type RouteObject } from 'react-router';
 import { getToken } from './lib/session';
 import { LoginPage } from './pages/login';
+import { TeamPage } from './pages/team';
+import { TeamsPage } from './pages/teams';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentLayout } from './pages/tournament-layout';
 import { TournamentSectionPlaceholder } from './pages/tournament-section-placeholder';
@@ -51,7 +53,10 @@ export const routes: RouteObject[] = [
       // Po założeniu turnieju pierwszą rzeczą jest dodanie drużyn, a osobny
       // „przegląd" bez meczów byłby pusty.
       { index: true, element: <Navigate to="teams" replace /> },
-      { path: 'teams', element: <TournamentSectionPlaceholder section="teams" /> },
+      { path: 'teams', element: <TeamsPage /> },
+      // Skład jest dzieckiem turnieju, a nie listy: lista nie ma `Outlet`, a skład
+      // zastępuje ją w całości, z tą samą aktywną kartą „Drużyny” (#89 pkt 3).
+      { path: 'teams/:teamId', element: <TeamPage /> },
       { path: 'venues', element: <TournamentSectionPlaceholder section="venues" /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
     ],
