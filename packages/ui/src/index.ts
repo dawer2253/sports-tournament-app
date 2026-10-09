@@ -2,9 +2,11 @@
 // Style motywu doładowuje się osobno: import '@tournament/ui/styles.css'.
 
 export { cn } from './lib/utils';
+export * from './lib/contrast';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
+export * from './components/ui/brand-color-picker';
 export * from './components/ui/button';
 export * from './components/ui/card';
 export * from './components/ui/checkbox';
@@ -14,6 +16,7 @@ export * from './components/ui/dropdown-menu';
 export * from './components/ui/empty-state';
 export * from './components/ui/form-dialog';
 export * from './components/ui/image-file-field';
+export * from './components/ui/image-with-fallback';
 export * from './components/ui/input';
 export * from './components/ui/label';
 export * from './components/ui/popover';
@@ -35,8 +38,10 @@ export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/team-row';
 export * from './components/data/teams-table';
+export * from './components/data/tiebreaker-list';
 export * from './components/data/tournament-row';
 export * from './components/data/tournament-status-badge';
+export * from './components/data/tournament-status-card';
 export * from './components/data/tournaments-table';
 export * from './components/data/venue-row';
 export * from './components/data/venues-table';
@@ -47,6 +52,7 @@ export * from './components/layout/meta-list';
 export * from './components/layout/photo-panel';
 export * from './components/layout/team-crest';
 export * from './components/layout/team-logo';
+export * from './components/layout/tournament-logo';
 
 // PublicShell celowo poza barrel-em: importuje zdjęcia hero, a Vite emituje
 // zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby

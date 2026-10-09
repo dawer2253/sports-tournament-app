@@ -1,5 +1,5 @@
-import * as React from 'react'
 import { cn } from '../../lib/utils'
+import { ImageWithFallback } from '../ui/image-with-fallback'
 import { TeamCrest, teamAbbr } from './team-crest'
 
 export interface TeamLogoProps {
@@ -21,23 +21,9 @@ export interface TeamLogoProps {
  * nazwa drużyny zawsze stoi obok.
  */
 export function TeamLogo({ logoUrl, name, className }: TeamLogoProps) {
-  // Pamiętamy adres, który zawiódł, a nie samą flagę: po zmianie `logoUrl`
-  // (nowy upload) nowy adres dostaje szansę bez efektu, który by flagę zerował.
-  const [failedUrl, setFailedUrl] = React.useState<string | null>(null)
-  const showImage = logoUrl !== null && logoUrl !== failedUrl
-
   return (
     <span data-slot="team-logo" className={cn('grid size-6 shrink-0 place-items-center', className)}>
-      {showImage ? (
-        <img
-          src={logoUrl}
-          alt=""
-          className="size-full object-contain"
-          onError={() => setFailedUrl(logoUrl)}
-        />
-      ) : (
-        <TeamCrest abbr={teamAbbr(name)} className="size-full" />
-      )}
+      <ImageWithFallback src={logoUrl} fallback={<TeamCrest abbr={teamAbbr(name)} className="size-full" />} />
     </span>
   )
 }
