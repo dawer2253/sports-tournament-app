@@ -13,10 +13,14 @@ use Illuminate\Validation\Validator;
  * (`teams`, `players`, `venues` — tak stanowi kontrakt). Relacje rodziców
  * pomijają dzieci usunięte miękko, więc te się do limitu nie liczą.
  *
+ * Callable do `after()`, a nie `ValidationRule`: reguła dostaje wartość pola,
+ * a limit nie zależy od żadnego pola z ciała, tylko od stanu rodzica.
+ *
  * Sprawdzenie i zapis to dwa kroki, więc równoległe żądania mogą razem
  * przekroczyć limit. Dla panelu jednego organizera to akceptowalne; blokada
  * wiersza rodzica byłaby tu na wyrost. To samo dotyczy unikalności wśród
- * żywego rodzeństwa (`UniqueAmongLiveSiblings`), której nie pilnuje indeks.
+ * żywego rodzeństwa (`UniqueAmongLiveSiblings`), której nie pilnuje indeks
+ * (powód przy migracji `teams`).
  */
 final class ChildLimit
 {

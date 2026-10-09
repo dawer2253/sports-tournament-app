@@ -20,7 +20,8 @@ class StoreVenueRequest extends VenueRequest
     }
 
     /**
-     * Forma „obiekty" pasuje do 32; zmieniając `MAX_VENUES`, popraw też
+     * Komunikat limitu ma liczebnik odmieniony ręcznie: forma „obiekty"
+     * pasuje do 32; zmieniając `MAX_VENUES`, popraw też
      * odmianę. `trans_choice` tu nie pomoże: z tekstem spoza `lang/` bierze
      * reguły języka zapasowego (`en`). Test limitu ma liczbę wpisaną wprost,
      * więc zmiana stałej go zaczerwieni.
