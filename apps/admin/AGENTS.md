@@ -29,8 +29,10 @@ jest jego jedynym opisem dla kodu.
     `update`; potwierdzenie podaje tylko `texts`, `invalidate` i `onDone`, woła
     `remove` i rozkłada `removeError` na propsy `ConfirmDeleteDialog`;
   - `invalidate` to lista, a przy drużynach także `['tournament', id]`, bo
-    stamtąd idzie `teamsCount`. Klucze pasują po prefiksie, więc
-    `['tournament', id]` odświeża też wszystko, co leży pod nim;
+    stamtąd idzie `teamsCount`. Dotyczy to dodania i usunięcia drużyny:
+    zmiana nazwy liczby drużyn nie zmienia, więc unieważnia drużynę i listę.
+    Klucze pasują po prefiksie, więc `['tournament', id]` odświeża też
+    wszystko, co leży pod nim;
   - przy usuwaniu `invalidate` obejmuje tylko to, co zostaje: listę i turniej.
     Klucze usuniętego bytu (drużyna i jej skład na ekranie składu) leżą poza
     tymi prefiksami, bo odświeżone dostałyby `404`, a ich ekran i tak znika

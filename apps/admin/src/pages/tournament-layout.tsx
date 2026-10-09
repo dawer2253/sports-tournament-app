@@ -4,16 +4,8 @@ import { Button, Card, CardContent, EmptyState, Skeleton } from '@tournament/ui'
 import { Outlet, useNavigate, useOutletContext, useParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { api } from '../lib/api';
-
-/** Błąd API razem z kodem HTTP: 403 i 404 znaczą co innego niż padnięty serwer. */
-class ApiError extends Error {
-  readonly status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
+import { ApiError, isNotFound } from '../lib/api-error';
+import { parseRouteId } from '../lib/route-id';
 
 /**
  * Trasa-rodzic `/tournaments/:id`: wejście z listy przez „Otwórz" (#46)
@@ -28,20 +20,14 @@ class ApiError extends Error {
 export function TournamentLayout() {
   const navigate = useNavigate();
   const params = useParams();
-  // Adres z paska przeglądarki, więc może być czymkolwiek. Id, które nie jest
-  // dodatnią liczbą całkowitą, nie idzie do API, tylko od razu kończy się
-  // stanem „nie ma" — takiego turnieju i tak nie ma w bazie. Sprawdzamy zapis,
-  // a nie samą wartość po `Number()`, bo ten przyjmuje też `1e3` czy `0x10`
-  // i zapytałby API o zupełnie inny turniej niż ten z adresu.
-  const id = Number(params.id);
-  const validId = /^[1-9]\d*$/.test(params.id ?? '') && Number.isSafeInteger(id);
+  const id = parseRouteId(params.id);
 
   const tournament = useQuery({
     queryKey: ['tournament', id],
-    enabled: validId,
+    enabled: id !== null,
     queryFn: async () => {
       const { data, error, response } = await api.GET('/tournaments/{tournament}', {
-        params: { path: { tournament: id } },
+        params: { path: { tournament: id! } },
       });
       if (error) throw new ApiError(error.message, response.status);
       return data.data;
@@ -52,10 +38,7 @@ export function TournamentLayout() {
     void navigate('/');
   }
 
-  // 403 to cudzy turniej: organizer nie dowie się z panelu, czy taki istnieje,
-  // więc oba przypadki wyglądają tak samo. Ponawianie niczego tu nie zmieni.
-  const httpStatus = tournament.error instanceof ApiError ? tournament.error.status : null;
-  const notFound = !validId || httpStatus === 403 || httpStatus === 404;
+  const notFound = id === null || isNotFound(tournament.error);
 
   let content;
   if (notFound) {
