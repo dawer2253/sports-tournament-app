@@ -18,7 +18,7 @@ class TeamFactory extends Factory
             'tournament_id' => Tournament::factory(),
             'group_id' => null,
             'name' => fake()->unique()->company(),
-            'logo_url' => null,
+            'logo_path' => null,
         ];
     }
 

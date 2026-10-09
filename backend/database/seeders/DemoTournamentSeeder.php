@@ -138,7 +138,7 @@ class DemoTournamentSeeder extends Seeder
                 'user_id' => $organizer->id,
                 'sport_id' => $football->id,
                 'name' => 'Liga Osiedlowa 2026',
-                'logo_url' => null,
+                'logo_path' => null,
                 'primary_color' => '#1F7A45',
                 'points' => $football->defaultPoints(),
                 'tiebreakers' => $football->defaultTiebreakers(),
@@ -179,7 +179,7 @@ class DemoTournamentSeeder extends Seeder
         foreach (self::SQUADS as $teamName => $squad) {
             $team = Team::updateOrCreate(
                 ['tournament_id' => $tournament->id, 'name' => $teamName],
-                ['group_id' => null, 'logo_url' => null],
+                ['group_id' => null, 'logo_path' => null],
             );
             $teams[$teamName] = $team;
 
