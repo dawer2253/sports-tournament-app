@@ -3,7 +3,7 @@
 use App\Exceptions\PublicFileCleanupException;
 use App\Models\Team;
 use App\Models\Tournament;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Storage;
@@ -77,7 +77,7 @@ function logoUrlPath(Tournament|Team $owner): string
     return $owner instanceof Tournament ? 'data.branding.logoUrl' : 'data.logoUrl';
 }
 
-function logoOrganizer(Tournament|Team $owner): Model
+function logoOrganizer(Tournament|Team $owner): User
 {
     return $owner instanceof Tournament ? $owner->user : $owner->tournament->user;
 }
@@ -109,7 +109,8 @@ it('przyjmuje PNG, JPG i WebP i oddaje absolutny adres pliku w swoim katalogu', 
 
 function expectLogoRejected(TestResponse $response, string $message): void
 {
-    $response->assertValidResponse(422)
+    $response->assertValidRequest()
+        ->assertValidResponse(422)
         ->assertJsonPath('errors.logo', [$message]);
 
     expect(Storage::disk('public')->allFiles())->toBe([]);
@@ -119,7 +120,7 @@ it('odrzuca GIF komunikatem formatu i niczego nie zapisuje', function (string $k
     $owner = logoOwner($kind);
 
     expectLogoRejected(
-        logoUpload($owner, UploadedFile::fake()->image('logo.gif', 128, 128))->assertValidRequest(),
+        logoUpload($owner, UploadedFile::fake()->image('logo.gif', 128, 128)),
         LOGO_MESSAGES[$kind]['format'],
     );
 })->with('logo');
@@ -135,6 +136,8 @@ it('rozpoznaje SVG po treści, mimo nazwy logo.png', function (string $kind) {
         logoUpload($owner, new UploadedFile($path, 'logo.png', 'image/png', null, true)),
         LOGO_MESSAGES[$kind]['format'],
     );
+
+    unlink($path);
 })->with('logo');
 
 it('przyjmuje plik 2048 KB, a 2049 KB odrzuca komunikatem rozmiaru', function (string $kind) {
@@ -179,8 +182,12 @@ it('daje pod logo dokładnie jeden komunikat dla pliku, który nie jest obrazem'
     );
 })->with('logo');
 
+// Bez `assertValidRequest()`: żądanie bez pliku łamie `required: [logo]`
+// w kontrakcie, a test sprawdza właśnie odpowiedź na takie żądanie.
 it('odrzuca żądanie bez pliku', function (string $kind) {
-    expectLogoRejected(logoUpload(logoOwner($kind), null), LOGO_MESSAGES[$kind]['required']);
+    logoUpload(logoOwner($kind), null)
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.logo', [LOGO_MESSAGES[$kind]['required']]);
 })->with('logo');
 
 it('podmienia plik: drugi upload daje nowy adres, a stary plik znika', function (string $kind) {
