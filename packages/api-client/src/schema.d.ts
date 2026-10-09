@@ -711,7 +711,7 @@ export interface paths {
         head?: never;
         /**
          * Zmień ustawienia turnieju
-         * @description Obsługuje też zmianę kolejności tiebreaków (`tiebreakers`) i zmianę
+         * @description Obsługuje też zmianę listy i kolejności tiebreaków (`tiebreakers`) i zmianę
          *     `slug`. Zmiana `slug` unieważnia dotychczasowy publiczny adres turnieju:
          *     panel musi o tym ostrzec przed zapisem.
          *
@@ -721,6 +721,10 @@ export interface paths {
          *     nie przechodzi do `draft` z innego stanu — taka próba daje `422`
          *     z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
          *     w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
+         *
+         *     Punktację (`points`) i tiebreaki (`tiebreakers`) wolno zmieniać zawsze,
+         *     niezależnie od statusu turnieju i od rozegranych meczów. Tabela liczy
+         *     się przy odczycie, więc zmiana obejmuje też mecze już rozegrane.
          */
         patch: {
             parameters: {
@@ -2802,11 +2806,20 @@ export interface components {
         };
         /** @enum {string} */
         SportCode: "football" | "basketball";
+        /**
+         * @description Punktacja: ile punktów w tabeli daje wygrana, remis i porażka. Obowiązuje
+         *     porządek `loss < win`, a w sporcie z remisami (`allowsDraw: true`) także
+         *     `loss ≤ draw ≤ win`. Naruszenie porządku daje `422` pod `points`.
+         *     Wartość spoza zakresu daje `422` pod `points.win`, `points.draw` albo
+         *     `points.loss`.
+         */
         Points: {
             win: number;
             /**
              * @description Punkty za remis. W sporcie z `allowsDraw: false` remis nie może
-             *     wystąpić, więc wartość jest bez znaczenia i backend zwraca zero.
+             *     wystąpić, więc wartość musi wynosić zero: inna daje `422` pod
+             *     `points.draw` i nie jest zerowana. Do porządku `loss ≤ draw ≤ win`
+             *     `draw` wtedy nie wchodzi, bo np. koszykówka ma `draw: 0` i `loss: 1`.
              */
             draw: number;
             loss: number;
@@ -2933,6 +2946,14 @@ export interface components {
                 primaryColor?: string;
             };
             points?: components["schemas"]["Points"];
+            /**
+             * @description Dowolny podzbiór `availableTiebreakers` sportu turnieju, w dowolnej
+             *     kolejności, z `points` na pierwszym miejscu. Samo `[points]` jest
+             *     poprawne. Backend niczego nie poprawia, tylko odrzuca: kod spoza
+             *     enuma, kod niedostępny w sporcie i duplikat dają `422` pod
+             *     `tiebreakers.N`, brak `points` na początku daje `422` pod
+             *     `tiebreakers.0`, a pusta lista pod `tiebreakers`.
+             */
             tiebreakers?: components["schemas"]["TiebreakerCode"][];
         };
         /**

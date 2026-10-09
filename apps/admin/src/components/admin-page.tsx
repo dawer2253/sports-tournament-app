@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
-import { AdminShell, type AdminNavKey } from '@tournament/ui';
+import type { Tournament } from '@tournament/api-client';
+import { AdminShell, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
@@ -7,22 +8,55 @@ import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
 
 /**
- * Pozycje nawigacji, które mają już swój ekran. Reszta zostaje nieczynna,
- * dopóki nie powstanie odpowiedni widok — `AdminShell` sam wyszarza pozycję
- * bez adresu, więc nie ma tu martwych odnośników.
+ * Sekcje turnieju, które mają już swoją trasę pod `/tournaments/:id`. Reszta
+ * zostaje nieczynna, dopóki nie powstanie odpowiedni widok — `AdminShell` sam
+ * wyszarza kartę bez adresu, więc nie ma tu martwych odnośników.
  */
-const NAV_ROUTES: Partial<Record<AdminNavKey, string>> = {
-  dashboard: '/',
+const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
+  teams: 'teams',
+  venues: 'venues',
+  settings: 'settings',
 };
 
-export interface AdminPageProps {
-  active: AdminNavKey;
-  title: string;
-  subtitle?: string;
+/** Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran. */
+function navRoute(key: AdminNavKey, tournament: Tournament | undefined): string | undefined {
+  if (key === 'dashboard') return '/';
+  if (!tournament) return undefined;
+  const base = `/tournaments/${tournament.id}`;
+  if (key === 'tournament') return base;
+  const section = SECTION_ROUTES[key];
+  return section && `${base}/${section}`;
+}
+
+interface CommonProps {
   /** Akcje w nagłówku, po prawej stronie tytułu. */
   actions?: ReactNode;
   children: ReactNode;
 }
+
+/** Ekran poza turniejem: lista, kreator. Tytuł podaje sam ekran. */
+interface PanelPageProps extends CommonProps {
+  active: 'dashboard';
+  title: string;
+  subtitle?: string;
+  tournament?: never;
+  section?: never;
+}
+
+/**
+ * Ekran sekcji turnieju. Nagłówek jest wspólny dla wszystkich sekcji, więc
+ * składa go ta warstwa: tytuł to nazwa turnieju, podtytuł to sport i adres
+ * publiczny, a sekcję pokazuje aktywna karta, nie tytuł (#85).
+ */
+interface TournamentPageProps extends CommonProps {
+  tournament: Tournament;
+  section: AdminSectionKey;
+  active?: never;
+  title?: never;
+  subtitle?: never;
+}
+
+export type AdminPageProps = PanelPageProps | TournamentPageProps;
 
 /**
  * Ekran panelu: `AdminShell` wpięty w router i w sesję.
@@ -33,7 +67,8 @@ export interface AdminPageProps {
  * z osobna. Drugi ekran panelu (#28) był momentem, w którym kopia zaczęła się
  * rozjeżdżać z oryginałem.
  */
-export function AdminPage({ active, title, subtitle, actions, children }: AdminPageProps) {
+export function AdminPage(props: AdminPageProps) {
+  const { tournament, actions, children } = props;
   const navigate = useNavigate();
   const account = useAccount();
 
@@ -58,14 +93,19 @@ export function AdminPage({ active, title, subtitle, actions, children }: AdminP
 
   return (
     <AdminShell
-      active={active}
-      title={title}
-      subtitle={subtitle}
+      {...(tournament
+        ? {
+            active: props.section,
+            tournament,
+            title: tournament.name,
+            subtitle: `${tournament.sport.name} · /t/${tournament.slug}`,
+          }
+        : { active: props.active, title: props.title, subtitle: props.subtitle })}
       actions={actions}
       user={account}
-      navHref={(key) => NAV_ROUTES[key]}
+      navHref={(key) => navRoute(key, tournament)}
       onNavigate={(key) => {
-        const route = NAV_ROUTES[key];
+        const route = navRoute(key, tournament);
         if (route) void navigate(route);
       }}
       // Drugi klik przed odpowiedzią wysłałby drugie `/logout`, a to już na
