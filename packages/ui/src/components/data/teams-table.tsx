@@ -102,6 +102,8 @@ export function TeamsTable({
       }}
       onCreate={onCreate}
       loadingLabel="Wczytywanie drużyn"
+      // Wiersz z herbem (`size-7`) jest wyższy od samego tekstu.
+      skeletonClassName="h-7"
     />
   )
 }

@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-table'
 import { AlertTriangle, Pencil, Trash2 } from 'lucide-react'
 import * as React from 'react'
+import { cn } from '../../lib/utils'
 import { Button } from '../ui/button'
 import { EmptyState } from '../ui/empty-state'
 import { Skeleton } from '../ui/skeleton'
@@ -55,6 +56,8 @@ export interface DataTableProps<Row extends RowData> {
   onCreate?: () => void
   /** Nazwa dostępna szkieletu, np. „Wczytywanie obiektów”. */
   loadingLabel: string
+  /** Klasy paska szkieletu, np. wyższy `h-7`, gdy wiersze są wyższe od tekstu. */
+  skeletonClassName?: string
   /**
    * Treść pod tabelą. Pojawia się tylko razem z tabelą, nie w stanie błędu ani
    * pustej listy; kiedy jeszcze ją pokazać, decyduje wywołujący.
@@ -78,6 +81,7 @@ export function DataTable<Row extends RowData>({
   empty,
   onCreate,
   loadingLabel,
+  skeletonClassName,
   footer,
 }: DataTableProps<Row>) {
   const table = useTable({ features: dataTableFeatures, columns, data })
@@ -135,7 +139,7 @@ export function DataTable<Row extends RowData>({
                     <Skeleton
                       role={index === 0 ? 'status' : undefined}
                       aria-label={index === 0 ? loadingLabel : undefined}
-                      className="h-5 w-full"
+                      className={cn('h-5 w-full', skeletonClassName)}
                     />
                   </TableCell>
                 </TableRow>
