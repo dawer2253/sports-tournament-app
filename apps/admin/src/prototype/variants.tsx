@@ -21,11 +21,6 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
   Table,
   TableBody,
   TableCell,
@@ -34,7 +29,7 @@ import {
   TableRow,
   cn,
 } from '@tournament/ui';
-import { AlertTriangle, ArrowLeft, ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Save } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ChevronDown, ChevronLeft, ChevronRight, Clock, MapPin, Pencil, Save } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { matchesWithCollisions, useScheduleState, type AdminMatch, type Round } from './schedule-store';
@@ -48,7 +43,6 @@ import {
   collisionText,
   draftOf,
   fmtKickoff,
-  fmtTime,
   resultBody,
   roundDates,
   rowWhen,
@@ -574,17 +568,32 @@ function MatchDialogC({ match, all, onClose }: { match: AdminMatch; all: AdminMa
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// D — Lista kolejek z boku, mecze kolejki w środku, mecz w panelu bocznym
+// D — Lista kolejek z boku, mecze kolejki w środku, mecz w oknie (FormDialog)
+//
+// Po przeglądzie (#162): okno na środku, jak każdy formularz panelu (#86),
+// zamiast panelu bocznego. Na telefonie lista kolejek zwija się do jednego
+// przycisku. Wynik stoi zawsze w tej samej kolumnie, niezależnie od plakietek.
 // ═══════════════════════════════════════════════════════════════════════
+
+/** Jedna siatka dla wierszy meczów: kolumny o stałej szerokości po bokach, więc wynik się nie przesuwa. */
+const ROW_GRID =
+  'grid grid-cols-[1fr_3.5rem_1fr] gap-x-3 gap-y-1.5 sm:grid-cols-[6.5rem_1fr_3.5rem_1fr_8.5rem]';
 
 export function VariantD() {
   const { s, matches, byRound } = useSchedule();
   const [roundId, setRoundId] = useState<number | undefined>(() => currentRound(s.rounds, byRound)?.id);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [listOpen, setListOpen] = useState(false);
   const round = s.rounds.find((r) => r.id === roundId) ?? s.rounds[0];
   if (!round) return null;
   const ms = byRound.get(round.id)!;
+  const idx = s.rounds.indexOf(round);
   const open = matches.find((m) => m.id === openId) ?? null;
+  const pick = (r: Round | undefined) => {
+    if (!r) return;
+    setRoundId(r.id);
+    setListOpen(false);
+  };
   const jumpTo = (id: number) => {
     const target = matches.find((m) => m.id === id);
     if (!target) return;
@@ -592,34 +601,52 @@ export function VariantD() {
     setOpenId(id);
   };
 
+  const roundList = (
+    <nav aria-label="Kolejki" className="max-h-[60vh] space-y-0.5 overflow-y-auto rounded-xl border bg-card p-1.5 md:max-h-[70vh]">
+      {s.rounds.map((r) => {
+        const rms = byRound.get(r.id)!;
+        return (
+          <button
+            key={r.id}
+            type="button"
+            aria-current={r.id === round.id ? 'true' : undefined}
+            onClick={() => pick(r)}
+            className={cn('flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted', r.id === round.id && 'bg-muted font-medium')}
+          >
+            <RoundLabel round={r} matches={rms} />
+          </button>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-      <nav aria-label="Kolejki" className="max-h-[70vh] space-y-0.5 overflow-y-auto rounded-xl border bg-card p-1.5">
-        {s.rounds.map((r) => {
-          const rms = byRound.get(r.id)!;
-          const done = rms.filter((m) => m.status === 'finished').length;
-          const c = collisionsIn(rms);
-          return (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRoundId(r.id)}
-              className={cn('flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted', r.id === round.id && 'bg-muted font-medium')}
-            >
-              <span className="flex-1">
-                {r.name}
-                <span className="block text-xs font-normal text-muted-foreground">{roundDates(rms) || '—'}</span>
-              </span>
-              {c > 0 && <span className="grid size-5 place-items-center rounded-full bg-destructive text-[10px] text-white">{c}</span>}
-              <span className="text-xs tabular-nums text-muted-foreground">
-                {done}/{rms.length}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-      <div className="space-y-2">
-        <div className="flex items-baseline gap-2">
+      {/* Telefon: bieżąca kolejka i strzałki, pełna lista dopiero po rozwinięciu. */}
+      <div className="space-y-2 md:hidden">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" disabled={idx === 0} onClick={() => pick(s.rounds[idx - 1])} aria-label="Poprzednia kolejka">
+            <ChevronLeft className="size-4" />
+          </Button>
+          <button
+            type="button"
+            aria-expanded={listOpen}
+            onClick={() => setListOpen(!listOpen)}
+            className="flex flex-1 items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-left text-sm font-medium"
+          >
+            <RoundLabel round={round} matches={ms} />
+            <ChevronDown className={cn('size-4 shrink-0 transition-transform', listOpen && 'rotate-180')} />
+          </button>
+          <Button variant="ghost" size="icon" disabled={idx === s.rounds.length - 1} onClick={() => pick(s.rounds[idx + 1])} aria-label="Następna kolejka">
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
+        {listOpen && roundList}
+      </div>
+      <div className="hidden md:block">{roundList}</div>
+
+      <div className="min-w-0 space-y-2">
+        <div className="hidden items-baseline gap-2 md:flex">
           <h3 className="font-semibold">{round.name}</h3>
           <span className="text-sm text-muted-foreground">{roundDates(ms)}</span>
         </div>
@@ -630,79 +657,103 @@ export function VariantD() {
             type="button"
             onClick={() => setOpenId(m.id)}
             className={cn(
-              'grid w-full grid-cols-[90px_1fr_auto_1fr_auto] items-center gap-3 rounded-xl border bg-card px-3 py-2.5 text-left hover:border-foreground/30',
+              ROW_GRID,
+              'w-full items-center rounded-xl border bg-card px-3 py-2.5 text-left hover:border-foreground/30',
               m.collisions.length && 'border-destructive/40 bg-destructive/5',
-              openId === m.id && 'ring-2 ring-primary',
             )}
           >
-            <span className="text-xs text-muted-foreground">
-              <span className="block tabular-nums">{m.kickoffAt ? fmtTime(m.kickoffAt) : 'do ustalenia'}</span>
-              <span className="flex items-center gap-0.5 truncate">
-                {m.venue && <MapPin className="size-3" />}
-                {m.venue?.name ?? ''}
+            {/* Telefon: termin i stan w pierwszej linii nad parą; od `sm` po bokach. */}
+            <span className="col-span-2 flex min-w-0 items-center gap-2 text-xs text-muted-foreground sm:col-span-1 sm:block">
+              <span className="tabular-nums">{rowWhen(m, ms)}</span>
+              <span className="flex min-w-0 items-center gap-1">
+                <MapPin className="size-3 shrink-0" />
+                <span className="truncate">{m.venue?.name ?? 'bez obiektu'}</span>
               </span>
             </span>
-            <span className="text-right font-medium">{m.homeTeam.name}</span>
-            <Score match={m} />
-            <span className="font-medium">{m.awayTeam.name}</span>
-            <span className="flex gap-1">
-              {m.collisions.length > 0 && (
-                <Badge variant="destructive">
-                  <AlertTriangle />
-                </Badge>
-              )}
-              <StatusBadge status={m.status} />
+            <span className="flex items-center justify-end gap-1 sm:hidden">
+              <RowFlags match={m} />
+            </span>
+            <span className="truncate text-right font-medium">{m.homeTeam.name}</span>
+            <span className="flex justify-center">
+              <Score match={m} className="w-full text-center" />
+            </span>
+            <span className="truncate font-medium">{m.awayTeam.name}</span>
+            <span className="hidden items-center justify-end gap-1 sm:flex">
+              <RowFlags match={m} />
             </span>
           </button>
         ))}
       </div>
-      <Sheet open={!!open} onOpenChange={(o) => !o && setOpenId(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
-          {open && <MatchPanelD key={open.id + open.status + open.kickoffAt} match={open} all={matches} onJump={jumpTo} onDone={() => setOpenId(null)} />}
-        </SheetContent>
-      </Sheet>
+      {open && <MatchDialogD key={open.id} match={open} all={matches} onJump={jumpTo} onClose={() => setOpenId(null)} />}
     </div>
   );
 }
 
-function MatchPanelD({ match, all, onJump, onDone }: { match: AdminMatch; all: AdminMatch[]; onJump: (id: number) => void; onDone: () => void }) {
+function RoundLabel({ round, matches }: { round: Round; matches: AdminMatch[] }) {
+  const done = matches.filter((m) => m.status === 'finished').length;
+  const c = collisionsIn(matches);
+  return (
+    <>
+      <span className="min-w-0 flex-1">
+        {round.name}
+        <span className="block truncate text-xs font-normal text-muted-foreground">{roundDates(matches) || '—'}</span>
+      </span>
+      {/* Stały slot na licznik kolizji, żeby „x/y” nie skakało. */}
+      <span className="w-5 shrink-0">
+        {c > 0 && (
+          <span className="grid size-5 place-items-center rounded-full bg-destructive text-[10px] text-white" title={`${c} mecze z kolizją`}>
+            {c}
+          </span>
+        )}
+      </span>
+      <span className="w-8 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+        {done}/{matches.length}
+      </span>
+    </>
+  );
+}
+
+/** Kolizja i stan: kolizja w stałym slocie przed stanem, żeby kolumna miała jedną szerokość. */
+function RowFlags({ match }: { match: AdminMatch }) {
+  return (
+    <>
+      <span className="flex w-7 justify-end">
+        {match.collisions.length > 0 && (
+          <Badge variant="destructive" title="Kolizja terminu">
+            <AlertTriangle />
+          </Badge>
+        )}
+      </span>
+      <StatusBadge status={match.status} />
+    </>
+  );
+}
+
+function MatchDialogD({ match, all, onJump, onClose }: { match: AdminMatch; all: AdminMatch[]; onJump: (id: number) => void; onClose: () => void }) {
   const [draft, setDraft] = useState(draftOf(match));
   const { save, pending, errors } = useSaveMatch();
   return (
-    <form
-      className="flex h-full flex-col gap-5 px-4 pb-4"
+    <FormDialog
+      open
+      onOpenChange={(o) => !o && onClose()}
       onSubmit={(e) => {
         e.preventDefault();
-        void save(match, { ...resultBody(draft), ...termBody(draft) }).then((ok) => ok && onDone());
+        void save(match, { ...resultBody(draft), ...termBody(draft) }).then((ok) => ok && onClose());
       }}
+      title={`${match.homeTeam.name} – ${match.awayTeam.name}`}
+      description={`${match.round.name} · mecz ${match.matchNumber}`}
+      submitLabel="Zapisz"
+      pending={pending}
+      error={errors.root}
     >
-      <SheetHeader className="px-0">
-        <SheetTitle>
-          {match.homeTeam.name} – {match.awayTeam.name}
-        </SheetTitle>
-        <SheetDescription>
-          {match.round.name} · mecz {match.matchNumber}
-        </SheetDescription>
-      </SheetHeader>
       <section className="flex flex-col items-center gap-3">
         <ScoreInputs match={match} draft={draft} onChange={setDraft} error={errors.homeScore} />
         <StatusPills value={draft.status} onChange={(st) => setDraft(withStatus(draft, st))} />
       </section>
       <section className="space-y-2 border-t pt-4">
-        <p className="text-sm font-medium">Termin i obiekt</p>
         <TermFields draft={draft} onChange={setDraft} errors={errors} />
       </section>
       {match.collisions.length > 0 && <CollisionList match={match} all={all} onJump={onJump} />}
-      <section className="rounded-md border border-dashed p-3 text-center text-sm text-muted-foreground">Zdarzenia (S3) dojdą tutaj, pod wynikiem.</section>
-      {errors.root && <p className="text-sm text-destructive">{errors.root}</p>}
-      <div className="mt-auto flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onDone} disabled={pending}>
-          Zamknij
-        </Button>
-        <Button type="submit" disabled={pending}>
-          {pending ? 'Zapisywanie…' : 'Zapisz'}
-        </Button>
-      </div>
-    </form>
+    </FormDialog>
   );
 }

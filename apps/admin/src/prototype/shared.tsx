@@ -242,13 +242,13 @@ export function TermFields({ draft, onChange, errors }: { draft: MatchDraft; onC
   const { venues } = useScheduleState();
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <div className="grid gap-1.5">
+      <div className="grid content-start gap-1.5">
         <Label htmlFor="kickoff">Termin</Label>
         <Input id="kickoff" type="datetime-local" value={draft.kickoff} onChange={(e) => onChange({ ...draft, kickoff: e.target.value })} />
         <p className="text-xs text-muted-foreground">Puste = termin do ustalenia.</p>
         {errors.kickoffAt && <p className="text-sm text-destructive">{errors.kickoffAt}</p>}
       </div>
-      <div className="grid gap-1.5">
+      <div className="grid content-start gap-1.5">
         <Label htmlFor="venue">Obiekt</Label>
         <select
           id="venue"
@@ -445,25 +445,25 @@ export function DatesDialog({ onClose }: { onClose: () => void }) {
             ))}
           </fieldset>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="startAt">Start (pierwsza kolejka)</Label>
               <Input id="startAt" type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
               {errors.startAt && <p className="text-sm text-destructive">{errors.startAt}</p>}
             </div>
             {mode === 'interval' ? (
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label htmlFor="intervalDays">Co ile dni</Label>
                 <Input id="intervalDays" type="number" min={1} value={intervalDays} onChange={(e) => setIntervalDays(e.target.value)} />
                 {errors.intervalDays && <p className="text-sm text-destructive">{errors.intervalDays}</p>}
               </div>
             ) : (
-              <div className="grid gap-1.5">
+              <div className="grid content-start gap-1.5">
                 <Label htmlFor="dayEnd">Koniec dnia (opcjonalnie)</Label>
                 <Input id="dayEnd" type="time" value={dayEndTime} onChange={(e) => setDayEndTime(e.target.value)} />
               </div>
             )}
           </div>
-          <fieldset className="grid gap-1.5">
+          <fieldset className="grid content-start gap-1.5">
             <legend className="mb-1 text-sm font-medium">Obiekty</legend>
             <div className="flex flex-wrap gap-2">
               {s.venues.map((v) => (
@@ -482,13 +482,13 @@ export function DatesDialog({ onClose }: { onClose: () => void }) {
             </p>
           </fieldset>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="duration">Długość meczu (min)</Label>
               <Input id="duration" type="number" min={10} max={600} value={duration} onChange={(e) => setDuration(e.target.value)} />
               <p className="text-xs text-muted-foreground">Zmieni długość meczu w całym turnieju.</p>
               {errors.matchDuration && <p className="text-sm text-destructive">{errors.matchDuration}</p>}
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid content-start gap-1.5">
               <Label htmlFor="fromRound">Od kolejki</Label>
               <select id="fromRound" className="h-9 rounded-md border bg-transparent px-2 text-sm" value={fromRound} onChange={(e) => setFromRound(e.target.value)}>
                 <option value="">od pierwszej</option>

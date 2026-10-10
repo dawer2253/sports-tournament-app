@@ -6,7 +6,7 @@ export const VARIANTS = [
   { key: 'A', name: 'Kolejka ze strzałkami, wynik na stronie meczu' },
   { key: 'B', name: 'Wszystkie kolejki, wynik w wierszu' },
   { key: 'C', name: 'Tabela z filtrem, mecz w oknie' },
-  { key: 'D', name: 'Kolejki z boku, mecz w panelu' },
+  { key: 'D', name: 'Kolejki z boku, mecz w oknie' },
 ] as const;
 
 export type ScheduleVariant = (typeof VARIANTS)[number]['key'];
