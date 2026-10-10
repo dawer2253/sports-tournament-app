@@ -12,9 +12,17 @@ import {
   FormDialog,
   Input,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   cn,
   toast,
 } from '@tournament/ui';
+
+/** Radix Select nie przyjmuje pustej wartości, więc „brak” ma własny klucz. */
+const NONE = 'none';
 import { AlertTriangle, CalendarClock, CalendarDays, Check, MoreHorizontal, RefreshCw, Trophy, UserX } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -250,19 +258,20 @@ export function TermFields({ draft, onChange, errors }: { draft: MatchDraft; onC
       </div>
       <div className="grid content-start gap-1.5">
         <Label htmlFor="venue">Obiekt</Label>
-        <select
-          id="venue"
-          className="h-9 rounded-md border bg-transparent px-2 text-sm"
-          value={draft.venueId}
-          onChange={(e) => onChange({ ...draft, venueId: e.target.value })}
-        >
-          <option value="">— bez obiektu —</option>
-          {venues.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-            </option>
-          ))}
-        </select>
+        {/* Select z DS, nie natywny: ta sama wysokość i ramka co `Input` obok. */}
+        <Select value={draft.venueId || NONE} onValueChange={(v) => onChange({ ...draft, venueId: v === NONE ? '' : v })}>
+          <SelectTrigger id="venue" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>— bez obiektu —</SelectItem>
+            {venues.map((v) => (
+              <SelectItem key={v.id} value={String(v.id)}>
+                {v.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.venueId && <p className="text-sm text-destructive">{errors.venueId}</p>}
       </div>
     </div>
@@ -490,14 +499,19 @@ export function DatesDialog({ onClose }: { onClose: () => void }) {
             </div>
             <div className="grid content-start gap-1.5">
               <Label htmlFor="fromRound">Od kolejki</Label>
-              <select id="fromRound" className="h-9 rounded-md border bg-transparent px-2 text-sm" value={fromRound} onChange={(e) => setFromRound(e.target.value)}>
-                <option value="">od pierwszej</option>
-                {s.rounds.map((r) => (
-                  <option key={r.id} value={r.order}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
+              <Select value={fromRound || NONE} onValueChange={(v) => setFromRound(v === NONE ? '' : v)}>
+                <SelectTrigger id="fromRound" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE}>od pierwszej</SelectItem>
+                  {s.rounds.map((r) => (
+                    <SelectItem key={r.id} value={String(r.order)}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </>
