@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router';
 import { getToken } from './lib/session';
 import { LoginPage } from './pages/login';
+import { MatchPrototypePage, SchedulePrototypePage } from './prototype/pages';
 import { TeamPage } from './pages/team';
 import { TeamsPage } from './pages/teams';
 import { TournamentCreatePage } from './pages/tournament-create';
@@ -59,6 +60,9 @@ export const routes: RouteObject[] = [
       { path: 'teams/:teamId', element: <TeamPage /> },
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
+      // PROTOTYP (#162): ekran terminarza w czterech wariantach (`?variant=`).
+      { path: 'schedule', element: <SchedulePrototypePage /> },
+      { path: 'schedule/matches/:matchId', element: <MatchPrototypePage /> },
     ],
   },
 ];
