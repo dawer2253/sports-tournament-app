@@ -1,13 +1,14 @@
 import { Plus } from 'lucide-react'
 import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
-import { TeamsTable, type TeamsTableStatus } from '../components/data/teams-table'
+import type { DataTableStatus } from '../components/data/data-table'
+import { TeamsTable } from '../components/data/teams-table'
 import type { TeamRow } from '../components/data/team-row'
 import { teamRows } from '../lib/demo-data'
 
 export interface AdminTeamsProps {
   teams?: TeamRow[]
-  status?: TeamsTableStatus
+  status?: DataTableStatus
 }
 
 /**

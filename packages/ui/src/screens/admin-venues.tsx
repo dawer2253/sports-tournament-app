@@ -1,13 +1,14 @@
 import { Plus } from 'lucide-react'
 import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
-import { VenuesTable, type VenuesTableStatus } from '../components/data/venues-table'
+import type { DataTableStatus } from '../components/data/data-table'
+import { VenuesTable } from '../components/data/venues-table'
 import type { VenueRow } from '../components/data/venue-row'
 import { venueRows } from '../lib/demo-data'
 
 export interface AdminVenuesProps {
   venues?: VenueRow[]
-  status?: VenuesTableStatus
+  status?: DataTableStatus
 }
 
 /** Lista obiektów turnieju (#90): nazwa i adres, bez liczby meczów. */

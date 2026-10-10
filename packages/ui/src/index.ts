@@ -34,6 +34,7 @@ export * from './components/ui/textarea';
 export * from './components/ui/tooltip';
 export * from './components/ui/typography';
 
+export * from './components/data/data-table';
 export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/team-row';

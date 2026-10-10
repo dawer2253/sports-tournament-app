@@ -70,6 +70,8 @@ export const Ladowanie: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('status')).toHaveAccessibleName('Wczytywanie turniejów')
+    // `total` z `meta` jest ustawione, a licznik i tak czeka na dane.
+    await expect(canvas.queryByText(/^Pokazano/)).not.toBeInTheDocument()
   },
 }
 
@@ -79,6 +81,11 @@ export const Pusty: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByText('Nie masz jeszcze turniejów')).toBeInTheDocument()
+    await expect(
+      canvas.getByText(
+        'Załóż pierwszy turniej, żeby wygenerować terminarz i udostępnić stronę publiczną.',
+      ),
+    ).toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Nowy turniej' }))
     await expect(args.onCreate).toHaveBeenCalled()
   },
@@ -94,7 +101,10 @@ export const Blad: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await expect(canvas.getByText('Nie udało się wczytać turniejów')).toBeInTheDocument()
+    await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
     await expect(canvas.getByText('Nie udało się pobrać turniejów.')).toBeInTheDocument()
+    await expect(canvas.queryByText(/^Pokazano/)).not.toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Spróbuj ponownie' }))
     await expect(args.onRetry).toHaveBeenCalled()
   },
