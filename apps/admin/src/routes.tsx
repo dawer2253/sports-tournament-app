@@ -8,6 +8,8 @@ import { TournamentLayout } from './pages/tournament-layout';
 import { TournamentSettingsPage } from './pages/tournament-settings';
 import { TournamentVenuesPage } from './pages/tournament-venues';
 import { TournamentsPage } from './pages/tournaments';
+// PROTOTYP (#163)
+import { SchedulePrototypePage, StandingsPrototypePage } from './prototype/pages';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   return getToken() ? children : <Navigate to="/login" replace />;
@@ -59,6 +61,9 @@ export const routes: RouteObject[] = [
       { path: 'teams/:teamId', element: <TeamPage /> },
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
+      // PROTOTYP (#163): Tabela (warianty A, B) i Terminarz z zakładką Tabela (C).
+      { path: 'standings', element: <StandingsPrototypePage /> },
+      { path: 'schedule', element: <SchedulePrototypePage /> },
     ],
   },
 ];

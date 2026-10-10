@@ -1,7 +1,7 @@
 import * as React from 'react'
 import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Settings,
-  Trophy, Search, Bell, LogOut, GitFork,
+  Trophy, Search, Bell, LogOut, GitFork, ListOrdered,
 } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
@@ -17,7 +17,8 @@ import {
 } from '../ui/dropdown-menu'
 
 /** Sekcja turnieju, czyli jedna z kart pod tytułem strony. */
-export type AdminSectionKey = 'teams' | 'venues' | 'settings' | 'schedule' | 'bracket' | 'stats'
+// PROTOTYP (#163): karta „Tabela” na gałęzi prototype/tabela-i-tiebreaki.
+export type AdminSectionKey = 'teams' | 'venues' | 'settings' | 'schedule' | 'standings' | 'bracket' | 'stats'
 
 /**
  * Cel nawigacji panelu: lista turniejów (`dashboard`, pozycja „Turnieje"),
@@ -31,6 +32,7 @@ const SECTIONS: { key: AdminSectionKey; label: string; icon: React.ElementType }
   { key: 'venues', label: 'Obiekty', icon: MapPin },
   { key: 'settings', label: 'Ustawienia', icon: Settings },
   { key: 'schedule', label: 'Terminarz', icon: CalendarDays },
+  { key: 'standings', label: 'Tabela', icon: ListOrdered },
   { key: 'bracket', label: 'Drabinka', icon: GitFork },
   { key: 'stats', label: 'Statystyki', icon: BarChart3 },
 ]
@@ -189,6 +191,8 @@ function SectionTabs(nav: NavProps) {
   return (
     <nav aria-label="Sekcje turnieju" className="-mb-px flex gap-1 overflow-x-auto">
       {SECTIONS.map(({ key, label, icon: Icon }) => {
+        // PROTOTYP (#163): adres '#hidden' chowa kartę (wariant C nie ma sekcji „Tabela”).
+        if (nav.navHref?.(key) === '#hidden') return null
         const { isActive, isDisabled, linkProps } = navLink(key, nav)
         return (
           <a

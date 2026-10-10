@@ -26,7 +26,6 @@ import {
   Label,
   Separator,
   Skeleton,
-  TiebreakerList,
   TournamentLogo,
   TournamentStatusCard,
   toast,
@@ -49,6 +48,8 @@ import {
 } from '../lib/tournament-settings-schema';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
+// PROTOTYP (#163): kryteria w ustawieniach według wariantu.
+import { SettingsTiebreakers, StatePanel, useSettingsTiebreakers } from '../prototype/pages';
 
 /**
  * Ustawienia turnieju (#91, #119). Trzy miejsca zapisu: status od razu
@@ -540,8 +541,9 @@ const POINT_FIELDS = [
  */
 function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sport }) {
   const queryClient = useQueryClient();
-  const { allowsDraw, defaultPoints, tiebreakerLabels } = sport.config;
+  const { allowsDraw, defaultPoints } = sport.config;
   const schema = useMemo(() => tournamentSettingsSchema(allowsDraw), [allowsDraw]);
+  const protoTiebreakers = useSettingsTiebreakers();
 
   const {
     control,
@@ -575,6 +577,15 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     // którą schemat przycina. Nie ma czego wysyłać.
     if (Object.keys(body).length === 0) {
       reset(tournamentSettingsValues(tournament));
+      // PROTOTYP (#163): same kryteria też są zmianą do zapisania.
+      if (protoTiebreakers.dirty) {
+        try {
+          await protoTiebreakers.save();
+          toast.success('Zapisano zmiany.');
+        } catch (e) {
+          setError('root', { message: (e as Error).message });
+        }
+      }
       return;
     }
 
@@ -602,6 +613,13 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
     // Najpierw formularz, potem cache: nowy turniej przychodzi wtedy przez
     // `values` do formularza, który nie ma już brudnych pól.
+    // PROTOTYP (#163): w prawdziwym kodzie `tiebreakers` jedzie w tym samym `PATCH`.
+    try {
+      await protoTiebreakers.save();
+    } catch (e) {
+      setError('root', { message: (e as Error).message });
+      return;
+    }
     reset(tournamentSettingsValues(data.data));
     queryClient.setQueryData(['tournament', tournament.id], data.data);
     toast.success('Zapisano zmiany.');
@@ -748,19 +766,11 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   {pointsError}
                 </p>
               )}
-              <div role="group" aria-labelledby="tiebreakers-label" className="space-y-2">
-                <p id="tiebreakers-label" className="text-sm font-medium">
-                  Kolejność rozstrzygania remisów w tabeli
-                </p>
-                <TiebreakerList
-                  items={tournament.tiebreakers.map((code) => ({
-                    code,
-                    // Kolejność z turnieju, z mapy tylko etykieta: MySQL oddaje
-                    // klucze `tiebreakerLabels` posortowane po długości.
-                    label: tiebreakerLabels[code] ?? code,
-                  }))}
-                />
-              </div>
+              <SettingsTiebreakers
+                draft={protoTiebreakers.draft}
+                onDraft={protoTiebreakers.setDraft}
+                disabled={isSubmitting}
+              />
             </section>
 
             {/* Błąd, którego nie da się przypiąć do pola. */}
@@ -771,14 +781,15 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
             )}
           </CardContent>
           <CardFooter className="justify-end">
-            <Button type="submit" disabled={!isDirty || isSubmitting}>
+            <Button type="submit" disabled={!(isDirty || protoTiebreakers.dirty) || isSubmitting}>
               {isSubmitting ? 'Zapisywanie…' : 'Zapisz zmiany'}
             </Button>
           </CardFooter>
         </Card>
       </form>
 
-      <UnsavedChangesGuard when={isDirty} />
+      <UnsavedChangesGuard when={isDirty || protoTiebreakers.dirty} />
+      <StatePanel />
     </>
   );
 }

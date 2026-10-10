@@ -8,6 +8,9 @@
 @custom-variant data-horizontal (&[data-orientation="horizontal"]);
 @custom-variant data-vertical (&[data-orientation="vertical"]);
 @custom-variant data-active (&[data-state="active"]);
+/* PROTOTYP (#163): bez tych wariantów zaznaczony Switch/Checkbox nie ma tła. Poprawka idzie osobno. */
+@custom-variant data-checked (&[data-state="checked"]);
+@custom-variant data-unchecked (&[data-state="unchecked"]);
 
 /*
   MOTYW — „pitch" (TournamentApp)

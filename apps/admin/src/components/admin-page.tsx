@@ -2,7 +2,9 @@ import { useMutation } from '@tanstack/react-query';
 import type { Tournament } from '@tournament/api-client';
 import { AdminShell, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
+import { PrototypeSwitcher } from '../prototype/switcher';
+import { useVariant, type Variant } from '../prototype/variant';
 import { api } from '../lib/api';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
@@ -16,10 +18,26 @@ const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   teams: 'teams',
   venues: 'venues',
   settings: 'settings',
+  // PROTOTYP (#163)
+  schedule: 'schedule',
+  standings: 'standings',
 };
 
 /** Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran. */
-function navRoute(key: AdminNavKey, tournament: Tournament | undefined): string | undefined {
+function navRoute(
+  key: AdminNavKey,
+  tournament: Tournament | undefined,
+  variant: Variant,
+  search: string,
+): string | undefined {
+  // PROTOTYP (#163): wariant C nie ma karty „Tabela”, A i B nie mają Terminarza.
+  if (key === 'standings' && variant === 'C') return '#hidden';
+  if (key === 'schedule' && variant !== 'C') return undefined;
+  const route = navRouteBase(key, tournament);
+  return route && `${route}${search}`;
+}
+
+function navRouteBase(key: AdminNavKey, tournament: Tournament | undefined): string | undefined {
   if (key === 'dashboard') return '/';
   if (!tournament) return undefined;
   const base = `/tournaments/${tournament.id}`;
@@ -71,6 +89,8 @@ export function AdminPage(props: AdminPageProps) {
   const { tournament, actions, children } = props;
   const navigate = useNavigate();
   const account = useAccount();
+  const variant = useVariant();
+  const { search } = useLocation();
 
   /**
    * Wylogowanie unieważnia token po stronie API, a nie tylko zapomina go
@@ -103,9 +123,9 @@ export function AdminPage(props: AdminPageProps) {
         : { active: props.active, title: props.title, subtitle: props.subtitle })}
       actions={actions}
       user={account}
-      navHref={(key) => navRoute(key, tournament)}
+      navHref={(key) => navRoute(key, tournament, variant, search)}
       onNavigate={(key) => {
-        const route = navRoute(key, tournament);
+        const route = navRoute(key, tournament, variant, search);
         if (route) void navigate(route);
       }}
       // Drugi klik przed odpowiedzią wysłałby drugie `/logout`, a to już na
@@ -115,6 +135,7 @@ export function AdminPage(props: AdminPageProps) {
       }}
     >
       {children}
+      <PrototypeSwitcher />
     </AdminShell>
   );
 }
