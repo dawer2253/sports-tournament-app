@@ -49,8 +49,9 @@ export function StandingsTable({
   return (
     <div className="rounded-xl border bg-card">
       <Table className={cn(compact && '[&_td]:py-1.5')}>
-        <TableHeader>
-          <TableRow>
+        {/* Nagłówek odcięty od wierszy jak w `public-standings`: tło, wersaliki, drobniejszy krój (#163). */}
+        <TableHeader className="[&_th]:h-9 [&_th]:text-xs [&_th]:font-semibold [&_th]:tracking-wide [&_th]:text-muted-foreground [&_th]:uppercase">
+          <TableRow className="bg-muted/60 hover:bg-muted/60">
             <TableHead className="w-12 text-right">#</TableHead>
             <TableHead>Drużyna</TableHead>
             <TableHead className="w-10 text-center" title="Mecze">
@@ -71,7 +72,7 @@ export function StandingsTable({
             <TableHead className="w-12 text-center" title="Bilans">
               +/−
             </TableHead>
-            <TableHead className="w-12 text-center">Pkt</TableHead>
+            <TableHead className="w-12 text-center !text-foreground">Pkt</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

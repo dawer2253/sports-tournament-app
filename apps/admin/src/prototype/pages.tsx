@@ -30,7 +30,7 @@ import { useSports } from '../lib/use-sports';
 import { FIXTURES, computeStandings, liveCount, type TiebreakerCode } from './standings-data';
 import { SaveError, saveTiebreakers, sim, useProto } from './standings-store';
 import { CriteriaSentence, StandingsTable, type Labels } from './standings-table';
-import { ButtonsEditor, ChipsEditor, DragEditor } from './tiebreaker-editors';
+import { ButtonsEditor, ChipsEditor } from './tiebreaker-editors';
 import { useVariant } from './variant';
 
 /** Sport z panelu stanu, z etykietami i listą dostępnych kryteriów z `GET /sports`. */
@@ -186,11 +186,11 @@ function VariantB() {
         <CardHeader>
           <CardTitle>Rozstrzyganie remisów</CardTitle>
           <CardDescription>
-            Przeciągnij, żeby zmienić kolejność. Tabela obok pokazuje skutek przed zapisem.
+            Zmień kolejność strzałkami ↑/↓. Tabela obok pokazuje skutek przed zapisem.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DragEditor value={draft} onChange={setDraft} available={s.available} labels={s.labels} disabled={pending} />
+          <ButtonsEditor value={draft} onChange={setDraft} available={s.available} labels={s.labels} disabled={pending} />
         </CardContent>
         {(dirty || error) && (
           <CardFooter className="flex-col items-stretch gap-2 border-t">
