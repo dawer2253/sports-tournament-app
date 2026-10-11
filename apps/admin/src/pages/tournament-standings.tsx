@@ -136,7 +136,8 @@ function StandingsSection({
     },
   });
 
-  function change(next: string[]) {
+  /** Nowy szkic albo `null` („Odrzuć”), czyli powrót do listy z turnieju. */
+  function change(next: string[] | null) {
     save.reset();
     setDraft(next);
   }
@@ -190,7 +191,7 @@ function StandingsSection({
         preview={preview}
         error={save.isError ? saveErrorMessage(save.error) : undefined}
         onSave={() => save.mutate(current)}
-        onDiscard={() => change(saved)}
+        onDiscard={() => change(null)}
       />
     );
   } else if (sportsFailed) {

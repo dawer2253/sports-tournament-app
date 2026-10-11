@@ -146,7 +146,11 @@ function standingsApi({
       return HttpResponse.json({ data: current });
     }),
   );
-  return { previews, patches };
+  // Zmiana turnieju „z zewnątrz”, np. w drugiej karcie; panel zobaczy ją po odświeżeniu.
+  const setTournament = (next: Tournament) => {
+    current = next;
+  };
+  return { previews, patches, setTournament };
 }
 
 async function renderStandings() {
@@ -160,7 +164,7 @@ async function renderStandings() {
   );
   await screen.findByRole('region', { name: 'Rozstrzyganie remisów' });
   await screen.findByRole('table');
-  return { router, user: userEvent.setup() };
+  return { router, queryClient, user: userEvent.setup() };
 }
 
 const usedCriteria = () =>
@@ -329,6 +333,22 @@ describe('tabela: zapis kolejności', () => {
     expect(usedCriteria()).toEqual(['1Punkty w tabeli zawsze pierwsze', '2Bezpośredni mecz', '3Różnica bramek']);
     expect(teamOrder()).toEqual(['WBWilki Bemowo', 'SUSokoły Ursus', 'OBOrły Bielany']);
     expect(patches).toEqual([]);
+  });
+
+  // Po „Odrzuć” nie ma szkicu, a nie szkic równy liście sprzed chwili: lista
+  // zmieniona gdzie indziej przychodzi wtedy wprost, bez fałszywego „Zapisz”.
+  it('po „Odrzuć” edytor idzie za listą turnieju odświeżoną z zewnątrz', async () => {
+    const { setTournament } = standingsApi();
+    const { user, queryClient } = await renderStandings();
+
+    await user.click(screen.getByRole('switch', { name: 'Używaj kryterium „Bezpośredni mecz”' }));
+    await user.click(await screen.findByRole('button', { name: 'Odrzuć' }));
+
+    setTournament({ ...TOURNAMENT, tiebreakers: ['points', 'wins'] });
+    await queryClient.invalidateQueries({ queryKey: ['tournament', 7] });
+
+    await waitFor(() => expect(usedCriteria()).toEqual(['1Punkty w tabeli zawsze pierwsze', '2Zwycięstwa']));
+    expect(screen.queryByRole('button', { name: 'Zapisz kolejność' })).not.toBeInTheDocument();
   });
 
   it('422 pokazuje komunikat w karcie, a szkic zostaje', async () => {
