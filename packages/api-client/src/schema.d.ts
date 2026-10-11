@@ -2111,8 +2111,8 @@ export interface paths {
         };
         /**
          * Mecze turnieju
-         * @description Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
-         *     `Match` jest już zamrożony.
+         * @description Odczyt. Wynik, stan, termin i obiekt zmienia `PATCH /matches/{match}`,
+         *     a kształt `Match` jest zamrożony.
          *
          *     Kolejność: faza (`order`), w niej kolejka (`round.order`), w kolejce
          *     `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (po
