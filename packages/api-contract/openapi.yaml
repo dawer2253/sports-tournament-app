@@ -86,6 +86,8 @@ tags:
     description: Zawodnicy drużyny.
   - name: Venues
     description: Obiekty w turnieju.
+  - name: Schedule
+    description: Terminarz fazy — generowanie kolejek i meczów.
   - name: Reads
     description: Odczyt meczów i tabel po stronie panelu.
   - name: Public
@@ -595,6 +597,94 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /stages/{stage}/schedule:
+    parameters:
+      - { $ref: '#/components/parameters/StageId' }
+    post:
+      tags: [Schedule]
+      summary: Wygeneruj terminarz fazy
+      description: |
+        Układa fazę `league` w kolejki „każdy z każdym” według tablic Bergera
+        i zastępuje cały dotychczasowy terminarz fazy, także terminy i obiekty
+        poprawione ręcznie. Wszystko dzieje się w jednej transakcji.
+
+        - Grają wszystkie drużyny turnieju. Ich kolejność na wejściu jest
+          losowana przy każdym wywołaniu, więc kolejne generowanie daje inne
+          pary w kolejkach.
+        - `meetings: 2` dokłada rewanż jako czyste lustro: kolejka
+          `n − 1 + t` (`n` przy nieparzystej liczbie drużyn) to kolejka `t`
+          z odwróconym gospodarzem.
+        - Przy nieparzystej liczbie drużyn jedna drużyna pauzuje w każdej
+          kolejce. Pauza nie tworzy meczu.
+        - Kolejki nazywają się „Kolejka 1”, „Kolejka 2”… z numeracją ciągłą
+          przez obie rundy. Mecze są `scheduled`, bez `kickoffAt` i bez
+          obiektu.
+
+        Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
+        faza nie jest `league` albo ma mecz `live` lub `finished`, i pod
+        `teams`, gdy turniej ma mniej niż dwie drużyny. Mecze dociąga się potem
+        przez `GET /tournaments/{tournament}/matches?stageId=`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meetings]
+              properties:
+                meetings:
+                  type: integer
+                  enum: [1, 2]
+                  description: |
+                    Ile razy w fazie spotyka się każda para: `1` to jedna
+                    runda, `2` to mecz i rewanż. Bez wartości domyślnej.
+            example:
+              meetings: 2
+      responses:
+        '201':
+          description: Terminarz wygenerowany
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [roundsCount, matchesCount]
+                    properties:
+                      roundsCount: { type: integer, minimum: 1 }
+                      matchesCount: { type: integer, minimum: 1 }
+              example:
+                data: { roundsCount: 38, matchesCount: 380 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Fazy nie da się wygenerować albo ciało jest niepoprawne
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              examples:
+                zaMaloDruzyn:
+                  summary: Mniej niż dwie drużyny
+                  value:
+                    message: Liga potrzebuje co najmniej dwóch drużyn.
+                    errors:
+                      teams: [Liga potrzebuje co najmniej dwóch drużyn.]
+                rozegraneMecze:
+                  summary: Faza ma mecz trwający albo zakończony
+                  value:
+                    message: Faza ma rozegrane mecze, więc nie można wygenerować terminarza ponownie.
+                    errors:
+                      stage: [Faza ma rozegrane mecze, więc nie można wygenerować terminarza ponownie.]
+                fazaNieLigowa:
+                  summary: Faza inna niż `league`
+                  value:
+                    message: Generowanie terminarza działa na razie tylko dla fazy ligowej.
+                    errors:
+                      stage: [Generowanie terminarza działa na razie tylko dla fazy ligowej.]
+
   /tournaments/{tournament}/teams:
     parameters:
       - { $ref: '#/components/parameters/TournamentId' }
@@ -1055,6 +1145,15 @@ paths:
         Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
         `Match` jest już zamrożony.
 
+        Kolejność: faza (`order`), w niej kolejka (`round.order`), w kolejce
+        `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (po
+        usunięciu drużyny razem z jej meczami `scheduled`), więc pozycji meczu
+        nie wyliczaj z numeru. Faza albo kolejka spoza turnieju w `stageId`
+        i `roundId` daje puste `data`, nie `404`: `404` jest tu odpowiedzią
+        o turnieju. `perPage` ponad limit jest dociągane do 200, a nieczytelne
+        daje rozmiar domyślny. Filtr o złym typie albo nieznanym `status` daje
+        `422`, bo cicha lista bez filtra wyglądałaby jak filtr działający.
+
         Stronicowane: liga dwudziestu drużyn to sto dziewięćdziesiąt meczów,
         każdy z zagnieżdżonymi drużynami. Widok drabinki potrzebuje kompletu
         meczów fazy, żeby zbudować odwrotny indeks krawędzi — zawęża więc
@@ -1305,6 +1404,15 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Filtr o złym typie albo nieznany stan meczu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              example:
+                message: 'Nieznany stan meczu: bogus. Dozwolone: scheduled, live, finished.'
+                errors:
+                  status: ['Nieznany stan meczu: bogus. Dozwolone: scheduled, live, finished.']
 
   /tournaments/{tournament}/standings:
     parameters:
@@ -2024,6 +2132,11 @@ components:
       schema: { type: integer, format: int64 }
     VenueId:
       name: venue
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    StageId:
+      name: stage
       in: path
       required: true
       schema: { type: integer, format: int64 }
