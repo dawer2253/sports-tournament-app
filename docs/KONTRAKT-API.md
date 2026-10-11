@@ -67,8 +67,10 @@ Rozważaliśmy trzy warianty, opisane w [ADR-0001](adr/0001-kontrakt-openapi-jak
 **v0.1:** konta i logowanie, sporty, turnieje, drużyny, zawodnicy, obiekty, odczyt
 faz, meczów i tabel, strona publiczna po slugu.
 
-**v0.2:** generowanie terminarza, wpisywanie wyniku i zmiana stanu meczu, zdarzenia
-meczowe, drabinka.
+**v0.2 (w budowie, `info.version` to już `0.2.0`):** są reguły usuwania drużyny
+i obiektu z zaplanowanymi meczami oraz `scheduledMatchesCount` (#171). Dochodzą
+generowanie terminarza, wpisywanie wyniku i zmiana stanu meczu, zdarzenia meczowe,
+drabinka.
 
 Kształty `Match`, `Round` i `StandingRow` są **zamrożone już w v0.1**, mimo że
 odpowiadające im endpointy zapisu wchodzą dopiero w v0.2. Powód: `Match` jest jedynym

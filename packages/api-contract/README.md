@@ -43,11 +43,13 @@ Wynika z tego kilka rzeczy, które zaskakują przy pierwszym użyciu:
 
 ## Zakres
 
-**v0.1 (obecne):** konta, sporty, turnieje, drużyny, zawodnicy, obiekty, odczyt
-faz, meczów i tabel, strona publiczna.
+**v0.1:** konta, sporty, turnieje, drużyny, zawodnicy, obiekty, odczyt faz,
+meczów i tabel, strona publiczna.
 
-**v0.2 (przed pracami nad ligą):** generowanie terminarza, wpisywanie wyniku
-i zmiana stanu meczu, zdarzenia meczowe, drabinka.
+**v0.2 (obecne, w budowie):** weszły już reguły usuwania drużyny i obiektu
+z zaplanowanymi meczami oraz `scheduledMatchesCount` (#171). Dochodzą:
+generowanie terminarza, wpisywanie wyniku i zmiana stanu meczu, zdarzenia
+meczowe, drabinka.
 
 Kształty `Match`, `Round` i `StandingRow` są zamrożone już w v0.1, żeby v0.2 nie
 było zmianą łamiącą dla nikogo.
