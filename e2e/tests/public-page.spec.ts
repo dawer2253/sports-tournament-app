@@ -10,7 +10,9 @@ import { expectStandings } from './standings';
  * `fixme`, bo Laravel nie ma jeszcze tras `/public/t/{slug}*` — kontrakt je
  * opisuje, a wchodzą z S3 (#192). Dziś strona dostaje 404. Zdejmij `fixme`
  * w PR-ze, który doda trasy; jeżeli zmieni się przy tym adres tabeli na
- * stronie, popraw `goto` niżej.
+ * stronie, popraw `goto` niżej. Ticket prosi też o terminarz, ale `apps/public`
+ * pokazuje dziś samą tabelę — asercja na terminarzu dochodzi razem z jego
+ * ekranem.
  */
 test.fixme('strona publiczna pokazuje tabelę policzoną z wyniku zapisanego w panelu', async ({ page, api, tournament }) => {
   for (const name of ['Orły', 'Sokoły']) {

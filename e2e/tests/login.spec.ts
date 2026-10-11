@@ -1,6 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { createApiClient } from '@tournament/api-client';
 import { API_URL, ORGANIZER, TOKEN_KEY } from './env';
+import { expect, test } from './fixtures';
 
 // Jedyne testy, które przechodzą przez formularz logowania, więc startują bez
 // sesji z projektu `setup`.
@@ -13,13 +14,14 @@ async function logIn(page: Page, password: string) {
   await page.getByRole('button', { name: 'Zaloguj' }).click();
 }
 
-test('organizer loguje się na koncie z seeda i widzi swoje turnieje', async ({ page }) => {
+test('organizer loguje się na koncie z seeda i widzi swoje turnieje', async ({ page, tournament }) => {
   await logIn(page, ORGANIZER.password);
 
   await expect(page).toHaveURL('/');
   await expect(page.getByRole('heading', { name: 'Twoje turnieje' })).toBeVisible();
-  // Lista przyszła z Laravela, a nie z mocka: seed demo zakłada ten turniej.
-  await expect(page.getByText('Liga Osiedlowa 2026')).toBeVisible();
+  // Lista przyszła z bazy `e2e`, a nie z mocka: ten turniej założył przed
+  // chwilą fixture. Lista idzie od najnowszego, więc jest na pierwszej stronie.
+  await expect(page.getByText(tournament.name)).toBeVisible();
 });
 
 test('złe hasło nie wpuszcza do panelu', async ({ page }) => {

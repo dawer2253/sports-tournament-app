@@ -137,8 +137,8 @@ Konwencje:
   vitest i Pest.
 
 Na CI chodzi job „E2E" (natywny PHP i MySQL jak w jobie backendu, Chromium jak
-we „Frontend"). Czerwony przebieg zostawia artefakt `playwright-report` z
-trace'em z ponowienia. Job nie jest wymagany do merge'a, dopóki suita nie
+we „Frontend"). Każdy przebieg zostawia artefakt `playwright-report`, a test
+ponowiony — także trace. Job nie jest wymagany do merge'a, dopóki suita nie
 pokaże kilku tygodni stabilnej zieleni.
 
 ## Zasady globalne
@@ -185,8 +185,8 @@ pliku przy odpowiednim eksporcie.
   (wersje PHP i MySQL-a muszą nadążać za `backend/compose.yaml`, a filtr ścieżek
   wymaga osobnego joba) — powody siedzą w komentarzach przy odpowiednich jobach,
   żeby nie rozjeżdżały się z konfiguracją. Job E2E kopiuje wzorzec backendu
-  i odpala się przy zmianach w aplikacjach, pakietach, backendzie i `e2e/`
-  (patrz [Testy E2E](#testy-e2e)).
+  i odpala się przy zmianach w `apps/**`, `packages/**`, `backend/**`, `e2e/**`,
+  rootowym `package.json`, lockfile'u i `ci.yml` (patrz [Testy E2E](#testy-e2e)).
 - [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
   Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
 

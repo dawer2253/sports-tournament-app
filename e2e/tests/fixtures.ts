@@ -1,8 +1,8 @@
-import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { test as base, expect } from '@playwright/test';
 import { createApiClient, type ApiClient, type Tournament } from '@tournament/api-client';
-import { API_URL, AUTH_FILE, TOKEN_KEY } from './env';
+import { API_URL } from './env';
+import { readToken } from './session';
 
 /**
  * Nazwa, której nie ma żaden inny test ani seed demo. Backend wywodzi z nazwy
@@ -33,10 +33,7 @@ export const test = base.extend<Fixtures>({
   // argumentu, więc pusty wzorzec jest tu wymagany, a nie przeoczeniem.
   // oxlint-disable-next-line no-empty-pattern
   api: async ({}, use) => {
-    const state = JSON.parse(await readFile(AUTH_FILE, 'utf8')) as {
-      origins: { localStorage: { name: string; value: string }[] }[];
-    };
-    const token = state.origins[0]?.localStorage.find((item) => item.name === TOKEN_KEY)?.value ?? null;
+    const token = await readToken();
     await use(createApiClient({ baseUrl: API_URL, getToken: () => token }));
   },
 

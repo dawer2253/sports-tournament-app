@@ -29,7 +29,7 @@ export DB_DATABASE=e2e
 export DB_USERNAME=root
 export APP_URL="http://localhost:${PORT}"
 
-serve() {
+serve_command() {
   local host=$1
   echo "php artisan migrate:fresh --seed --force && exec php artisan serve --no-reload --host=${host} --port=${PORT}"
 }
@@ -40,10 +40,10 @@ serve() {
 # stać po `make up`: bez tej flagi compose odtworzyłby go, gdyby konfiguracja
 # różniła się choćby ścieżką montowania (np. z worktree).
 if [ -n "${CI:-}" ]; then
-  exec bash -c "$(serve 127.0.0.1)"
+  exec bash -c "$(serve_command 127.0.0.1)"
 fi
 
 exec docker compose run --rm --no-deps \
   --publish "${PORT}:${PORT}" \
   --env "DB_DATABASE=${DB_DATABASE}" --env "DB_USERNAME=${DB_USERNAME}" --env "APP_URL=${APP_URL}" \
-  laravel.test bash -c "$(serve 0.0.0.0)"
+  laravel.test bash -c "$(serve_command 0.0.0.0)"

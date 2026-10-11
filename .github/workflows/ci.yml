@@ -47,6 +47,7 @@ jobs:
               - 'packages/**'
               - 'backend/**'
               - 'e2e/**'
+              - 'package.json'
               - 'package-lock.json'
               - '.github/workflows/ci.yml'
 
@@ -285,9 +286,11 @@ jobs:
 
       # Raport z trace'ami z ponowienia (`trace: 'on-first-retry'`), żeby
       # czerwony przebieg dało się obejrzeć bez odtwarzania go lokalnie:
-      # `npx playwright show-report` w rozpakowanym katalogu.
+      # `npx playwright show-report` w rozpakowanym katalogu. Także przy
+      # zielonym jobie, bo test zielony dopiero za drugim razem (flaky) też
+      # zostawia trace, a bez artefaktu nikt by go nie zobaczył.
       - name: Raport Playwrighta
-        if: failure()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report

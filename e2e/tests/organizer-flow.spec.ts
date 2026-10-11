@@ -56,11 +56,11 @@ test('organizer zakłada ligę, układa terminarz i wpisuje wynik, a tabela go l
   });
 
   // Pary są losowane, więc gospodarza i gościa czytamy z ekranu. Trzy drużyny
-  // przy jednej rundzie dają kolejkę z jednym meczem i jedną pauzą.
+  // przy jednej rundzie dają kolejkę z jednym meczem i jedną pauzą (bye).
   const match = page.getByRole('button', { name: / – / });
   await expect(match).toHaveCount(1);
   const [home, away] = (await match.getAttribute('aria-label'))!.split(' – ') as [string, string];
-  const idle = TEAMS.find((team) => team !== home && team !== away)!;
+  const byeTeam = TEAMS.find((team) => team !== home && team !== away)!;
 
   await test.step(`wpisuje wynik ${home} 3:1 ${away}`, async () => {
     await match.click();
@@ -74,11 +74,11 @@ test('organizer zakłada ligę, układa terminarz i wpisuje wynik, a tabela go l
 
   await test.step('tabela liczy punkty i kolejność z wyniku', async () => {
     await page.getByRole('navigation', { name: 'Sekcje turnieju' }).getByRole('link', { name: 'Tabela' }).click();
-    // Pauzujący wyprzedza przegranego bilansem (0 wobec −2) przy równych
+    // Drużyna z pauzą wyprzedza przegranego bilansem (0 wobec −2) przy równych
     // punktach — domyślne kryteria piłki: punkty, mecz bezpośredni, bilans.
     await expectStandings(page.getByRole('table'), [
       { team: home, played: 1, won: 1, drawn: 0, lost: 0, score: '3:1', points: 3 },
-      { team: idle, played: 0, won: 0, drawn: 0, lost: 0, score: '0:0', points: 0 },
+      { team: byeTeam, played: 0, won: 0, drawn: 0, lost: 0, score: '0:0', points: 0 },
       { team: away, played: 1, won: 0, drawn: 0, lost: 1, score: '1:3', points: 0 },
     ]);
   });

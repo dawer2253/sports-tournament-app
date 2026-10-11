@@ -1,6 +1,6 @@
 import { expect, type Locator } from '@playwright/test';
 
-export interface ExpectedStanding {
+export interface ExpectedStandingRow {
   team: string;
   played: number;
   won: number;
@@ -17,7 +17,7 @@ export interface ExpectedStanding {
  * miejscu, bo panel i strona publiczna układają je inaczej (panel ma bilans,
  * wygrane to w panelu „W”, a na stronie „Z”).
  */
-export async function expectStandings(table: Locator, expected: ExpectedStanding[]) {
+export async function expectStandings(table: Locator, expected: ExpectedStandingRow[]) {
   const rows = table.getByRole('row').filter({ has: table.page().getByRole('cell') });
   await expect(rows).toHaveCount(expected.length);
 
