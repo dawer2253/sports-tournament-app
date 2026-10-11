@@ -24,6 +24,8 @@ class MatchController extends Controller
      * więc sortujemy po nich, a nie liczymy z nich pozycji.
      *
      * Filtry idą przed `paginate()`, żeby `meta` opisywała zbiór zawężony.
+     * Warunek to `!== null`, a nie prawdziwość: `?stageId=0` ma zawęzić listę
+     * do niczego, a nie zdjąć filtr.
      */
     public function index(IndexMatchesRequest $request, Tournament $tournament): JsonResponse
     {
@@ -33,9 +35,9 @@ class MatchController extends Controller
         $matches = $tournament->matches()
             ->join('rounds', 'rounds.id', '=', 'matches.round_id')
             ->with(['round', 'homeTeam', 'awayTeam', 'venue'])
-            ->when($request->stageId(), fn (Builder $query, int $id): Builder => $query->where('matches.stage_id', $id))
-            ->when($request->roundId(), fn (Builder $query, int $id): Builder => $query->where('matches.round_id', $id))
-            ->when($request->status(), fn (Builder $query, string $status): Builder => $query->where('matches.status', $status))
+            ->when($request->stageId() !== null, fn (Builder $query): Builder => $query->where('matches.stage_id', $request->stageId()))
+            ->when($request->roundId() !== null, fn (Builder $query): Builder => $query->where('matches.round_id', $request->roundId()))
+            ->when($request->status() !== null, fn (Builder $query): Builder => $query->where('matches.status', $request->status()))
             ->orderBy('stages.order')
             ->orderBy('rounds.order')
             ->orderBy('matches.match_number')

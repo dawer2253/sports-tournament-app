@@ -199,6 +199,18 @@ it('dociąga perPage do granic zamiast odrzucać', function (mixed $perPage, int
     'tekst' => ['dużo', 50],
 ]);
 
+// Zero to poprawna liczba całkowita, ale nie id żadnej fazy ani kolejki. Filtr
+// ma zawęzić listę do niczego, a nie zniknąć i oddać cały turniej.
+it('przy stageId albo roundId równym zero oddaje pustą listę, a nie wszystkie mecze', function (string $filter) {
+    $tournament = Tournament::factory()->create();
+    GameMatch::factory()->for(roundOf(Stage::factory()->for($tournament)->create(), 1))->create();
+
+    listMatches($tournament, [$filter => 0])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data', [])
+        ->assertJsonPath('meta.total', 0);
+})->with(['stageId', 'roundId']);
+
 it('odrzuca z 422 filtr o złym typie albo nieznany stan', function (array $query, string $field) {
     $tournament = Tournament::factory()->create();
 
