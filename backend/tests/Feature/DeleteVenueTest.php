@@ -34,18 +34,41 @@ it('usuwa obiekt miękko i oddaje 204', function () {
     expect(Venue::withTrashed()->findOrFail($venue->id)->trashed())->toBeTrue();
 });
 
-it('nie usuwa obiektu z rozegranym meczem', function () {
+it('nie usuwa obiektu z meczem rozegranym albo trwającym i nie odpina go od meczów', function (string $status) {
     $venue = Venue::factory()->create(['name' => 'Boisko Bemowo']);
-    GameMatch::factory()
-        ->for(Round::factory()->for(Stage::factory()->for($venue->tournament)))
-        ->finished()
-        ->create(['venue_id' => $venue->id]);
+    $round = Round::factory()->for(Stage::factory()->for($venue->tournament))->create();
+    GameMatch::factory()->for($round)->started($status)->create(['venue_id' => $venue->id]);
+    $scheduled = GameMatch::factory()->for($round)->create(['match_number' => 2, 'venue_id' => $venue->id]);
 
     deleteVenue($venue)
         ->assertValidResponse(422)
-        ->assertJsonPath('errors.id', ['Nie można usunąć: obiekt „Boisko Bemowo” ma powiązane rozegrane mecze.']);
+        ->assertJsonPath('errors.id', ['Nie można usunąć: obiekt „Boisko Bemowo” ma rozegrane lub trwające mecze.']);
 
-    expect($venue->fresh()->deleted_at)->toBeNull();
+    expect($venue->fresh()->deleted_at)->toBeNull()
+        ->and($scheduled->fresh()->venue_id)->toBe($venue->id);
+})->with(['live', 'finished']);
+
+// Mecz na innym obiekcie stoi obok, żeby odpięcie szło po obiekcie, a nie
+// po turnieju. W meczach usuniętego obiektu zmienia się tylko `venue_id`.
+it('odpina obiekt od meczów scheduled, a reszty meczu nie rusza', function () {
+    $venue = Venue::factory()->create();
+    $other = Venue::factory()->for($venue->tournament)->create();
+    $round = Round::factory()->for(Stage::factory()->for($venue->tournament))->create();
+    $matches = GameMatch::factory()->count(2)->for($round)
+        ->sequence(['match_number' => 1], ['match_number' => 2])
+        ->create(['venue_id' => $venue->id]);
+    $elsewhere = GameMatch::factory()->for($round)->create(['match_number' => 3, 'venue_id' => $other->id]);
+    $columns = ['round_id', 'match_number', 'home_team_id', 'away_team_id', 'status', 'kickoff_at'];
+
+    deleteVenue($venue)->assertValidResponse(204);
+
+    foreach ($matches as $match) {
+        $after = $match->fresh();
+        expect($after->venue_id)->toBeNull()
+            ->and($after->only($columns))->toEqual($match->only($columns));
+    }
+    expect(GameMatch::where('venue_id', $venue->id)->exists())->toBeFalse()
+        ->and($elsewhere->fresh()->venue_id)->toBe($other->id);
 });
 
 // Na danych demo stoi krok przeciw Laravelowi w ekranie obiektów panelu (#116):

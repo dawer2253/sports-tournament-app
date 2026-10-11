@@ -41,7 +41,7 @@ Dać organizatorowi jedno miejsce do zarządzania drużyną (nazwa, herb, usuni�
   - Formularz sprawdza `zod`em: `name` 1–120 znaków, `number` całkowity 0–999 (puste pole to `null`), `position` do 60 znaków. Pole „Pozycja" jest bez podpowiedzi.
   - Duplikat numeru daje `422` pod `number`, przy polu. Limit 50 zawodników daje `422` pod `players`, w błędzie formularza. Przycisk nie blokuje się z wyprzedzeniem, bo limity sprawdza serwer.
   - Po zapisie i po usunięciu odświeżają się skład, drużyna i lista drużyn, bo zmienia się `playersCount`.
-- „Usuń drużynę" prosi o potwierdzenie, które mówi o kaskadzie, np. „Usunie też 12 zawodników." (bez tego zdania przy zerze). Po sukcesie wracamy na listę z toastem, a `422` z guarda włącza tryb zablokowany (#89 pkt 5).
+- „Usuń drużynę" prosi o potwierdzenie, które mówi o kaskadzie, np. „Usunie też 12 zawodników." (bez tego zdania przy zerze). Przy meczach zaplanowanych dochodzi drugie zdanie, np. „Usunie też 12 zaplanowanych meczów drużyny. Pozostałe mecze zostają bez zmian, z tymi samymi datami." (#171). Po sukcesie wracamy na listę z toastem, a `422` z guarda włącza tryb zablokowany (#89 pkt 5).
 - „Wgraj herb" / „Zmień herb" otwiera okno z polem pliku i podglądem; okno zamyka się dopiero po odpowiedzi serwera. Aplikacja sprawdza format (`file.type`) i rozmiar (2 MB), wymiary tylko serwer; `422` pod `logo` siada przy polu (#89 pkt 8).
 - „Usuń herb" prosi o potwierdzenie, bo plik przepada.
 

@@ -39,5 +39,8 @@ Umożliwić organizatorowi przeglądanie i zarządzanie miejscami rozgrywek: dod
 
 ## Otwarte pytania
 Rozstrzygnięte w #90:
-- Usuwanie obiektu z rozegranymi meczami blokuje serwer (guard rozegranych meczów), a panel go nie uprzedza: odmowę pokazuje stan „Usuwanie zablokowane".
+- Usuwanie obiektu z meczami rozegranymi albo trwającymi blokuje serwer (guard), a panel go nie uprzedza: odmowę pokazuje stan „Usuwanie zablokowane".
 - Pojemność i typ obiektu (boisko vs hala) nie wchodzą.
+
+Rozstrzygnięte w #171:
+- Obiekt z meczami zaplanowanymi da się usunąć, a mecze zostają bez obiektu, z tymi samymi datami. Przy `scheduledMatchesCount > 0` okno potwierdzenia mówi o tym zdaniem, np. „12 zaplanowanych meczów straci obiekt. Daty meczów się nie zmienią." (bez tego zdania przy zerze). Zdanie odmienia się w całości, razem z czasownikiem i drugim zdaniem: „1 zaplanowany mecz straci obiekt. Data meczu się nie zmieni.", „2 zaplanowane mecze stracą obiekt. Daty meczów się nie zmienią.".

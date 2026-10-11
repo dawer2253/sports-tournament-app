@@ -141,7 +141,8 @@ przeczytaj go, zanim któreś z nich „naprawisz":
 
 - **Model meczu nazywa się `GameMatch`**, mimo że byt nazywa się `Match`.
 - **Nie dodawaj `RESTRICT` wewnątrz poddrzewa turnieju.** Zakaz usuwania bytu
-  z rozegranym meczem realizuje guard w modelach (`GuardsFinishedMatches`),
+  z meczem rozegranym albo trwającym realizuje guard w modelach
+  (`GuardsStartedMatches`),
   zwracający **422** (tak stanowi kontrakt), nie Policy i nie klucz obcy.
   Obejmuje byty kasowane ręcznie, nie strukturę spod generatora.
 - **Przynależność grupy do turnieju sprawdzi Form Request**, nie klucz obcy —
@@ -157,11 +158,13 @@ Poza tym:
 - Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
   robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
 - **`Team::delete()` jest nadpisane i owija w transakcję usunięcie drużyny
-  razem z kaskadą na zawodników** — powody w docblockach `Team::booted()`
-  i `Team::delete()`. Nie `deleteOrFail()`, bo transakcję dostaje wtedy tylko
+  razem z kaskadą na zawodników i na jej mecze `scheduled`** — powody
+  w docblockach `Team::booted()` i `Team::delete()`. Tak samo
+  `Venue::delete()` owija usunięcie obiektu razem z odpięciem go od meczów
+  `scheduled`. Nie `deleteOrFail()`, bo transakcję dostaje wtedy tylko
   wywołujący, który o nim pamięta. Masowe `->delete()` na zapytaniu omija
-  i transakcję, i zdarzenia modelu (także guard), więc drużyny usuwa się
-  pojedynczo.
+  i transakcję, i zdarzenia modelu (także guard), więc drużyny i obiekty
+  usuwa się pojedynczo.
 
 ## Autoryzacja
 

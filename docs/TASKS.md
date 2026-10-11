@@ -33,7 +33,7 @@ Do zrobienia:
 
 ## S2 — Liga (D prowadzi) → Demo #1
 - [ ] Generator round-robin (circle method + bye + 1/2 rundy) (D) — bye zostaje wewnątrz generatora, nie trafia do terminarza (decyzja #24)
-  - Razem z generatorem: usuwanie drużyny lub obiektu z zaplanowanymi, nierozegranymi meczami (mapa #78, #80)
+  - Razem z generatorem: usuwanie drużyny lub obiektu z zaplanowanymi, nierozegranymi meczami (mapa #78, #80) — wydzielone do #171, przed generatorem
 - [ ] Auto-rozkład dat (start + interwał) + ostrzeżenia kolizji (W)
 - [ ] StandingsCalculator on-read (D)
 - [ ] Tiebreaki + rejestr komparatorów + head-to-head mini-tabela (D)
@@ -53,6 +53,7 @@ Do zrobienia:
 
 ## S4 — Puchar (W prowadzi)
 - [ ] BracketService (seeding, pary, `winner_to_match_id` / `loser_to_match_id`) (W)
+  - Usunięcie drużyny kasuje jej mecze `scheduled` (#171, `Team::booted()`), a krawędzie drabinki mają `nullOnDelete`, więc w fazie `knockout` skasowany mecz wyzeruje `winner_to_match_id` / `loser_to_match_id` meczów, które do niego prowadzą. Rozstrzygnąć razem z drabinką: kasować mecz czy zerować slot drużyny
 - [ ] Cykl życia meczu + kaskada propagacji zwycięzcy (W)
 - [ ] Admin: kreator/podgląd drabinki (W)
 - [ ] Public: widok drabinki (W)

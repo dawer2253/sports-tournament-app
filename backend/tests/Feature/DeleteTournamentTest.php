@@ -27,14 +27,15 @@ beforeEach(function () {
 
 /**
  * Pełne poddrzewo turnieju, z drużyną usuniętą miękko i jej zawodnikiem.
- * Mecz domyślnie zostaje nierozegrany, bo rozegrany blokuje usunięcie.
+ * Mecz domyślnie zostaje `scheduled`, bo `live` i `finished` (`$startedMatch`)
+ * blokują usunięcie.
  *
  * Funkcje tego pliku lądują w globalnej przestrzeni nazw Pesta, stąd prefiks
  * `tournamentDeletion` w każdej nazwie.
  *
  * @return array<class-string, list<int>> klasa modelu → id utworzonych wierszy
  */
-function tournamentDeletionSubtree(Tournament $tournament, bool $withFinishedMatch = false): array
+function tournamentDeletionSubtree(Tournament $tournament, ?string $startedMatch = null): array
 {
     $stage = Stage::factory()->group()->for($tournament)->create();
     $group = Group::factory()->for($stage)->create();
@@ -47,7 +48,7 @@ function tournamentDeletionSubtree(Tournament $tournament, bool $withFinishedMat
     $venue = Venue::factory()->for($tournament)->create();
     $match = GameMatch::factory()
         ->for($round)
-        ->when($withFinishedMatch, fn (GameMatchFactory $factory) => $factory->finished())
+        ->when($startedMatch !== null, fn (GameMatchFactory $factory) => $factory->started($startedMatch))
         ->create([
             'group_id' => $group->id,
             'home_team_id' => $team->id,
@@ -184,18 +185,18 @@ it('zwalnia slug: po usunięciu nowy turniej dostaje ten sam adres', function ()
         ->assertJsonPath('data.slug', 'liga-osiedlowa-2026');
 });
 
-it('nie usuwa turnieju ani jego poddrzewa, gdy w turnieju rozegrano mecz', function () {
+it('nie usuwa turnieju ani jego poddrzewa, gdy turniej ma mecz rozegrany albo trwający', function (string $status) {
     $tournament = Tournament::factory()->create(['name' => 'Liga Osiedlowa 2026']);
-    $subtree = tournamentDeletionSubtree($tournament, withFinishedMatch: true);
+    $subtree = tournamentDeletionSubtree($tournament, startedMatch: $status);
 
     actingAsOrganizer($tournament->user)
         ->deleteJson("/api/v1/tournaments/{$tournament->id}")
         ->assertValidResponse(422)
-        ->assertJsonPath('errors.id', ['Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.']);
+        ->assertJsonPath('errors.id', ['Nie można usunąć: turniej „Liga Osiedlowa 2026” ma rozegrane lub trwające mecze.']);
 
     expect($tournament->fresh())->not->toBeNull();
     expectTournamentDeletionSubtreeIntact($subtree);
-});
+})->with(['live', 'finished']);
 
 it('usuwa turniej ze statusem finished, jeżeli nie rozegrano w nim meczu', function () {
     $tournament = Tournament::factory()->create(['status' => 'finished']);
@@ -230,7 +231,7 @@ it('nie rusza katalogu turnieju, którego nie można usunąć', function () {
     fakePublicDisk();
     $tournament = Tournament::factory()->create();
     $directory = tournamentDeletionFiles($tournament);
-    tournamentDeletionSubtree($tournament, withFinishedMatch: true);
+    tournamentDeletionSubtree($tournament, startedMatch: 'finished');
 
     actingAsOrganizer($tournament->user)
         ->deleteJson("/api/v1/tournaments/{$tournament->id}")

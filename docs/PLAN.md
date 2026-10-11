@@ -286,9 +286,6 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 - Słownik pozycji zawodników per sport. W v0.1 `position` to wolny tekst (#80).
 - Seryjne dodawanie zawodników w panelu (kilku naraz albo „Dodaj i kolejny”).
   W S1 jedno otwarcie dialogu to jeden zawodnik (#89).
-- Liczba meczów obiektu (`matchesCount`) w odpowiedzi API. Rozstrzygnąć w S2
-  razem z usuwaniem obiektu z zaplanowanymi meczami, bo od tej reguły zależy,
-  czy pole liczy wszystkie mecze, czy tylko nierozegrane (#90).
 - Krótka nazwa drużyny (`shortName`) w kontrakcie. W S1 skrót w herbie
   zastępczym wylicza `teamAbbr` z nazwy (#89).
 - Podgląd strony publicznej turnieju przed publikacją. W S1 szkic daje na
@@ -297,6 +294,9 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
   próbę” blokuje usunięcie turnieju przez guard (#82, #83).
 - v0.2: kary punktowe (np. za walkower) jako osobne pojęcie obok punktacji.
   W v0.1 `points` mieści się w 0–10 (#87).
+- Wycofanie drużyny w trakcie sezonu, z walkowerami za jej pozostałe mecze.
+  Dziś drużyny z meczem rozegranym albo trwającym nie da się usunąć, a bez
+  takiego meczu usunięcie kasuje jej mecze zaplanowane (#171).
 
 ---
 

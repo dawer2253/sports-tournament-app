@@ -56,4 +56,26 @@ class GameMatchFactory extends Factory
             'away_score' => $away,
         ]);
     }
+
+    /** Mecz trwający — ma już wynik cząstkowy, ale nie wchodzi do tabeli. */
+    public function live(int $home = 1, int $away = 0): static
+    {
+        return $this->state([
+            'status' => 'live',
+            'home_score' => $home,
+            'away_score' => $away,
+        ]);
+    }
+
+    /**
+     * Mecz `live` albo `finished` — oba blokują usuwanie powiązanych bytów
+     * (`GuardsStartedMatches`), więc testy guarda biegną po obu.
+     */
+    public function started(string $status): static
+    {
+        return match ($status) {
+            'live' => $this->live(),
+            'finished' => $this->finished(),
+        };
+    }
 }

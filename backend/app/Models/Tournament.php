@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\GuardsFinishedMatches;
+use App\Models\Concerns\GuardsStartedMatches;
 use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,8 +18,9 @@ use Illuminate\Support\Str;
  * Jedyny korzeń własności w systemie (decyzja #5): każdy inny byt należy do
  * organizera pośrednio, przez turniej.
  *
- * Bez soft-delete: turniej albo nie ma rozegranych meczów i kasuje się na twardo
- * razem z poddrzewem, albo je ma i guard nie pozwala go usunąć wcale.
+ * Bez soft-delete: turniej albo nie ma meczów rozpoczętych (trwających ani
+ * zakończonych) i kasuje się na twardo razem z poddrzewem, albo je ma i guard
+ * nie pozwala go usunąć wcale.
  */
 #[Fillable([
     'user_id', 'sport_id', 'slug', 'name',
@@ -27,7 +28,7 @@ use Illuminate\Support\Str;
 ])]
 class Tournament extends Model
 {
-    use GuardsFinishedMatches;
+    use GuardsStartedMatches;
     use HasFactory;
     use HasLogo;
 
@@ -106,7 +107,7 @@ class Tournament extends Model
      * baza, więc pliki to jedyne, co trzeba sprzątnąć ręcznie.
      *
      * Zdarzenie `deleted`, nie `deleting`: guard odpala w `deleting`, więc
-     * turniej z rozegranym meczem nie dochodzi tu wcale i jego pliki zostają.
+     * turniej z meczem rozpoczętym nie dochodzi tu wcale i jego pliki zostają.
      * Kasowanie idzie po commicie, a jego porażka trafia do `report()` bez
      * zmiany odpowiedzi (`DeletesPublicFilesAfterCommit`, wnoszone przez `HasLogo`).
      */
@@ -293,9 +294,9 @@ class Tournament extends Model
         return $this->storageDirectory().'/logo';
     }
 
-    public function hasFinishedMatches(): bool
+    public function hasStartedMatches(): bool
     {
-        return $this->matches()->where('matches.status', 'finished')->exists();
+        return $this->matches()->whereIn('matches.status', GameMatch::STARTED_STATUSES)->exists();
     }
 
     protected function guardLabel(): string

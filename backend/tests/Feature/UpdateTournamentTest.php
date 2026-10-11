@@ -28,14 +28,14 @@ function tournamentOfSport(string $sport): Tournament
     return ($sport === 'basketball' ? $factory->basketball() : $factory)->create();
 }
 
-function withFinishedMatch(Tournament $tournament): Tournament
+function withStartedMatch(Tournament $tournament, string $status = 'finished'): Tournament
 {
     GameMatch::factory()
         ->for(Round::factory()->for(Stage::factory()->for($tournament)))
-        ->finished()
+        ->started($status)
         ->create();
 
-    expect($tournament->hasFinishedMatches())->toBeTrue();
+    expect($tournament->hasStartedMatches())->toBeTrue();
 
     return $tournament;
 }
@@ -211,7 +211,7 @@ it('przechodzi między stanami bez warunków wstępnych', function (string $from
     $tournament = Tournament::factory()->create(['status' => $from]);
 
     if ($finishedMatch) {
-        withFinishedMatch($tournament);
+        withStartedMatch($tournament);
     }
 
     patchTournament($tournament, ['status' => $to])
@@ -231,18 +231,18 @@ it('przechodzi między stanami bez warunków wstępnych', function (string $from
     'draft → draft z meczem' => ['draft', 'draft', true],
 ]);
 
-it('nie cofa do draft turnieju z zakończonym meczem', function (string $from) {
-    $tournament = withFinishedMatch(Tournament::factory()->create(['status' => $from]));
+it('nie cofa do draft turnieju z meczem rozegranym albo trwającym', function (string $from, string $match) {
+    $tournament = withStartedMatch(Tournament::factory()->create(['status' => $from]), $match);
 
     patchTournament($tournament, ['status' => 'draft'])
         ->assertValidRequest()
         ->assertValidResponse(422)
-        ->assertJsonPath('errors.status', ['Turniej ma zakończony mecz, więc nie może wrócić do szkicu.']);
+        ->assertJsonPath('errors.status', ['Turniej ma rozegrane lub trwające mecze, więc nie może wrócić do szkicu.']);
 
     expect($tournament->fresh()->status)->toBe($from);
-})->with(['active', 'finished']);
+})->with(['active', 'finished'])->with(['live', 'finished']);
 
-// Mecz zaplanowany nie blokuje powrotu do szkicu — liczy się tylko zakończony.
+// Mecz zaplanowany nie blokuje powrotu do szkicu — liczy się rozegrany albo trwający.
 it('cofa do draft turniej z meczem niezakończonym', function () {
     $tournament = Tournament::factory()->create(['status' => 'active']);
     GameMatch::factory()->for(Round::factory()->for(Stage::factory()->for($tournament)))->create();
@@ -464,7 +464,7 @@ it('zmienia punktację i tiebreaki niezależnie od statusu i zakończonych mecz�
     $tournament = Tournament::factory()->create(['status' => $status]);
 
     if ($finishedMatch) {
-        withFinishedMatch($tournament);
+        withStartedMatch($tournament);
     }
 
     patchTournament($tournament, [

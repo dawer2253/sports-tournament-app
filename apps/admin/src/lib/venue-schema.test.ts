@@ -47,7 +47,7 @@ describe('venueSchema', () => {
 });
 
 describe('venueValues', () => {
-  const venue: Venue = { id: 2, tournamentId: 1, name: 'Hala Ursus', address: null };
+  const venue: Venue = { id: 2, tournamentId: 1, name: 'Hala Ursus', address: null, scheduledMatchesCount: 0 };
 
   it('przy dodawaniu startuje z pustymi polami', () => {
     expect(venueValues(null)).toEqual({ name: '', address: '' });

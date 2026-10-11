@@ -43,10 +43,10 @@ meczów. Byłby to błąd niedeterministyczny, czyli najgorszy możliwy rodzaj.
 Zamiast tego wewnątrz poddrzewa jest `CASCADE` albo `SET NULL` — to drugie tam,
 gdzie pusty slot jest sensownym stanem (`venue_id`, `home_team_id`,
 `away_team_id`, `matches.group_id`, `teams.group_id`, krawędzie drabinki). Zakaz usuwania bytu
-powiązanego z meczem `finished` realizuje guard w modelach
-(`GuardsFinishedMatches`), zwracający **422** — tak stanowi kontrakt
-(`DELETE /teams/{team}`: „Odrzucane z kodem `422`, jeżeli drużyna wystąpiła
-w rozegranym meczu"). Semantycznie bliższe byłoby 409, bo organizer ma prawo do
+powiązanego z meczem `finished` (od #171 także `live`) realizuje guard
+w modelach (`GuardsStartedMatches`), zwracający **422** — tak stanowi kontrakt
+(`DELETE /teams/{team}`: „Daje `422` z błędem pod `id`, jeżeli drużyna ma mecz
+rozegrany albo trwający"). Semantycznie bliższe byłoby 409, bo organizer ma prawo do
 turnieju i blokuje go stan danych, ale kontrakt jest jedynym źródłem prawdy
 ([ADR-0001](0001-kontrakt-openapi-jako-zrodlo-prawdy.md)) i zmiana kodu
 odpowiedzi idzie przez spec, nie przez backend.

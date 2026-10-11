@@ -2,12 +2,13 @@
 
 namespace App\Models\Concerns;
 
-use App\Exceptions\FinishedMatchGuardException;
+use App\Exceptions\StartedMatchGuardException;
 
 /**
- * Guard: nie usuwamy bytu powiązanego z meczem `finished` — ani na twardo,
- * ani na miękko. Rozegrany turniej ma dalej działać pod swoim publicznym
- * adresem, więc historia jest nienaruszalna.
+ * Guard: nie usuwamy bytu powiązanego z meczem rozegranym albo trwającym
+ * (`finished` albo `live`) — ani na twardo, ani na miękko. Rozegrany turniej
+ * ma dalej działać pod swoim publicznym adresem, więc historia jest
+ * nienaruszalna, a mecz trwający za chwilę stanie się historią.
  *
  * Guard siedzi w zdarzeniu `deleting` modelu, a nie w Policy ani w kontrolerze,
  * bo to jedyne miejsce, którego nie ominie ani seeder, ani przyszły kod
@@ -23,19 +24,19 @@ use App\Exceptions\FinishedMatchGuardException;
  * Kasowanie kaskadowe w bazie guarda nie uruchamia — dlatego `tournaments.user_id`
  * jest `RESTRICT`, żeby usunięcie konta nie obeszło go od góry (ADR-0005).
  */
-trait GuardsFinishedMatches
+trait GuardsStartedMatches
 {
-    public static function bootGuardsFinishedMatches(): void
+    public static function bootGuardsStartedMatches(): void
     {
         static::deleting(function (self $model) {
-            if ($model->hasFinishedMatches()) {
-                throw FinishedMatchGuardException::for($model->guardLabel());
+            if ($model->hasStartedMatches()) {
+                throw StartedMatchGuardException::for($model->guardLabel());
             }
         });
     }
 
-    /** Czy z tym bytem wiąże się choć jeden mecz `finished`. */
-    abstract public function hasFinishedMatches(): bool;
+    /** Czy z tym bytem wiąże się choć jeden mecz `live` albo `finished`. */
+    abstract public function hasStartedMatches(): bool;
 
     /** Nazwa bytu w komunikacie błędu. */
     abstract protected function guardLabel(): string;

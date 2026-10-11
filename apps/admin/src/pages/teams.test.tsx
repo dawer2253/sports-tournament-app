@@ -118,6 +118,22 @@ describe('dodanie drużyny', () => {
     expect(within(dialog).getByLabelText('Nazwa drużyny')).not.toHaveAttribute('aria-invalid');
   });
 
+  // Panel nie ukrywa „Dodaj drużynę” po rozpoczęciu gry (#171): odmowę daje
+  // serwer pod tym samym kluczem co limit, a formularz pokazuje ją nad polami.
+  it('`422` pod `teams` po rozpoczęciu gry trafia nad formularz', async () => {
+    const message = 'Turniej ma rozegrane lub trwające mecze, więc nie można dodać drużyny.';
+    serveTeams({
+      override: { 'POST /tournaments/7/teams': () => validationError({ teams: [message] }) },
+    });
+    const { user } = renderPanel(LIST);
+
+    const dialog = await openCreateDialog(user);
+    await user.type(within(dialog).getByLabelText('Nazwa drużyny'), 'Orły Bielany');
+    await user.click(within(dialog).getByRole('button', { name: 'Dodaj' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(message);
+  });
+
   it('pusta nazwa nie idzie do API', async () => {
     const { bodies } = serveTeams();
     const { user } = renderPanel(LIST);

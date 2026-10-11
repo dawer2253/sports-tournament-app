@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\GameMatch;
 use App\Models\Player;
+use App\Models\Round;
+use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\User;
@@ -36,6 +39,7 @@ it('oddaje drużyny po nazwie bez względu na wielkość liter, w kształcie z k
             'logoUrl' => null,
             'groupId' => null,
             'playersCount' => 0,
+            'scheduledMatchesCount' => 0,
         ]);
 });
 
@@ -70,4 +74,30 @@ it('liczy zawodników każdej drużyny osobno, bez usuniętych', function () {
         ->getJson("/api/v1/tournaments/{$tournament->id}/teams")
         ->assertValidResponse(200)
         ->assertJsonPath('data.*.playersCount', [3, 1]);
+});
+
+// Orły grają dwa mecze `scheduled`, raz u siebie i raz na wyjeździe, a do
+// tego jeden `live` i jeden `finished`, które liczyć się nie mają. Pozostałe
+// drużyny mają po jednym `scheduled`, więc liczba policzona tylko po jednej
+// stronie albo z meczami rozegranymi dałaby inną listę.
+it('liczy mecze scheduled drużyny po obu stronach, bez live i finished', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $orly = Team::factory()->for($tournament)->create(['name' => 'Orły']);
+    $sokoly = Team::factory()->for($tournament)->create(['name' => 'Sokoły']);
+    $wilki = Team::factory()->for($tournament)->create(['name' => 'Wilki']);
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    $match = fn (int $number, Team $home, Team $away) => GameMatch::factory()
+        ->for($round)
+        ->state(['match_number' => $number, 'home_team_id' => $home->id, 'away_team_id' => $away->id]);
+    $match(1, $orly, $sokoly)->create();
+    $match(2, $wilki, $orly)->create();
+    $match(3, $orly, $sokoly)->live()->create();
+    $match(4, $wilki, $orly)->finished()->create();
+
+    actingAsOrganizer($organizer)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/teams")
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.*.name', ['Orły', 'Sokoły', 'Wilki'])
+        ->assertJsonPath('data.*.scheduledMatchesCount', [2, 1, 1]);
 });

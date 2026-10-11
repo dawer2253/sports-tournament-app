@@ -30,7 +30,7 @@ Stan ustawia organizer. Nic w systemie nie zmienia go samo. Turniej w szkicu
 nie jest opublikowany: pod jego publicznym adresem nic nie ma. **Opublikować**
 turniej znaczy przestawić go ze szkicu na trwający. Zakończenie to deklaracja
 organizera, że rozgrywki się skończyły, a nie blokada zmian. Turniej, który ma
-zakończony mecz, nie wraca do szkicu.
+mecz rozpoczęty (patrz `Match`), nie wraca do szkicu.
 
 ## Slug
 
@@ -101,6 +101,9 @@ Uczestnik turnieju. Należy do jednego turnieju. Dwie drużyny o tej samej nazwi
 w dwóch turniejach to dwa niepowiązane byty. W obrębie jednego turnieju nazwa
 drużyny się nie powtarza.
 
+Usunięcie drużyny usuwa też jej mecze zaplanowane. Reszta terminarza zostaje
+bez zmian, nawet jeśli kolejka opustoszeje.
+
 ## Logo (logo, herb)
 
 Obraz, który organizer wgrywa dla turnieju albo dla drużyny. W kodzie i w API
@@ -126,6 +129,9 @@ Zawodnicy jednej drużyny to jej skład (etykieta UI "skład").
 Miejsce rozegrania meczu. Należy do turnieju. W obrębie jednego turnieju nazwa
 obiektu się nie powtarza.
 
+Usunięcie obiektu nie usuwa meczów: mecze zaplanowane zostają bez obiektu,
+z tym samym terminem.
+
 ## Match (mecz)
 
 Spotkanie dwóch drużyn w ramach kolejki. Ma gospodarza i gościa, planowany
@@ -137,6 +143,14 @@ w backendzie nazywa się `GameMatch`
 
 Stan meczu: zaplanowany, trwający, zakończony. Tylko mecz zakończony wpływa na
 tabelę i na statystyki.
+
+**Mecz rozpoczęty** to mecz trwający albo zakończony, czyli każdy poza
+zaplanowanym. Wiąże drużyny, zawodników i obiekt, które w nim uczestniczą:
+żadnego z nich nie da się usunąć, a turniej z meczem rozpoczętym nie przyjmuje
+nowych drużyn i nie wraca do szkicu.
+
+_Unikaj_: „rozegrany” (`played`) jako nazwy meczu rozpoczętego. Mecz rozegrany
+to mecz zakończony, i tak liczy go tabela.
 
 Mecz ma pozycję własną: numer w obrębie swojej kolejki (`matchNumber`). W lidze
 porządkuje kolejkę, w drabince razem z numerem rundy wyznacza miejsce meczu

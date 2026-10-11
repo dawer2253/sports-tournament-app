@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\GuardsFinishedMatches;
+use App\Models\Concerns\GuardsStartedMatches;
 use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 #[Fillable(['tournament_id', 'group_id', 'name', 'logo_path'])]
 class Team extends Model
 {
-    use GuardsFinishedMatches;
+    use GuardsStartedMatches;
     use HasFactory;
     use HasLogo;
     use SoftDeletes;
@@ -33,31 +33,41 @@ class Team extends Model
 
     /**
      * Kaskada: zawodnik nie istnieje bez drużyny (`CONTEXT.md`), więc
-     * miękkie usunięcie drużyny usuwa miękko jej zawodników. Siedzi w modelu
-     * z tego samego powodu co guard — nie ominie jej ani seeder, ani przyszły
-     * kod (`GuardsFinishedMatches`).
+     * miękkie usunięcie drużyny usuwa miękko jej zawodników. Tak samo
+     * znikają jej mecze `scheduled` (#171): mecz z drużyną, której już nie
+     * ma, nie zostanie rozegrany. Obie kaskady siedzą w modelu z tego samego
+     * powodu co guard — nie ominie ich ani seeder, ani przyszły kod
+     * (`GuardsStartedMatches`).
      *
      * Zdarzenie `deleted`, nie `deleting`: guard odpala w `deleting`, więc
-     * odrzucone usunięcie nie dochodzi tu wcale i zawodnicy zostają
-     * nietknięci, bez zależności od kolejności rejestrowania nasłuchów.
+     * odrzucone usunięcie nie dochodzi tu wcale i zawodnicy oraz mecze
+     * zostają nietknięci, bez zależności od kolejności rejestrowania nasłuchów.
      *
      * Każdy zawodnik idzie przez własny `delete()`, więc i przez swój guard.
      * Guard drużyny go nie zastępuje: baza nie wiąże zawodnika zdarzenia
      * z drużyną meczu, więc zawodnik może mieć rozegrany mecz, którego jego
      * drużyna nie ma. Usunięcie twarde załatwia `cascadeOnDelete` w bazie.
+     *
+     * Mecze kasuje jedno zapytanie, bez zdarzeń: `GameMatch` nie ma guarda
+     * ani nasłuchów, a guard drużyny przepuścił ją tylko bez meczów `live`
+     * i `finished`. Reszty terminarza kasowanie nie rusza — kolejki zostają,
+     * także puste, a pozostałe mecze zachowują `match_number`, więc w kolejce
+     * mogą powstać dziury (opis `DELETE /teams/{team}` w kontrakcie).
      */
     protected static function booted(): void
     {
         static::deleted(function (self $team): void {
             if (! $team->isForceDeleting()) {
                 $team->players()->get()->each->delete();
+                $team->matchesQuery()->where('status', 'scheduled')->delete();
             }
         });
     }
 
     /**
-     * Drużyna i jej zawodnicy znikają razem albo wcale: odmowa guarda
-     * zawodnika w kaskadzie cofa też usunięcie drużyny.
+     * Drużyna, jej zawodnicy i jej mecze `scheduled` znikają razem albo
+     * wcale: odmowa guarda zawodnika w kaskadzie cofa też usunięcie drużyny
+     * i jej meczów.
      */
     public function delete(): ?bool
     {
@@ -105,6 +115,28 @@ class Team extends Model
     }
 
     /**
+     * Liczniki, których wymaga `TeamResource`, do `withCount()` na liście
+     * i `loadCount()` przy pojedynczej drużynie — jedna lista dla wszystkich
+     * odpowiedzi z drużyną.
+     *
+     * Mecze `scheduled` to suma dwóch liczników po relacjach, bo
+     * `matchesQuery()` nie jest relacją i `withCount` go nie przyjmie.
+     * Suma nie liczy meczu dwa razy: drużyna nie gra sama ze sobą.
+     *
+     * @return array<int|string, mixed>
+     */
+    public static function resourceCounts(): array
+    {
+        $scheduled = fn (Builder $query) => $query->where('status', 'scheduled');
+
+        return [
+            'players',
+            'homeMatches as scheduled_home_matches_count' => $scheduled,
+            'awayMatches as scheduled_away_matches_count' => $scheduled,
+        ];
+    }
+
+    /**
      * Czy grupa, do której przypisujemy drużynę, należy do tego samego turnieju.
      *
      * Bazy o to nie prosimy — dlaczego, tłumaczy migracja `teams`. Wywołaj to
@@ -124,9 +156,9 @@ class Team extends Model
         return Tournament::storageDirectoryFor($this->tournament_id)."/teams/{$this->id}";
     }
 
-    public function hasFinishedMatches(): bool
+    public function hasStartedMatches(): bool
     {
-        return $this->matchesQuery()->where('status', 'finished')->exists();
+        return $this->matchesQuery()->whereIn('status', GameMatch::STARTED_STATUSES)->exists();
     }
 
     protected function guardLabel(): string

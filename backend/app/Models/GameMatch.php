@@ -31,6 +31,15 @@ class GameMatch extends Model
 {
     use HasFactory;
 
+    /**
+     * Mecz rozpoczęty (`CONTEXT.md`): trwający albo zakończony. Wiąże
+     * powiązane z nim byty (`GuardsStartedMatches`) i zamyka turniej na nowe
+     * drużyny. Pozostaje tylko `scheduled` — mecz, który można jeszcze
+     * skasować albo przenieść. „Rozegrany” znaczy w słowniku „zakończony”,
+     * stąd `started`, a nie `played`.
+     */
+    public const STARTED_STATUSES = ['live', 'finished'];
+
     protected function casts(): array
     {
         return ['kickoff_at' => 'datetime'];

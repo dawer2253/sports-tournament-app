@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Sports Tournament API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Kontrakt REST API aplikacji do prowadzenia turniejów sportowych.
 
@@ -426,8 +426,9 @@ paths:
 
         Zmienia też `status` (znaczenie stanów i to, kto je ustawia:
         `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
-        warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
-        nie przechodzi do `draft` z innego stanu — taka próba daje `422`
+        warunków wstępnych. Jedyny zakaz: turniej, który ma mecz rozegrany
+        albo trwający (`finished` albo `live`), nie przechodzi do `draft`
+        z innego stanu — taka próba daje `422`
         z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
         w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
 
@@ -465,9 +466,9 @@ paths:
         z plikami logo i herbów. Operacji nie da się cofnąć, a `slug` od razu
         się zwalnia.
 
-        Odrzucane z kodem `422`, jeżeli w turnieju rozegrano choć jeden mecz:
-        jego publiczny adres ma działać dalej. Status turnieju nie ma tu
-        znaczenia.
+        Odrzucane z kodem `422`, jeżeli turniej ma choć jeden mecz rozegrany
+        albo trwający (`finished` albo `live`): jego publiczny adres ma
+        działać dalej. Status turnieju nie ma tu znaczenia.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -616,9 +617,9 @@ paths:
                     items: { $ref: '#/components/schemas/Team' }
               example:
                 data:
-                  - { id: 3, tournamentId: 1, name: Orły Bielany, logoUrl: null, groupId: null, playersCount: 3 }
-                  - { id: 2, tournamentId: 1, name: Sokoły Ursus, logoUrl: null, groupId: null, playersCount: 3 }
-                  - { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3 }
+                  - { id: 3, tournamentId: 1, name: Orły Bielany, logoUrl: null, groupId: null, playersCount: 3, scheduledMatchesCount: 2 }
+                  - { id: 2, tournamentId: 1, name: Sokoły Ursus, logoUrl: null, groupId: null, playersCount: 3, scheduledMatchesCount: 2 }
+                  - { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3, scheduledMatchesCount: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -632,6 +633,11 @@ paths:
 
         Turniej mieści najwyżej 128 drużyn. Próba dodania kolejnej daje `422`
         z błędem pod `teams`.
+
+        Turniej z meczem rozegranym albo trwającym (`finished` albo `live`)
+        nie przyjmuje nowych drużyn: próba daje `422` z błędem pod `teams`.
+        Wcześniej dodawanie jest dozwolone, ale istniejący terminarz nowej
+        drużyny nie obejmuje — obejmie ją dopiero ponowne wygenerowanie.
       requestBody:
         required: true
         content:
@@ -654,7 +660,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
               example:
-                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 0 }
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 0, scheduledMatchesCount: 0 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -677,7 +683,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
               example:
-                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3 }
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3, scheduledMatchesCount: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -717,10 +723,15 @@ paths:
       tags: [Teams]
       summary: Usuń drużynę
       description: |
-        Usuwa także zawodników drużyny.
+        Usuwa także zawodników drużyny i wszystkie jej mecze `scheduled`
+        (`Team.scheduledMatchesCount`). Reszta terminarza się nie zmienia:
+        kolejki zostają, także te, które opustoszały, a pozostałe mecze
+        zachowują termin, obiekt, kolejkę i `matchNumber`. Numery meczów nie
+        są przenumerowywane, więc w kolejce mogą powstać dziury.
 
-        Daje `422` z błędem pod `id`, jeżeli drużyna wystąpiła w rozegranym
-        meczu: usunięcie zmieniłoby tabelę wstecz.
+        Daje `422` z błędem pod `id`, jeżeli drużyna ma mecz rozegrany albo
+        trwający (`finished` albo `live`): usunięcie zmieniłoby tabelę wstecz.
+        Odmowa niczego nie zmienia — drużyna, jej zawodnicy i mecze zostają.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -763,7 +774,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
               example:
-                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: http://localhost:8000/storage/tournaments/1/teams/1/GmvZcUftUF1rp7d6ntSTGxnDGWHVCmrmYYNbs9IG.png, groupId: null, playersCount: 3 }
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: http://localhost:8000/storage/tournaments/1/teams/1/GmvZcUftUF1rp7d6ntSTGxnDGWHVCmrmYYNbs9IG.png, groupId: null, playersCount: 3, scheduledMatchesCount: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -785,7 +796,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Team' }
               example:
-                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3 }
+                data: { id: 1, tournamentId: 1, name: Wilki Bemowo, logoUrl: null, groupId: null, playersCount: 3, scheduledMatchesCount: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -899,6 +910,10 @@ paths:
     delete:
       tags: [Players]
       summary: Usuń zawodnika
+      description: |
+        Daje `422` z błędem pod `id`, jeżeli zawodnik ma zdarzenie w meczu
+        rozegranym albo trwającym (`finished` albo `live`): usunięcie
+        zmieniłoby klasyfikację strzelców wstecz. Odmowa niczego nie zmienia.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -928,8 +943,8 @@ paths:
                     items: { $ref: '#/components/schemas/Venue' }
               example:
                 data:
-                  - { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa' }
-                  - { id: 2, tournamentId: 1, name: Hala Ursus, address: 'ul. Sosnkowskiego 3, Warszawa' }
+                  - { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa', scheduledMatchesCount: 2 }
+                  - { id: 2, tournamentId: 1, name: Hala Ursus, address: 'ul. Sosnkowskiego 3, Warszawa', scheduledMatchesCount: 0 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -967,7 +982,7 @@ paths:
                 properties:
                   data: { $ref: '#/components/schemas/Venue' }
               example:
-                data: { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa' }
+                data: { id: 1, tournamentId: 1, name: Boisko Bemowo, address: 'ul. Powstańców Śląskich 1, Warszawa', scheduledMatchesCount: 0 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1009,6 +1024,13 @@ paths:
     delete:
       tags: [Venues]
       summary: Usuń obiekt
+      description: |
+        Mecze `scheduled` na tym obiekcie (`Venue.scheduledMatchesCount`)
+        zostają w terminarzu bez obiektu (`Match.venue: null`), z tym samym
+        terminem, drużynami i kolejką.
+
+        Daje `422` z błędem pod `id`, jeżeli na obiekcie jest mecz rozegrany
+        albo trwający (`finished` albo `live`). Odmowa niczego nie zmienia.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -2086,14 +2108,14 @@ components:
             errors:
               name: [Pole nazwa jest wymagane.]
     DeleteBlocked:
-      description: Usunięcie zablokowane przez rozegrane mecze
+      description: Usunięcie zablokowane przez mecze rozegrane albo trwające
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ValidationError' }
           example:
-            message: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.'
+            message: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma rozegrane lub trwające mecze.'
             errors:
-              id: ['Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.']
+              id: ['Nie można usunąć: turniej „Liga Osiedlowa 2026” ma rozegrane lub trwające mecze.']
 
   schemas:
     Error:
@@ -2394,7 +2416,7 @@ components:
 
     Team:
       type: object
-      required: [id, tournamentId, name, logoUrl, groupId, playersCount]
+      required: [id, tournamentId, name, logoUrl, groupId, playersCount, scheduledMatchesCount]
       properties:
         id: { type: integer, format: int64 }
         tournamentId: { type: integer, format: int64 }
@@ -2413,6 +2435,13 @@ components:
           type: integer
           minimum: 0
           description: Liczba zawodników drużyny, bez usuniętych.
+        scheduledMatchesCount:
+          type: integer
+          minimum: 0
+          description: |
+            Liczba meczów `scheduled` drużyny, jako gospodarza i jako gościa.
+            Mecze `live` i `finished` się nie liczą. Tyle meczów zniknie
+            z terminarza razem z drużyną (`DELETE /teams/{team}`).
 
     TeamSummary:
       type: object
@@ -2446,12 +2475,19 @@ components:
 
     Venue:
       type: object
-      required: [id, tournamentId, name, address]
+      required: [id, tournamentId, name, address, scheduledMatchesCount]
       properties:
         id: { type: integer, format: int64 }
         tournamentId: { type: integer, format: int64 }
         name: { type: string }
         address: { type: [string, 'null'] }
+        scheduledMatchesCount:
+          type: integer
+          minimum: 0
+          description: |
+            Liczba meczów `scheduled` na tym obiekcie. Mecze `live`
+            i `finished` się nie liczą. Tyle meczów straci obiekt, gdy ten
+            zostanie usunięty (`DELETE /venues/{venue}`).
 
     VenueSummary:
       type: object
@@ -2488,7 +2524,8 @@ components:
             z `round.order` tworzy pozycję własną meczu, z której widok wylicza
             etykietę ("1/2 finału", "Finał") — etykiety nie ma w danych, bo
             zależy od rozmiaru drabinki. W lidze daje stabilną kolejność meczów
-            w kolejce.
+            w kolejce i niczego więcej nie znaczy, więc może mieć dziury (np.
+            po usunięciu drużyny razem z jej meczami `scheduled`).
         homeTeam:
           oneOf:
             - $ref: '#/components/schemas/TeamSummary'
