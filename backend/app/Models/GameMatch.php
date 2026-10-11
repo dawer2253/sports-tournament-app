@@ -31,6 +31,13 @@ class GameMatch extends Model
 {
     use HasFactory;
 
+    /**
+     * Mecz, który się zaczął: rozegrany albo trwający. Wiąże powiązane z nim
+     * byty (`GuardsPlayedMatches`) i zamyka turniej na nowe drużyny. Pozostaje
+     * tylko `scheduled` — mecz, który można jeszcze skasować albo przenieść.
+     */
+    public const PLAYED_STATUSES = ['live', 'finished'];
+
     protected function casts(): array
     {
         return ['kickoff_at' => 'datetime'];

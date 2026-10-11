@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\GuardsFinishedMatches;
+use App\Models\Concerns\GuardsPlayedMatches;
 use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
 ])]
 class Tournament extends Model
 {
-    use GuardsFinishedMatches;
+    use GuardsPlayedMatches;
     use HasFactory;
     use HasLogo;
 
@@ -293,9 +293,9 @@ class Tournament extends Model
         return $this->storageDirectory().'/logo';
     }
 
-    public function hasFinishedMatches(): bool
+    public function hasPlayedMatches(): bool
     {
-        return $this->matches()->where('matches.status', 'finished')->exists();
+        return $this->matches()->whereIn('matches.status', GameMatch::PLAYED_STATUSES)->exists();
     }
 
     protected function guardLabel(): string

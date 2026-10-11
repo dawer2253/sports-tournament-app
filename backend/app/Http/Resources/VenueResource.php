@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
+ * Wymaga liczników z `Venue::resourceCounts()`, z tego samego powodu co
+ * `TeamResource`.
+ *
  * @mixin Venue
  */
 class VenueResource extends JsonResource
@@ -21,6 +24,7 @@ class VenueResource extends JsonResource
             'tournamentId' => $this->tournament_id,
             'name' => $this->name,
             'address' => $this->address,
+            'scheduledMatchesCount' => $this->scheduled_matches_count,
         ];
     }
 }

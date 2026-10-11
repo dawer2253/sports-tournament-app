@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Wymaga policzonego `players_count` — resource nie liczy zawodników sam,
- * żeby lista drużyn nie robiła zapytania na wiersz.
+ * Wymaga liczników z `Team::resourceCounts()` — resource nie liczy zawodników
+ * ani meczów sam, żeby lista drużyn nie robiła zapytania na wiersz.
  *
  * `groupId` jest w v0.1 zawsze `null` (opis `PATCH /teams/{team}`
  * w kontrakcie), ale idzie z kolumny, a nie jako stała: przypisanie do grupy
@@ -30,6 +30,7 @@ class TeamResource extends JsonResource
             'logoUrl' => $this->logoUrl(),
             'groupId' => $this->group_id,
             'playersCount' => $this->players_count,
+            'scheduledMatchesCount' => $this->scheduled_home_matches_count + $this->scheduled_away_matches_count,
         ];
     }
 }

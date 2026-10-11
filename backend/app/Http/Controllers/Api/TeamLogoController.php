@@ -27,6 +27,6 @@ class TeamLogoController extends Controller
     /** Resource wymaga dociągniętych relacji i liczników (docblock TeamResource). */
     private function resource(Team $team): TeamResource
     {
-        return new TeamResource($team->loadCount('players'));
+        return new TeamResource($team->loadCount(Team::resourceCounts()));
     }
 }

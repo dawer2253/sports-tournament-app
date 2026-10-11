@@ -25,12 +25,12 @@ it('usuwa zawodnika miękko i oddaje 204', function () {
     expect(Player::withTrashed()->findOrFail($player->id)->trashed())->toBeTrue();
 });
 
-it('nie usuwa zawodnika ze zdarzeniem w rozegranym meczu', function () {
+it('nie usuwa zawodnika ze zdarzeniem w meczu rozegranym albo trwającym', function (string $status) {
     $team = Team::factory()->create();
     $player = Player::factory()->for($team)->create(['name' => 'Marek Nowak']);
     $match = GameMatch::factory()
         ->for(Round::factory()->for(Stage::factory()->for($team->tournament)))
-        ->finished()
+        ->played($status)
         ->create(['home_team_id' => $team->id]);
     MatchEvent::factory()->for($match, 'match')->create([
         'team_id' => $team->id,
@@ -40,10 +40,10 @@ it('nie usuwa zawodnika ze zdarzeniem w rozegranym meczu', function () {
     actingAsOrganizer($team->tournament->user)
         ->deleteJson("/api/v1/players/{$player->id}")
         ->assertValidResponse(422)
-        ->assertJsonPath('errors.id', ['Nie można usunąć: zawodnik „Marek Nowak” ma powiązane rozegrane mecze.']);
+        ->assertJsonPath('errors.id', ['Nie można usunąć: zawodnik „Marek Nowak” ma rozegrane lub trwające mecze.']);
 
     expect($player->fresh()->deleted_at)->toBeNull();
-});
+})->with(['live', 'finished']);
 
 // Bez wymogu żywej drużyny w wiązaniu `PlayerPolicy` dostałaby `null`
 // z `$player->team` i oddała 500.

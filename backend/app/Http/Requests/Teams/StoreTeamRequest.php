@@ -19,11 +19,15 @@ class StoreTeamRequest extends TeamRequest
     }
 
     /**
+     * Oba warunki mówią o stanie turnieju, a nie o polu z ciała, więc idą pod
+     * klucz `teams` (tak stanowi kontrakt).
+     *
      * @return list<callable(Validator): void>
      */
     public function after(): array
     {
         return [
+            $this->checkPlayNotStarted(...),
             ChildLimit::check(
                 $this->tournament()->teams(),
                 Tournament::MAX_TEAMS,
@@ -31,6 +35,19 @@ class StoreTeamRequest extends TeamRequest
                 'Turniej ma już '.Tournament::MAX_TEAMS.' drużyn, to górny limit.',
             ),
         ];
+    }
+
+    /**
+     * Po rozpoczęciu gry (mecz `live` albo `finished`) nowa drużyna nie
+     * miałaby już miejsca w terminarzu, bo meczów do istniejących kolejek nikt
+     * nie dopisuje (#171). Wcześniej dodanie przechodzi, a terminarz obejmie
+     * nową drużynę dopiero po ponownym wygenerowaniu.
+     */
+    private function checkPlayNotStarted(Validator $validator): void
+    {
+        if ($this->tournament()->hasPlayedMatches()) {
+            $validator->errors()->add('teams', 'Turniej ma rozegrane lub trwające mecze, więc nie można dodać drużyny.');
+        }
     }
 
     protected function tournament(): Tournament

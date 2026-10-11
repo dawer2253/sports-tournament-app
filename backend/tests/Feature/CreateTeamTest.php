@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\GameMatch;
+use App\Models\Round;
+use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
 use Illuminate\Testing\TestResponse;
@@ -126,4 +129,32 @@ it('nie wlicza do limitu drużyn usuniętych', function () {
     Team::factory()->for($tournament)->create()->delete();
 
     postTeamTo($tournament, ['name' => 'Wilki Bemowo'])->assertValidResponse(201);
+});
+
+// Klucz `teams` jest ten sam co przy limicie, a mecz `scheduled` nie
+// blokuje: przed rozpoczęciem gry drużynę wolno dodać, tyle że istniejący
+// terminarz jej nie obejmie.
+it('odrzuca drużynę pod kluczem teams, gdy turniej ma mecz rozegrany albo trwający', function (string $status) {
+    $tournament = Tournament::factory()->create();
+    GameMatch::factory()
+        ->for(Round::factory()->for(Stage::factory()->for($tournament)))
+        ->played($status)
+        ->create();
+    $teamsBefore = $tournament->teams()->count();
+
+    postTeamTo($tournament, ['name' => 'Wilki Bemowo'])
+        ->assertValidRequest()
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.teams', ['Turniej ma rozegrane lub trwające mecze, więc nie można dodać drużyny.']);
+
+    expect($tournament->teams()->count())->toBe($teamsBefore);
+})->with(['live', 'finished']);
+
+it('dodaje drużynę do turnieju z samymi meczami scheduled', function () {
+    $tournament = Tournament::factory()->create();
+    GameMatch::factory()->for(Round::factory()->for(Stage::factory()->for($tournament)))->create();
+
+    postTeamTo($tournament, ['name' => 'Wilki Bemowo'])
+        ->assertValidResponse(201)
+        ->assertJsonPath('data.scheduledMatchesCount', 0);
 });

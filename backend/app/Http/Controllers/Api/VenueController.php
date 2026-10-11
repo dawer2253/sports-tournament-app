@@ -22,7 +22,11 @@ class VenueController extends Controller
     public function index(Tournament $tournament): AnonymousResourceCollection
     {
         return VenueResource::collection(
-            $tournament->venues()->orderBy('name')->orderBy('id')->get()
+            $tournament->venues()
+                ->withCount(Venue::resourceCounts())
+                ->orderBy('name')
+                ->orderBy('id')
+                ->get()
         );
     }
 
@@ -30,7 +34,7 @@ class VenueController extends Controller
     {
         $venue = $tournament->venues()->create($request->validated());
 
-        return (new VenueResource($venue))
+        return (new VenueResource($venue->loadCount(Venue::resourceCounts())))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -39,10 +43,10 @@ class VenueController extends Controller
     {
         $venue->update($request->validated());
 
-        return new VenueResource($venue);
+        return new VenueResource($venue->loadCount(Venue::resourceCounts()));
     }
 
-    /** Guard z rozegranym meczem daje 422 (`FinishedMatchGuardException`). */
+    /** Guard z meczem rozegranym albo trwającym daje 422 (`PlayedMatchGuardException`). */
     public function destroy(Venue $venue): Response
     {
         $venue->delete();

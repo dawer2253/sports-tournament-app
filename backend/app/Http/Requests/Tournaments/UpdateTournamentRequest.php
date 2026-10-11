@@ -126,8 +126,9 @@ class UpdateTournamentRequest extends TournamentRequest
 
     /**
      * Przejścia między stanami są dowolne. Jedyny zakaz (#82): turniej
-     * z zakończonym meczem nie wraca do `draft`. `draft` → `draft` nie jest
-     * przejściem, więc zakaz go nie dotyczy.
+     * z meczem rozegranym albo trwającym nie wraca do `draft` (#171 dołożył
+     * mecz trwający, bo pilnuje tego ta sama metoda co guard usuwania).
+     * `draft` → `draft` nie jest przejściem, więc zakaz go nie dotyczy.
      */
     private function checkReturnToDraft(Validator $validator): void
     {
@@ -136,11 +137,11 @@ class UpdateTournamentRequest extends TournamentRequest
         if ($validator->errors()->has('status')
             || $this->input('status') !== 'draft'
             || $tournament->status === 'draft'
-            || ! $tournament->hasFinishedMatches()) {
+            || ! $tournament->hasPlayedMatches()) {
             return;
         }
 
-        $validator->errors()->add('status', 'Turniej ma zakończony mecz, więc nie może wrócić do szkicu.');
+        $validator->errors()->add('status', 'Turniej ma rozegrane lub trwające mecze, więc nie może wrócić do szkicu.');
     }
 
     /**

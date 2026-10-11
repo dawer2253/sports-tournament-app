@@ -23,7 +23,7 @@ class TeamController extends Controller
     {
         return TeamResource::collection(
             $tournament->teams()
-                ->withCount('players')
+                ->withCount(Team::resourceCounts())
                 ->orderBy('name')
                 ->orderBy('id')
                 ->get()
@@ -34,25 +34,25 @@ class TeamController extends Controller
     {
         $team = $tournament->teams()->create($request->validated());
 
-        return (new TeamResource($team->loadCount('players')))
+        return (new TeamResource($team->loadCount(Team::resourceCounts())))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function show(Team $team): TeamResource
     {
-        return new TeamResource($team->loadCount('players'));
+        return new TeamResource($team->loadCount(Team::resourceCounts()));
     }
 
     public function update(UpdateTeamRequest $request, Team $team): TeamResource
     {
         $team->update($request->validated());
 
-        return new TeamResource($team->loadCount('players'));
+        return new TeamResource($team->loadCount(Team::resourceCounts()));
     }
 
     /**
-     * Guard z rozegranym meczem daje 422 (`FinishedMatchGuardException`),
+     * Guard z meczem rozegranym albo trwającym daje 422 (`PlayedMatchGuardException`),
      * a kaskadę na zawodników robi model.
      */
     public function destroy(Team $team): Response

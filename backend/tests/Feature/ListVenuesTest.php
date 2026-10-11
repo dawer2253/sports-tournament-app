@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\GameMatch;
+use App\Models\Round;
+use App\Models\Stage;
 use App\Models\Tournament;
 use App\Models\User;
 use App\Models\Venue;
@@ -40,6 +43,7 @@ it('oddaje obiekty po nazwie bez względu na wielkość liter, w kształcie z ko
             'tournamentId' => $tournament->id,
             'name' => 'Hala',
             'address' => 'ul. Sosnkowskiego 3, Warszawa',
+            'scheduledMatchesCount' => 0,
         ])
         ->assertJsonPath('data.3.address', null);
 });
@@ -58,4 +62,28 @@ it('nie oddaje obiektów innego turnieju ani usuniętych', function () {
         ->getJson("/api/v1/tournaments/{$tournament->id}/venues")
         ->assertValidResponse(200)
         ->assertJsonPath('data.*.id', [$own->id]);
+});
+
+// Hala ma dwa mecze `scheduled` i po jednym `live` i `finished`, które liczyć
+// się nie mają. Orlik ma jeden, więc liczba przypisana nie temu obiektowi
+// też wyjdzie na jaw.
+it('liczy mecze scheduled obiektu, bez live i finished', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $hall = Venue::factory()->for($tournament)->create(['name' => 'Hala']);
+    $pitch = Venue::factory()->for($tournament)->create(['name' => 'Orlik']);
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    $match = fn (int $number, Venue $venue) => GameMatch::factory()
+        ->for($round)
+        ->state(['match_number' => $number, 'venue_id' => $venue->id]);
+    $match(1, $hall)->create();
+    $match(2, $hall)->create();
+    $match(3, $hall)->live()->create();
+    $match(4, $hall)->finished()->create();
+    $match(5, $pitch)->create();
+
+    actingAsOrganizer($organizer)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/venues")
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.*.scheduledMatchesCount', [2, 1]);
 });

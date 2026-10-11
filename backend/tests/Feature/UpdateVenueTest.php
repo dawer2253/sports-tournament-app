@@ -36,6 +36,7 @@ it('zmienia nazwę i adres obiektu', function () {
             'tournamentId' => $venue->tournament_id,
             'name' => 'Hala Ursus II',
             'address' => 'ul. Sosnkowskiego 3, Warszawa',
+            'scheduledMatchesCount' => 0,
         ]);
 
     expect($venue->fresh()->name)->toBe('Hala Ursus II');

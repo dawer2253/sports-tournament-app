@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Schema;
  *
  * Wewnątrz poddrzewa turnieju żaden klucz obcy nie jest `RESTRICT` — powód
  * (niedeterministyczna kolejność kaskady w InnoDB) opisuje ADR-0005. Zakaz
- * usuwania bytu powiązanego z meczem `finished` żyje w modelach (guard).
+ * usuwania bytu powiązanego z meczem `live` albo `finished` żyje w modelach
+ * (guard).
  */
 return new class extends Migration
 {
@@ -35,8 +36,9 @@ return new class extends Migration
             $table->unsignedSmallInteger('match_number');
 
             // Puste, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte.
-            // Usunięcie drużyny zeruje slot zamiast kasować mecz — terminarz
-            // zachowuje kształt.
+            // Usunięcie twarde drużyny zeruje slot zamiast kasować mecz — terminarz
+            // zachowuje kształt. Miękkie, czyli to z panelu, kasuje jej mecze
+            // `scheduled` (`Team::booted()`).
             $table->foreignId('home_team_id')->nullable()->constrained('teams')->nullOnDelete();
             $table->foreignId('away_team_id')->nullable()->constrained('teams')->nullOnDelete();
 
