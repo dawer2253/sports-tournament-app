@@ -541,4 +541,42 @@ describe('Terminarz — okno meczu (#176)', () => {
     expect(await screen.findByRole('dialog', { name: 'Orły Bielany – Rysie Wola' })).toBeInTheDocument();
     expect(router.state.location.search).toBe('?round=2');
   });
+
+  it('błąd zakresu pod awayScore ląduje pod blokiem wyniku, nie przy gościu', async () => {
+    const matches = [match(1, 1, 1, 2)];
+    serveMatches(matches);
+    const message = 'Wynik może mieć najwyżej 999.';
+    server.use(
+      http.patch(MATCH_PATCH_URL, () =>
+        HttpResponse.json({ message, errors: { awayScore: [message] } }, { status: 422 }),
+      ),
+    );
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    const error = await within(dialog).findByText(message);
+    expect(within(dialog).getByLabelText('Wynik Wilki Bemowo')).toHaveAttribute('aria-describedby', error.id);
+    expect(within(dialog).getByLabelText('Wynik Sokoły Ursus')).toHaveAttribute('aria-describedby', error.id);
+  });
+
+  it('błąd pod venueId stoi przy polu obiektu, nie pod wynikiem', async () => {
+    const matches = [match(1, 1, 1, 2)];
+    serveMatches(matches);
+    const message = 'Wybierz obiekt tego turnieju.';
+    server.use(
+      http.patch(MATCH_PATCH_URL, () =>
+        HttpResponse.json({ message, errors: { venueId: [message] } }, { status: 422 }),
+      ),
+    );
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Wynik Wilki Bemowo')).not.toHaveAttribute('aria-describedby');
+    expect(within(dialog).getByLabelText('Wynik Sokoły Ursus')).not.toHaveAttribute('aria-describedby');
+  });
 });

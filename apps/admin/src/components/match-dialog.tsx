@@ -28,10 +28,11 @@ const NO_VENUE = 'none';
 
 /**
  * Pola, których `422` umiemy posadzić przy polu (#159): cała para wyników pod
- * blokiem `__ : __`, termin i obiekt przy swoich polach. Reszta idzie nad
+ * blokiem `__ : __` (kontrakt sadza błędy pary pod `homeScore`, a błąd zakresu
+ * pod swoim polem), termin i obiekt przy swoich polach. Reszta idzie nad
  * przyciskami.
  */
-const FIELDS = ['homeScore', 'kickoffAt', 'venueId'] as const;
+const FIELDS = ['homeScore', 'awayScore', 'kickoffAt', 'venueId'] as const;
 
 /**
  * `datetime-local` trzyma czas lokalny bez offsetu, a API wymaga momentu
@@ -114,6 +115,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
         FIELDS,
         (field, { message }) => {
           if (field === 'root') setFormError(message);
+          // Para wyników dzieli jeden komunikat pod blokiem `__ : __`.
+          else if (field === 'homeScore' || field === 'awayScore') setFieldErrors((current) => ({ ...current, homeScore: message }));
           else setFieldErrors((current) => ({ ...current, [field]: message }));
         },
         SAVE_FAILED,
@@ -126,9 +129,11 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     if (next === 'scheduled') {
       setHomeScore('');
       setAwayScore('');
-    } else if (next === 'live' && homeScore === '' && awayScore === '') {
-      setHomeScore('0');
-      setAwayScore('0');
+    } else if (next === 'live') {
+      // Mecz trwający potrzebuje obu wyników: puste pole dostaje zero, a wpisane
+      // przez organizera zostaje (`0:0` na meczu bez wyniku).
+      setHomeScore((value) => (value === '' ? '0' : value));
+      setAwayScore((value) => (value === '' ? '0' : value));
     }
   }
 
