@@ -5,6 +5,8 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card'
 import { Switch } from '../ui/switch'
 import type { TiebreakerItem } from './tiebreaker-item'
+import { TiebreakerOrdinal } from './tiebreaker-list'
+import { Heading } from '../ui/typography'
 
 export interface TiebreakerEditorProps {
   /**
@@ -32,14 +34,6 @@ export interface TiebreakerEditorProps {
 }
 
 const itemClass = 'flex items-center gap-3 rounded-md border border-border p-2.5'
-
-function Ordinal({ children }: { children?: React.ReactNode }) {
-  return (
-    <span className="grid size-6 shrink-0 place-items-center rounded bg-muted text-xs font-medium tabular-nums">
-      {children}
-    </span>
-  )
-}
 
 function move(list: string[], from: number, to: number): string[] {
   const next = [...list]
@@ -84,10 +78,10 @@ export function TiebreakerEditor({
         <ol aria-label="Używane kryteria" className="grid gap-2">
           {pinned !== undefined && (
             <li className={cn(itemClass, 'border-dashed bg-muted/40')}>
-              <Ordinal>1</Ordinal>
+              <TiebreakerOrdinal>1</TiebreakerOrdinal>
               <span className="flex-1 text-sm font-medium">{label(pinned)}</span>
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Lock aria-hidden className="size-3" /> zawsze pierwsze
+                <Lock aria-hidden className="size-4" /> zawsze pierwsze
               </span>
             </li>
           )}
@@ -95,7 +89,7 @@ export function TiebreakerEditor({
             const index = offset + 1
             return (
               <li key={code} className={itemClass}>
-                <Ordinal>{index + 1}</Ordinal>
+                <TiebreakerOrdinal>{index + 1}</TiebreakerOrdinal>
                 <span className="flex-1 text-sm font-medium">{label(code)}</span>
                 <Button
                   type="button"
@@ -129,13 +123,15 @@ export function TiebreakerEditor({
         </ol>
         {unused.length > 0 && (
           <section aria-labelledby={unusedId} className="grid gap-2">
-            <p id={unusedId} className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {/* Nagłówek podsekcji karty: styl z `headingVariants`, przyciszony,
+                żeby nie konkurował z tytułem karty. */}
+            <Heading id={unusedId} level="card" className="text-sm text-muted-foreground">
               Nieużywane
-            </p>
+            </Heading>
             <ul className="grid gap-2">
               {unused.map((item) => (
                 <li key={item.code} className={cn(itemClass, 'text-muted-foreground')}>
-                  <Ordinal />
+                  <TiebreakerOrdinal />
                   <span className="flex-1 text-sm">{item.label}</span>
                   <Switch
                     checked={false}

@@ -47,8 +47,8 @@ function Position({ position, previous }: { position: number; previous: number |
   const down = previous !== undefined && previous < position
   return (
     <span className="inline-flex items-center justify-end gap-1">
-      {up && <ArrowUp aria-hidden className="size-3 text-primary" />}
-      {down && <ArrowDown aria-hidden className="size-3 text-destructive" />}
+      {up && <ArrowUp aria-hidden className="size-4 text-primary" />}
+      {down && <ArrowDown aria-hidden className="size-4 text-destructive" />}
       {position}
       {(up || down) && <span className="sr-only">, wcześniej {previous}.</span>}
     </span>

@@ -1,0 +1,63 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-standings.stories'
+
+<Meta of={Stories} />
+
+# Tabela (Admin): specyfikacja
+
+Ekran tabeli ligi z edycją kolejności kryteriów rozstrzygających i podglądem
+skutku przed zapisem. Decyzje: [#173](https://github.com/dawer2253/sports-tournament-app/issues/173),
+reguły liczenia [#160](https://github.com/dawer2253/sports-tournament-app/issues/160),
+wybór wariantu [#163](https://github.com/dawer2253/sports-tournament-app/issues/163).
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pokazać organizatorowi tabelę ligi i pozwolić mu ustalić kolejność kryteriów
+przy równej liczbie punktów, widząc od razu, które drużyny zmienią miejsce.
+
+## Dane (wejście)
+- Nagłówek strony wspólny dla ekranów turnieju, aktywna karta „Tabela”.
+- `GET /tournaments/{tournament}/standings`: tabele (`StandingTable`) z
+  `stageName`, `groupName`, `scoreLabel` i wierszami `StandingsTableRow`.
+  Ten sam endpoint z `?tiebreakers=…` liczy podgląd bez zapisu.
+- `Tournament.tiebreakers`: zapisana kolejność kryteriów.
+- `GET /sports`: `availableTiebreakers`, `tiebreakerLabels`, `allowsDraw`.
+- Dane demo: `standingsTableRows`, `standingsTablePreviewRows`,
+  `basketballStandingsTableRows` i `sportSettings` z `lib/demo-data.ts`.
+
+## Reguły
+- Tabela to `StandingsTable`: kolumny #, Drużyna, M, W, R, P, zdobycze
+  (`scoreLabel`), +/−, Pkt. Kolumna R znika przy `allowsDraw: false`.
+- Nagłówek tabeli odcięty od wierszy jak w `public-standings`; bloki drużyn
+  z równą liczbą punktów oddziela grubsza linia.
+- Pod tabelą zdanie z kolejnością kryteriów zakończone „nazwa drużyny
+  (alfabetycznie)” (`TiebreakerSentence`).
+- Karta to `TiebreakerEditor`: `points` z kłódką na górze, reszta z ↑/↓
+  i przełącznikiem, sekcja „Nieużywane”, stopka o nazwie drużyny. Bez
+  przeciągania.
+
+## Stany
+- **Domyślny**: lista zapisana, bez stopki zapisu (powyżej).
+- **Koszykówka**: bez kolumny R, zdobycze „Punkty”, etykiety kryteriów
+  koszykarskie.
+- **Podgląd ze zmianą miejsc**: wiersze, które zmieniły miejsce, podświetlone,
+  ze strzałką i poprzednim miejscem dla czytnika; stopka mówi, ile drużyn
+  zmienia miejsce, i niesie „Odrzuć” oraz „Zapisz kolejność”.
+- **Wczytywanie, błąd, turniej bez drużyn**: stany ramy `DataTable`, ten
+  ostatni z odnośnikiem do Drużyn (stories `UI/Tabela ligi`).
+
+<Canvas of={Stories.Koszykowka} />
+<Canvas of={Stories.PodgladZeZmianaMiejsc} />
+
+## Zachowanie
+- Każda zmiana szkicu odpytuje tabelę z parametrem podglądu; do nadejścia
+  odpowiedzi zostają poprzednie dane.
+- „Zapisz kolejność” wysyła `PATCH` z samym `{ tiebreakers }`, a w trakcie
+  zapisu edytor jest zablokowany. Błąd zostaje w stopce karty razem ze szkicem.
+- Niezapisany szkic przy wyjściu z ekranu pilnuje `UnsavedChangesGuard`.
+- Na wąskim ekranie karta schodzi pod tabelę.
+
+## Otwarte pytania
+Poza zakresem #173: znaczniki „co rozstrzygnęło” przy wierszach, strefy awansu
+i spadku, informacja o meczach w trakcie oraz tabele grup (S5).
