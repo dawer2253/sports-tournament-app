@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { organizer, tournamentList } from '../../lib/demo-data'
 import { AdminShell, type AdminNavKey } from './admin-shell'
 
@@ -181,7 +181,8 @@ export const MenuKontaZKlawiatury: Story = {
     await userEvent.keyboard(' ')
     await expect(await page.findByRole('menu')).toBeInTheDocument()
     await userEvent.keyboard('{Escape}')
-    await expect(page.queryByRole('menu')).not.toBeInTheDocument()
+    // Menu znika dopiero po animacji wyjścia (`data-closed:animate-out`, #172).
+    await waitFor(() => expect(page.queryByRole('menu')).not.toBeInTheDocument())
     await expect(trigger).toHaveFocus()
 
     // Enter otwiera z fokusem na pierwszej pozycji, strzałka przechodzi na
