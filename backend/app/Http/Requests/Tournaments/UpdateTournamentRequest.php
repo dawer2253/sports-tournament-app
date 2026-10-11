@@ -43,6 +43,8 @@ class UpdateTournamentRequest extends TournamentRequest
                 Rule::unique('tournaments', 'slug')->ignore($this->tournament()),
             ],
             'status' => ['sometimes', 'required', 'string', Rule::in(Tournament::STATUSES)],
+            // Długość meczu (#158): 10–600 minut razem z przerwą po nim.
+            'matchDuration' => ['sometimes', 'required', 'integer:strict', 'between:10,600'],
             // `additionalProperties: false` w kontrakcie: `logoUrl` tu nie
             // występuje, bo logo wgrywa osobna trasa. Bez `required`, bo
             // kontrakt nie wymaga `primaryColor`, więc `{}` niczego nie zmienia.
@@ -154,6 +156,10 @@ class UpdateTournamentRequest extends TournamentRequest
 
         $attributes = Arr::only($validated, ['name', 'slug', 'status', 'tiebreakers']);
 
+        if (Arr::has($validated, 'matchDuration')) {
+            $attributes['match_duration'] = $validated['matchDuration'];
+        }
+
         if (Arr::has($validated, 'branding.primaryColor')) {
             $attributes['primary_color'] = $validated['branding']['primaryColor'];
         }
@@ -175,6 +181,7 @@ class UpdateTournamentRequest extends TournamentRequest
             'slug' => 'adres',
             'branding' => 'branding',
             'branding.primaryColor' => 'kolor',
+            'matchDuration' => 'długość meczu',
             'points' => 'punktacja',
             'points.win' => 'punkty za wygraną',
             'points.draw' => 'punkty za remis',

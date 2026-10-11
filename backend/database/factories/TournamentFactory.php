@@ -31,6 +31,7 @@ class TournamentFactory extends Factory
             'primary_color' => fake()->hexColor(),
             'points' => $sport->defaultPoints(),
             'tiebreakers' => $sport->defaultTiebreakers(),
+            'match_duration' => $sport->defaultMatchDuration(),
             'status' => 'draft',
         ];
     }
@@ -44,6 +45,7 @@ class TournamentFactory extends Factory
                 'sport_id' => $sport->id,
                 'points' => $sport->defaultPoints(),
                 'tiebreakers' => $sport->defaultTiebreakers(),
+                'match_duration' => $sport->defaultMatchDuration(),
             ];
         });
     }

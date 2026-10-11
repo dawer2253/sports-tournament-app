@@ -142,6 +142,7 @@ class DemoTournamentSeeder extends Seeder
                 'primary_color' => '#1F7A45',
                 'points' => $football->defaultPoints(),
                 'tiebreakers' => $football->defaultTiebreakers(),
+                'match_duration' => $football->defaultMatchDuration(),
                 'status' => 'active',
             ],
         );

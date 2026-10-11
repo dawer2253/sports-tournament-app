@@ -3,6 +3,7 @@
 use App\Models\Stage;
 use App\Models\Tournament;
 use App\Models\User;
+use App\Schedule\MatchDurationBackfill;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Spectator\Spectator;
 
@@ -102,6 +103,34 @@ it('kopiuje punktację i tiebreaki z domyślnych danego sportu', function (strin
     'piłka nożna' => ['football', ['win' => 3, 'draw' => 1, 'loss' => 0], ['points', 'head_to_head', 'score_diff', 'score_for']],
     'koszykówka' => ['basketball', ['win' => 2, 'draw' => 0, 'loss' => 1], ['points', 'head_to_head', 'score_diff']],
 ]);
+
+// Długość meczu (#158) też jest kopią domyślnej dla sportu, literałem z przykładu
+// `GET /sports` w kontrakcie.
+it('kopiuje długość meczu z domyślnej dla sportu', function (string $sportCode, int $duration) {
+    actingAsOrganizer()
+        ->postJson('/api/v1/tournaments', [
+            'name' => 'Turniej testowy',
+            'sportId' => sport($sportCode)->id,
+            'format' => 'league',
+        ])
+        ->assertValidResponse(201)
+        ->assertJsonPath('data.matchDuration', $duration);
+})->with([
+    'piłka nożna' => ['football', 60],
+    'koszykówka' => ['basketball', 40],
+]);
+
+// Logika wypełnienia z migracji (`MatchDurationBackfill`) wydzielona, bo
+// migracja biegnie na czystej bazie, gdzie nie ma jeszcze żadnego turnieju.
+it('wypełnia istniejące turnieje długością ze swojego sportu', function () {
+    $football = Tournament::factory()->create(['match_duration' => 999]);
+    $basketball = Tournament::factory()->basketball()->create(['match_duration' => 999]);
+
+    MatchDurationBackfill::run();
+
+    expect($football->fresh()->match_duration)->toBe(60)
+        ->and($basketball->fresh()->match_duration)->toBe(40);
+});
 
 // `assertValidRequest()` celowo nie ma: żądania są błędne z założenia, więc
 // nie przechodzą walidacji kontraktu po stronie wejścia. Komunikat sprawdzany

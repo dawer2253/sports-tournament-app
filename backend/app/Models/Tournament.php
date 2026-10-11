@@ -24,7 +24,7 @@ use Illuminate\Support\Str;
  */
 #[Fillable([
     'user_id', 'sport_id', 'slug', 'name',
-    'logo_path', 'primary_color', 'points', 'tiebreakers', 'status',
+    'logo_path', 'primary_color', 'points', 'tiebreakers', 'match_duration', 'status',
 ])]
 class Tournament extends Model
 {
@@ -173,6 +173,7 @@ class Tournament extends Model
             'primary_color' => self::DEFAULT_PRIMARY_COLOR,
             'points' => $sport->defaultPoints(),
             'tiebreakers' => $sport->defaultTiebreakers(),
+            'match_duration' => $sport->defaultMatchDuration(),
             'status' => 'draft',
         ]);
 
@@ -237,6 +238,7 @@ class Tournament extends Model
         return [
             'points' => 'array',
             'tiebreakers' => 'array',
+            'match_duration' => 'integer',
         ];
     }
 

@@ -38,6 +38,7 @@ class TournamentResource extends JsonResource
             ],
             'points' => $this->points,
             'tiebreakers' => $this->tiebreakers,
+            'matchDuration' => $this->match_duration,
             'teamsCount' => $this->teams_count,
             'createdAt' => $this->formatDate($this->created_at),
             'updatedAt' => $this->formatDate($this->updated_at),
