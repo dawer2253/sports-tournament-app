@@ -85,7 +85,7 @@ it('w trybie interval trzyma godzinę zegarową przez zmianę czasu', function (
     $kickoffs = roundKickoffs($stage);
 
     // 10:00 Warszawa to 08:00 UTC przed zmianą czasu (25 października)
-    // i 09:00 UTC po niej — gracias temu kolejka 2 i 3 różnią się offsetem.
+    // i 09:00 UTC po niej — dzięki temu kolejka 2 i 3 różnią się offsetem.
     expect($kickoffs[1])->toBe(['2026-10-18T08:00:00+00:00', '2026-10-18T08:00:00+00:00'])
         ->and($kickoffs[2])->toBe(['2026-10-25T09:00:00+00:00', '2026-10-25T09:00:00+00:00'])
         ->and($kickoffs[3])->toBe(['2026-11-01T09:00:00+00:00', '2026-11-01T09:00:00+00:00']);

@@ -22,9 +22,6 @@ use Illuminate\Validation\ValidationException;
  */
 class DateDistributor
 {
-    /** Domyślna długość przerwy, gdyby turniej nie miał jeszcze wartości. */
-    private const FALLBACK_DURATION = 60;
-
     private const HAS_SCHEDULE_MESSAGE = 'Faza nie ma jeszcze terminarza, więc nie ma czego rozkładać.';
 
     public function __construct(private CollisionCalculator $collisions) {}
@@ -44,7 +41,7 @@ class DateDistributor
             }
 
             $tournament = $stage->tournament;
-            $duration = $tournament->match_duration ?? self::FALLBACK_DURATION;
+            $duration = $tournament->match_duration;
 
             $updates = $this->slots($stage, $plan, $duration);
 
