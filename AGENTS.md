@@ -27,6 +27,7 @@ npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 | `apps/admin/` | panel organizera (logowanie, port 5173) ([własny `AGENTS.md`](apps/admin/AGENTS.md)) |
 | `apps/public/` | strona turnieju (bez logowania, port 5174) |
 | `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); autoryzacja stoi, endpointy domenowe dochodzą w kolejnych ticketach |
+| `e2e/` | suita dymna Playwrighta przez panel, stronę publiczną i Laravela (patrz [Testy E2E](#testy-e2e)) |
 
 ## Kontrakt API
 
@@ -66,7 +67,7 @@ Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 
 Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
-`typecheck`, `test`, `build`.
+`typecheck`, `test`, `test:e2e`, `build`.
 
 ### Testy frontendu
 
@@ -97,6 +98,48 @@ krok, więc czerwona funkcja `play` robi go czerwonym
 ([#71](https://github.com/dawer2253/sports-tournament-app/issues/71)). Merge
 blokuje to tylko wtedy, gdy „Frontend" jest wymaganym sprawdzeniem w ochronie
 gałęzi `main` — to ustawienie repo, nie tego pliku.
+
+### Testy E2E
+
+Cienka suita dymna w `e2e/` (osobny workspace, bo test dotyka dwóch aplikacji
+i backendu naraz) sprawdza szew, którego nie widzi ani vitest na mocku, ani
+Pest bez przeglądarki ([#185](https://github.com/dawer2253/sports-tournament-app/issues/185)).
+Uzasadnienie zakresu: [`docs/research/playwright-e2e-timing.md`](docs/research/playwright-e2e-timing.md).
+
+```bash
+make up            # MySQL musi stać; Laravel E2E wstaje obok, na :8001
+npm run test:e2e   # za pierwszym razem: npx playwright install chromium
+```
+
+Jedno polecenie stawia panel (5173), stronę publiczną (5174) i Laravela na
+osobnej bazie `e2e`, wyczyszczonej i zaseedowanej raz na przebieg. **Porty
+5173 i 5174 muszą być wolne** — zatrzymaj `dev:admin`/`dev:public`. Podpięcie
+pod działający serwer dev jest celowo wyłączone, bo ten celuje w inne API, a
+innych portów nie wpuści CORS. `npm test` E2E nie uruchamia.
+
+Konwencje:
+
+- **Selektory po rolach i etykietach** (`getByRole`, `getByLabel`), zero
+  selektorów CSS i XPath. Zmiana układu nie może psuć testu; zmiana nazwy
+  przycisku może.
+- **Asercje na tym, co widzi użytkownik, i na niezmiennikach domeny** (miejsca
+  i punkty w tabeli po wyniku), nie na komunikacie „zapisano". Tylko asercje
+  z ponawianiem (`await expect(locator)…`).
+- **Każdy test zakłada własny turniej** o unikalnej nazwie, a tym samym slugu
+  (`uniqueName`, fixture `tournament` w `e2e/tests/fixtures.ts`). Nie opieraj
+  się na id ani danych z seeda demo poza kontem organizera.
+- **Dane do testu powstają przez API** (fixture `api`, typowany klient
+  z kontraktu), a przez ekrany idzie tylko to, co test sprawdza. Sesję daje
+  projekt `setup` (logowanie przez API raz na przebieg); przez formularz
+  logowania przechodzi wyłącznie `login.spec.ts`.
+- **Suita rośnie o jeden test na nowy ekran albo na błąd, który przeszedł
+  przez nią niezauważony** — nie o walidacje i stany błędów, które pokrywają
+  vitest i Pest.
+
+Na CI chodzi job „E2E" (natywny PHP i MySQL jak w jobie backendu, Chromium jak
+we „Frontend"). Czerwony przebieg zostawia artefakt `playwright-report` z
+trace'em z ponowienia. Job nie jest wymagany do merge'a, dopóki suita nie
+pokaże kilku tygodni stabilnej zieleni.
 
 ## Zasady globalne
 
@@ -141,7 +184,9 @@ pliku przy odpowiednim eksporcie.
   `backend/**`, w kontrakcie i w samym `ci.yml`. Obie decyzje niosą pułapki
   (wersje PHP i MySQL-a muszą nadążać za `backend/compose.yaml`, a filtr ścieżek
   wymaga osobnego joba) — powody siedzą w komentarzach przy odpowiednich jobach,
-  żeby nie rozjeżdżały się z konfiguracją.
+  żeby nie rozjeżdżały się z konfiguracją. Job E2E kopiuje wzorzec backendu
+  i odpala się przy zmianach w aplikacjach, pakietach, backendzie i `e2e/`
+  (patrz [Testy E2E](#testy-e2e)).
 - [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
   Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
 

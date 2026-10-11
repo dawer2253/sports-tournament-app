@@ -107,6 +107,16 @@ powtórne `db:seed` na stojącej bazie odtwarza demo pod nowymi id. To cena za t
 że seed nie pada obok turniejów założonych przez panel — powody w docblocku
 `DemoTournamentSeeder`.
 
+### Baza `e2e`
+
+Suita Playwrighta (`npm run test:e2e`, opis w rootowym `AGENTS.md`) ma własną
+bazę `e2e` w tym samym MySQL-u i własny Laravel na porcie **8001**, w
+jednorazowym kontenerze obok `make up`. Na starcie każdego przebiegu dostaje
+`migrate:fresh --seed`, więc baza deweloperska (`laravel`) i testowa Pesta
+(`testing`) zostają nietknięte. Bazę zakłada sam `migrate:fresh` na koncie
+`root`, bo użytkownik `sail` nie ma prawa tworzyć baz — szczegóły w
+[`e2e/scripts/backend.sh`](../e2e/scripts/backend.sh).
+
 ## Warstwa API i autoryzacja
 
 Stoi. Endpointy `/register`, `/login`, `/logout` i `/me` są zaimplementowane,
