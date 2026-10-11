@@ -1,6 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
-import type { MatchRowData } from '../components/data/match-row-data'
+import type { MatchCollision, MatchRowData } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
 import type { RoundSummary } from '../components/data/round-summary'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
@@ -439,26 +439,97 @@ export const scheduleUndated: ScheduleDemoMatch[] = bergerPairs(teams.length).fl
 
 /**
  * Sezon w trakcie: cztery kolejki rozegrane, w piątej dwa mecze zakończone,
- * jeden trwa, jeden przed nami. Wyniki są deterministyczne.
+ * jeden trwa, jeden przed nami. Wyniki są deterministyczne. Do tego dwie
+ * ręczne korekty dają kolizję terminu (#175): jedną boiska, jedną drużyny.
  */
-export const scheduleInProgress: ScheduleDemoMatch[] = scheduleUndated.map((match) => {
-  const matchNumber = (match.id - 1) % 10 + 1
-  const dated = {
-    ...match,
-    kickoffAt: demoKickoff(match.round.order, matchNumber),
-    venue: scheduleVenues[(matchNumber - 1) % 2],
-  }
-  const order = match.round.order
-  if (order < 5 || (order === 5 && matchNumber <= 2)) {
-    return { ...dated, status: 'finished' as const, homeScore: (match.id * 7) % 4, awayScore: (match.id * 3) % 3 }
-  }
-  if (order === 5 && matchNumber === 3) {
-    return { ...dated, status: 'live' as const, homeScore: 1, awayScore: 0 }
-  }
-  return dated
-})
+export const scheduleInProgress: ScheduleDemoMatch[] = withCollisions(seedScheduleCollisions(scheduleSeason()))
 
-/** Kolejki z meczów, tak jak liczy je panel: zakres dat i „zakończone/wszystkie”. */
+function scheduleSeason(): ScheduleDemoMatch[] {
+  return scheduleUndated.map((match) => {
+    const matchNumber = (match.id - 1) % 10 + 1
+    const dated = {
+      ...match,
+      kickoffAt: demoKickoff(match.round.order, matchNumber),
+      venue: scheduleVenues[(matchNumber - 1) % 2],
+    }
+    const order = match.round.order
+    if (order < 5 || (order === 5 && matchNumber === 1)) {
+      return { ...dated, status: 'finished' as const, homeScore: (match.id * 7) % 4, awayScore: (match.id * 3) % 3 }
+    }
+    if (order === 5 && matchNumber === 2) {
+      return { ...dated, status: 'live' as const, homeScore: 1, awayScore: 0 }
+    }
+    return dated
+  })
+}
+
+/**
+ * Dwie korekty, które dają kolizję terminu — po jednej na rodzaj, żeby makieta
+ * pokazywała oba warianty plakietki (#175). Kolizja boiska siedzi w kolejce 5,
+ * czyli w tej, którą ekran otwiera domyślnie. Reszta terminarza zostaje bez zmian.
+ */
+function seedScheduleCollisions(matches: ScheduleDemoMatch[]): ScheduleDemoMatch[] {
+  const scheduled = (order: number) => matches.filter((match) => match.round.order === order && match.status === 'scheduled')
+  const fifth = scheduled(5)
+  if (fifth.length < 2) return matches
+
+  const [first, second] = fifth
+  // Kolizja boiska: drugi zaplanowany mecz kolejki 5 wchodzi na godzinę
+  // i obiekt pierwszego.
+  let seeded = matches.map((match) =>
+    match.id === second.id ? { ...match, kickoffAt: first.kickoffAt, venue: first.venue } : match,
+  )
+
+  const sharesTeam = (a: ScheduleDemoMatch, b: ScheduleDemoMatch) =>
+    [a.homeTeam?.id, a.awayTeam?.id].some((id) => id === b.homeTeam?.id || id === b.awayTeam?.id)
+
+  // Kolizja drużyny: mecz kolejki 7 na godzinę meczu kolejki 6 z tą samą drużyną.
+  const sixth = scheduled(6)
+  const partner = scheduled(7).find((match) => sixth.some((other) => sharesTeam(match, other)))
+  const target = partner && seeded.find((other) => other.round.order === 6 && sharesTeam(partner, other))
+  if (partner && target) {
+    seeded = seeded.map((match) => (match.id === partner.id ? { ...match, kickoffAt: target.kickoffAt } : match))
+  }
+
+  return seeded
+}
+
+/** Kolizje terminów, liczone tym samym przepisem co backend (#158). */
+export function withCollisions(matches: ScheduleDemoMatch[], matchDuration = 60): ScheduleDemoMatch[] {
+  const windows = matches
+    .filter((match) => match.kickoffAt)
+    .map((match) => ({
+      match,
+      start: Date.parse(match.kickoffAt!),
+      end: Date.parse(match.kickoffAt!) + matchDuration * 60_000,
+    }))
+    .sort((a, b) => a.start - b.start)
+
+  const found = new Map<number, MatchCollision[]>()
+  const add = (id: number, collision: MatchCollision) => found.set(id, [...(found.get(id) ?? []), collision])
+  const describe = (other: ScheduleDemoMatch) =>
+    `${other.homeTeam?.name ?? 'Do ustalenia'} – ${other.awayTeam?.name ?? 'Do ustalenia'} (${other.round.name})`
+
+  for (let i = 0; i < windows.length; i++) {
+    for (let j = i + 1; j < windows.length && windows[j].start < windows[i].end; j++) {
+      const a = windows[i].match
+      const b = windows[j].match
+      const teams = new Set([a.homeTeam?.id, a.awayTeam?.id].filter((id) => id !== undefined))
+      if ((b.homeTeam && teams.has(b.homeTeam.id)) || (b.awayTeam && teams.has(b.awayTeam.id))) {
+        add(a.id, { type: 'team', matchId: b.id, title: `Kolizja drużyny: ${describe(b)}` })
+        add(b.id, { type: 'team', matchId: a.id, title: `Kolizja drużyny: ${describe(a)}` })
+      }
+      if (a.venue && b.venue && a.venue.id === b.venue.id) {
+        add(a.id, { type: 'venue', matchId: b.id, title: `Kolizja boiska: ${describe(b)}` })
+        add(b.id, { type: 'venue', matchId: a.id, title: `Kolizja boiska: ${describe(a)}` })
+      }
+    }
+  }
+
+  return matches.map((match) => ({ ...match, collisions: found.get(match.id) ?? [] }))
+}
+
+/** Kolejki z meczów, tak jak liczy je panel: zakres dat, kolizje i „zakończone/wszystkie”. */
 export function scheduleRounds(matches: ScheduleDemoMatch[]): RoundSummary[] {
   const byRound = new Map<number, ScheduleDemoMatch[]>()
   for (const match of matches) byRound.set(match.round.id, [...(byRound.get(match.round.id) ?? []), match])
@@ -468,5 +539,6 @@ export function scheduleRounds(matches: ScheduleDemoMatch[]): RoundSummary[] {
     dates: formatRoundDates(roundMatches.map((match) => match.kickoffAt), scheduleTimeZone),
     finished: roundMatches.filter((match) => match.status === 'finished').length,
     total: roundMatches.length,
+    collisions: roundMatches.filter((match) => (match.collisions?.length ?? 0) > 0).length,
   }))
 }
