@@ -108,13 +108,13 @@ export function AdminSettings({
                 <div className="space-y-2">
                   <Label htmlFor="slug">Adres strony</Label>
                   <div className="flex items-center rounded-lg border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-                    <span className="px-2.5 text-sm text-muted-foreground select-none">/t/</span>
+                    <span className="shrink-0 px-2.5 text-sm whitespace-nowrap text-muted-foreground select-none">/t/</span>
                     <Input
                       id="slug"
                       value={slug}
                       onChange={(event) => setSlug(event.target.value)}
                       aria-describedby={slugWarning ? 'slug-warning' : undefined}
-                      className="rounded-l-none border-0 pl-0 focus-visible:ring-0"
+                      className="min-w-0 flex-1 rounded-l-none border-0 pl-0 focus-visible:ring-0"
                     />
                   </div>
                   {slugWarning && (

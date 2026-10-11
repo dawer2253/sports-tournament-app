@@ -23,6 +23,8 @@ type FormDialogProps = {
   /** Błąd ogólny formularza; błędy pól zostają przy polach. */
   error?: ReactNode
   pending?: boolean
+  /** Dodatkowe klasy treści okna, np. szerszy `sm:max-w-lg` dla formularzy z dwiema kolumnami. */
+  contentClassName?: string
   /** Pola formularza. */
   children: ReactNode
 }
@@ -40,11 +42,12 @@ function FormDialog({
   submitLabel,
   error,
   pending,
+  contentClassName,
   children,
 }: FormDialogProps) {
   return (
     <Dialog open={open} onOpenChange={guardWhilePending(pending, onOpenChange)}>
-      <DialogContent showCloseButton={false}>
+      <DialogContent showCloseButton={false} className={contentClassName}>
         <form
           // Blokada na formularzu, nie tylko na przycisku akcji: wysłać go może
           // też Enter w polu albo przycisk z `children` bez `type="button"`.
