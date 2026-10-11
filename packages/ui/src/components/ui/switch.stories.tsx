@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { screen } from 'storybook/test'
 import { expectCheckedFill } from '../../test/checked'
@@ -13,7 +14,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-function States({ size }: { size?: 'sm' | 'default' }) {
+function States({ size }: Pick<ComponentProps<typeof Switch>, 'size'>) {
   return (
     <div className="flex flex-col gap-4">
       <Label>
@@ -23,7 +24,7 @@ function States({ size }: { size?: 'sm' | 'default' }) {
         <Switch size={size} defaultChecked /> Publiczna tabela
       </Label>
       <Label>
-        <Switch size={size} defaultChecked disabled /> Zgłoszenia zamknięte
+        <Switch size={size} defaultChecked disabled /> Turniej opublikowany
       </Label>
     </div>
   )

@@ -20,10 +20,10 @@ function States() {
         <Checkbox /> Mecz o 3. miejsce
       </Label>
       <Label>
-        <Checkbox defaultChecked /> Dogrywka w fazie pucharowej
+        <Checkbox defaultChecked /> Mecz i rewanż
       </Label>
       <Label>
-        <Checkbox defaultChecked disabled /> Rzuty karne
+        <Checkbox defaultChecked disabled /> Rzuty karne przy remisie
       </Label>
     </div>
   )
@@ -33,7 +33,7 @@ export const Stany: Story = {
   render: () => <States />,
   play: async () => {
     await expectCheckedFill(
-      screen.getByRole('checkbox', { name: 'Dogrywka w fazie pucharowej' }),
+      screen.getByRole('checkbox', { name: 'Mecz i rewanż' }),
       screen.getByRole('checkbox', { name: 'Mecz o 3. miejsce' }),
     )
   },
