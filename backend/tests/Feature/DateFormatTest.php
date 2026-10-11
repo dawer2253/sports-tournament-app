@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\GameMatch;
+use App\Models\Round;
+use App\Models\Stage;
 use App\Models\Tournament;
 use App\Models\User;
 use Illuminate\Support\Arr;
@@ -87,4 +90,20 @@ it('oddaje daty turniejów z listy GET /tournaments w +00:00', function () {
         'data.0.createdAt', 'data.0.updatedAt',
         'data.1.createdAt', 'data.1.updatedAt',
     ]);
+});
+
+// `kickoff_at` to `DATETIME` bez offsetu (ADR-0008), więc zapis w UTC musi
+// wyjść z `+00:00`, a nie jako surowy Carbon z `…000000Z`.
+it('oddaje termin meczu z GET /tournaments/{tournament}/matches w +00:00', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    GameMatch::factory()->for($round)->create(['kickoff_at' => '2026-10-25 09:00:00']);
+
+    $response = actingAsOrganizer($organizer)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/matches")
+        ->assertOk()
+        ->assertJsonPath('data.0.kickoffAt', '2026-10-25T09:00:00+00:00');
+
+    expectEveryDateInUtc($response, ['data.0.kickoffAt']);
 });

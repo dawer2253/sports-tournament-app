@@ -40,6 +40,15 @@ class GameMatch extends Model
      */
     public const STARTED_STATUSES = ['live', 'finished'];
 
+    /**
+     * Stany meczu, w kolejności z kontraktu (`MatchStatus`). Lista powtarza
+     * enum z migracji `create_matches_table`, bo walidacja filtra listy
+     * meczów potrzebuje jej w PHP — oba źródła pilnuje `ListMatchesTest`.
+     *
+     * @var list<string>
+     */
+    public const STATUSES = ['scheduled', 'live', 'finished'];
+
     protected function casts(): array
     {
         return ['kickoff_at' => 'datetime'];

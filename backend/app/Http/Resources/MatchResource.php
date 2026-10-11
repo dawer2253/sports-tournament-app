@@ -1,0 +1,64 @@
+<?php
+
+namespace App\Http\Resources;
+
+use App\Http\Resources\Concerns\FormatsDates;
+use App\Models\GameMatch;
+use App\Models\Team;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+/**
+ * Oczekuje wczytanych `round`, `homeTeam`, `awayTeam` i `venue`, z tego
+ * samego powodu co `StageResource`: lista meczów nie może robić zapytania na
+ * wiersz.
+ *
+ * `kickoffAt` idzie przez `formatDate()`, jak każda data w odpowiedzi
+ * (ADR-0008).
+ *
+ * @mixin GameMatch
+ */
+class MatchResource extends JsonResource
+{
+    use FormatsDates;
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->id,
+            'stageId' => $this->stage_id,
+            'groupId' => $this->group_id,
+            'round' => [
+                'id' => $this->round->id,
+                'name' => $this->round->name,
+                'order' => $this->round->order,
+            ],
+            'matchNumber' => $this->match_number,
+            'homeTeam' => $this->teamSummary($this->homeTeam),
+            'awayTeam' => $this->teamSummary($this->awayTeam),
+            'homeScore' => $this->home_score,
+            'awayScore' => $this->away_score,
+            'homePenalties' => $this->home_penalties,
+            'awayPenalties' => $this->away_penalties,
+            'status' => $this->status,
+            'kickoffAt' => $this->formatDate($this->kickoff_at),
+            'venue' => $this->venue === null ? null : ['id' => $this->venue->id, 'name' => $this->venue->name],
+            'winnerToMatchId' => $this->winner_to_match_id,
+            'loserToMatchId' => $this->loser_to_match_id,
+            'advancesToSlot' => $this->advances_to_slot,
+        ];
+    }
+
+    /**
+     * `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte.
+     *
+     * @return array{id: int, name: string, logoUrl: ?string}|null
+     */
+    private function teamSummary(?Team $team): ?array
+    {
+        return $team === null ? null : ['id' => $team->id, 'name' => $team->name, 'logoUrl' => $team->logoUrl()];
+    }
+}
