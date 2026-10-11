@@ -3,6 +3,23 @@
 Obowiązują [zasady globalne z rootu](../AGENTS.md), w tym „Testy frontendu”
 (vitest + msw, pułapka z `server.listen()`).
 
+## Okna
+
+Zasada całego panelu, nie tylko list. Rozstrzygnął ją
+[#162](https://github.com/dawer2253/sports-tournament-app/issues/162) (pkt 6
+i 7), rozszerzając wzorzec z #86 opisany niżej.
+
+- **Każdy formularz i każde potwierdzenie to okno na środku**: `FormDialog`
+  albo `ConfirmDeleteDialog` z design systemu. Dotyczy to też terminarza:
+  generowanie, rozkład dat i mecz idą w oknach.
+- **Bez paneli bocznych, dymków z formularzem i osobnych stron formularzy.**
+  Dwa wzorce z regułą, kiedy który, trzeba by tłumaczyć, więc nie ujednolicają.
+- **Pola w kilku kolumnach równają się do góry**, więc podpis pod jednym polem
+  (np. „Zmieni długość meczu w całym turnieju”) nie przesuwa pola obok. Pole
+  w siatce ma `content-start`, jak `TextField`.
+- **Listy wyboru idą przez `Select` z design systemu**, a nie przez natywny
+  `<select>`, który ma inną wysokość i ramkę niż `Input` obok.
+
 ## Edycja list
 
 Dotyczy bytów turnieju, które organizer dodaje, zmienia i usuwa na liście:

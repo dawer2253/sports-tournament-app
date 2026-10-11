@@ -1,6 +1,18 @@
 /** Mecze `scheduled` w oknach usuwania drużyny i obiektu (#171). */
 export const SCHEDULED_MATCHES = ['zaplanowany mecz', 'zaplanowane mecze', 'zaplanowanych meczów'] as const;
 
+/** Kolejki w opisie opcji generowania: „19 kolejek” (#174). */
+export const ROUNDS = ['kolejka', 'kolejki', 'kolejek'] as const;
+
+/** Kolejki w toaście po generowaniu: „Wygenerowano 1 kolejkę” (#174). */
+export const ROUNDS_ACCUSATIVE = ['kolejkę', 'kolejki', 'kolejek'] as const;
+
+/** Mecze w generowaniu terminarza: „190 meczów” (#174). */
+export const MATCHES = ['mecz', 'mecze', 'meczów'] as const;
+
+/** Pusty stan terminarza: „2 drużyny grają każdy z każdym” (#174). */
+export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] as const;
+
 /** Liczba drużyn w nagłówku tabeli (#173). */
 export const TEAMS = ['drużyna', 'drużyny', 'drużyn'] as const;
 

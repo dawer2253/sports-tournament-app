@@ -15,6 +15,7 @@ function RoundLabel({ round }: { round: RoundSummary }) {
     <>
       <span className="min-w-0 flex-1">
         <span className="block truncate">{round.name}</span>
+        {/* Spacja rozdziela nazwę i daty w nazwie przycisku: nie każde środowisko robi to samo z bloków (jsdom nie). */}{' '}
         <span className="block truncate text-xs font-normal text-muted-foreground">{round.dates}</span>
       </span>
       <span className="flex w-5 shrink-0 justify-center">

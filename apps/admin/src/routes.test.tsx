@@ -132,13 +132,13 @@ describe('trasy turnieju', () => {
     ).toHaveLength(1);
   });
 
-  it('Terminarz, Drabinka i Statystyki są nieczynne', async () => {
+  it('Drabinka i Statystyki są nieczynne', async () => {
     tournamentEndpoint(() => HttpResponse.json({ data: TOURNAMENT }));
 
     const { router, user } = renderAt('/tournaments/7/teams');
     await screen.findByRole('heading', { name: 'Puchar Zimowy' });
 
-    for (const label of ['Terminarz', 'Drabinka', 'Statystyki']) {
+    for (const label of ['Drabinka', 'Statystyki']) {
       // Bez `href` element `<a>` nie ma roli `link`, więc szukamy po tekście.
       const tab = sectionTabs().getByText(label).closest('a')!;
       expect(tab).not.toHaveAttribute('href');
@@ -151,9 +151,11 @@ describe('trasy turnieju', () => {
       'Drużyny',
       'Obiekty',
       'Ustawienia',
+      'Terminarz',
       'Tabela',
     ]);
     expect(sectionTabs().getByRole('link', { name: 'Tabela' })).toHaveAttribute('href', '/tournaments/7/standings');
+    expect(sectionTabs().getByRole('link', { name: 'Terminarz' })).toHaveAttribute('href', '/tournaments/7/schedule');
   });
 
   it('przejście między sekcjami nie pyta API o turniej drugi raz', async () => {

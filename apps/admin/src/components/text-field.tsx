@@ -17,7 +17,9 @@ export function TextField({ label, error, ...inputProps }: TextFieldProps) {
   const id = useId();
   const errorId = `${id}-error`;
   return (
-    <div className="grid gap-2">
+    // `content-start`: w siatce kilku pól podpis pod jednym nie rozpycha
+    // sąsiada (`apps/admin/AGENTS.md`, „Okna”).
+    <div className="grid content-start gap-2">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
