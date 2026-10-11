@@ -1549,7 +1549,12 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Usuń zawodnika */
+        /**
+         * Usuń zawodnika
+         * @description Daje `422` z błędem pod `id`, jeżeli zawodnik ma zdarzenie w meczu
+         *     rozegranym albo trwającym (`finished` albo `live`): usunięcie
+         *     zmieniłoby klasyfikację strzelców wstecz. Odmowa niczego nie zmienia.
+         */
         delete: {
             parameters: {
                 query?: never;
