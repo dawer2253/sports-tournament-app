@@ -15,6 +15,6 @@ export type RoundSummary = {
   finished: number
   /** Wszystkie mecze kolejki. Kolejka bez meczów nie trafia na listę. */
   total: number
-  /** Mecze z kolizją; slot na licznik stoi zawsze, wypełni go #175. */
+  /** Mecze z kolizją; slot na licznik stoi zawsze, a wartość liczy panel (#175). */
   collisions?: number
 }

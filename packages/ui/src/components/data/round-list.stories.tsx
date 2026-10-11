@@ -4,11 +4,10 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleRounds } from '../../lib/demo-data'
 import { RoundList, type RoundListProps } from './round-list'
 
-const rounds = scheduleRounds(scheduleInProgress).map((round) =>
-  // Licznik kolizji wypełni #175. Tu jeden, żeby było widać, że ułamek stoi
-  // w tym samym miejscu z licznikiem i bez niego.
-  round.id === 6 ? { ...round, collisions: 2 } : round,
-)
+// Licznik kolizji liczy `scheduleRounds` z danych (#175). Kolejka 5 ma kolizję
+// boiska, kolejne kolizję drużyny, więc widać, że ułamek stoi w tym samym
+// miejscu z licznikiem i bez niego.
+const rounds = scheduleRounds(scheduleInProgress)
 
 const meta = {
   title: 'UI/Lista kolejek',
