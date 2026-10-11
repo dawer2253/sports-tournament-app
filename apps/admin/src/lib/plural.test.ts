@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { plural } from './plural';
-
-const MATCHES = ['zaplanowany mecz', 'zaplanowane mecze', 'zaplanowanych meczów'] as const;
+import { plural, SCHEDULED_MATCHES } from './plural';
 
 describe('plural', () => {
   it.each([
@@ -18,6 +16,6 @@ describe('plural', () => {
     [112, 'zaplanowanych meczów'],
     [0, 'zaplanowanych meczów'],
   ])('%i → „%s”', (count, form) => {
-    expect(plural(count, MATCHES)).toBe(form);
+    expect(plural(count, SCHEDULED_MATCHES)).toBe(form);
   });
 });

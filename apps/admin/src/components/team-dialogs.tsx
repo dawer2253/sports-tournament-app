@@ -4,7 +4,7 @@ import { ConfirmDeleteDialog, FormDialog, ImageFileField, TeamLogo } from '@tour
 import { Controller, useForm } from 'react-hook-form';
 import { api } from '../lib/api';
 import { LOGO_FILE_HINT, logoFileError, logoFormData, TEAM_LOGO } from '../lib/logo-file';
-import { plural } from '../lib/plural';
+import { plural, SCHEDULED_MATCHES } from '../lib/plural';
 import { TEAM_LOGO_TEXTS, TEAM_TEXTS, teamKeys } from '../lib/team-queries';
 import { teamSchema, type TeamValues } from '../lib/team-schema';
 import { useListMutation } from '../lib/use-list-mutation';
@@ -90,13 +90,8 @@ function teamDeleteDescription({ playersCount, scheduledMatchesCount }: Team) {
   const sentences = [];
   if (playersCount > 0) sentences.push(`Usunie też ${playersAccusative(playersCount)}.`);
   if (scheduledMatchesCount > 0) {
-    const matches = plural(scheduledMatchesCount, [
-      'zaplanowany mecz',
-      'zaplanowane mecze',
-      'zaplanowanych meczów',
-    ]);
     sentences.push(
-      `Usunie też ${scheduledMatchesCount} ${matches} drużyny.`,
+      `Usunie też ${scheduledMatchesCount} ${plural(scheduledMatchesCount, SCHEDULED_MATCHES)} drużyny.`,
       'Pozostałe mecze zostają bez zmian, z tymi samymi datami.',
     );
   }

@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AdminPage } from '../components/admin-page';
 import { api } from '../lib/api';
-import { plural } from '../lib/plural';
+import { plural, SCHEDULED_MATCHES } from '../lib/plural';
 import { useListMutation, type ListTexts } from '../lib/use-list-mutation';
 import {
   venueSchema,
@@ -95,7 +95,8 @@ export function TournamentVenuesPage() {
         errorMessage={venues.error?.message}
         onRetry={() => void venues.refetch()}
         onCreate={() => setDialog({ kind: 'form', venue: null })}
-        // Okna biorą `VenueRow`: id, nazwa i adres to wszystko, czego potrzebują.
+        // Formularzowi wystarcza `VenueRow` (id, nazwa, adres). Usuwanie mówi
+        // o liczbie meczów, więc bierze z listy cały `Venue`.
         onEdit={(venue) => setDialog({ kind: 'form', venue })}
         onDelete={(row) => {
           const venue = venues.data?.find((candidate) => candidate.id === row.id);
@@ -197,7 +198,7 @@ function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: 
  */
 function venueDeleteDescription({ scheduledMatchesCount: count }: Venue) {
   if (count === 0) return undefined;
-  const matches = plural(count, ['zaplanowany mecz', 'zaplanowane mecze', 'zaplanowanych meczów']);
+  const matches = plural(count, SCHEDULED_MATCHES);
   const verb = plural(count, ['straci', 'stracą', 'straci']);
   const dates = count === 1 ? 'Data meczu się nie zmieni.' : 'Daty meczów się nie zmienią.';
   return `${count} ${matches} ${verb} obiekt. ${dates}`;
