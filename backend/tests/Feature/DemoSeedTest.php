@@ -74,8 +74,12 @@ it('sieje pierwszą rundę rozegraną i rewanże w terminarzu', function () {
 it('sieje zdarzenia meczowe zgodne z wynikami', function () {
     // Klasyfikacja strzelców liczy się ze zdarzeń, a tabela z wyniku meczu.
     // Gdyby seed dawał inną liczbę bramek niż wynik, strona publiczna
-    // pokazywałaby dwie sprzeczne prawdy o tym samym meczu.
-    $matches = GameMatch::query()->where('status', 'finished')->get();
+    // pokazywałaby dwie sprzeczne prawdy o tym samym meczu. Liga koszykówki
+    // nie ma zdarzeń (S3), więc sprawdzamy mecze piłkarskie.
+    $matches = Tournament::firstWhere('slug', 'liga-osiedlowa-2026')
+        ->matches()
+        ->where('matches.status', 'finished')
+        ->get();
 
     foreach ($matches as $match) {
         $goals = fn (int $teamId) => MatchEvent::query()
@@ -129,7 +133,10 @@ it('sieje mecze o terminach zgodnych z kontraktem', function () {
     // na stronie niż na mocku. Druga asercja zostaje mimo zgodnego już zapisu,
     // bo trzyma widoczny związek z południem czasu polskiego — godziną, na
     // którą mecz jest naprawdę umówiony i którą zobaczy kibic.
-    $first = GameMatch::query()->orderBy('kickoff_at')->first();
+    $first = Tournament::firstWhere('slug', 'liga-osiedlowa-2026')
+        ->matches()
+        ->orderBy('kickoff_at')
+        ->first();
 
     expect($first->kickoff_at->toIso8601String())->toBe('2026-09-06T10:00:00+00:00')
         ->and($first->kickoff_at->equalTo(new DateTimeImmutable('2026-09-06T12:00:00+02:00')))->toBeTrue();
@@ -144,13 +151,57 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
     $demo = Tournament::firstWhere('slug', 'liga-osiedlowa-2026');
 
     // Poddrzewo powstaje od nowa pod nowymi id (autoinkrement, patrz docblock
-    // seedera), więc pilnujemy, że stare nie zostało obok: jedna faza, sześć
-    // kolejek i sześć meczów, wszystkie wiszące pod demo.
+    // seedera), więc pilnujemy, że stare nie zostało obok: po jednej fazie
+    // i po dwa rozegrane mecze na turniej.
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
-        ->and(Stage::query()->count())->toBe(1)
-        ->and(Round::query()->count())->toBe(6)
-        ->and(GameMatch::query()->count())->toBe(6)
+        ->and(Stage::query()->count())->toBe(2)
+        ->and(Round::query()->count())->toBe(8)
+        ->and(GameMatch::query()->count())->toBe(8)
         ->and($demo->matches()->count())->toBe(6);
+});
+
+it('sieje ligę koszykówki zgodną z przykładem koszykowka', function () {
+    $tournament = Tournament::firstWhere('slug', 'liga-koszykowki-2026');
+
+    expect($tournament)->not->toBeNull()
+        ->and($tournament->sport->code)->toBe('basketball')
+        ->and($tournament->status)->toBe('active')
+        ->and($tournament->points)->toBe($tournament->sport->defaultPoints())
+        ->and($tournament->user->email)->toBe('dawid@example.com')
+        ->and($tournament->stages()->first()->type)->toBe('league')
+        ->and($tournament->teams()->orderBy('id')->pluck('name')->all())->toBe(['Żubry Wola', 'Rysie Mokotów'])
+        ->and($tournament->matches()->where('matches.status', 'finished')->count())->toBe(2);
+
+    // Tabelę liczy kalkulator, więc zgodność z przykładem `koszykowka`
+    // (`scoreFor` 168:141, punkty 4 i 2) jest wynikiem danych seeda,
+    // a nie przepisaną liczbą.
+    $standings = actingAsOrganizer($tournament->user)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/standings")
+        ->assertOk();
+
+    expect($standings->json('data.0.scoreLabel'))->toBe('Punkty')
+        ->and($standings->json('data.0.rows.*.team.name'))->toBe(['Żubry Wola', 'Rysie Mokotów'])
+        ->and($standings->json('data.0.rows.*.played'))->toBe([2, 2])
+        ->and($standings->json('data.0.rows.*.scoreFor'))->toBe([168, 141])
+        ->and($standings->json('data.0.rows.*.scoreAgainst'))->toBe([141, 168])
+        ->and($standings->json('data.0.rows.*.points'))->toBe([4, 2]);
+});
+
+it('nie dubluje ligi koszykówki przy powtórnym seedowaniu', function () {
+    $this->seed();
+
+    expect(Tournament::query()->where('slug', 'liga-koszykowki-2026')->count())->toBe(1)
+        ->and(Tournament::firstWhere('slug', 'liga-koszykowki-2026')->stages()->count())->toBe(1);
+});
+
+it('odrzuca remis na meczu finished z seeda koszykarskiego pod homeScore', function () {
+    $tournament = Tournament::firstWhere('slug', 'liga-koszykowki-2026');
+    $match = $tournament->matches()->where('matches.status', 'finished')->firstOrFail();
+
+    actingAsOrganizer($tournament->user)
+        ->patchJson("/api/v1/matches/{$match->id}", ['status' => 'finished', 'homeScore' => 80, 'awayScore' => 80])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('homeScore');
 });
 
 // Od kiedy organizer może założyć turniej przez API, baza deweloperska ma

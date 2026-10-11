@@ -296,8 +296,6 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
   zastępczym wylicza `teamAbbr` z nazwy (#89).
 - Podgląd strony publicznej turnieju przed publikacją. W S1 szkic daje na
   trasach publicznych `404` (#82).
-- v0.2: czy w turnieju `draft` wolno wpisywać wyniki. Jeśli tak, wynik „na
-  próbę” blokuje usunięcie turnieju przez guard (#82, #83).
 - v0.2: kary punktowe (np. za walkower) jako osobne pojęcie obok punktacji.
   W v0.1 `points` mieści się w 0–10 (#87).
 - Wycofanie drużyny w trakcie sezonu, z walkowerami za jej pozostałe mecze.

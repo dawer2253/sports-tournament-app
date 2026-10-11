@@ -46,6 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/matches', [MatchController::class, 'index'])
         ->can('manage', 'tournament');
+    Route::patch('/matches/{match}', [MatchController::class, 'update'])
+        ->can('manage', 'match');
     Route::post('/stages/{stage}/schedule', [ScheduleController::class, 'store'])
         ->can('manage', 'stage');
     Route::post('/stages/{stage}/schedule/dates', [ScheduleController::class, 'dates'])

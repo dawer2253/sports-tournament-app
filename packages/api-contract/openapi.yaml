@@ -88,6 +88,8 @@ tags:
     description: Obiekty w turnieju.
   - name: Schedule
     description: Terminarz fazy — generowanie kolejek i meczów.
+  - name: Matches
+    description: Zapis meczu — wynik, stan, termin i obiekt.
   - name: Reads
     description: Odczyt meczów i tabel po stronie panelu.
   - name: Public
@@ -397,6 +399,12 @@ paths:
     get:
       tags: [Tournaments]
       summary: Szczegóły turnieju
+      description: |
+        Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+        Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
+        ten sam przełącznik obsługuje listę meczów i tabelę, więc w panelu
+        przestawia naraz turniej, terminarz i tabelę. Turniej koszykarski to
+        ten z seedu demo (`liga-koszykowki-2026`).
       responses:
         '200':
           description: Turniej
@@ -407,20 +415,39 @@ paths:
                 required: [data]
                 properties:
                   data: { $ref: '#/components/schemas/Tournament' }
-              example:
-                data:
-                  id: 1
-                  name: Liga Osiedlowa 2026
-                  slug: liga-osiedlowa-2026
-                  status: active
-                  sport: { id: 1, code: football, name: Piłka nożna }
-                  branding: { logoUrl: null, primaryColor: '#1F7A45' }
-                  points: { win: 3, draw: 1, loss: 0 }
-                  tiebreakers: [points, head_to_head, score_diff, score_for]
-                  matchDuration: 60
-                  teamsCount: 3
-                  createdAt: '2026-09-01T08:00:00+00:00'
-                  updatedAt: '2026-09-14T16:30:00+00:00'
+              examples:
+                pilka:
+                  summary: Turniej piłkarski — zgodny z seedem demo
+                  value:
+                    data:
+                      id: 1
+                      name: Liga Osiedlowa 2026
+                      slug: liga-osiedlowa-2026
+                      status: active
+                      sport: { id: 1, code: football, name: Piłka nożna }
+                      branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      points: { win: 3, draw: 1, loss: 0 }
+                      tiebreakers: [points, head_to_head, score_diff, score_for]
+                      matchDuration: 60
+                      teamsCount: 3
+                      createdAt: '2026-09-01T08:00:00+00:00'
+                      updatedAt: '2026-09-14T16:30:00+00:00'
+                koszykowka:
+                  summary: Turniej koszykarski — zgodny z tabelą i listą meczów
+                  value:
+                    data:
+                      id: 2
+                      name: Liga Koszykówki 2026
+                      slug: liga-koszykowki-2026
+                      status: active
+                      sport: { id: 2, code: basketball, name: Koszykówka }
+                      branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      points: { win: 2, draw: 0, loss: 1 }
+                      tiebreakers: [points, head_to_head, score_diff]
+                      matchDuration: 40
+                      teamsCount: 2
+                      createdAt: '2026-09-01T08:00:00+00:00'
+                      updatedAt: '2026-09-14T16:30:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1296,8 +1323,8 @@ paths:
       tags: [Reads]
       summary: Mecze turnieju
       description: |
-        Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
-        `Match` jest już zamrożony.
+        Odczyt. Wynik, stan, termin i obiekt zmienia `PATCH /matches/{match}`,
+        a kształt `Match` jest zamrożony.
 
         Kolejność: faza (`order`), w niej kolejka (`round.order`), w kolejce
         `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (po
@@ -1314,8 +1341,11 @@ paths:
         odpowiedź przez `stageId`, bo faza pucharowa nawet przy szesnastu
         drużynach mieści się w jednej stronie.
 
-        Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
-        wysłaniu nagłówka `Prefer: example=puchar`.
+        Przykłady są trzy: `liga` (domyślny), `puchar` i `koszykowka`. Mock
+        zwraca drugi po wysłaniu nagłówka `Prefer: example=puchar`, a trzeci po
+        `Prefer: example=koszykowka`. Koszykarski jest zgodny z przykładem
+        `koszykowka` tabeli i turnieju, więc jeden przełącznik przestawia
+        w panelu turniej, terminarz i tabelę naraz.
       responses:
         '200':
           description: Stronicowane mecze, opcjonalnie zawężone parametrami
@@ -1567,6 +1597,54 @@ paths:
                         advancesToSlot: null
                         collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
+                koszykowka:
+                  summary: Liga koszykówki — zgodna z tabelą i turniejem
+                  description: |
+                    Ten sam turniej co przykłady `koszykowka` w
+                    `GET /tournaments/{tournament}` i w tabeli. Żubry Wola
+                    i Rysie Mokotów rozegrały dwa mecze, razem 168:141.
+                    W koszykówce `allowsDraw: false`, więc wynik zakończonego
+                    meczu nigdy nie jest remisem — na tych danych okno meczu
+                    pokazuje tę regułę (#159).
+                  value:
+                    data:
+                      - id: 1
+                        stageId: 1
+                        groupId: null
+                        round: { id: 1, name: Kolejka 1, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 4, name: Żubry Wola, logoUrl: null }
+                        awayTeam: { id: 5, name: Rysie Mokotów, logoUrl: null }
+                        homeScore: 90
+                        awayScore: 70
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-06T16:00:00+00:00'
+                        venue: { id: 1, name: Hala Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        collisions: []
+                      - id: 2
+                        stageId: 1
+                        groupId: null
+                        round: { id: 2, name: Kolejka 2, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 5, name: Rysie Mokotów, logoUrl: null }
+                        awayTeam: { id: 4, name: Żubry Wola, logoUrl: null }
+                        homeScore: 71
+                        awayScore: 78
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-13T16:00:00+00:00'
+                        venue: { id: 1, name: Hala Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        collisions: []
+                    meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1579,6 +1657,64 @@ paths:
                 message: 'Nieznany stan meczu: bogus. Dozwolone: scheduled, live, finished.'
                 errors:
                   status: ['Nieznany stan meczu: bogus. Dozwolone: scheduled, live, finished.']
+
+  /matches/{match}:
+    parameters:
+      - { $ref: '#/components/parameters/MatchId' }
+    patch:
+      tags: [Matches]
+      summary: Wpisz wynik, zmień stan, termin albo obiekt meczu
+      description: |
+        Częściowa zmiana meczu: wynik i stan (reguły z #159), a także korekta
+        terminu i obiektu (#158). Pole nieobecne zostaje bez zmian. Reguły
+        spójności, klucz `homeScore` oraz to, że termin i obiekt wolno zmieniać
+        przy każdym stanie, opisuje `MatchUpdate`.
+
+        Odpowiedź to ten sam `AdminMatch`, co na liście meczów, więc okno meczu
+        dostaje po zapisie świeże kolizje bez osobnego odczytu.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MatchUpdate' }
+            examples:
+              wynik:
+                summary: Mecz zakończony z wynikiem
+                value: { status: finished, homeScore: 3, awayScore: 1 }
+              terminIObiekt:
+                summary: Korekta terminu i obiektu bez zmiany wyniku
+                value: { kickoffAt: '2026-10-11T10:00:00+02:00', venueId: 2 }
+      responses:
+        '200':
+          description: Mecz po zmianie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/AdminMatch' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Wynik niespójny ze stanem, obcy obiekt albo niepoprawne ciało
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              examples:
+                scheduledZWynikiem:
+                  summary: Powrót do `scheduled` bez jawnego wyczyszczenia wyniku
+                  value:
+                    message: 'Mecz zaplanowany nie ma wyniku. Wyczyść oba pola: homeScore i awayScore.'
+                    errors:
+                      homeScore: ['Mecz zaplanowany nie ma wyniku. Wyczyść oba pola: homeScore i awayScore.']
+                remisBezRemisow:
+                  summary: 'Remis przy allowsDraw: false na meczu finished'
+                  value:
+                    message: 'Ten sport nie zna remisu, więc mecz zakończony musi mieć zwycięzcę.'
+                    errors:
+                      homeScore: ['Ten sport nie zna remisu, więc mecz zakończony musi mieć zwycięzcę.']
 
   /tournaments/{tournament}/standings:
     parameters:
@@ -1606,9 +1742,10 @@ paths:
         i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
         `Prefer: example=koszykowka`. Drugi przykład jest tu po to, żeby dało
         się sprawdzić, czy panel bierze nagłówek kolumny z odpowiedzi, a nie ze
-        sztywnego napisu. `/tournaments/{tournament}` nie ma jeszcze wariantu
-        koszykarskiego, więc w panelu przełącznik zmienia tylko tabele. Mock
-        nie liczy tabel, więc parametr `tiebreakers` niczego w nim nie zmienia.
+        sztywnego napisu. `GET /tournaments/{tournament}` i lista meczów panelu
+        mają ten sam przełącznik, więc w panelu przestawia naraz turniej,
+        terminarz i tabelę. Mock nie liczy tabel, więc parametr `tiebreakers`
+        niczego w nim nie zmienia.
       parameters:
         - name: tiebreakers
           in: query
@@ -1662,8 +1799,9 @@ paths:
                 koszykowka:
                   summary: Turniej koszykarski — zdobycze to punkty
                   description: |
-                    Bez odpowiednika w seedzie demo, który jest wyłącznie
-                    piłkarski.
+                    Turniej koszykarski z seedu demo (`liga-koszykowki-2026`),
+                    zgodny z przykładem `koszykowka` w
+                    `GET /tournaments/{tournament}` i na liście meczów panelu.
                   value:
                     data:
                       - stageId: 1
@@ -1778,8 +1916,9 @@ paths:
                 koszykowka:
                   summary: Turniej koszykarski — zdobycze to punkty
                   description: |
-                    Bez odpowiednika w seedzie demo, który jest wyłącznie
-                    piłkarski.
+                    Turniej koszykarski z seedu demo (`liga-koszykowki-2026`),
+                    zgodny z przykładem `koszykowka` w
+                    `GET /tournaments/{tournament}` i na liście meczów panelu.
                   value:
                     data:
                       - stageId: 1
@@ -2303,6 +2442,11 @@ components:
       schema: { type: integer, format: int64 }
     StageId:
       name: stage
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    MatchId:
+      name: match
       in: path
       required: true
       schema: { type: integer, format: int64 }
@@ -2936,6 +3080,56 @@ components:
 
             Niepuste dokładnie wtedy, gdy niepuste jest co najmniej jedno
             z `winnerToMatchId` i `loserToMatchId`.
+
+    MatchUpdate:
+      type: object
+      description: |
+        Częściowa zmiana meczu: wynik, stan, termin i obiekt. Pole nieobecne
+        zostaje bez zmian, a `null` czyści pole, które je dopuszcza.
+
+        Spójność wyniku ze stanem (#159), sprawdzana po scaleniu ciała żądania
+        z zapisanym meczem, bo `PATCH` jest częściowy:
+
+        | stan | `homeScore` i `awayScore` |
+        |---|---|
+        | `scheduled` | oba `null` |
+        | `live` | oba liczbami |
+        | `finished` | oba liczbami, a przy `allowsDraw: false` różne |
+
+        Wszystkie błędy pary wyników wracają pod klucz `homeScore`, bo
+        organizator poprawia je liczbami, a nie stanem: jeden wynik pusty,
+        wynik przy `scheduled`, brak wyniku przy `live` albo `finished` oraz
+        remis przy `finished` w sporcie bez remisów. Powrót do `scheduled`
+        nie czyści wyniku sam — klient musi wysłać `homeScore: null`
+        i `awayScore: null` jawnie, inaczej `422`.
+
+        Przejścia między stanami są dowolne (także `scheduled` → `finished`
+        bez `live`): nic nie przestawia meczu po upływie `kickoffAt` ani
+        `matchDuration`. Wynik wolno wpisać meczowi bez `kickoffAt` i w turnieju
+        `draft`, a wynik meczu `finished` zmienia się zawsze, bez ostrzeżenia —
+        tabela liczy się przy odczycie.
+
+        Termin i obiekt wolno korygować przy każdym stanie meczu, także
+        `finished` (#158). `kickoffAt` wymaga offsetu (ADR-0008), a `venueId`
+        musi należeć do tego turnieju i nie być usunięty. Karne nie wchodzą do
+        ciała żądania: należą do fazy pucharowej (S4).
+      properties:
+        homeScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
+        awayScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
+        status: { $ref: '#/components/schemas/MatchStatus' }
+        kickoffAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            Termin meczu. **Wymagany offset** (np. `+02:00` albo `Z`): data bez
+            offsetu daje `422`, bo nie wiadomo, który moment organizator miał na
+            myśli (ADR-0008). `null` znaczy „termin do ustalenia”.
+        venueId:
+          type: [integer, 'null']
+          format: int64
+          description: |
+            Obiekt turnieju, na którym gra mecz. `null` znaczy „bez obiektu”.
+            Obcy turniejowi albo usunięty obiekt daje `422`.
 
     MatchCollisionType:
       type: string
