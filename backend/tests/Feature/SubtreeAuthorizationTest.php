@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\GameMatch;
 use App\Models\Player;
+use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
@@ -40,7 +42,7 @@ beforeEach(function () {
 });
 
 /** Parametry, których obecność czyni trasę częścią poddrzewa turnieju. */
-const SUBTREE_PARAMETERS = ['tournament', 'team', 'player', 'venue', 'stage'];
+const SUBTREE_PARAMETERS = ['tournament', 'team', 'player', 'venue', 'stage', 'match'];
 
 /**
  * Trasy pod `auth:sanctum` bez parametru z poddrzewa. Każda inna trasa pod
@@ -80,6 +82,9 @@ function subtreeFactories(): array
             ->create(),
         'venue' => fn (User $owner): Venue => Venue::factory()
             ->for(Tournament::factory()->for($owner))
+            ->create(),
+        'match' => fn (User $owner): GameMatch => GameMatch::factory()
+            ->for(Round::factory()->for(Stage::factory()->for(Tournament::factory()->for($owner))))
             ->create(),
     ];
 }

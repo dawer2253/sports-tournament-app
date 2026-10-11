@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Matches\IndexMatchesRequest;
+use App\Http\Requests\Matches\UpdateMatchRequest;
 use App\Http\Resources\AdminMatchResource;
 use App\Models\GameMatch;
 use App\Models\Tournament;
+use App\Rules\Iso8601WithOffset;
 use App\Schedule\CollisionCalculator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -62,6 +64,50 @@ class MatchController extends Controller
                 'perPage' => $matches->perPage(),
                 'total' => $matches->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Zapis meczu (#159, #158): wynik i stan idą przez `UpdateMatchRequest`, który
+     * po scaleniu ciała z zapisanym wierszem pilnuje ich spójności, a termin
+     * i obiekt przyjmuje przy każdym stanie. Zmiana wyniku nie dotyka tabeli
+     * jawnie — jest liczona przy odczycie.
+     *
+     * Odpowiedź to `AdminMatch`, jak na liście, więc kolizje po zmianie terminu
+     * albo obiektu liczymy na świeżo dla całego turnieju.
+     */
+    public function update(UpdateMatchRequest $request, GameMatch $match, CollisionCalculator $collisions): JsonResponse
+    {
+        $data = $request->validated();
+        $changes = [];
+
+        foreach (['homeScore' => 'home_score', 'awayScore' => 'away_score'] as $field => $column) {
+            if (array_key_exists($field, $data)) {
+                $changes[$column] = $data[$field];
+            }
+        }
+
+        if (array_key_exists('status', $data)) {
+            $changes['status'] = $data['status'];
+        }
+
+        if (array_key_exists('kickoffAt', $data)) {
+            $changes['kickoff_at'] = $data['kickoffAt'] === null
+                ? null
+                : Iso8601WithOffset::toUtc($data['kickoffAt']);
+        }
+
+        if (array_key_exists('venueId', $data)) {
+            $changes['venue_id'] = $data['venueId'];
+        }
+
+        $match->update($changes);
+        $match->load(['round', 'homeTeam', 'awayTeam', 'venue']);
+
+        $collisions = $collisions->forTournament($match->stage->tournament);
+
+        return response()->json([
+            'data' => (new AdminMatchResource($match, $collisions))->resolve(),
         ]);
     }
 }

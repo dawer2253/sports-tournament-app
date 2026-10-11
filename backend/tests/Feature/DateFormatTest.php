@@ -107,3 +107,17 @@ it('oddaje termin meczu z GET /tournaments/{tournament}/matches w +00:00', funct
 
     expectEveryDateInUtc($response, ['data.0.kickoffAt']);
 });
+
+it('oddaje termin meczu z PATCH /matches/{match} w +00:00', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    $match = GameMatch::factory()->for($round)->create(['kickoff_at' => '2026-10-25 09:00:00']);
+
+    $response = actingAsOrganizer($organizer)
+        ->patchJson("/api/v1/matches/{$match->id}", ['kickoffAt' => '2026-10-25T11:00:00+02:00'])
+        ->assertOk()
+        ->assertJsonPath('data.kickoffAt', '2026-10-25T09:00:00+00:00');
+
+    expectEveryDateInUtc($response, ['data.kickoffAt']);
+});
