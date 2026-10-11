@@ -37,7 +37,7 @@ it('usuwa obiekt miękko i oddaje 204', function () {
 it('nie usuwa obiektu z meczem rozegranym albo trwającym i nie odpina go od meczów', function (string $status) {
     $venue = Venue::factory()->create(['name' => 'Boisko Bemowo']);
     $round = Round::factory()->for(Stage::factory()->for($venue->tournament))->create();
-    GameMatch::factory()->for($round)->played($status)->create(['venue_id' => $venue->id]);
+    GameMatch::factory()->for($round)->started($status)->create(['venue_id' => $venue->id]);
     $scheduled = GameMatch::factory()->for($round)->create(['match_number' => 2, 'venue_id' => $venue->id]);
 
     deleteVenue($venue)

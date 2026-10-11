@@ -69,9 +69,9 @@ class GameMatchFactory extends Factory
 
     /**
      * Mecz `live` albo `finished` — oba blokują usuwanie powiązanych bytów
-     * (`GuardsPlayedMatches`), więc testy guarda biegną po obu.
+     * (`GuardsStartedMatches`), więc testy guarda biegną po obu.
      */
-    public function played(string $status): static
+    public function started(string $status): static
     {
         return match ($status) {
             'live' => $this->live(),

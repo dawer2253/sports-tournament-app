@@ -138,7 +138,7 @@ it('odrzuca drużynę pod kluczem teams, gdy turniej ma mecz rozegrany albo trwa
     $tournament = Tournament::factory()->create();
     GameMatch::factory()
         ->for(Round::factory()->for(Stage::factory()->for($tournament)))
-        ->played($status)
+        ->started($status)
         ->create();
     $teamsBefore = $tournament->teams()->count();
 

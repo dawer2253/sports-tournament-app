@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\GuardsPlayedMatches;
+use App\Models\Concerns\GuardsStartedMatches;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 #[Fillable(['tournament_id', 'name', 'address'])]
 class Venue extends Model
 {
-    use GuardsPlayedMatches;
+    use GuardsStartedMatches;
     use HasFactory;
     use SoftDeletes;
 
@@ -67,9 +67,9 @@ class Venue extends Model
         ];
     }
 
-    public function hasPlayedMatches(): bool
+    public function hasStartedMatches(): bool
     {
-        return $this->matches()->whereIn('status', GameMatch::PLAYED_STATUSES)->exists();
+        return $this->matches()->whereIn('status', GameMatch::STARTED_STATUSES)->exists();
     }
 
     protected function guardLabel(): string

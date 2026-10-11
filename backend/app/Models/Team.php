@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\GuardsPlayedMatches;
+use App\Models\Concerns\GuardsStartedMatches;
 use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 #[Fillable(['tournament_id', 'group_id', 'name', 'logo_path'])]
 class Team extends Model
 {
-    use GuardsPlayedMatches;
+    use GuardsStartedMatches;
     use HasFactory;
     use HasLogo;
     use SoftDeletes;
@@ -37,7 +37,7 @@ class Team extends Model
      * znikają jej mecze `scheduled` (#171): mecz z drużyną, której już nie
      * ma, nie zostanie rozegrany. Obie kaskady siedzą w modelu z tego samego
      * powodu co guard — nie ominie ich ani seeder, ani przyszły kod
-     * (`GuardsPlayedMatches`).
+     * (`GuardsStartedMatches`).
      *
      * Zdarzenie `deleted`, nie `deleting`: guard odpala w `deleting`, więc
      * odrzucone usunięcie nie dochodzi tu wcale i zawodnicy oraz mecze
@@ -156,9 +156,9 @@ class Team extends Model
         return Tournament::storageDirectoryFor($this->tournament_id)."/teams/{$this->id}";
     }
 
-    public function hasPlayedMatches(): bool
+    public function hasStartedMatches(): bool
     {
-        return $this->matchesQuery()->whereIn('status', GameMatch::PLAYED_STATUSES)->exists();
+        return $this->matchesQuery()->whereIn('status', GameMatch::STARTED_STATUSES)->exists();
     }
 
     protected function guardLabel(): string

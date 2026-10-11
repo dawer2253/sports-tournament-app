@@ -45,7 +45,7 @@ class StoreTeamRequest extends TeamRequest
      */
     private function checkPlayNotStarted(Validator $validator): void
     {
-        if ($this->tournament()->hasPlayedMatches()) {
+        if ($this->tournament()->hasStartedMatches()) {
             $validator->errors()->add('teams', 'Turniej ma rozegrane lub trwające mecze, więc nie można dodać drużyny.');
         }
     }

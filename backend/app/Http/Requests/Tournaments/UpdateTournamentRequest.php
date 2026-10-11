@@ -137,7 +137,7 @@ class UpdateTournamentRequest extends TournamentRequest
         if ($validator->errors()->has('status')
             || $this->input('status') !== 'draft'
             || $tournament->status === 'draft'
-            || ! $tournament->hasPlayedMatches()) {
+            || ! $tournament->hasStartedMatches()) {
             return;
         }
 

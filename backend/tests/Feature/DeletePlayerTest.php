@@ -30,7 +30,7 @@ it('nie usuwa zawodnika ze zdarzeniem w meczu rozegranym albo trwającym', funct
     $player = Player::factory()->for($team)->create(['name' => 'Marek Nowak']);
     $match = GameMatch::factory()
         ->for(Round::factory()->for(Stage::factory()->for($team->tournament)))
-        ->played($status)
+        ->started($status)
         ->create(['home_team_id' => $team->id]);
     MatchEvent::factory()->for($match, 'match')->create([
         'team_id' => $team->id,

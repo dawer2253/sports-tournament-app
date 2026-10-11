@@ -46,7 +46,7 @@ class VenueController extends Controller
         return new VenueResource($venue->loadCount(Venue::resourceCounts()));
     }
 
-    /** Guard z meczem rozegranym albo trwającym daje 422 (`PlayedMatchGuardException`). */
+    /** Guard z meczem rozegranym albo trwającym daje 422 (`StartedMatchGuardException`). */
     public function destroy(Venue $venue): Response
     {
         $venue->delete();

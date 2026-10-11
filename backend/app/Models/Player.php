@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\GuardsPlayedMatches;
+use App\Models\Concerns\GuardsStartedMatches;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 #[Fillable(['team_id', 'name', 'number', 'position'])]
 class Player extends Model
 {
-    use GuardsPlayedMatches;
+    use GuardsStartedMatches;
     use HasFactory;
     use SoftDeletes;
 
@@ -60,10 +60,10 @@ class Player extends Model
      * Zawodnik jest powiązany z meczem rozegranym albo trwającym przez swoje
      * zdarzenia: usunięcie go wyczyściłoby wiersz z klasyfikacji strzelców.
      */
-    public function hasPlayedMatches(): bool
+    public function hasStartedMatches(): bool
     {
         return $this->events()
-            ->whereHas('match', fn ($query) => $query->whereIn('status', GameMatch::PLAYED_STATUSES))
+            ->whereHas('match', fn ($query) => $query->whereIn('status', GameMatch::STARTED_STATUSES))
             ->exists();
     }
 

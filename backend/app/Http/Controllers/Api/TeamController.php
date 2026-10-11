@@ -52,7 +52,7 @@ class TeamController extends Controller
     }
 
     /**
-     * Guard z meczem rozegranym albo trwającym daje 422 (`PlayedMatchGuardException`),
+     * Guard z meczem rozegranym albo trwającym daje 422 (`StartedMatchGuardException`),
      * a kaskadę na zawodników robi model.
      */
     public function destroy(Team $team): Response

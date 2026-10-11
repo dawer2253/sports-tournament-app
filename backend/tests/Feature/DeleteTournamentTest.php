@@ -27,7 +27,7 @@ beforeEach(function () {
 
 /**
  * Pełne poddrzewo turnieju, z drużyną usuniętą miękko i jej zawodnikiem.
- * Mecz domyślnie zostaje `scheduled`, bo `live` i `finished` (`$playedMatch`)
+ * Mecz domyślnie zostaje `scheduled`, bo `live` i `finished` (`$startedMatch`)
  * blokują usunięcie.
  *
  * Funkcje tego pliku lądują w globalnej przestrzeni nazw Pesta, stąd prefiks
@@ -35,7 +35,7 @@ beforeEach(function () {
  *
  * @return array<class-string, list<int>> klasa modelu → id utworzonych wierszy
  */
-function tournamentDeletionSubtree(Tournament $tournament, ?string $playedMatch = null): array
+function tournamentDeletionSubtree(Tournament $tournament, ?string $startedMatch = null): array
 {
     $stage = Stage::factory()->group()->for($tournament)->create();
     $group = Group::factory()->for($stage)->create();
@@ -48,7 +48,7 @@ function tournamentDeletionSubtree(Tournament $tournament, ?string $playedMatch 
     $venue = Venue::factory()->for($tournament)->create();
     $match = GameMatch::factory()
         ->for($round)
-        ->when($playedMatch !== null, fn (GameMatchFactory $factory) => $factory->played($playedMatch))
+        ->when($startedMatch !== null, fn (GameMatchFactory $factory) => $factory->started($startedMatch))
         ->create([
             'group_id' => $group->id,
             'home_team_id' => $team->id,
@@ -187,7 +187,7 @@ it('zwalnia slug: po usunięciu nowy turniej dostaje ten sam adres', function ()
 
 it('nie usuwa turnieju ani jego poddrzewa, gdy turniej ma mecz rozegrany albo trwający', function (string $status) {
     $tournament = Tournament::factory()->create(['name' => 'Liga Osiedlowa 2026']);
-    $subtree = tournamentDeletionSubtree($tournament, playedMatch: $status);
+    $subtree = tournamentDeletionSubtree($tournament, startedMatch: $status);
 
     actingAsOrganizer($tournament->user)
         ->deleteJson("/api/v1/tournaments/{$tournament->id}")
@@ -231,7 +231,7 @@ it('nie rusza katalogu turnieju, którego nie można usunąć', function () {
     fakePublicDisk();
     $tournament = Tournament::factory()->create();
     $directory = tournamentDeletionFiles($tournament);
-    tournamentDeletionSubtree($tournament, playedMatch: 'finished');
+    tournamentDeletionSubtree($tournament, startedMatch: 'finished');
 
     actingAsOrganizer($tournament->user)
         ->deleteJson("/api/v1/tournaments/{$tournament->id}")

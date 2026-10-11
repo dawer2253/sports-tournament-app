@@ -44,7 +44,7 @@ Zamiast tego wewnątrz poddrzewa jest `CASCADE` albo `SET NULL` — to drugie ta
 gdzie pusty slot jest sensownym stanem (`venue_id`, `home_team_id`,
 `away_team_id`, `matches.group_id`, `teams.group_id`, krawędzie drabinki). Zakaz usuwania bytu
 powiązanego z meczem `finished` (od #171 także `live`) realizuje guard
-w modelach (`GuardsPlayedMatches`), zwracający **422** — tak stanowi kontrakt
+w modelach (`GuardsStartedMatches`), zwracający **422** — tak stanowi kontrakt
 (`DELETE /teams/{team}`: „Daje `422` z błędem pod `id`, jeżeli drużyna ma mecz
 rozegrany albo trwający"). Semantycznie bliższe byłoby 409, bo organizer ma prawo do
 turnieju i blokuje go stan danych, ale kontrakt jest jedynym źródłem prawdy

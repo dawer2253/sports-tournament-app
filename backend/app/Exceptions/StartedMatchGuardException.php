@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
  * Dziedziczenie po `ValidationException` daje też właściwą kopertę
  * `{ message, errors }`, której kontrakt oczekuje dla 422.
  */
-class PlayedMatchGuardException extends ValidationException
+class StartedMatchGuardException extends ValidationException
 {
     public static function for(string $what): self
     {

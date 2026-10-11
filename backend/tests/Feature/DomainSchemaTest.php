@@ -1,6 +1,6 @@
 <?php
 
-use App\Exceptions\PlayedMatchGuardException;
+use App\Exceptions\StartedMatchGuardException;
 use App\Models\GameMatch;
 use App\Models\Group;
 use App\Models\MatchEvent;
@@ -65,7 +65,7 @@ it('nie pozwala usunąć drużyny, która rozegrała mecz', function () {
     $match = GameMatch::factory()->finished()->create();
     $team = $match->homeTeam;
 
-    expect(fn () => $team->delete())->toThrow(PlayedMatchGuardException::class);
+    expect(fn () => $team->delete())->toThrow(StartedMatchGuardException::class);
 
     // Ani na miękko: rozegrany mecz ma dalej pokazywać, kto w nim grał.
     expect(Team::withTrashed()->find($team->id)->deleted_at)->toBeNull();
@@ -75,14 +75,14 @@ it('nie pozwala usunąć obiektu, na którym rozegrano mecz', function () {
     $venue = Venue::factory()->create();
     GameMatch::factory()->finished()->create(['venue_id' => $venue->id]);
 
-    expect(fn () => $venue->delete())->toThrow(PlayedMatchGuardException::class);
+    expect(fn () => $venue->delete())->toThrow(StartedMatchGuardException::class);
 });
 
 it('nie pozwala usunąć zawodnika ze zdarzeniami w rozegranym meczu', function () {
     $match = GameMatch::factory()->finished()->create();
     $event = MatchEvent::factory()->for($match, 'match')->create();
 
-    expect(fn () => $event->player->delete())->toThrow(PlayedMatchGuardException::class);
+    expect(fn () => $event->player->delete())->toThrow(StartedMatchGuardException::class);
 });
 
 it('pozwala usunąć drużynę, dopóki jej mecze nie są rozegrane', function () {
@@ -224,7 +224,7 @@ it('nie pozwala usunąć turnieju, w którym rozegrano mecz', function () {
     $match = GameMatch::factory()->finished()->create();
     $tournament = $match->stage->tournament;
 
-    expect(fn () => $tournament->delete())->toThrow(PlayedMatchGuardException::class);
+    expect(fn () => $tournament->delete())->toThrow(StartedMatchGuardException::class);
 
     $this->assertDatabaseHas('tournaments', ['id' => $tournament->id]);
 });
@@ -253,7 +253,7 @@ it('zgłasza blokadę guarda kodem i kopertą, których żąda kontrakt', functi
     try {
         $team->delete();
         $this->fail('Guard nie zadziałał.');
-    } catch (PlayedMatchGuardException $exception) {
+    } catch (StartedMatchGuardException $exception) {
         expect($exception->status)->toBe(422)
             ->and($exception->errors())->toHaveKey('id');
     }

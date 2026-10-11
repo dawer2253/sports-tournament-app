@@ -142,7 +142,7 @@ przeczytaj go, zanim któreś z nich „naprawisz":
 - **Model meczu nazywa się `GameMatch`**, mimo że byt nazywa się `Match`.
 - **Nie dodawaj `RESTRICT` wewnątrz poddrzewa turnieju.** Zakaz usuwania bytu
   z meczem rozegranym albo trwającym realizuje guard w modelach
-  (`GuardsPlayedMatches`),
+  (`GuardsStartedMatches`),
   zwracający **422** (tak stanowi kontrakt), nie Policy i nie klucz obcy.
   Obejmuje byty kasowane ręcznie, nie strukturę spod generatora.
 - **Przynależność grupy do turnieju sprawdzi Form Request**, nie klucz obcy —

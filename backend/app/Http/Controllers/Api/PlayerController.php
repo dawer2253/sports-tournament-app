@@ -48,7 +48,7 @@ class PlayerController extends Controller
         return new PlayerResource($player);
     }
 
-    /** Guard z meczem rozegranym albo trwającym daje 422 (`PlayedMatchGuardException`). */
+    /** Guard z meczem rozegranym albo trwającym daje 422 (`StartedMatchGuardException`). */
     public function destroy(Player $player): Response
     {
         $player->delete();

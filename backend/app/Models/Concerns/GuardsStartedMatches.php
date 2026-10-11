@@ -2,7 +2,7 @@
 
 namespace App\Models\Concerns;
 
-use App\Exceptions\PlayedMatchGuardException;
+use App\Exceptions\StartedMatchGuardException;
 
 /**
  * Guard: nie usuwamy bytu powiązanego z meczem rozegranym albo trwającym
@@ -24,19 +24,19 @@ use App\Exceptions\PlayedMatchGuardException;
  * Kasowanie kaskadowe w bazie guarda nie uruchamia — dlatego `tournaments.user_id`
  * jest `RESTRICT`, żeby usunięcie konta nie obeszło go od góry (ADR-0005).
  */
-trait GuardsPlayedMatches
+trait GuardsStartedMatches
 {
-    public static function bootGuardsPlayedMatches(): void
+    public static function bootGuardsStartedMatches(): void
     {
         static::deleting(function (self $model) {
-            if ($model->hasPlayedMatches()) {
-                throw PlayedMatchGuardException::for($model->guardLabel());
+            if ($model->hasStartedMatches()) {
+                throw StartedMatchGuardException::for($model->guardLabel());
             }
         });
     }
 
     /** Czy z tym bytem wiąże się choć jeden mecz `live` albo `finished`. */
-    abstract public function hasPlayedMatches(): bool;
+    abstract public function hasStartedMatches(): bool;
 
     /** Nazwa bytu w komunikacie błędu. */
     abstract protected function guardLabel(): string;

@@ -107,7 +107,7 @@ class TournamentController extends Controller
     }
 
     /**
-     * Guard z meczem rozegranym albo trwającym daje 422 (`PlayedMatchGuardException`),
+     * Guard z meczem rozegranym albo trwającym daje 422 (`StartedMatchGuardException`),
      * a poddrzewo kaskaduje baza. Status turnieju nie ma znaczenia (#83).
      */
     public function destroy(Tournament $tournament): Response

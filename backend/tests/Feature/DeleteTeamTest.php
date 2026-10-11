@@ -50,7 +50,7 @@ it('nie usuwa drużyny, jej zawodników ani meczów, gdy drużyna ma mecz rozegr
     $team = Team::factory()->create(['name' => 'Wilki Bemowo']);
     $player = Player::factory()->for($team)->create();
     $round = Round::factory()->for(Stage::factory()->for($team->tournament))->create();
-    GameMatch::factory()->for($round)->played($status)->create(['home_team_id' => $team->id]);
+    GameMatch::factory()->for($round)->started($status)->create(['home_team_id' => $team->id]);
     $scheduled = GameMatch::factory()->for($round)->create(['match_number' => 2, 'away_team_id' => $team->id]);
 
     actingAsOrganizer($team->tournament->user)

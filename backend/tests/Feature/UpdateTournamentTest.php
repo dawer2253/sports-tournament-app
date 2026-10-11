@@ -28,14 +28,14 @@ function tournamentOfSport(string $sport): Tournament
     return ($sport === 'basketball' ? $factory->basketball() : $factory)->create();
 }
 
-function withPlayedMatch(Tournament $tournament, string $status = 'finished'): Tournament
+function withStartedMatch(Tournament $tournament, string $status = 'finished'): Tournament
 {
     GameMatch::factory()
         ->for(Round::factory()->for(Stage::factory()->for($tournament)))
-        ->played($status)
+        ->started($status)
         ->create();
 
-    expect($tournament->hasPlayedMatches())->toBeTrue();
+    expect($tournament->hasStartedMatches())->toBeTrue();
 
     return $tournament;
 }
@@ -211,7 +211,7 @@ it('przechodzi między stanami bez warunków wstępnych', function (string $from
     $tournament = Tournament::factory()->create(['status' => $from]);
 
     if ($finishedMatch) {
-        withPlayedMatch($tournament);
+        withStartedMatch($tournament);
     }
 
     patchTournament($tournament, ['status' => $to])
@@ -232,7 +232,7 @@ it('przechodzi między stanami bez warunków wstępnych', function (string $from
 ]);
 
 it('nie cofa do draft turnieju z meczem rozegranym albo trwającym', function (string $from, string $match) {
-    $tournament = withPlayedMatch(Tournament::factory()->create(['status' => $from]), $match);
+    $tournament = withStartedMatch(Tournament::factory()->create(['status' => $from]), $match);
 
     patchTournament($tournament, ['status' => 'draft'])
         ->assertValidRequest()
@@ -464,7 +464,7 @@ it('zmienia punktację i tiebreaki niezależnie od statusu i zakończonych mecz�
     $tournament = Tournament::factory()->create(['status' => $status]);
 
     if ($finishedMatch) {
-        withPlayedMatch($tournament);
+        withStartedMatch($tournament);
     }
 
     patchTournament($tournament, [
