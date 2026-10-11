@@ -679,9 +679,9 @@ export interface paths {
          *     z plikami logo i herbów. Operacji nie da się cofnąć, a `slug` od razu
          *     się zwalnia.
          *
-         *     Odrzucane z kodem `422`, jeżeli w turnieju rozegrano choć jeden mecz:
-         *     jego publiczny adres ma działać dalej. Status turnieju nie ma tu
-         *     znaczenia.
+         *     Odrzucane z kodem `422`, jeżeli turniej ma choć jeden mecz rozegrany
+         *     albo trwający (`finished` albo `live`): jego publiczny adres ma
+         *     działać dalej. Status turnieju nie ma tu znaczenia.
          */
         delete: {
             parameters: {
@@ -717,8 +717,9 @@ export interface paths {
          *
          *     Zmienia też `status` (znaczenie stanów i to, kto je ustawia:
          *     `TournamentStatus`). Przejścia między stanami są dowolne i nie mają
-         *     warunków wstępnych. Jedyny zakaz: turniej, który ma zakończony mecz,
-         *     nie przechodzi do `draft` z innego stanu — taka próba daje `422`
+         *     warunków wstępnych. Jedyny zakaz: turniej, który ma mecz rozegrany
+         *     albo trwający (`finished` albo `live`), nie przechodzi do `draft`
+         *     z innego stanu — taka próba daje `422`
          *     z błędem pod `status`. Wysłanie `draft` turniejowi, który już jest
          *     w `draft`, nie jest przejściem, więc zakaz go nie dotyczy.
          *
@@ -1035,7 +1036,8 @@ export interface paths {
                          *           "name": "Orły Bielany",
                          *           "logoUrl": null,
                          *           "groupId": null,
-                         *           "playersCount": 3
+                         *           "playersCount": 3,
+                         *           "scheduledMatchesCount": 2
                          *         },
                          *         {
                          *           "id": 2,
@@ -1043,7 +1045,8 @@ export interface paths {
                          *           "name": "Sokoły Ursus",
                          *           "logoUrl": null,
                          *           "groupId": null,
-                         *           "playersCount": 3
+                         *           "playersCount": 3,
+                         *           "scheduledMatchesCount": 2
                          *         },
                          *         {
                          *           "id": 1,
@@ -1051,7 +1054,8 @@ export interface paths {
                          *           "name": "Wilki Bemowo",
                          *           "logoUrl": null,
                          *           "groupId": null,
-                         *           "playersCount": 3
+                         *           "playersCount": 3,
+                         *           "scheduledMatchesCount": 2
                          *         }
                          *       ]
                          *     }
@@ -1075,6 +1079,11 @@ export interface paths {
          *
          *     Turniej mieści najwyżej 128 drużyn. Próba dodania kolejnej daje `422`
          *     z błędem pod `teams`.
+         *
+         *     Turniej z meczem rozegranym albo trwającym (`finished` albo `live`)
+         *     nie przyjmuje nowych drużyn: próba daje `422` z błędem pod `teams`.
+         *     Wcześniej dodawanie jest dozwolone, ale istniejący terminarz nowej
+         *     drużyny nie obejmuje — obejmie ją dopiero ponowne wygenerowanie.
          */
         post: {
             parameters: {
@@ -1112,7 +1121,8 @@ export interface paths {
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
                          *         "groupId": null,
-                         *         "playersCount": 0
+                         *         "playersCount": 0,
+                         *         "scheduledMatchesCount": 0
                          *       }
                          *     }
                          */
@@ -1168,7 +1178,8 @@ export interface paths {
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
                          *         "groupId": null,
-                         *         "playersCount": 3
+                         *         "playersCount": 3,
+                         *         "scheduledMatchesCount": 2
                          *       }
                          *     }
                          */
@@ -1186,10 +1197,15 @@ export interface paths {
         post?: never;
         /**
          * Usuń drużynę
-         * @description Usuwa także zawodników drużyny.
+         * @description Usuwa także zawodników drużyny i wszystkie jej mecze `scheduled`
+         *     (`Team.scheduledMatchesCount`). Reszta terminarza się nie zmienia:
+         *     kolejki zostają, także te, które opustoszały, a pozostałe mecze
+         *     zachowują termin, obiekt, kolejkę i `matchNumber`. Numery meczów nie
+         *     są przenumerowywane, więc w kolejce mogą powstać dziury.
          *
-         *     Daje `422` z błędem pod `id`, jeżeli drużyna wystąpiła w rozegranym
-         *     meczu: usunięcie zmieniłoby tabelę wstecz.
+         *     Daje `422` z błędem pod `id`, jeżeli drużyna ma mecz rozegrany albo
+         *     trwający (`finished` albo `live`): usunięcie zmieniłoby tabelę wstecz.
+         *     Odmowa niczego nie zmienia — drużyna, jej zawodnicy i mecze zostają.
          */
         delete: {
             parameters: {
@@ -1316,7 +1332,8 @@ export interface paths {
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": "http://localhost:8000/storage/tournaments/1/teams/1/GmvZcUftUF1rp7d6ntSTGxnDGWHVCmrmYYNbs9IG.png",
                          *         "groupId": null,
-                         *         "playersCount": 3
+                         *         "playersCount": 3,
+                         *         "scheduledMatchesCount": 2
                          *       }
                          *     }
                          */
@@ -1361,7 +1378,8 @@ export interface paths {
                          *         "name": "Wilki Bemowo",
                          *         "logoUrl": null,
                          *         "groupId": null,
-                         *         "playersCount": 3
+                         *         "playersCount": 3,
+                         *         "scheduledMatchesCount": 2
                          *       }
                          *     }
                          */
@@ -1639,13 +1657,15 @@ export interface paths {
                          *           "id": 1,
                          *           "tournamentId": 1,
                          *           "name": "Boisko Bemowo",
-                         *           "address": "ul. Powstańców Śląskich 1, Warszawa"
+                         *           "address": "ul. Powstańców Śląskich 1, Warszawa",
+                         *           "scheduledMatchesCount": 2
                          *         },
                          *         {
                          *           "id": 2,
                          *           "tournamentId": 1,
                          *           "name": "Hala Ursus",
-                         *           "address": "ul. Sosnkowskiego 3, Warszawa"
+                         *           "address": "ul. Sosnkowskiego 3, Warszawa",
+                         *           "scheduledMatchesCount": 0
                          *         }
                          *       ]
                          *     }
@@ -1706,7 +1726,8 @@ export interface paths {
                          *         "id": 1,
                          *         "tournamentId": 1,
                          *         "name": "Boisko Bemowo",
-                         *         "address": "ul. Powstańców Śląskich 1, Warszawa"
+                         *         "address": "ul. Powstańców Śląskich 1, Warszawa",
+                         *         "scheduledMatchesCount": 0
                          *       }
                          *     }
                          */
@@ -1739,7 +1760,15 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Usuń obiekt */
+        /**
+         * Usuń obiekt
+         * @description Mecze `scheduled` na tym obiekcie (`Venue.scheduledMatchesCount`)
+         *     zostają w terminarzu bez obiektu (`Match.venue: null`), z tym samym
+         *     terminem, drużynami i kolejką.
+         *
+         *     Daje `422` z błędem pod `id`, jeżeli na obiekcie jest mecz rozegrany
+         *     albo trwający (`finished` albo `live`). Odmowa niczego nie zmienia.
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -3009,6 +3038,12 @@ export interface components {
             groupId: number | null;
             /** @description Liczba zawodników drużyny, bez usuniętych. */
             playersCount: number;
+            /**
+             * @description Liczba meczów `scheduled` drużyny, jako gospodarza i jako gościa.
+             *     Mecze `live` i `finished` się nie liczą. Tyle meczów zniknie
+             *     z terminarza razem z drużyną (`DELETE /teams/{team}`).
+             */
+            scheduledMatchesCount: number;
         };
         TeamSummary: {
             /** Format: int64 */
@@ -3042,6 +3077,12 @@ export interface components {
             tournamentId: number;
             name: string;
             address: string | null;
+            /**
+             * @description Liczba meczów `scheduled` na tym obiekcie. Mecze `live`
+             *     i `finished` się nie liczą. Tyle meczów straci obiekt, gdy ten
+             *     zostanie usunięty (`DELETE /venues/{venue}`).
+             */
+            scheduledMatchesCount: number;
         };
         VenueSummary: {
             /** Format: int64 */
@@ -3074,7 +3115,8 @@ export interface components {
              *     z `round.order` tworzy pozycję własną meczu, z której widok wylicza
              *     etykietę ("1/2 finału", "Finał") — etykiety nie ma w danych, bo
              *     zależy od rozmiaru drabinki. W lidze daje stabilną kolejność meczów
-             *     w kolejce.
+             *     w kolejce i niczego więcej nie znaczy, więc może mieć dziury (np.
+             *     po usunięciu drużyny razem z jej meczami `scheduled`).
              */
             matchNumber: number;
             /**
@@ -3344,7 +3386,7 @@ export interface components {
                 "application/json": components["schemas"]["ValidationError"];
             };
         };
-        /** @description Usunięcie zablokowane przez rozegrane mecze */
+        /** @description Usunięcie zablokowane przez mecze rozegrane albo trwające */
         DeleteBlocked: {
             headers: {
                 [name: string]: unknown;
@@ -3352,10 +3394,10 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "message": "Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.",
+                 *       "message": "Nie można usunąć: turniej „Liga Osiedlowa 2026” ma rozegrane lub trwające mecze.",
                  *       "errors": {
                  *         "id": [
-                 *           "Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze."
+                 *           "Nie można usunąć: turniej „Liga Osiedlowa 2026” ma rozegrane lub trwające mecze."
                  *         ]
                  *       }
                  *     }
