@@ -13,17 +13,18 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** Etykiety to kryteria rozstrzygające (`Tiebreaker` w `CONTEXT.md`) w wersji piłkarskiej. */
 function States() {
   return (
     <div className="flex flex-col gap-4">
       <Label>
-        <Checkbox /> Mecz o 3. miejsce
+        <Checkbox /> Bramki zdobyte
       </Label>
       <Label>
-        <Checkbox defaultChecked /> Mecz i rewanż
+        <Checkbox defaultChecked /> Bezpośredni mecz
       </Label>
       <Label>
-        <Checkbox defaultChecked disabled /> Rzuty karne przy remisie
+        <Checkbox defaultChecked disabled /> Różnica bramek
       </Label>
     </div>
   )
@@ -33,14 +34,16 @@ export const Stany: Story = {
   render: () => <States />,
   play: async () => {
     await expectCheckedFill(
-      screen.getByRole('checkbox', { name: 'Mecz i rewanż' }),
-      screen.getByRole('checkbox', { name: 'Mecz o 3. miejsce' }),
+      screen.getByRole('checkbox', { name: 'Bezpośredni mecz' }),
+      screen.getByRole('checkbox', { name: 'Bramki zdobyte' }),
     )
   },
 }
 
+/** Bez snapshotu: ciemne snapshoty Chromatica to osobna decyzja. */
 export const CiemnyMotyw: Story = {
   globals: { theme: 'dark' },
+  parameters: { chromatic: { disableSnapshot: true } },
   render: () => <States />,
   play: Stany.play,
 }
