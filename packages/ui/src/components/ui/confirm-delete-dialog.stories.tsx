@@ -135,14 +135,14 @@ export const PotwierdzenieNazwa: Story = {
 }
 
 /**
- * Odmowa przy turnieju z rozegranymi meczami (#103): przycisk zostaje, ale
- * zgaszony, nawet przy zgodnej nazwie.
+ * Odmowa przy turnieju z meczami rozegranymi albo trwającymi (#103, #171):
+ * przycisk zostaje, ale zgaszony, nawet przy zgodnej nazwie.
  */
 export const PotwierdzenieNazwaZgaszone: Story = {
   args: {
     ...PotwierdzenieNazwa.args,
     confirmDisabled: true,
-    error: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma powiązane rozegrane mecze.',
+    error: 'Nie można usunąć: turniej „Liga Osiedlowa 2026” ma rozegrane lub trwające mecze.',
   },
   play: async ({ args }) => {
     await screen.findByRole('alertdialog')
