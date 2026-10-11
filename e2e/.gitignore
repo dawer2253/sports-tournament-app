@@ -1,0 +1,5 @@
+# Stan sesji z projektu `setup`: niesie ważny token organizera, więc nie może
+# trafić do repo (#185).
+/playwright/.auth/
+/test-results/
+/playwright-report/

@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
+      e2e: ${{ steps.filter.outputs.e2e }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +38,17 @@ jobs:
             backend:
               - 'backend/**'
               - 'packages/api-contract/**'
+              - '.github/workflows/ci.yml'
+            # E2E przechodzi przez oba końce szwu, więc łapie też zmiany
+            # w aplikacjach i w tym, z czego są zbudowane (design system,
+            # klient API, lockfile).
+            e2e:
+              - 'apps/**'
+              - 'packages/**'
+              - 'backend/**'
+              - 'e2e/**'
+              - 'package.json'
+              - 'package-lock.json'
               - '.github/workflows/ci.yml'
 
   contract:
@@ -192,3 +204,95 @@ jobs:
       # checkoutu odpowiada temu, co compose montuje do kontenera.
       - name: Pest
         run: ./vendor/bin/pest
+
+  # Suita dymna Playwrighta: panel i strona publiczna na Vite, Laravel na bazie
+  # `e2e` (#185). Serwery stawia sama konfiguracja Playwrighta, a skrypt
+  # backendu przy `CI` wybiera natywny PHP zamiast kontenera Saila.
+  #
+  # Job nie jest wymagany w ochronie `main` i ma taki zostać, dopóki suita nie
+  # przejdzie kilku tygodni stabilnej zieleni — to ustawienie repo, nie tego pliku.
+  e2e:
+    name: E2E
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    # Wyżej niż `globalTimeout` z `e2e/playwright.config.ts` (10 min), żeby
+    # Playwright zdążył sam przerwać przebieg i zostawić raport.
+    timeout-minutes: 20
+
+    # PHP i MySQL jak w jobie `backend`, z tych samych powodów (komentarze tam).
+    # Bazy `e2e` obraz nie zakłada: robi to `migrate:fresh` na koncie `root`
+    # (`e2e/scripts/backend.sh`), tak samo jak lokalnie.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ppassword"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=60s
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: pdo_mysql, mbstring, bcmath, intl, gd
+          coverage: none
+
+      - name: Katalog cache'u Composera
+        id: composer-cache
+        working-directory: backend
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composera
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php85-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php85-
+
+      - name: Backend
+        working-directory: backend
+        run: |
+          cp .env.example .env
+          composer install --no-interaction --no-progress --prefer-dist
+          php artisan key:generate
+
+      # Tak jak w jobie Frontend: sam headless shell, bez cache'u.
+      - name: Instalacja Chromium
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Testy E2E
+        run: npm run test:e2e
+
+      # Raport z trace'ami z ponowienia (`trace: 'on-first-retry'`), żeby
+      # czerwony przebieg dało się obejrzeć bez odtwarzania go lokalnie:
+      # `npx playwright show-report` w rozpakowanym katalogu. Także przy
+      # zielonym jobie, bo test zielony dopiero za drugim razem (flaky) też
+      # zostawia trace, a bez artefaktu nikt by go nie zobaczył.
+      - name: Raport Playwrighta
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14
