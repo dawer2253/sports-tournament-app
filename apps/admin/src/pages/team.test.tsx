@@ -125,7 +125,18 @@ describe('usunięcie drużyny', () => {
     );
   });
 
-  it('bez zawodników nie ma zdania o kaskadzie', async () => {
+  it('przy zaplanowanych meczach mówi, że znikną, obok zdania o zawodnikach', async () => {
+    serveTeams({ teams: [{ ...WILKI, scheduledMatchesCount: 12 }, SOKOLY] });
+    const { user } = await renderSquad();
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+
+    expect(await screen.findByRole('alertdialog')).toHaveAccessibleDescription(
+      'Usunie też 2 zawodników. Usunie też 12 zaplanowanych meczów drużyny. ' +
+        'Pozostałe mecze zostają bez zmian, z tymi samymi datami.',
+    );
+  });
+
+  it('bez zawodników i bez zaplanowanych meczów nie ma zdania o kaskadzie', async () => {
     serveTeams();
     const { user } = renderPanel(`${LIST}/${SOKOLY.id}`);
     await screen.findByRole('heading', { name: 'Sokoły Ursus' });
@@ -134,6 +145,18 @@ describe('usunięcie drużyny', () => {
     const dialog = await screen.findByRole('alertdialog');
     expect(dialog).toHaveAccessibleName('Usunąć drużynę „Sokoły Ursus”?');
     expect(dialog).not.toHaveTextContent('Usunie też');
+    expect(dialog).not.toHaveTextContent(/mecz/i);
+  });
+
+  it('przy samych zaplanowanych meczach mówi tylko o nich, z odmianą liczebnika', async () => {
+    serveTeams({ teams: [WILKI, { ...SOKOLY, scheduledMatchesCount: 1 }] });
+    const { user } = renderPanel(`${LIST}/${SOKOLY.id}`);
+    await screen.findByRole('heading', { name: 'Sokoły Ursus' });
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+
+    expect(await screen.findByRole('alertdialog')).toHaveAccessibleDescription(
+      'Usunie też 1 zaplanowany mecz drużyny. Pozostałe mecze zostają bez zmian, z tymi samymi datami.',
+    );
   });
 
   it('sukces wraca na listę z toastem i odświeża listę oraz turniej', async () => {

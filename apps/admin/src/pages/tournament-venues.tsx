@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import type { Tournament } from '@tournament/api-client';
+import type { Tournament, Venue } from '@tournament/api-client';
 import {
   Button,
   ConfirmDeleteDialog,
@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AdminPage } from '../components/admin-page';
 import { api } from '../lib/api';
+import { plural } from '../lib/plural';
 import { useListMutation, type ListTexts } from '../lib/use-list-mutation';
 import {
   venueSchema,
@@ -37,10 +38,14 @@ function venuesKey(tournamentId: number) {
   return ['tournament', tournamentId, 'venues'] as const;
 }
 
-/** Otwarte okno: formularz (`venue: null` to dodawanie) albo potwierdzenie usunięcia. */
+/**
+ * Otwarte okno: formularz (`venue: null` to dodawanie) albo potwierdzenie
+ * usunięcia. Potwierdzenie trzyma cały `Venue`, bo mówi o liczbie meczów,
+ * której wiersz tabeli (`VenueRow`) nie niesie.
+ */
 type OpenDialog =
   | { kind: 'form'; venue: VenueRow | null }
-  | { kind: 'delete'; venue: VenueRow }
+  | { kind: 'delete'; venue: Venue }
   | null;
 
 /**
@@ -48,8 +53,9 @@ type OpenDialog =
  * i edycja w `FormDialog`, usuwanie w `ConfirmDeleteDialog`. Zapis idzie przez
  * `useListMutation` — wzorzec opisuje `apps/admin/AGENTS.md`, „Edycja list”.
  *
- * Usunięcia panel nie blokuje z wyprzedzeniem: nie zna liczby meczów obiektu,
- * więc o rozegranych meczach mówi dopiero `422` z guarda serwera.
+ * Usunięcia panel nie blokuje z wyprzedzeniem: `scheduledMatchesCount` liczy
+ * tylko mecze zaplanowane, więc o rozegranych i trwających mówi dopiero `422`
+ * z guarda serwera.
  */
 export function TournamentVenuesPage() {
   const tournament = useTournament();
@@ -91,7 +97,10 @@ export function TournamentVenuesPage() {
         onCreate={() => setDialog({ kind: 'form', venue: null })}
         // Okna biorą `VenueRow`: id, nazwa i adres to wszystko, czego potrzebują.
         onEdit={(venue) => setDialog({ kind: 'form', venue })}
-        onDelete={(venue) => setDialog({ kind: 'delete', venue })}
+        onDelete={(row) => {
+          const venue = venues.data?.find((candidate) => candidate.id === row.id);
+          if (venue) setDialog({ kind: 'delete', venue });
+        }}
       />
 
       {/* Okna renderowane warunkowo: stan hooka (błąd, blokada) żyje tyle co okno. */}
@@ -182,7 +191,19 @@ function VenueFormDialog({ tournament, venue, onClose }: DialogProps & { venue: 
   );
 }
 
-function VenueDeleteDialog({ tournament, venue, onClose }: DialogProps & { venue: VenueRow }) {
+/**
+ * Mecze `scheduled` obiektu zostają po usunięciu bez obiektu (#171), więc
+ * okno o nich uprzedza. Przy zerze nie ma opisu, jak przed #171.
+ */
+function venueDeleteDescription({ scheduledMatchesCount: count }: Venue) {
+  if (count === 0) return undefined;
+  const matches = plural(count, ['zaplanowany mecz', 'zaplanowane mecze', 'zaplanowanych meczów']);
+  const verb = plural(count, ['straci', 'stracą', 'straci']);
+  const dates = count === 1 ? 'Data meczu się nie zmieni.' : 'Daty meczów się nie zmienią.';
+  return `${count} ${matches} ${verb} obiekt. ${dates}`;
+}
+
+function VenueDeleteDialog({ tournament, venue, onClose }: DialogProps & { venue: Venue }) {
   const mutation = useListMutation({
     texts: VENUE_TEXTS,
     invalidate: [venuesKey(tournament.id)],
@@ -203,6 +224,7 @@ function VenueDeleteDialog({ tournament, venue, onClose }: DialogProps & { venue
       }
       entity={VENUE_TEXTS.accusative}
       name={venue.name}
+      description={venueDeleteDescription(venue)}
       pending={mutation.pending}
       {...mutation.removeError}
     />

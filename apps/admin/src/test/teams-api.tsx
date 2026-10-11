@@ -31,6 +31,7 @@ export const WILKI: Team = {
   logoUrl: null,
   groupId: null,
   playersCount: 2,
+  scheduledMatchesCount: 0,
 };
 
 /** Adres logo drużyny po wgraniu; jak w przykładzie kontraktu, więc pod mockiem się nie ładuje. */

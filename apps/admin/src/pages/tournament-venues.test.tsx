@@ -33,8 +33,15 @@ const BEMOWO: Venue = {
   tournamentId: TOURNAMENT.id,
   name: 'Boisko Bemowo',
   address: 'ul. Powstańców Śląskich 1, Warszawa',
+  scheduledMatchesCount: 0,
 };
-const URSUS: Venue = { id: 2, tournamentId: TOURNAMENT.id, name: 'Hala Ursus', address: null };
+const URSUS: Venue = {
+  id: 2,
+  tournamentId: TOURNAMENT.id,
+  name: 'Hala Ursus',
+  address: null,
+  scheduledMatchesCount: 0,
+};
 
 const VENUES_URL = `${API}/tournaments/${TOURNAMENT.id}/venues`;
 
@@ -160,7 +167,7 @@ describe('Obiekty — dodawanie', () => {
       http.post(VENUES_URL, async ({ request }) => {
         const body = (await request.json()) as { name: string; address: string | null };
         bodies.push(body);
-        const created = { id: 3, tournamentId: TOURNAMENT.id, ...body };
+        const created = { id: 3, tournamentId: TOURNAMENT.id, scheduledMatchesCount: 0, ...body };
         state.venues.push(created);
         return HttpResponse.json({ data: created }, { status: 201 });
       }),
@@ -336,7 +343,7 @@ describe('Obiekty — usuwanie', () => {
     await venuesTable();
     await user.click(screen.getByRole('button', { name: 'Usuń obiekt Hala Ursus' }));
     const dialog = screen.getByRole('alertdialog', { name: 'Usunąć obiekt „Hala Ursus”?' });
-    // Panel nie zna liczby meczów obiektu, więc nie ma o czym uprzedzać (#90).
+    // Hala nie ma zaplanowanych meczów, więc okno wygląda jak przed #171.
     expect(dialog).not.toHaveTextContent(/mecz/i);
 
     await user.click(within(dialog).getByRole('button', { name: 'Usuń obiekt' }));
@@ -345,9 +352,23 @@ describe('Obiekty — usuwanie', () => {
     await waitFor(() => expect(screen.getByRole('table')).not.toHaveTextContent('Hala Ursus'));
   });
 
+  it.each([
+    [12, '12 zaplanowanych meczów straci obiekt. Daty meczów się nie zmienią.'],
+    [2, '2 zaplanowane mecze stracą obiekt. Daty meczów się nie zmienią.'],
+    [1, '1 zaplanowany mecz straci obiekt. Data meczu się nie zmieni.'],
+  ])('uprzedza, że zaplanowane mecze (%i) stracą obiekt', async (count, description) => {
+    serveVenues([{ ...BEMOWO, scheduledMatchesCount: count }, URSUS]);
+    const user = renderVenues();
+
+    await venuesTable();
+    await user.click(screen.getByRole('button', { name: 'Usuń obiekt Boisko Bemowo' }));
+
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleDescription(description);
+  });
+
   it('`422` pod `id` daje komunikat serwera i tylko „Zamknij”, a obiekt zostaje na liście', async () => {
     const state = serveVenues([BEMOWO, URSUS]);
-    const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma powiązane rozegrane mecze.';
+    const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma rozegrane lub trwające mecze.';
     server.use(
       http.delete(`${API}/venues/${BEMOWO.id}`, () =>
         HttpResponse.json({ message: reason, errors: { id: [reason] } }, { status: 422 }),
@@ -396,7 +417,7 @@ describe('Obiekty — usuwanie', () => {
 
   it('blokada z jednego obiektu nie wraca przy usuwaniu następnego', async () => {
     serveVenues([BEMOWO, URSUS]);
-    const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma powiązane rozegrane mecze.';
+    const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma rozegrane lub trwające mecze.';
     server.use(
       http.delete(`${API}/venues/${BEMOWO.id}`, () =>
         HttpResponse.json({ message: reason, errors: { id: [reason] } }, { status: 422 }),

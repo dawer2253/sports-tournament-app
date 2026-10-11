@@ -27,8 +27,8 @@ const TEAM_TEXTS: ListTexts = {
   gone: 'Tej drużyny już nie ma.',
 };
 
-const BEMOWO: Venue = { id: 1, tournamentId: TOURNAMENT_ID, name: 'Boisko Bemowo', address: null };
-const URSUS: Venue = { id: 2, tournamentId: TOURNAMENT_ID, name: 'Hala Ursus', address: null };
+const BEMOWO: Venue = { id: 1, tournamentId: TOURNAMENT_ID, name: 'Boisko Bemowo', address: null, scheduledMatchesCount: 0 };
+const URSUS: Venue = { id: 2, tournamentId: TOURNAMENT_ID, name: 'Hala Ursus', address: null, scheduledMatchesCount: 0 };
 
 /**
  * Lista obiektów „pod oknem”, tak jak na ekranie. Odpytuje msw naprawdę, więc
@@ -197,7 +197,7 @@ describe('useListMutation — dodawanie i edycja', () => {
     server.use(
       http.post(`${API}/tournaments/${TOURNAMENT_ID}/venues`, async ({ request }) => {
         const { name } = (await request.json()) as { name: string };
-        const created = { id: 2, tournamentId: TOURNAMENT_ID, name, address: null };
+        const created = { id: 2, tournamentId: TOURNAMENT_ID, name, address: null, scheduledMatchesCount: 0 };
         venues.push(created);
         return HttpResponse.json({ data: created }, { status: 201 });
       }),
@@ -443,7 +443,7 @@ describe('useListMutation — usuwanie', () => {
 
   it('`422` z guarda blokuje okno: powód serwera i samo „Zamknij”', async () => {
     serveVenues([BEMOWO]);
-    const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma powiązane rozegrane mecze.';
+    const reason = 'Nie można usunąć: obiekt „Boisko Bemowo” ma rozegrane lub trwające mecze.';
     server.use(
       http.delete(`${API}/venues/${BEMOWO.id}`, () =>
         HttpResponse.json({ message: reason, errors: { id: [reason] } }, { status: 422 }),
@@ -527,6 +527,7 @@ describe('useListMutation — usuwanie', () => {
       logoUrl: null,
       groupId: null,
       playersCount: 12,
+      scheduledMatchesCount: 0,
     };
     let deleted = false;
     let teamRequests = 0;
