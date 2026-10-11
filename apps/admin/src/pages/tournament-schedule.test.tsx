@@ -140,7 +140,10 @@ async function roundsNav() {
 }
 
 function matchRows() {
-  return screen.getAllByRole('group').map((row) => row.getAttribute('aria-label'));
+  return screen
+    .getAllByRole('button')
+    .filter((element) => element.getAttribute('data-slot') === 'match-row')
+    .map((row) => row.getAttribute('aria-label'));
 }
 
 describe('Terminarz — lista', () => {
@@ -425,5 +428,117 @@ describe('Terminarz — rozkład dat (#175)', () => {
     await screen.findByRole('heading', { name: 'Kolejka 1' });
     // Opis drugiej strony pary dokłada panel, bo kontrakt zna tylko `matchId`.
     expect(screen.getAllByTitle(/^Kolizja boiska: /)).toHaveLength(2);
+  });
+});
+
+const MATCH_PATCH_URL = `${API}/matches/:match`;
+
+/** Handler zapisu meczu: zapisuje ciała i oddaje mecz z nałożonymi zmianami. */
+function serveSave(matches: AdminMatch[]) {
+  const bodies: Record<string, unknown>[] = [];
+  server.use(
+    http.patch(MATCH_PATCH_URL, async ({ request, params }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      bodies.push(body);
+      const match = matches.find((candidate) => candidate.id === Number(params.match))!;
+      return HttpResponse.json({ data: { ...match, ...body } });
+    }),
+  );
+  return bodies;
+}
+
+async function openMatchRow(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole('button', { name }));
+  return screen.getByRole('dialog');
+}
+
+describe('Terminarz — okno meczu (#176)', () => {
+  it('„Zaplanowany” czyści pola i wysyła jawne null', async () => {
+    const matches = [match(1, 1, 1, 2, FINISHED)];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(within(dialog).getByRole('radio', { name: 'Zakończony' })).toBeChecked();
+
+    await user.click(within(dialog).getByRole('radio', { name: 'Zaplanowany' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ status: 'scheduled', homeScore: null, awayScore: null });
+  });
+
+  it('„Trwa” na meczu bez wyniku wstawia 0:0', async () => {
+    const matches = [match(1, 1, 1, 2)];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Trwa' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ status: 'live', homeScore: 0, awayScore: 0 });
+  });
+
+  it('błąd pod homeScore stoi pod całym blokiem wyniku', async () => {
+    const matches = [match(1, 1, 1, 2)];
+    serveMatches(matches);
+    const message = 'Mecz trwający albo zakończony potrzebuje obu wyników.';
+    server.use(
+      http.patch(MATCH_PATCH_URL, () =>
+        HttpResponse.json({ message, errors: { homeScore: [message] } }, { status: 422 }),
+      ),
+    );
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    const error = await within(dialog).findByText(message);
+    // Oba pola dzielą opis błędu, więc komunikat jest pod blokiem `__ : __`,
+    // a nie przy jednym z pól.
+    expect(within(dialog).getByLabelText('Wynik Wilki Bemowo')).toHaveAttribute('aria-describedby', error.id);
+    expect(within(dialog).getByLabelText('Wynik Sokoły Ursus')).toHaveAttribute('aria-describedby', error.id);
+  });
+
+  it('pusty termin wysyła kickoffAt: null', async () => {
+    const matches = [match(1, 1, 1, 2, { kickoffAt: '2026-09-06T08:00:00+00:00' })];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    fireEvent.change(within(dialog).getByLabelText('Termin'), { target: { value: '' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ kickoffAt: null });
+  });
+
+  it('kliknięcie kolizji otwiera okno drugiego meczu i przełącza kolejkę', async () => {
+    serveMatches([
+      match(1, 1, 1, 2, {
+        kickoffAt: '2026-09-06T08:00:00+00:00',
+        venue: { id: 1, name: 'Boisko A' },
+        collisions: [{ type: 'venue', matchId: 2 }],
+      }),
+      match(2, 1, 3, 4, {
+        kickoffAt: '2026-09-06T08:00:00+00:00',
+        venue: { id: 1, name: 'Boisko A' },
+        collisions: [{ type: 'venue', matchId: 1 }],
+      }),
+    ]);
+    const { user, router } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(within(dialog).getByText('Kolizja nie blokuje zapisu.')).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: /Kolizja boiska: Orły Bielany – Rysie Wola/ }));
+
+    expect(await screen.findByRole('dialog', { name: 'Orły Bielany – Rysie Wola' })).toBeInTheDocument();
+    expect(router.state.location.search).toBe('?round=2');
   });
 });

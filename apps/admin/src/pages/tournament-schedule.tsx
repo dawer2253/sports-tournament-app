@@ -36,6 +36,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { ChoiceCards } from '../components/choice-cards';
+import { MatchDialog } from '../components/match-dialog';
 import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
 import { COLLISIONS, MATCHES, plural, ROUNDS, ROUNDS_ACCUSATIVE, TEAMS, TEAMS_PLAYING } from '../lib/plural';
@@ -82,11 +83,31 @@ export function TournamentSchedulePage() {
   const teams = useTeams(tournament.id);
   const [generating, setGenerating] = useState(false);
   const [distributing, setDistributing] = useState(false);
+  const [openMatchId, setOpenMatchId] = useState<number | null>(null);
+  const [, setParams] = useSearchParams();
 
   const started = hasStartedMatches(matches.data ?? []);
   const hasSchedule = (matches.data?.length ?? 0) > 0;
+  const selectedMatch = matches.data?.find((match) => match.id === openMatchId);
   const openGenerate = () => setGenerating(true);
   const openDates = () => setDistributing(true);
+
+  /**
+   * Otwiera okno meczu i przełącza listę kolejek na jego kolejkę (#176) —
+   * używane przy kliknięciu wiersza i przy kliknięciu kolizji, która prowadzi
+   * do meczu z innej kolejki.
+   */
+  function openMatch(match: AdminMatch) {
+    setOpenMatchId(match.id);
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set(ROUND_PARAM, String(match.round.order));
+        return next;
+      },
+      { replace: true },
+    );
+  }
 
   let content;
   if (stages.isError || matches.isError) {
@@ -156,7 +177,7 @@ export function TournamentSchedulePage() {
           onGenerate={openGenerate}
         />
         <WithoutDatesNotice matches={matches.data} onDistribute={openDates} />
-        <RoundsView rounds={rounds} />
+        <RoundsView rounds={rounds} onSelectMatch={openMatch} />
       </>
     );
   }
@@ -207,6 +228,16 @@ export function TournamentSchedulePage() {
           matches={matches.data}
           rounds={scheduleRounds(withCollisionTitles(matches.data))}
           onClose={() => setDistributing(false)}
+        />
+      )}
+      {selectedMatch && (
+        <MatchDialog
+          key={selectedMatch.id}
+          match={selectedMatch}
+          tournamentId={tournament.id}
+          matches={matches.data ?? []}
+          onOpenMatch={openMatch}
+          onClose={() => setOpenMatchId(null)}
         />
       )}
     </AdminPage>
@@ -287,7 +318,13 @@ function WithoutDatesNotice({ matches, onDistribute }: { matches: AdminMatch[]; 
  * odświeżenie. Bez parametru albo z numerem, którego nie ma, otwiera się
  * pierwsza kolejka z meczem niezakończonym (#162, pkt 1).
  */
-function RoundsView({ rounds }: { rounds: ScheduleRound[] }) {
+function RoundsView({
+  rounds,
+  onSelectMatch,
+}: {
+  rounds: ScheduleRound[];
+  onSelectMatch: (match: AdminMatch) => void;
+}) {
   const [params, setParams] = useSearchParams();
   const requested = Number(params.get(ROUND_PARAM));
   const round = rounds.find((candidate) => candidate.order === requested) ?? defaultRound(rounds);
@@ -327,7 +364,7 @@ function RoundsView({ rounds }: { rounds: ScheduleRound[] }) {
         <ul className="space-y-2">
           {round.matches.map((match) => (
             <li key={match.id}>
-              <MatchRow match={match} showDate={!oneDay} />
+              <MatchRow match={match} showDate={!oneDay} onSelect={() => onSelectMatch(match)} />
             </li>
           ))}
         </ul>
