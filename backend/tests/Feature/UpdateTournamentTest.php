@@ -101,6 +101,7 @@ it('nie rusza pól, których nie wysłano', function (array $body, string $chang
     'kolor' => [['branding' => ['primaryColor' => '#000000']], 'primary_color'],
     'punktacja' => [['points' => ['win' => 2, 'draw' => 1, 'loss' => 0]], 'points'],
     'tiebreakery' => [['tiebreakers' => ['points']], 'tiebreakers'],
+    'długość meczu' => [['matchDuration' => 90], 'match_duration'],
 ]);
 
 it('odrzuca pustą nazwę i nazwę ponad limit', function (string $name) {
@@ -487,3 +488,37 @@ it('trzyma kody tiebreaków zgodne z enumem TiebreakerCode w kontrakcie', functi
     expect($contract['components']['schemas']['TiebreakerCode']['enum'])
         ->toBe(Tournament::TIEBREAKER_CODES);
 });
+
+// --- długość meczu (#158) ----------------------------------------------------
+
+it('zmienia długość meczu', function () {
+    $tournament = Tournament::factory()->create(['match_duration' => 60]);
+
+    patchTournament($tournament, ['matchDuration' => 90])
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.matchDuration', 90);
+
+    expect($tournament->fresh()->match_duration)->toBe(90);
+});
+
+it('przyjmuje granice 10 i 600, a odrzuca wartości spoza zakresu i zły typ', function (mixed $value, bool $valid) {
+    $tournament = Tournament::factory()->create();
+
+    $response = patchTournament($tournament, ['matchDuration' => $value]);
+
+    if ($valid) {
+        $response->assertValidRequest()->assertValidResponse(200)->assertJsonPath('data.matchDuration', $value);
+    } else {
+        $response->assertValidResponse(422)->assertJsonValidationErrors('matchDuration');
+    }
+})->with([
+    'dolna granica' => [10, true],
+    'górna granica' => [600, true],
+    'poniżej' => [9, false],
+    'powyżej' => [601, false],
+    'napis' => ['60', false],
+    'logiczna' => [true, false],
+    'ułamek' => [60.5, false],
+    'null' => [null, false],
+]);

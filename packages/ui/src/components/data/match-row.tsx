@@ -1,15 +1,16 @@
-import { Check, MapPin } from 'lucide-react'
+import { AlertTriangle, Check, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
-import type { MatchRowData } from './match-row-data'
+import type { MatchCollision, MatchCollisionType, MatchRowData } from './match-row-data'
 
 /**
  * Jedna siatka dla wszystkich wierszy, żeby kolumny stały równo w całej
  * kolejce. Kolumny po bokach mają stałą szerokość, więc wynik stoi w tym
  * samym miejscu niezależnie od plakietki po prawej i długości nazw (#162,
- * pkt 3).
+ * pkt 3). Slot kolizji jest stały i stoi przed stanem (#175), więc plakietka
+ * kolizji nie przesuwa kolumny wyniku ani stanu.
  *
  * Na telefonie termin i stan idą w linię nad parą, a wynik dalej siedzi
  * w środkowej kolumnie. Miejsce każdej komórki jest jawne (`col-start`,
@@ -17,7 +18,7 @@ import type { MatchRowData } from './match-row-data'
  * jest ta sama na każdej szerokości i tak też czyta ją czytnik ekranu.
  */
 const ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem]'
+  'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
 
 const STATUS_BADGE: Record<
   MatchRowData['status'],
@@ -39,6 +40,31 @@ export function MatchStatusBadge({ status, className }: { status: MatchRowData['
     <Badge variant={badge.variant} className={className}>
       {badge.icon}
       {badge.label}
+    </Badge>
+  )
+}
+
+/** Etykiety rodzajów kolizji z rozstrzygnięcia #158. */
+export function collisionLabel(type: MatchCollisionType): string {
+  return type === 'team' ? 'Kolizja drużyny' : 'Kolizja boiska'
+}
+
+/**
+ * Plakietka kolizji z opisem drugiej strony w `title` (#158). Przy kilku
+ * kolizjach pokazuje ich liczbę, a pełny opis niesie `title`. Nazwa rodzaju
+ * jest `sr-only` na telefonie, gdzie wiersz jest ciasny — ikona zostaje.
+ */
+export function CollisionBadge({ collisions, className }: { collisions: MatchCollision[]; className?: string }) {
+  if (collisions.length === 0) return null
+
+  const title = collisions.map((collision) => collision.title ?? collisionLabel(collision.type)).join('\n')
+  const types = [...new Set(collisions.map((collision) => collision.type))]
+  const label = types.length === 1 ? collisionLabel(types[0]!) : `Kolizje (${collisions.length})`
+
+  return (
+    <Badge variant="destructive" title={title} className={className}>
+      <AlertTriangle />
+      <span className="sr-only sm:not-sr-only">{label}</span>
     </Badge>
   )
 }
@@ -108,8 +134,15 @@ export function MatchRow({ match, showDate = true, timeZone, className }: MatchR
         <Score match={match} />
       </span>
       <span className="col-start-3 row-start-2 truncate font-medium sm:col-start-4 sm:row-start-1">{away}</span>
-      <span className="col-start-3 row-start-1 flex justify-end sm:col-start-5">
-        <MatchStatusBadge status={match.status} />
+      {/* Stały slot kolizji przed stanem (#175): miejsce rezerwuje pusty
+          wrapper, więc plakietka nie przesuwa kolumny wyniku. */}
+      <span className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 sm:col-span-2 sm:col-start-5">
+        <span className="flex shrink-0 justify-end sm:w-[6.5rem]">
+          <CollisionBadge collisions={match.collisions ?? []} />
+        </span>
+        <span className="flex shrink-0 justify-end sm:w-[6.5rem]">
+          <MatchStatusBadge status={match.status} />
+        </span>
       </span>
     </div>
   )

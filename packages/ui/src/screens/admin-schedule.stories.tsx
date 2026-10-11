@@ -24,6 +24,8 @@ export const Domyslny: Story = {
     await expect(canvas.getByRole('heading', { name: 'Kolejka 5' })).toBeInTheDocument()
     await expect(canvas.getAllByRole('group')).toHaveLength(4)
     await expect(canvas.queryByRole('tab')).not.toBeInTheDocument()
+    // Kolizja boiska w kolejce 5: plakietka po obu stronach pary (#175).
+    await expect(canvas.getAllByTitle(/^Kolizja boiska:/)).toHaveLength(2)
   },
 }
 

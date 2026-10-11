@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Matches\IndexMatchesRequest;
-use App\Http\Resources\MatchResource;
+use App\Http\Resources\AdminMatchResource;
+use App\Models\GameMatch;
 use App\Models\Tournament;
+use App\Schedule\CollisionCalculator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 
@@ -26,8 +28,11 @@ class MatchController extends Controller
      * Filtry idą przed `paginate()`, żeby `meta` opisywała zbiór zawężony.
      * Warunek to `!== null`, a nie prawdziwość: `?stageId=0` ma zawęzić listę
      * do niczego, a nie zdjąć filtr.
+     *
+     * Kolizje (#158) liczy jeden przebieg po całym turnieju — także poza
+     * zwróconą stroną, bo kolizja łączy mecze z różnych faz.
      */
-    public function index(IndexMatchesRequest $request, Tournament $tournament): JsonResponse
+    public function index(IndexMatchesRequest $request, Tournament $tournament, CollisionCalculator $collisions): JsonResponse
     {
         $perPage = $request->integer('perPage');
         $perPage = $perPage < 1 ? self::DEFAULT_PER_PAGE : min($perPage, self::MAX_PER_PAGE);
@@ -44,8 +49,13 @@ class MatchController extends Controller
             ->orderBy('matches.id')
             ->paginate($perPage);
 
+        $collisions = $collisions->forTournament($tournament);
+
         return response()->json([
-            'data' => MatchResource::collection($matches->items()),
+            'data' => array_map(
+                fn (GameMatch $match): array => (new AdminMatchResource($match, $collisions))->resolve(),
+                $matches->items(),
+            ),
             'meta' => [
                 'currentPage' => $matches->currentPage(),
                 'lastPage' => $matches->lastPage(),

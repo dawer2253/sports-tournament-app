@@ -44,6 +44,16 @@ class Sport extends Model
     }
 
     /**
+     * Domyślna długość meczu w minutach, kopiowana do turnieju przy zakładaniu
+     * (#158). Turniej zmienia ją potem u siebie, więc sport nigdy sam nie
+     * wyznacza długości meczu.
+     */
+    public function defaultMatchDuration(): int
+    {
+        return $this->config['defaultMatchDuration'];
+    }
+
+    /**
      * Domyślna kolejność tiebreaków, kopiowana do turnieju przy zakładaniu
      * (decyzja #25). Organizer zmienia ją potem u siebie, nie w sporcie.
      */

@@ -565,6 +565,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     'name',
     'slug',
     'branding.primaryColor',
+    'matchDuration',
     'points',
     ...pointFields.map(({ key }) => `points.${key}` as const),
   ] as const;
@@ -709,6 +710,30 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
             <Separator />
 
             <section className="space-y-4">
+              <Heading level="card">Rozgrywki</Heading>
+              <div className="grid w-32 content-start gap-2">
+                <Label htmlFor="match-duration">Długość meczu (min)</Label>
+                <Input
+                  id="match-duration"
+                  type="number"
+                  inputMode="numeric"
+                  min={10}
+                  max={600}
+                  aria-invalid={errors.matchDuration ? true : undefined}
+                  aria-describedby={errors.matchDuration ? 'match-duration-error' : undefined}
+                  {...register('matchDuration', { valueAsNumber: true })}
+                />
+                {errors.matchDuration && (
+                  <p id="match-duration-error" className="text-sm text-destructive">
+                    {errors.matchDuration.message}
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <Separator />
+
+            <section className="space-y-4">
               <Heading level="card">Punktacja</Heading>
               <div className="flex flex-wrap items-start gap-4">
                 {pointFields.map(({ key, label }) => {
@@ -717,7 +742,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                     .filter(Boolean)
                     .join(' ');
                   return (
-                    <div key={key} className="w-24 space-y-2">
+                    <div key={key} className="grid w-24 content-start gap-2">
                       <Label htmlFor={`points-${key}`}>{label}</Label>
                       <Input
                         id={`points-${key}`}

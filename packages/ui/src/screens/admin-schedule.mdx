@@ -28,12 +28,15 @@ bieżącą, i pozwolić mu wygenerować terminarz albo wygenerować go ponownie.
   z `lib/demo-data.ts`, w strefie `Europe/Warsaw`.
 
 ## Reguły
-- Lista kolejek to `RoundList`: nazwa, zakres dat, stały slot na licznik
-  kolizji (wypełni #175) i „zakończone/wszystkie”. Od `md` stoi w kolumnie
-  obok meczów.
+- Lista kolejek to `RoundList`: nazwa, zakres dat, licznik meczów z kolizją
+  i „zakończone/wszystkie”. Od `md` stoi w kolumnie obok meczów.
 - Wiersz meczu to `MatchRow`: termin i obiekt | gospodarz | wynik | gość |
-  stan. Kolumny po bokach mają stałą szerokość, więc wynik stoi w tej samej
-  pozycji w każdym wierszu.
+  plakietka kolizji | stan. Kolumny po bokach mają stałą szerokość, więc wynik
+  stoi w tej samej pozycji w każdym wierszu, a slot kolizji przed stanem
+  rezerwuje miejsce także w wierszu bez kolizji (#175).
+- Plakietka kolizji (`MatchRow`) niesie opis drugiej strony pary w `title`;
+  licznik kolizji kolejki (`RoundList`) liczy mecze z co najmniej jedną
+  kolizją, a nie pary (#175).
 - Godziny formatuje `Intl` ze strefą przeglądarki (ADR-0008). Kolejka grana
   jednego dnia pokazuje w wierszach samą godzinę, a datę nad listą.
 - Mecz bez daty pokazuje „Termin do ustalenia”.
@@ -43,7 +46,8 @@ bieżącą, i pozwolić mu wygenerować terminarz albo wygenerować go ponownie.
 ## Stany
 - **W trakcie** (powyżej): otwiera się pierwsza kolejka z meczem innym niż
   `finished`, a „Wygeneruj ponownie” w menu „⋯” jest wyłączone, bo faza ma
-  mecze rozpoczęte.
+  mecze rozpoczęte. Kolejka niesie kolizję boiska, więc widać licznik przy
+  kolejce i plakietki w wierszach.
 - **Bez dat**: zaraz po wygenerowaniu, mecze bez terminu i obiektu.
 - **Pusty**: „Wygeneruj terminarz”, wyłączone przy mniej niż dwóch drużynach.
 - **Telefon**: lista kolejek zwinięta do przycisku z bieżącą kolejką

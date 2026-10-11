@@ -305,6 +305,10 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
   takiego meczu usunięcie kasuje jej mecze zaplanowane (#171).
 - Zmiana nazwy kolejki przez organizatora. W S2 generator nadaje nazwy
   „Kolejka 1”, „Kolejka 2”… i panel ich nie zmienia (#162).
+- Pole `Tournament.timezone` — strefa turnieju, którą przewiduje
+  [ADR 0008](adr/0008-czas-w-api-idzie-w-utc.md). W S2 rozkład dat bierze
+  strefę z żądania (`timeZone`, panel z przeglądarki), a własnej strefy turniej
+  jeszcze nie ma (#158).
 
 ---
 

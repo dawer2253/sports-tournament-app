@@ -236,6 +236,7 @@ paths:
                     config:
                       allowsDraw: true
                       defaultPoints: { win: 3, draw: 1, loss: 0 }
+                      defaultMatchDuration: 60
                       eventTypes:
                         - { code: goal, label: Bramka, hasPlayer: true, stat: goals }
                         - { code: own_goal, label: Bramka samobójcza, hasPlayer: true, stat: null }
@@ -256,6 +257,7 @@ paths:
                     config:
                       allowsDraw: false
                       defaultPoints: { win: 2, draw: 0, loss: 1 }
+                      defaultMatchDuration: 40
                       eventTypes:
                         - { code: points, label: Punkty, hasPlayer: true, stat: points }
                         - { code: foul, label: Faul, hasPlayer: true, stat: fouls }
@@ -325,6 +327,7 @@ paths:
                     branding: { logoUrl: null, primaryColor: '#1F7A45' }
                     points: { win: 2, draw: 0, loss: 1 }
                     tiebreakers: [points, head_to_head, score_diff]
+                    matchDuration: 40
                     teamsCount: 8
                     createdAt: '2026-09-10T07:00:00+00:00'
                     updatedAt: '2026-09-10T07:00:00+00:00'
@@ -336,6 +339,7 @@ paths:
                     branding: { logoUrl: null, primaryColor: '#1F7A45' }
                     points: { win: 3, draw: 1, loss: 0 }
                     tiebreakers: [points, head_to_head, score_diff, score_for]
+                    matchDuration: 60
                     teamsCount: 3
                     createdAt: '2026-09-01T08:00:00+00:00'
                     updatedAt: '2026-09-14T16:30:00+00:00'
@@ -380,6 +384,7 @@ paths:
                   branding: { logoUrl: null, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
+                  matchDuration: 60
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -412,6 +417,7 @@ paths:
                   branding: { logoUrl: null, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
+                  matchDuration: 60
                   teamsCount: 3
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-14T16:30:00+00:00'
@@ -522,6 +528,7 @@ paths:
                   branding: { logoUrl: http://localhost:8000/storage/tournaments/1/logo/hMbkow7jZDUOi8YzukrkRzF1eY8wqM7DJtNlFrEZ.png, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
+                  matchDuration: 60
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -555,6 +562,7 @@ paths:
                   branding: { logoUrl: null, primaryColor: '#1F7A45' }
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
+                  matchDuration: 60
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -684,6 +692,152 @@ paths:
                     message: Generowanie terminarza działa na razie tylko dla fazy ligowej.
                     errors:
                       stage: [Generowanie terminarza działa na razie tylko dla fazy ligowej.]
+
+  /stages/{stage}/schedule/dates:
+    parameters:
+      - { $ref: '#/components/parameters/StageId' }
+    post:
+      tags: [Schedule]
+      summary: Rozłóż daty i obiekty terminarza
+      description: |
+        Nadaje terminy i obiekty meczom fazy, która ma już terminarz
+        (`POST /stages/{stage}/schedule`). To osobny krok po wygenerowaniu par,
+        więc przestawienie dat nie losuje ich od nowa. Faza może trwale zostać
+        bez dat, a pojedynczy mecz bez terminu i obiektu („termin do
+        ustalenia”).
+
+        - `mode: interval` — liga sezonowa: kolejka `k` (licząc od pierwszej
+          rozkładanej) zaczyna się `startAt + (k − 1) × intervalDays` dni,
+          licząc w `timeZone`. Dzięki temu ta sama godzina zegarowa obowiązuje
+          także przez zmianę czasu.
+        - `mode: continuous` — turniej jedno-, dwudniowy: mecz za meczem,
+          kolejka `k + 1` zaczyna się w pierwszym slocie po ostatnim meczu
+          kolejki `k`, nigdy wcześniej.
+        - Mecz `j` w kolejce (licząc od zera) dostaje obiekt
+          `venueIds[j mod V]` i godzinę startu kolejki plus
+          `⌊j / V⌋ × matchDuration`. Bez obiektów cała kolejka gra o jednej
+          godzinie i bez obiektu.
+        - `dayEndTime` (tylko `continuous`): slot, który **kończyłby się** po tej
+          godzinie, przechodzi na następny dzień kalendarzowy o godzinie
+          `startAt`. Kolejka może przez to rozciągnąć się na dwa dni. Wyjątkiem
+          jest slot dłuższy niż okno dnia (od `startAt` do `dayEndTime`): taki
+          slot zostaje, bo nie da się go zmieścić nigdzie.
+        - `fromRound` — `order` kolejki, od której rozkład idzie od nowa
+          (domyślnie od pierwszej). Zastępuje osobną operację „przesuń kolejkę”.
+        - Rusza wyłącznie mecze `scheduled` w kolejkach od `fromRound`
+          i nadpisuje ręczne korekty. Mecze `live` i `finished` oraz kolejki
+          przed `fromRound` zachowują termin i obiekt.
+
+        Rozkład wolno powtarzać zawsze. Status turnieju nie gra roli. Odmowa to
+        `422` pod `stage`, gdy faza nie ma jeszcze terminarza. Odpowiedź niesie
+        liczbę meczów, które dostały termin, i liczbę meczów fazy, które po
+        rozkładzie mają kolizję.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mode, startAt, timeZone]
+              properties:
+                mode:
+                  type: string
+                  enum: [interval, continuous]
+                startAt:
+                  type: string
+                  format: date-time
+                  description: |
+                    Początek pierwszej rozkładanej kolejki. **Wymagany offset**
+                    (np. `+02:00` albo `Z`): data bez offsetu daje `422`, bo nie
+                    wiadomo, który moment organizer miał na myśli (ADR-0008).
+                    Backend przelicza wartość na UTC i przyjmuje ten sam moment,
+                    więc `2026-09-06T10:00:00+02:00` to `08:00:00+00:00`.
+                timeZone:
+                  type: string
+                  description: |
+                    Strefa IANA (np. `Europe/Warsaw`), w której liczona jest
+                    arytmetyka „+7 dni o tej samej godzinie” i „następny dzień
+                    o godzinie startu”. Panel bierze ją z przeglądarki.
+                intervalDays:
+                  type: [integer, 'null']
+                  minimum: 1
+                  description: |
+                    Odstęp między kolejkami w dniach. Wymagane przy
+                    `mode: interval`; przy `mode: continuous` musi być nieobecne.
+                dayEndTime:
+                  type: [string, 'null']
+                  pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+                  description: |
+                    Najpóźniejsza godzina dnia (w `timeZone`, `HH:MM`), o której
+                    mecz może się skończyć. Dozwolone tylko przy
+                    `mode: continuous`.
+                venueIds:
+                  type: array
+                  maxItems: 20
+                  uniqueItems: true
+                  description: |
+                    Obiekty turnieju, na które rozkładane są sloty, w kolejności
+                    użycia. Bez powtórzeń. Obiekt innego turnieju albo usunięty
+                    daje `422`. Brak pola albo pusta lista znaczy „bez obiektów”:
+                    wtedy cała kolejka gra o jednej godzinie i bez obiektu.
+                  items: { type: integer, format: int64 }
+                fromRound:
+                  type: [integer, 'null']
+                  minimum: 1
+                  description: |
+                    `order` kolejki, od której rozkład idzie od nowa. Bez pola
+                    rozkład obejmuje wszystkie kolejki.
+            example:
+              mode: interval
+              startAt: '2026-09-06T10:00:00+02:00'
+              timeZone: Europe/Warsaw
+              intervalDays: 7
+              dayEndTime: null
+              venueIds: [1, 2]
+              fromRound: null
+      responses:
+        '200':
+          description: Daty rozłożone
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [matchesCount, collisionsCount]
+                    properties:
+                      matchesCount:
+                        type: integer
+                        minimum: 0
+                        description: |
+                          Ile meczów `scheduled` dostało termin i obiekt. Bez
+                          wybranych obiektów mecz dostaje sam termin, a obiekt
+                          zostaje pusty.
+                      collisionsCount:
+                        type: integer
+                        minimum: 0
+                        description: |
+                          Ile meczów fazy po rozkładzie ma kolizję, licząc także
+                          kolizje z meczami innych faz tego samego turnieju.
+              example:
+                data: { matchesCount: 190, collisionsCount: 2 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Faza nie ma terminarza albo ciało jest niepoprawne
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              examples:
+                bezTerminarza:
+                  summary: Faza nie ma jeszcze terminarza
+                  value:
+                    message: Faza nie ma jeszcze terminarza, więc nie ma czego rozkładać.
+                    errors:
+                      stage: [Faza nie ma jeszcze terminarza, więc nie ma czego rozkładać.]
 
   /tournaments/{tournament}/teams:
     parameters:
@@ -1173,7 +1327,7 @@ paths:
                 properties:
                   data:
                     type: array
-                    items: { $ref: '#/components/schemas/Match' }
+                    items: { $ref: '#/components/schemas/AdminMatch' }
                   meta: { $ref: '#/components/schemas/PaginationMeta' }
               examples:
                 liga:
@@ -1197,6 +1351,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                       - id: 2
                         stageId: 1
                         groupId: null
@@ -1214,6 +1369,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                       - id: 3
                         stageId: 1
                         groupId: null
@@ -1231,6 +1387,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                       - id: 4
                         stageId: 1
                         groupId: null
@@ -1248,6 +1405,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                       - id: 5
                         stageId: 1
                         groupId: null
@@ -1265,6 +1423,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                       - id: 6
                         stageId: 1
                         groupId: null
@@ -1282,6 +1441,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
                 puchar:
                   summary: Faza pucharowa — komplet meczów drabinki sześciodrużynowej
@@ -1315,6 +1475,7 @@ paths:
                         winnerToMatchId: 201
                         loserToMatchId: null
                         advancesToSlot: home
+                        collisions: []
                       - id: 102
                         stageId: 2
                         groupId: null
@@ -1332,6 +1493,7 @@ paths:
                         winnerToMatchId: 202
                         loserToMatchId: null
                         advancesToSlot: away
+                        collisions: []
                       - id: 201
                         stageId: 2
                         groupId: null
@@ -1349,6 +1511,7 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: home
+                        collisions: []
                       - id: 202
                         stageId: 2
                         groupId: null
@@ -1366,6 +1529,7 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: away
+                        collisions: []
                       - id: 301
                         stageId: 2
                         groupId: null
@@ -1383,6 +1547,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                       - id: 302
                         stageId: 2
                         groupId: null
@@ -1400,6 +1565,7 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
@@ -2366,12 +2532,20 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats]
+      required: [allowsDraw, defaultPoints, defaultMatchDuration, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats]
       properties:
         allowsDraw:
           type: boolean
           description: Czy w tym sporcie mecz może zakończyć się remisem.
         defaultPoints: { $ref: '#/components/schemas/Points' }
+        defaultMatchDuration:
+          type: integer
+          minimum: 10
+          maximum: 600
+          description: |
+            Domyślna długość meczu w minutach, razem z przerwą po nim,
+            kopiowana do turnieju przy zakładaniu (`Tournament.matchDuration`).
+            Wartości amatorskie: piłka nożna 60, koszykówka 40.
         eventTypes:
           type: array
           items: { $ref: '#/components/schemas/SportEventType' }
@@ -2468,7 +2642,7 @@ components:
 
     Tournament:
       type: object
-      required: [id, name, slug, status, sport, branding, points, tiebreakers, teamsCount, createdAt, updatedAt]
+      required: [id, name, slug, status, sport, branding, points, tiebreakers, matchDuration, teamsCount, createdAt, updatedAt]
       properties:
         id: { type: integer, format: int64 }
         name: { type: string }
@@ -2484,6 +2658,17 @@ components:
           type: array
           items: { $ref: '#/components/schemas/TiebreakerCode' }
           description: Uporządkowana lista kryteriów, stosowanych po kolei.
+        matchDuration:
+          type: integer
+          minimum: 10
+          maximum: 600
+          description: |
+            Długość meczu w minutach, razem z przerwą po nim. Wyznacza slot
+            rozkładu dat (`POST /stages/{stage}/schedule/dates`) i okno kolizji
+            (`AdminMatch.collisions`). Turniej dostaje ją przy zakładaniu jako
+            kopię `SportConfig.defaultMatchDuration`, a potem organizer zmienia
+            ją u siebie. Zmiana nie przesuwa żadnego `kickoffAt` — zmienia tylko
+            to, co liczy się jako kolizja.
         teamsCount: { type: integer, minimum: 0 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -2502,6 +2687,14 @@ components:
         name: { type: string, minLength: 1, maxLength: 160 }
         slug: { type: string, pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', minLength: 3, maxLength: 80 }
         status: { $ref: '#/components/schemas/TournamentStatus' }
+        matchDuration:
+          type: integer
+          minimum: 10
+          maximum: 600
+          description: |
+            Długość meczu w minutach (10–600), razem z przerwą po nim.
+            Zmiana nie przesuwa terminów meczów: zmienia tylko to, co liczy się
+            jako kolizja.
         branding:
           type: object
           additionalProperties: false
@@ -2743,6 +2936,50 @@ components:
 
             Niepuste dokładnie wtedy, gdy niepuste jest co najmniej jedno
             z `winnerToMatchId` i `loserToMatchId`.
+
+    MatchCollisionType:
+      type: string
+      description: |
+        Rodzaj kolizji terminu. `team` to „Kolizja drużyny” (wspólna drużyna),
+        `venue` to „Kolizja boiska” (ten sam obiekt).
+      enum: [team, venue]
+
+    MatchCollision:
+      type: object
+      required: [type, matchId]
+      description: |
+        Kolizja tego meczu z innym meczem **tego samego turnieju**, także
+        z innej fazy. Dwa mecze kolidują, gdy ich okna
+        `[kickoffAt, kickoffAt + Tournament.matchDuration)` się nakładają;
+        stykające się okna (koniec o 12:00, start o 12:00) nie kolidują.
+        Kolizja nigdy nie blokuje zapisu, nie ma jej w bazie: liczy się ją przy
+        odczycie.
+      properties:
+        type: { $ref: '#/components/schemas/MatchCollisionType' }
+        matchId:
+          type: integer
+          format: int64
+          description: |
+            Mecz po drugiej stronie kolizji. Kolizja jest symetryczna: jeśli
+            ten mecz ma tu tamten, to tamten ma tu ten.
+
+    AdminMatch:
+      description: |
+        Mecz widziany przez panel: kształt `Match` plus kolizje policzone przy
+        odczycie. Kolizja to narzędzie organizatora, więc strona publiczna
+        oddaje dalej samo `Match`, bez tego pola.
+      allOf:
+        - $ref: '#/components/schemas/Match'
+        - type: object
+          required: [collisions]
+          properties:
+            collisions:
+              type: array
+              description: |
+                Kolizje tego meczu z innymi meczami turnieju. Mecz bez
+                `kickoffAt` nie ma kolizji, a mecz bez obiektu nie ma kolizji
+                `venue`. Liczą się też mecze `finished`.
+              items: { $ref: '#/components/schemas/MatchCollision' }
 
     StandingRow:
       type: object

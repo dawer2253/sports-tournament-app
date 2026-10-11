@@ -17,6 +17,7 @@ type Story = StoryObj<typeof meta>
 const finished = scheduleInProgress.find((match) => match.status === 'finished')!
 const live = scheduleInProgress.find((match) => match.status === 'live')!
 const scheduled = scheduleInProgress.find((match) => match.round.order === 6)!
+const colliding = scheduleInProgress.find((match) => (match.collisions?.length ?? 0) > 0)!
 
 /** Mecz z długimi nazwami: nazwa się obcina, a nie przesuwa wyniku. */
 const longNames: MatchRowData = {
@@ -28,7 +29,7 @@ const longNames: MatchRowData = {
 
 const undated: MatchRowData = { ...scheduleUndated[0], id: 998 }
 
-const rows: MatchRowData[] = [finished, live, scheduled, longNames, undated]
+const rows: MatchRowData[] = [finished, live, colliding, scheduled, longNames, undated]
 
 /**
  * Pomiar w przeglądarce, nie w jsdom: kolumny po bokach mają stałą szerokość,
@@ -86,3 +87,6 @@ export const BezTerminu: Story = { args: { match: scheduleUndated[0] } }
 
 /** Kolejka w jednym dniu: data stoi nad listą, wiersz pokazuje samą godzinę. */
 export const SamaGodzina: Story = { args: { match: scheduled, showDate: false } }
+
+/** Kolizja terminu: plakietka w stałym slocie przed stanem, opis w `title` (#175). */
+export const Kolizja: Story = { args: { match: colliding } }

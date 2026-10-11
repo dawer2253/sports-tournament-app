@@ -193,6 +193,31 @@ W lidze nie zostawia po sobie śladu — kolejka ma po prostu o jeden mecz mniej
 W drabince widać ją w jej kształcie: drużyna stoi w rundzie, do której nie
 prowadzi żaden mecz.
 
+## Match duration (długość meczu)
+
+Czas jednego meczu razem z przerwą po nim, w minutach (10–600), trzymany
+w `Tournament.matchDuration`. Turniej dostaje go przy zakładaniu jako kopię
+`SportConfig.defaultMatchDuration`, a potem organizer zmienia go u siebie —
+sport nigdy nie wyznacza go sam.
+
+Wyznacza zarówno slot rozkładu dat, jak i okno kolizji. Zmiana długości nie
+przesuwa żadnego terminu: zmienia tylko to, co liczy się jako kolizja.
+
+## Collision (kolizja)
+
+Nakładanie się okien dwóch meczów **tego samego turnieju** (także z różnych
+faz): `[kickoffAt, kickoffAt + matchDuration)`. Dwa rodzaje:
+
+- `team` — „Kolizja drużyny": mecze mają wspólną drużynę;
+- `venue` — „Kolizja boiska": mecze grają na tym samym obiekcie.
+
+Stykające się okna (koniec o 12:00, start o 12:00) nie kolidują. Mecz bez
+terminu nie koliduje nigdy, a mecz bez obiektu nie ma kolizji `venue`. Mecze
+zakończone liczą się tak samo jak pozostałe.
+
+Kolizja jest ostrzeżeniem dla organizera, nie regułą: **nigdy nie blokuje
+zapisu** i nie ma jej w bazie — liczy się ją przy każdym odczycie terminarza.
+
 ## MatchEvent (zdarzenie meczowe)
 
 Pojedynczy fakt odnotowany w meczu: bramka, kartka, faul. Wiąże mecz, drużynę,

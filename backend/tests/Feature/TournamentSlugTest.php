@@ -141,6 +141,7 @@ it('bierze kolejny sufiks, gdy równoległe żądanie zajmie slug między sprawd
             'primary_color' => '#000000',
             'points' => '{}',
             'tiebreakers' => '[]',
+            'match_duration' => 60,
         ]);
     });
 

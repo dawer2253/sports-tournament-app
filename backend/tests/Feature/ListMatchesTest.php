@@ -67,6 +67,7 @@ it('oddaje mecz w kształcie z kontraktu', function () {
                 'winnerToMatchId' => null,
                 'loserToMatchId' => null,
                 'advancesToSlot' => null,
+                'collisions' => [],
             ]],
             'meta' => ['currentPage' => 1, 'lastPage' => 1, 'perPage' => 50, 'total' => 1],
         ]);

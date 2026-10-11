@@ -269,6 +269,7 @@ export interface paths {
                          *               "draw": 1,
                          *               "loss": 0
                          *             },
+                         *             "defaultMatchDuration": 60,
                          *             "eventTypes": [
                          *               {
                          *                 "code": "goal",
@@ -333,6 +334,7 @@ export interface paths {
                          *               "draw": 0,
                          *               "loss": 1
                          *             },
+                         *             "defaultMatchDuration": 40,
                          *             "eventTypes": [
                          *               {
                          *                 "code": "points",
@@ -465,6 +467,7 @@ export interface paths {
                          *             "head_to_head",
                          *             "score_diff"
                          *           ],
+                         *           "matchDuration": 40,
                          *           "teamsCount": 8,
                          *           "createdAt": "2026-09-10T07:00:00+00:00",
                          *           "updatedAt": "2026-09-10T07:00:00+00:00"
@@ -494,6 +497,7 @@ export interface paths {
                          *             "score_diff",
                          *             "score_for"
                          *           ],
+                         *           "matchDuration": 60,
                          *           "teamsCount": 3,
                          *           "createdAt": "2026-09-01T08:00:00+00:00",
                          *           "updatedAt": "2026-09-14T16:30:00+00:00"
@@ -579,6 +583,7 @@ export interface paths {
                          *           "score_diff",
                          *           "score_for"
                          *         ],
+                         *         "matchDuration": 60,
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -654,6 +659,7 @@ export interface paths {
                          *           "score_diff",
                          *           "score_for"
                          *         ],
+                         *         "matchDuration": 60,
                          *         "teamsCount": 3,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-14T16:30:00+00:00"
@@ -845,6 +851,7 @@ export interface paths {
                          *           "score_diff",
                          *           "score_for"
                          *         ],
+                         *         "matchDuration": 60,
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -911,6 +918,7 @@ export interface paths {
                          *           "score_diff",
                          *           "score_for"
                          *         ],
+                         *         "matchDuration": 60,
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -1084,6 +1092,173 @@ export interface paths {
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
                 /** @description Fazy nie da się wygenerować albo ciało jest niepoprawne */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stages/{stage}/schedule/dates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: components["parameters"]["StageId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rozłóż daty i obiekty terminarza
+         * @description Nadaje terminy i obiekty meczom fazy, która ma już terminarz
+         *     (`POST /stages/{stage}/schedule`). To osobny krok po wygenerowaniu par,
+         *     więc przestawienie dat nie losuje ich od nowa. Faza może trwale zostać
+         *     bez dat, a pojedynczy mecz bez terminu i obiektu („termin do
+         *     ustalenia”).
+         *
+         *     - `mode: interval` — liga sezonowa: kolejka `k` (licząc od pierwszej
+         *       rozkładanej) zaczyna się `startAt + (k − 1) × intervalDays` dni,
+         *       licząc w `timeZone`. Dzięki temu ta sama godzina zegarowa obowiązuje
+         *       także przez zmianę czasu.
+         *     - `mode: continuous` — turniej jedno-, dwudniowy: mecz za meczem,
+         *       kolejka `k + 1` zaczyna się w pierwszym slocie po ostatnim meczu
+         *       kolejki `k`, nigdy wcześniej.
+         *     - Mecz `j` w kolejce (licząc od zera) dostaje obiekt
+         *       `venueIds[j mod V]` i godzinę startu kolejki plus
+         *       `⌊j / V⌋ × matchDuration`. Bez obiektów cała kolejka gra o jednej
+         *       godzinie i bez obiektu.
+         *     - `dayEndTime` (tylko `continuous`): slot, który **kończyłby się** po tej
+         *       godzinie, przechodzi na następny dzień kalendarzowy o godzinie
+         *       `startAt`. Kolejka może przez to rozciągnąć się na dwa dni. Wyjątkiem
+         *       jest slot dłuższy niż okno dnia (od `startAt` do `dayEndTime`): taki
+         *       slot zostaje, bo nie da się go zmieścić nigdzie.
+         *     - `fromRound` — `order` kolejki, od której rozkład idzie od nowa
+         *       (domyślnie od pierwszej). Zastępuje osobną operację „przesuń kolejkę”.
+         *     - Rusza wyłącznie mecze `scheduled` w kolejkach od `fromRound`
+         *       i nadpisuje ręczne korekty. Mecze `live` i `finished` oraz kolejki
+         *       przed `fromRound` zachowują termin i obiekt.
+         *
+         *     Rozkład wolno powtarzać zawsze. Status turnieju nie gra roli. Odmowa to
+         *     `422` pod `stage`, gdy faza nie ma jeszcze terminarza. Odpowiedź niesie
+         *     liczbę meczów, które dostały termin, i liczbę meczów fazy, które po
+         *     rozkładzie mają kolizję.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stage: components["parameters"]["StageId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "mode": "interval",
+                     *       "startAt": "2026-09-06T10:00:00+02:00",
+                     *       "timeZone": "Europe/Warsaw",
+                     *       "intervalDays": 7,
+                     *       "dayEndTime": null,
+                     *       "venueIds": [
+                     *         1,
+                     *         2
+                     *       ],
+                     *       "fromRound": null
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        mode: "interval" | "continuous";
+                        /**
+                         * Format: date-time
+                         * @description Początek pierwszej rozkładanej kolejki. **Wymagany offset**
+                         *     (np. `+02:00` albo `Z`): data bez offsetu daje `422`, bo nie
+                         *     wiadomo, który moment organizer miał na myśli (ADR-0008).
+                         *     Backend przelicza wartość na UTC i przyjmuje ten sam moment,
+                         *     więc `2026-09-06T10:00:00+02:00` to `08:00:00+00:00`.
+                         */
+                        startAt: string;
+                        /**
+                         * @description Strefa IANA (np. `Europe/Warsaw`), w której liczona jest
+                         *     arytmetyka „+7 dni o tej samej godzinie” i „następny dzień
+                         *     o godzinie startu”. Panel bierze ją z przeglądarki.
+                         */
+                        timeZone: string;
+                        /**
+                         * @description Odstęp między kolejkami w dniach. Wymagane przy
+                         *     `mode: interval`; przy `mode: continuous` musi być nieobecne.
+                         */
+                        intervalDays?: number | null;
+                        /**
+                         * @description Najpóźniejsza godzina dnia (w `timeZone`, `HH:MM`), o której
+                         *     mecz może się skończyć. Dozwolone tylko przy
+                         *     `mode: continuous`.
+                         */
+                        dayEndTime?: string | null;
+                        /**
+                         * @description Obiekty turnieju, na które rozkładane są sloty, w kolejności
+                         *     użycia. Bez powtórzeń. Obiekt innego turnieju albo usunięty
+                         *     daje `422`. Brak pola albo pusta lista znaczy „bez obiektów”:
+                         *     wtedy cała kolejka gra o jednej godzinie i bez obiektu.
+                         */
+                        venueIds?: number[];
+                        /**
+                         * @description `order` kolejki, od której rozkład idzie od nowa. Bez pola
+                         *     rozkład obejmuje wszystkie kolejki.
+                         */
+                        fromRound?: number | null;
+                    };
+                };
+            };
+            responses: {
+                /** @description Daty rozłożone */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "matchesCount": 190,
+                         *         "collisionsCount": 2
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: {
+                                /**
+                                 * @description Ile meczów `scheduled` dostało termin i obiekt. Bez
+                                 *     wybranych obiektów mecz dostaje sam termin, a obiekt
+                                 *     zostaje pusty.
+                                 */
+                                matchesCount: number;
+                                /**
+                                 * @description Ile meczów fazy po rozkładzie ma kolizję, licząc także
+                                 *     kolizje z meczami innych faz tego samego turnieju.
+                                 */
+                                collisionsCount: number;
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Faza nie ma terminarza albo ciało jest niepoprawne */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -2008,7 +2183,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data: components["schemas"]["Match"][];
+                            data: components["schemas"]["AdminMatch"][];
                             meta: components["schemas"]["PaginationMeta"];
                         };
                     };
@@ -3033,6 +3208,12 @@ export interface components {
             /** @description Czy w tym sporcie mecz może zakończyć się remisem. */
             allowsDraw: boolean;
             defaultPoints: components["schemas"]["Points"];
+            /**
+             * @description Domyślna długość meczu w minutach, razem z przerwą po nim,
+             *     kopiowana do turnieju przy zakładaniu (`Tournament.matchDuration`).
+             *     Wartości amatorskie: piłka nożna 60, koszykówka 40.
+             */
+            defaultMatchDuration: number;
             eventTypes: components["schemas"]["SportEventType"][];
             /**
              * @description Kolejność tiebreaków, którą turniej dostaje przy zakładaniu.
@@ -3121,6 +3302,15 @@ export interface components {
             points: components["schemas"]["Points"];
             /** @description Uporządkowana lista kryteriów, stosowanych po kolei. */
             tiebreakers: components["schemas"]["TiebreakerCode"][];
+            /**
+             * @description Długość meczu w minutach, razem z przerwą po nim. Wyznacza slot
+             *     rozkładu dat (`POST /stages/{stage}/schedule/dates`) i okno kolizji
+             *     (`AdminMatch.collisions`). Turniej dostaje ją przy zakładaniu jako
+             *     kopię `SportConfig.defaultMatchDuration`, a potem organizer zmienia
+             *     ją u siebie. Zmiana nie przesuwa żadnego `kickoffAt` — zmienia tylko
+             *     to, co liczy się jako kolizja.
+             */
+            matchDuration: number;
             teamsCount: number;
             /** Format: date-time */
             createdAt: string;
@@ -3137,6 +3327,12 @@ export interface components {
             name?: string;
             slug?: string;
             status?: components["schemas"]["TournamentStatus"];
+            /**
+             * @description Długość meczu w minutach (10–600), razem z przerwą po nim.
+             *     Zmiana nie przesuwa terminów meczów: zmienia tylko to, co liczy się
+             *     jako kolizja.
+             */
+            matchDuration?: number;
             /**
              * @description Branding jest zagnieżdżony tak samo jak w odczycie
              *     (`Tournament.branding`), żeby formularz panelu nie musiał go
@@ -3346,6 +3542,42 @@ export interface components {
              * @enum {string|null}
              */
             advancesToSlot: "home" | "away" | null;
+        };
+        /**
+         * @description Rodzaj kolizji terminu. `team` to „Kolizja drużyny” (wspólna drużyna),
+         *     `venue` to „Kolizja boiska” (ten sam obiekt).
+         * @enum {string}
+         */
+        MatchCollisionType: "team" | "venue";
+        /**
+         * @description Kolizja tego meczu z innym meczem **tego samego turnieju**, także
+         *     z innej fazy. Dwa mecze kolidują, gdy ich okna
+         *     `[kickoffAt, kickoffAt + Tournament.matchDuration)` się nakładają;
+         *     stykające się okna (koniec o 12:00, start o 12:00) nie kolidują.
+         *     Kolizja nigdy nie blokuje zapisu, nie ma jej w bazie: liczy się ją przy
+         *     odczycie.
+         */
+        MatchCollision: {
+            type: components["schemas"]["MatchCollisionType"];
+            /**
+             * Format: int64
+             * @description Mecz po drugiej stronie kolizji. Kolizja jest symetryczna: jeśli
+             *     ten mecz ma tu tamten, to tamten ma tu ten.
+             */
+            matchId: number;
+        };
+        /**
+         * @description Mecz widziany przez panel: kształt `Match` plus kolizje policzone przy
+         *     odczycie. Kolizja to narzędzie organizatora, więc strona publiczna
+         *     oddaje dalej samo `Match`, bez tego pola.
+         */
+        AdminMatch: components["schemas"]["Match"] & {
+            /**
+             * @description Kolizje tego meczu z innymi meczami turnieju. Mecz bez
+             *     `kickoffAt` nie ma kolizji, a mecz bez obiektu nie ma kolizji
+             *     `venue`. Liczą się też mecze `finished`.
+             */
+            collisions: components["schemas"]["MatchCollision"][];
         };
         StandingRow: {
             /**
