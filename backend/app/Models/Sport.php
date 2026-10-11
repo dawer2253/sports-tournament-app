@@ -16,6 +16,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['code', 'name', 'config'])]
 class Sport extends Model
 {
+    /**
+     * Nagłówek kolumny zdobyczy w tabeli (`StandingTable.scoreLabel`). Etykietę
+     * niesie odpowiedź tabeli, a wyprowadza ją serwer ze sportu (ADR-0006).
+     * Stała w kodzie, a nie pole `config`, bo `config` jest przepisany
+     * z przykładu `GET /sports` w kontrakcie, a tam tej etykiety nie ma.
+     */
+    private const SCORE_LABELS = [
+        'football' => 'Bramki',
+        'basketball' => 'Punkty',
+    ];
+
     protected function casts(): array
     {
         return ['config' => 'array'];
@@ -56,5 +67,10 @@ class Sport extends Model
     public function allowsDraw(): bool
     {
         return $this->config['allowsDraw'];
+    }
+
+    public function scoreLabel(): string
+    {
+        return self::SCORE_LABELS[$this->code];
     }
 }

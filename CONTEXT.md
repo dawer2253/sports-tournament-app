@@ -240,9 +240,18 @@ w interfejsie tego turnieju.
 Reguła ustalająca kolejność drużyn, które mają tyle samo punktów. Turniej ma
 uporządkowaną listę takich kryteriów, stosowanych po kolei aż do rozstrzygnięcia.
 
-`head_to_head` (bezpośredni mecz) jest szczególnym kryterium: porównuje wyłącznie
-mecze rozegrane między remisującymi drużynami. Jeżeli nie rozstrzyga, stosuje się
-kolejne kryterium z listy, bez ponownego zawężania do meczów między nimi.
+`head_to_head` (bezpośredni mecz) jest szczególnym kryterium (#160):
+
+1. To **mini-tabela** z zakończonych meczów fazy rozegranych między remisującymi
+   drużynami, sortowana po punktach, bilansie i zdobyczach w tych meczach.
+   Pozostaje jednym kryterium.
+2. Drużyny, których mini-tabela nie rozdzieliła, idą do **następnego** kryterium
+   z listy, bez ponownego zawężania do meczów między nimi.
+3. Jest pomijane, dopóki w fazie istnieje niezakończony mecz między remisującymi.
+
+4. Po liście turnieju zawsze rozstrzyga ukryte ostatnie kryterium: **nazwa
+   drużyny**, alfabetycznie po polsku, bez rozróżniania wielkości liter. Miejsce
+   w tabeli jest więc zawsze unikalne, a pozycji ex aequo nie ma.
 
 Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
 `score_for`, `score_against`.

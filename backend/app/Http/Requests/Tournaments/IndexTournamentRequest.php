@@ -49,7 +49,7 @@ class IndexTournamentRequest extends FormRequest
             'status' => [
                 'sometimes',
                 'bail',
-                new SingleCommaSeparatedQueryParam($this),
+                new SingleCommaSeparatedQueryParam($this, example: 'draft,active'),
                 'array',
                 $this->statusListRule(),
             ],

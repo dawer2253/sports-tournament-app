@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests\Tournaments;
 
+use App\Http\Requests\Tournaments\Concerns\ValidatesTiebreakers;
 use App\Models\Sport;
 use App\Models\Tournament;
 use Closure;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -20,6 +20,8 @@ use Illuminate\Validation\Validator;
  */
 class UpdateTournamentRequest extends TournamentRequest
 {
+    use ValidatesTiebreakers;
+
     /** Kolizja sluga — z walidacji i z wyścigu o unikalny indeks w kontrolerze. */
     public const SLUG_TAKEN_MESSAGE = 'Ten adres ma już inny turniej.';
 
@@ -60,8 +62,7 @@ class UpdateTournamentRequest extends TournamentRequest
                 },
             ],
             'points.loss' => $this->pointRules(),
-            'tiebreakers' => ['sometimes', 'array', 'list', 'min:1'],
-            'tiebreakers.*' => [$this->tiebreakerRule()],
+            ...$this->tiebreakerRules($this->sport()),
         ];
     }
 
@@ -78,37 +79,6 @@ class UpdateTournamentRequest extends TournamentRequest
     }
 
     /**
-     * Jeden element listy: kod z kontraktu, dostępny w sporcie turnieju
-     * i niepowtórzony. Duplikat oznacza tylko drugie i dalsze wystąpienie, żeby
-     * błąd stał przy elemencie, który trzeba usunąć. Backend niczego nie
-     * poprawia, tylko odrzuca.
-     */
-    private function tiebreakerRule(): Closure
-    {
-        $available = $this->sport()->availableTiebreakers();
-
-        return function (string $attribute, mixed $value, Closure $fail) use ($available): void {
-            if (! in_array($value, Tournament::TIEBREAKER_CODES, true)) {
-                $fail('Nieznane kryterium kolejności.');
-
-                return;
-            }
-
-            if (! in_array($value, $available, true)) {
-                $fail('To kryterium nie jest dostępne w sporcie tego turnieju.');
-
-                return;
-            }
-
-            $index = (int) Str::afterLast($attribute, '.');
-
-            if (in_array($value, array_slice($this->input('tiebreakers'), 0, $index), true)) {
-                $fail('To kryterium jest już na liście.');
-            }
-        };
-    }
-
-    /**
      * Reguły, które patrzą na kilka pól naraz albo na stan turnieju. Każda
      * rusza dopiero wtedy, gdy pola, na których stoi, przeszły walidację —
      * inaczej jedna literówka dawałaby dwa komunikaty.
@@ -120,7 +90,7 @@ class UpdateTournamentRequest extends TournamentRequest
         return [
             $this->checkReturnToDraft(...),
             $this->checkPointsOrder(...),
-            $this->checkPointsFirst(...),
+            $this->checkTiebreakersStartWithPoints(...),
         ];
     }
 
@@ -171,18 +141,6 @@ class UpdateTournamentRequest extends TournamentRequest
         }
     }
 
-    /** `points` stoi zawsze na początku listy. */
-    private function checkPointsFirst(Validator $validator): void
-    {
-        if (! $this->has('tiebreakers')
-            || $validator->errors()->hasAny(['tiebreakers', 'tiebreakers.0'])
-            || $this->input('tiebreakers.0') === 'points') {
-            return;
-        }
-
-        $validator->errors()->add('tiebreakers.0', 'Pierwszym kryterium jest zawsze liczba punktów.');
-    }
-
     /**
      * Kolumny do zapisu, wyłącznie z pól, które przyszły. Punktacja jest
      * składana od nowa: kontrakt dopuszcza w niej dodatkowe klucze, a te nie
@@ -221,7 +179,7 @@ class UpdateTournamentRequest extends TournamentRequest
             'points.win' => 'punkty za wygraną',
             'points.draw' => 'punkty za remis',
             'points.loss' => 'punkty za porażkę',
-            'tiebreakers' => 'kolejność kryteriów',
+            ...$this->tiebreakerAttributes(),
         ];
     }
 
@@ -234,7 +192,7 @@ class UpdateTournamentRequest extends TournamentRequest
             'slug.regex' => 'Adres może zawierać tylko małe litery bez polskich znaków, cyfry i pojedyncze myślniki między nimi.',
             'slug.unique' => self::SLUG_TAKEN_MESSAGE,
             'branding.primaryColor.regex' => 'Kolor podaj w formacie #RRGGBB.',
-            'tiebreakers.min' => 'Lista kryteriów musi mieć co najmniej jedną pozycję.',
+            ...$this->tiebreakerMessages(),
         ];
     }
 

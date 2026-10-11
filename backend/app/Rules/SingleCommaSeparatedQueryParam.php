@@ -22,10 +22,14 @@ use Illuminate\Http\Request;
  * tablicowy parametr potrzebuje dokładnie tego samego sprawdzenia.
  *
  * Patrzy na surowy query string, bo w `$_GET` śladu po powtórzeniu już nie ma.
+ *
+ * Komunikat podaje nazwę parametru wprost, a nie przez `:attribute`: chodzi
+ * o to, co trzeba poprawić w adresie, a nie o nazwę pola z `attributes()`.
  */
 readonly class SingleCommaSeparatedQueryParam implements ValidationRule
 {
-    public function __construct(private Request $request) {}
+    /** @param  string  $example  poprawne wartości do komunikatu, np. `draft,active` */
+    public function __construct(private Request $request, private string $example) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
@@ -48,7 +52,7 @@ readonly class SingleCommaSeparatedQueryParam implements ValidationRule
         }
 
         if ($occurrences > 1 || $bracketed) {
-            $fail("Parametr :attribute podaj raz, z wartościami po przecinku, np. {$attribute}=draft,active.");
+            $fail("Parametr {$attribute} podaj raz, z wartościami po przecinku, np. {$attribute}={$this->example}.");
         }
     }
 }

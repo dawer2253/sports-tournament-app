@@ -163,11 +163,17 @@ Algorytm (on-read):
 2. Sortuj wg **uporządkowanej listy tiebreaków** turnieju, np. `["points","head_to_head","score_diff","score_for"]`.
 3. Każdy tiebreak = komparator z rejestru.
 
-**Head-to-head (decyzja #11):**
-- 2 drużyny remisują → porównaj ich bezpośrednie mecze.
-- 3+ drużyn remisuje → policz **mini-tabelę** tylko z meczów między nimi i posortuj wg niej.
-- Jeśli po mini-tabeli nadal remis → **zejdź do następnego kryterium** z listy (brak rekurencji).
+**Head-to-head (decyzja #11, doprecyzowane w #160):**
+1. `head_to_head` to **mini-tabela** z meczów `finished` w fazie, rozegranych między remisującymi drużynami (dwiema albo więcej), sortowana po punktach, bilansie i zdobyczach w tych meczach. Nadal jest to jedno kryterium.
+2. Jeśli mini-tabela rozdziela grupę tylko częściowo, nierozdzielone drużyny idą do **następnego** kryterium z listy turnieju, bez powrotu do `head_to_head` (brak rekurencji).
+3. `head_to_head` jest pomijane, dopóki w fazie istnieje mecz między remisującymi o statusie innym niż `finished` (`scheduled` albo `live`).
 - Future work: pełna rekurencja FIFA/UEFA.
+
+**Ostatnie kryterium (#160):**
+
+4. Po liście turnieju zawsze rozstrzyga ukryta **nazwa drużyny**: alfabetycznie po polsku (`Collator('pl_PL')` z `intl`), bez rozróżniania wielkości liter, a przy tej samej nazwie `team.id`. `position` jest więc zawsze unikalne `1..n`, bez miejsc ex aequo.
+
+Tabela zawiera komplet drużyn fazy, także bez meczów (z zerami); przed pierwszym meczem to wszystkie drużyny alfabetycznie. Mecz `live` się nie liczy. Liczy to `StandingsCalculator` w backendzie, wołany osobno dla każdej tabeli (faza `league` albo grupa).
 
 ---
 
