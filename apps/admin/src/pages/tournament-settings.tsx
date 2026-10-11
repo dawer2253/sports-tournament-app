@@ -651,7 +651,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
               <div className="space-y-2">
                 <Label htmlFor="slug">Adres strony</Label>
                 <div className="flex items-center rounded-lg border border-input focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50">
-                  <span className="px-2.5 text-sm text-muted-foreground select-none">/t/</span>
+                  <span className="shrink-0 px-2.5 text-sm whitespace-nowrap text-muted-foreground select-none">/t/</span>
                   <Input
                     id="slug"
                     maxLength={80}
@@ -663,7 +663,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                         .filter(Boolean)
                         .join(' ')
                     }
-                    className="rounded-l-none border-0 pl-0 focus-visible:ring-0"
+                    className="min-w-0 flex-1 rounded-l-none border-0 pl-0 focus-visible:ring-0"
                     {...register('slug')}
                   />
                 </div>
@@ -711,7 +711,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
             <section className="space-y-4">
               <Heading level="card">Rozgrywki</Heading>
-              <div className="grid w-32 content-start gap-2">
+              <div className="grid w-44 content-start gap-2">
                 <Label htmlFor="match-duration">Długość meczu (min)</Label>
                 <Input
                   id="match-duration"

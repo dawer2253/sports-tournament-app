@@ -156,6 +156,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       submitLabel="Zapisz"
       pending={save.isPending}
       error={formError}
+      contentClassName="sm:max-w-lg"
     >
       <div className="grid gap-4">
         <ScoreInputs

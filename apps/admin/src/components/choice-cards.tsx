@@ -114,9 +114,9 @@ export function ChoiceCards<T extends string | number>({
                 )}
               >
                 {selected && (
-                  <CheckCircle2 className="absolute right-3 top-3 size-5 text-primary" />
+                  <CheckCircle2 className="absolute top-3 right-3 size-5 rounded-full bg-card text-primary" />
                 )}
-                <CardHeader>
+                <CardHeader className={selected ? 'pr-10' : undefined}>
                   {option.icon && (
                     <div
                       aria-hidden="true"
