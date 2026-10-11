@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\SportController;
 use App\Http\Controllers\Api\StageController;
+use App\Http\Controllers\Api\StandingController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\TeamLogoController;
 use App\Http\Controllers\Api\TournamentController;
@@ -38,6 +39,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/tournaments/{tournament}/logo', [TournamentLogoController::class, 'destroy'])
         ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/stages', [StageController::class, 'index'])
+        ->can('manage', 'tournament');
+    Route::get('/tournaments/{tournament}/standings', [StandingController::class, 'index'])
         ->can('manage', 'tournament');
 
     Route::get('/tournaments/{tournament}/teams', [TeamController::class, 'index'])

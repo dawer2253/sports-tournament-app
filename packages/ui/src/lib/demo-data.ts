@@ -1,6 +1,7 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
 import type { PlayerRow } from '../components/data/player-row'
+import type { StandingsTableRow } from '../components/data/standings-table-row'
 import type { TeamRow } from '../components/data/team-row'
 import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
@@ -112,6 +113,37 @@ export const standings: StandingRow[] = [
 // „Punkty"). W kontrakcie to `StandingTable.scoreLabel` — etykieta wisi na
 // tabeli, nie na turnieju (ADR-0006).
 export const standingsScoreLabel = 'Bramki'
+
+// Ta sama tabela w kształcie `StandingsTableRow`, czyli tak, jak oddaje ją
+// kontrakt panelowi (`StandingRow`). Herb jak w `teamRows`.
+export const standingsTableRows: StandingsTableRow[] = standings.map((row) => ({
+  position: row.pos,
+  team: { id: row.team.id, name: row.team.name, logoUrl: row.team.id === 1 ? demoTeamLogoUrl : null },
+  played: row.p,
+  won: row.w,
+  drawn: row.d,
+  lost: row.l,
+  scoreFor: row.gf,
+  scoreAgainst: row.ga,
+  scoreDifference: row.gf - row.ga,
+  points: row.pts,
+}))
+
+// Podgląd innej kolejności kryteriów (#173): pary z równą liczbą punktów
+// (miejsca 2–3 i 4–5) zamieniają się miejscami, reszta stoi.
+export const standingsTablePreviewRows: StandingsTableRow[] = [1, 3, 2, 5, 4, 6, 7, 8].map((position, index) => ({
+  ...standingsTableRows[position - 1]!,
+  position: index + 1,
+}))
+
+// Tabela turnieju koszykarskiego: bez remisów, punktacja 2/1, zdobycze to
+// punkty. Drużyny spoza `teams`, bo turniej demo jest piłkarski.
+export const basketballStandingsTableRows: StandingsTableRow[] = [
+  { position: 1, team: { id: 11, name: 'Żubry Wola', logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 251, scoreAgainst: 212, scoreDifference: 39, points: 6 },
+  { position: 2, team: { id: 12, name: 'Rysie Mokotów', logoUrl: null }, played: 3, won: 2, drawn: 0, lost: 1, scoreFor: 240, scoreAgainst: 226, scoreDifference: 14, points: 5 },
+  { position: 3, team: { id: 13, name: 'Kosze Ochota', logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 219, scoreAgainst: 233, scoreDifference: -14, points: 4 },
+  { position: 4, team: { id: 14, name: 'Orlęta Praga', logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 204, scoreAgainst: 243, scoreDifference: -39, points: 3 },
+]
 
 export type MatchEvent = {
   type: 'goal' | 'yellow' | 'red'
@@ -253,6 +285,13 @@ export type DemoSportSettings = {
   allowsDraw: boolean
   defaultPoints: { win: number; draw: number; loss: number }
   tiebreakers: TiebreakerItem[]
+  /**
+   * `availableTiebreakers` z etykietami, w kolejności sportu: z tego
+   * wybiera edytor przy tabeli (#173).
+   */
+  availableTiebreakers: TiebreakerItem[]
+  /** `StandingTable.scoreLabel` w turnieju tego sportu (ADR-0006). */
+  scoreLabel: string
 }
 
 export const sportSettings: Record<'football' | 'basketball', DemoSportSettings> = {
@@ -266,6 +305,14 @@ export const sportSettings: Record<'football' | 'basketball', DemoSportSettings>
       { code: 'score_diff', label: 'Różnica bramek' },
       { code: 'score_for', label: 'Bramki zdobyte' },
     ],
+    availableTiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica bramek' },
+      { code: 'score_for', label: 'Bramki zdobyte' },
+      { code: 'wins', label: 'Zwycięstwa' },
+    ],
+    scoreLabel: standingsScoreLabel,
   },
   basketball: {
     name: 'Koszykówka',
@@ -276,8 +323,20 @@ export const sportSettings: Record<'football' | 'basketball', DemoSportSettings>
       { code: 'head_to_head', label: 'Bezpośredni mecz' },
       { code: 'score_diff', label: 'Różnica punktów' },
     ],
+    availableTiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica punktów' },
+      { code: 'score_for', label: 'Zdobyte punkty' },
+      { code: 'wins', label: 'Zwycięstwa' },
+    ],
+    scoreLabel: 'Punkty',
   },
 }
+
+// Szkic kolejności w podglądzie (#173): różnica bramek przed meczem
+// bezpośrednim. Według niego ułożone jest `standingsTablePreviewRows`.
+export const standingsTablePreviewDraft = ['points', 'score_diff', 'head_to_head', 'score_for']
 
 export const formColor: Record<FormResult, string> = {
   W: 'bg-primary',

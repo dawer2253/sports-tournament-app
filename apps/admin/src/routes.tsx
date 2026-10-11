@@ -6,6 +6,7 @@ import { TeamsPage } from './pages/teams';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentLayout } from './pages/tournament-layout';
 import { TournamentSettingsPage } from './pages/tournament-settings';
+import { TournamentStandingsPage } from './pages/tournament-standings';
 import { TournamentVenuesPage } from './pages/tournament-venues';
 import { TournamentsPage } from './pages/tournaments';
 
@@ -59,6 +60,7 @@ export const routes: RouteObject[] = [
       { path: 'teams/:teamId', element: <TeamPage /> },
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
+      { path: 'standings', element: <TournamentStandingsPage /> },
     ],
   },
 ];

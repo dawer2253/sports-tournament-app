@@ -1926,8 +1926,18 @@ export interface paths {
         /**
          * Tabele turnieju
          * @description Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
-         *     z zakończonych meczów. Jedna pozycja na fazę `league` i jedna na każdą
-         *     grupę w fazie `group`. Faza `knockout` nie ma tabeli.
+         *     z zakończonych meczów. Mecz trwający (`live`) się nie liczy. Jedna
+         *     pozycja na fazę `league` i jedna na każdą grupę w fazie `group`. Faza
+         *     `knockout` nie ma tabeli.
+         *
+         *     Tabela zawiera komplet drużyn fazy, także tych, które nie rozegrały
+         *     jeszcze meczu: dostają wiersz z zerami. Przed pierwszym meczem i w fazie
+         *     bez terminarza są to wszystkie drużyny fazy alfabetycznie, a nie pusta
+         *     lista. Drużyny usunięte nie mają wiersza.
+         *
+         *     Kolejność ustala lista `Tournament.tiebreakers` (znaczenie kryteriów:
+         *     `TiebreakerCode`), a po niej ukryte ostatnie kryterium: nazwa drużyny,
+         *     alfabetycznie po polsku, bez rozróżniania wielkości liter.
          *
          *     Przykłady są dwa, po jednym na sport, te same co w
          *     `/public/t/{slug}/standings`: `pilka` (domyślny, zgodny z seedem demo)
@@ -1935,11 +1945,32 @@ export interface paths {
          *     `Prefer: example=koszykowka`. Drugi przykład jest tu po to, żeby dało
          *     się sprawdzić, czy panel bierze nagłówek kolumny z odpowiedzi, a nie ze
          *     sztywnego napisu. `/tournaments/{tournament}` nie ma jeszcze wariantu
-         *     koszykarskiego, więc w panelu przełącznik zmienia tylko tabele.
+         *     koszykarskiego, więc w panelu przełącznik zmienia tylko tabele. Mock
+         *     nie liczy tabel, więc parametr `tiebreakers` niczego w nim nie zmienia.
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /**
+                     * @description Podgląd: liczy tabele według podanej listy kryteriów zamiast
+                     *     zapisanej w turnieju i **niczego nie zapisuje**. Panel pokazuje
+                     *     dzięki temu skutek nowej kolejności przed zapisem. Bez parametru
+                     *     odpowiedź liczy się według `Tournament.tiebreakers`.
+                     *
+                     *     Lista podlega tym samym regułom co `tiebreakers` w
+                     *     `PATCH /tournaments/{tournament}` (`TournamentUpdate`) i daje te
+                     *     same błędy `422` pod tymi samymi kluczami: `tiebreakers.N` przy
+                     *     elemencie, `tiebreakers.0` przy braku `points` na początku,
+                     *     `tiebreakers` przy pustej wartości. Powtórzony klucz i notacja
+                     *     nawiasowa (`tiebreakers[]=`) dają `422` pod `tiebreakers` (ADR-0009).
+                     * @example [
+                     *       "points",
+                     *       "score_diff",
+                     *       "head_to_head"
+                     *     ]
+                     */
+                    tiebreakers?: components["schemas"]["TiebreakerCode"][];
+                };
                 header?: never;
                 path: {
                     tournament: components["parameters"]["TournamentId"];
@@ -1962,6 +1993,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                422: components["responses"]["ValidationError"];
             };
         };
         put?: never;
@@ -2905,9 +2937,15 @@ export interface components {
         };
         /**
          * @description Kryterium rozstrzygające o kolejności w tabeli. `points` jest zawsze
-         *     pierwsze na liście turnieju. `head_to_head` porównuje wyłącznie mecze
-         *     między remisującymi drużynami i nie zagłębia się rekurencyjnie: gdy nie
-         *     rozstrzyga, stosowane jest następne kryterium z listy.
+         *     pierwsze na liście turnieju. `score_against` stawia wyżej drużynę,
+         *     która straciła mniej, pozostałe kryteria drużynę z wyższą wartością.
+         *
+         *     `head_to_head` to mini-tabela z zakończonych meczów między remisującymi
+         *     drużynami, sortowana po punktach, bilansie i zdobyczach w tych meczach.
+         *     Nie zagłębia się rekurencyjnie: drużyny, których mini-tabela nie
+         *     rozdzieliła, idą do następnego kryterium z listy, bez powrotu do
+         *     `head_to_head`. Kryterium jest pomijane, dopóki w fazie istnieje
+         *     niezakończony mecz między remisującymi.
          * @enum {string}
          */
         TiebreakerCode: "points" | "head_to_head" | "score_diff" | "score_for" | "score_against" | "wins";
@@ -3179,6 +3217,13 @@ export interface components {
             advancesToSlot: "home" | "away" | null;
         };
         StandingRow: {
+            /**
+             * @description Miejsce w tabeli, unikalne: wiersze jednej tabeli mają kolejno
+             *     `1..n`, bez miejsc ex aequo. Ostatnim kryterium, po liście
+             *     `Tournament.tiebreakers`, jest nazwa drużyny (alfabetycznie po
+             *     polsku, bez rozróżniania wielkości liter), więc pełny remis też
+             *     daje różne miejsca.
+             */
             position: number;
             team: components["schemas"]["TeamSummary"];
             played: number;

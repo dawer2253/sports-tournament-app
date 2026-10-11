@@ -13,7 +13,7 @@ Ekran, na którym organizer publikuje turniej, ustawia jego publiczną tożsamo�
 ## Cel
 Pozwolić organizatorowi opublikować i zakończyć turniej, ustawić nazwę, adres
 `/t/{slug}`, kolor wiodący i logo strony publicznej oraz punktację za mecz.
-Kolejność tiebreaków jest na razie tylko do odczytu.
+Kolejność tiebreaków jest tu tylko do odczytu; zmienia się ją przy tabeli.
 
 ## Dane (wejście)
 - `tournament.status`: stan turnieju (`draft`, `active`, `finished`).
@@ -52,8 +52,8 @@ Na dole „Strefa zagrożenia” z „Usuń turniej” ([#103](https://github.co
   ekran pokazuje **domyślne logo** (puchar na kolorze z formularza), które istnieje
   tylko w UI: w API zostaje `logoUrl: null`.
 - **Punktacja**: w sporcie bez remisów nie ma pola „Remis”, a wysyłane jest `draw: 0`.
-- **Tiebreaki** są do odczytu, z etykietami z konfiguracji sportu. Zmiana
-  kolejności przyjdzie później.
+- **Tiebreaki** są do odczytu, z etykietami z konfiguracji sportu. Odnośnik
+  „Zmień przy tabeli” prowadzi do edytora z podglądem na ekranie Tabela (#173).
 
 ## Stany
 - **Domyślny**: turniej opublikowany, bez logo (powyżej).

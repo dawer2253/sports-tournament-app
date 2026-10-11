@@ -34,7 +34,7 @@ import {
 import { AlertTriangle, Trash2, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
@@ -749,9 +749,16 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                 </p>
               )}
               <div role="group" aria-labelledby="tiebreakers-label" className="space-y-2">
-                <p id="tiebreakers-label" className="text-sm font-medium">
-                  Kolejność rozstrzygania remisów w tabeli
-                </p>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p id="tiebreakers-label" className="text-sm font-medium">
+                    Kolejność rozstrzygania remisów w tabeli
+                  </p>
+                  {/* Tu tylko do odczytu: kolejność zmienia się przy tabeli,
+                      z podglądem skutku przed zapisem (#173). */}
+                  <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                    <Link to={`/tournaments/${tournament.id}/standings`}>Zmień przy tabeli</Link>
+                  </Button>
+                </div>
                 <TiebreakerList
                   items={tournament.tiebreakers.map((code) => ({
                     code,

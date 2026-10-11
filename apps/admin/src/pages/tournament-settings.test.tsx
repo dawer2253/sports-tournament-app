@@ -176,6 +176,16 @@ describe('ustawienia turnieju: formularz', () => {
     ]);
   });
 
+  it('tiebreaki są tu tylko do odczytu, z odnośnikiem do edycji przy tabeli', async () => {
+    tournamentApi(FOOTBALL);
+    await renderSettings();
+
+    const group = within(screen.getByRole('group', { name: /rozstrzygania remisów/ }));
+    expect(group.getByRole('link', { name: 'Zmień przy tabeli' })).toHaveAttribute('href', '/tournaments/7/standings');
+    expect(group.queryByRole('button')).not.toBeInTheDocument();
+    expect(group.queryByText(/kolejnej wersji/)).not.toBeInTheDocument();
+  });
+
   it('zmiana samej nazwy wysyła { name }, odświeża nagłówek i resetuje formularz', async () => {
     const bodies = tournamentApi(FOOTBALL);
     const { user } = await renderSettings();

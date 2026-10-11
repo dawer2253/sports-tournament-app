@@ -1,6 +1,12 @@
 /** Mecze `scheduled` w oknach usuwania drużyny i obiektu (#171). */
 export const SCHEDULED_MATCHES = ['zaplanowany mecz', 'zaplanowane mecze', 'zaplanowanych meczów'] as const;
 
+/** Liczba drużyn w nagłówku tabeli (#173). */
+export const TEAMS = ['drużyna', 'drużyny', 'drużyn'] as const;
+
+/** Podgląd kolejności przy tabeli: „2 drużyny zmieniają miejsce” (#173). */
+export const TEAMS_CHANGING_PLACE = ['drużyna zmienia', 'drużyny zmieniają', 'drużyn zmienia'] as const;
+
 /**
  * Polska odmiana rzeczownika po liczebniku: `[1, 2–4, 5+]`, np.
  * `SCHEDULED_MATCHES`. Druga forma obejmuje liczby kończące się na 2–4 poza
