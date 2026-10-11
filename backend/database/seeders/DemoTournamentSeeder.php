@@ -14,9 +14,10 @@ use App\Models\Venue;
 use Illuminate\Database\Seeder;
 
 /**
- * Turniej demo: „Liga Osiedlowa 2026" pod `/t/liga-osiedlowa-2026`.
+ * Turniej demo: „Liga Osiedlowa 2026" pod `/t/liga-osiedlowa-2026`, a obok
+ * niego, od #176, „Liga Koszykówki 2026" pod `/t/liga-koszykowki-2026`.
  *
- * To ten sam turniej, który serwuje mock kontraktu — dane są przepisane
+ * To te same turnieje, które serwuje mock kontraktu — dane są przepisane
  * z przykładów w `packages/api-contract/openapi.yaml`, żeby `apps/public`
  * pokazywało to samo niezależnie od tego, w co celuje (decyzja z ticketu #9).
  *
@@ -96,6 +97,24 @@ class DemoTournamentSeeder extends Seeder
         ['Boisko Bemowo', 'ul. Powstańców Śląskich 1, Warszawa'],
         ['Hala Ursus', 'ul. Sosnkowskiego 3, Warszawa'],
     ];
+
+    /**
+     * Liga koszykówki demo — drugi turniej tego samego organizera. Drużyny
+     * i wyniki są przepisane z przykładu `koszykowka` listy meczów i tabeli
+     * panelu: dwa mecze Żubry Wola – Rysie Mokotów, razem 168:141. Jest po to,
+     * żeby dało się pokazać regułę „bez remisów” z okna meczu (#159) na
+     * danych z seeda, a nie z fabryki.
+     *
+     * Rozegrane mecze: [kolejka, gospodarz, gość, punkty gospodarza, punkty
+     * gościa, termin (UTC)], jak `RESULTS` przy piłce.
+     */
+    private const BASKETBALL_RESULTS = [
+        [1, 'Żubry Wola', 'Rysie Mokotów', 90, 70, '2026-09-06 16:00:00'],
+        [2, 'Rysie Mokotów', 'Żubry Wola', 71, 78, '2026-09-13 16:00:00'],
+    ];
+
+    /** Drużyny ligi koszykówki, w kolejności z przykładu (id 4 i 5 w mocku). */
+    private const BASKETBALL_TEAMS = ['Żubry Wola', 'Rysie Mokotów'];
 
     /**
      * Składy: drużyna => [nazwisko, numer, pozycja]. Kolejność ma znaczenie —
@@ -218,6 +237,62 @@ class DemoTournamentSeeder extends Seeder
                 'type' => $type,
                 'minute' => $minute,
             ]);
+        }
+
+        $this->seedBasketball($organizer);
+    }
+
+    /**
+     * Drugi turniej demo: liga koszykówki tego samego organizera. Poddrzewo
+     * powstaje od zera przy każdym seedowaniu, jak przy piłce, więc powtórne
+     * `db:seed` odświeża dane zamiast dublować turniej.
+     */
+    private function seedBasketball(User $organizer): void
+    {
+        $basketball = Sport::firstWhere('code', 'basketball');
+
+        $tournament = Tournament::updateOrCreate(
+            ['slug' => 'liga-koszykowki-2026'],
+            [
+                'user_id' => $organizer->id,
+                'sport_id' => $basketball->id,
+                'name' => 'Liga Koszykówki 2026',
+                'logo_path' => null,
+                'primary_color' => '#1F7A45',
+                'points' => $basketball->defaultPoints(),
+                'tiebreakers' => $basketball->defaultTiebreakers(),
+                'match_duration' => $basketball->defaultMatchDuration(),
+                'status' => 'active',
+            ],
+        );
+
+        $tournament->stages()->delete();
+
+        $stage = $tournament->stages()->create([
+            'type' => 'league',
+            'name' => 'Faza zasadnicza',
+            'order' => 1,
+        ]);
+
+        $venue = Venue::updateOrCreate(
+            ['tournament_id' => $tournament->id, 'name' => 'Hala Bemowo'],
+            ['address' => 'ul. Powstańców Śląskich 1, Warszawa'],
+        );
+
+        $teams = [];
+
+        foreach (self::BASKETBALL_TEAMS as $teamName) {
+            $teams[$teamName] = Team::updateOrCreate(
+                ['tournament_id' => $tournament->id, 'name' => $teamName],
+                ['group_id' => null, 'logo_path' => null],
+            );
+        }
+
+        foreach (self::BASKETBALL_RESULTS as [$roundNumber, $home, $away, $homeScore, $awayScore, $kickoff]) {
+            $this->createMatch(
+                $stage, $roundNumber, $teams[$home], $teams[$away], $kickoff, $venue,
+                homeScore: $homeScore, awayScore: $awayScore,
+            );
         }
     }
 
