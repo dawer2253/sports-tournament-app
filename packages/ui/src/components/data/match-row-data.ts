@@ -13,7 +13,7 @@ export type MatchRowData = {
   awayTeam: { id: number; name: string } | null
   homeScore: number | null
   awayScore: number | null
-  status: 'scheduled' | 'live' | 'finished'
+  status: MatchStatus
   /** ISO 8601 z offsetem; `null` to „Termin do ustalenia”. */
   kickoffAt: string | null
   venue: { id: number; name: string } | null
@@ -22,6 +22,20 @@ export type MatchRowData = {
    * przy odczycie (#158). Brak pola i pusta lista znaczą to samo: brak kolizji.
    */
   collisions?: MatchCollision[]
+}
+
+/** Stany meczu z kontraktu (`MatchStatus`). */
+export type MatchStatus = 'scheduled' | 'live' | 'finished'
+
+/**
+ * Nazwy stanów meczu. Jedno źródło dla plakietki w wierszu terminarza
+ * (`MatchRow`) i przełącznika w oknie meczu (`MatchStatusToggle`), żeby oba
+ * mówiły o stanie tak samo (#159).
+ */
+export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
+  scheduled: 'Zaplanowany',
+  live: 'Trwa',
+  finished: 'Zakończony',
 }
 
 /** Rodzaj kolizji terminu: wspólna drużyna (`team`) albo ten sam obiekt (`venue`). */

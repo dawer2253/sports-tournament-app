@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
-import type { MatchCollision, MatchCollisionType, MatchRowData } from './match-row-data'
+import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
 
 /**
  * Jedna siatka dla wszystkich wierszy, żeby kolumny stały równo w całej
@@ -24,13 +24,13 @@ const STATUS_BADGE: Record<
   MatchRowData['status'],
   { label: string; variant: 'secondary' | 'destructive' | 'outline'; icon?: ReactNode }
 > = {
-  scheduled: { label: 'Zaplanowany', variant: 'secondary' },
+  scheduled: { label: MATCH_STATUS_LABELS.scheduled, variant: 'secondary' },
   live: {
-    label: 'Trwa',
+    label: MATCH_STATUS_LABELS.live,
     variant: 'destructive',
     icon: <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-destructive" />,
   },
-  finished: { label: 'Zakończony', variant: 'outline', icon: <Check /> },
+  finished: { label: MATCH_STATUS_LABELS.finished, variant: 'outline', icon: <Check /> },
 }
 
 /** Stan meczu jako plakietka, z tymi samymi nazwami co okno meczu (#159). */
@@ -102,24 +102,26 @@ export interface MatchRowProps {
   showDate?: boolean
   /** Strefa terminu; bez niej strefa przeglądarki (ADR-0008). */
   timeZone?: string
+  /**
+   * Gdy podane, wiersz jest przyciskiem otwierającym okno meczu (#176).
+   * Bez tego zostaje grupą tylko do odczytu (makieta terminarza).
+   */
+  onSelect?: () => void
   className?: string
 }
 
 /**
  * Wiersz meczu w terminarzu panelu: termin i obiekt | gospodarz | wynik |
- * gość | stan. Tylko do odczytu — okno meczu dochodzi w #176.
+ * gość | stan. Z `onSelect` cały wiersz otwiera okno meczu (#176); makieta
+ * terminarza zostawia go tylko do odczytu.
  */
-export function MatchRow({ match, showDate = true, timeZone, className }: MatchRowProps) {
+export function MatchRow({ match, showDate = true, timeZone, onSelect, className }: MatchRowProps) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
+  const label = `${home} – ${away}`
 
-  return (
-    <div
-      data-slot="match-row"
-      role="group"
-      aria-label={`${home} – ${away}`}
-      className={cn(ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm', className)}
-    >
+  const content = (
+    <>
       <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground sm:col-span-1 sm:block">
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (
@@ -144,6 +146,32 @@ export function MatchRow({ match, showDate = true, timeZone, className }: MatchR
           <MatchStatusBadge status={match.status} />
         </span>
       </span>
+    </>
+  )
+
+  const grid = cn(ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm', className)
+
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        data-slot="match-row"
+        aria-label={label}
+        onClick={onSelect}
+        className={cn(
+          grid,
+          'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+        )}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <div data-slot="match-row" role="group" aria-label={label} className={grid}>
+      {content}
     </div>
   )
 }

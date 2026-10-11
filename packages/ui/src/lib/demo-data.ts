@@ -422,6 +422,9 @@ const scheduleVenues = [
   { id: 2, name: 'Boisko B' },
 ]
 
+/** Obiekty makiet terminarza i okna meczu, eksportowane dla ekranów demo. */
+export { scheduleVenues }
+
 /** Cały sezon bez dat i obiektów, tak jak oddaje go generator (#157). */
 export const scheduleUndated: ScheduleDemoMatch[] = bergerPairs(teams.length).flatMap((pairs, index) =>
   pairs.map(([home, away], position) => ({
