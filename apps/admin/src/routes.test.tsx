@@ -151,7 +151,9 @@ describe('trasy turnieju', () => {
       'Drużyny',
       'Obiekty',
       'Ustawienia',
+      'Tabela',
     ]);
+    expect(sectionTabs().getByRole('link', { name: 'Tabela' })).toHaveAttribute('href', '/tournaments/7/standings');
   });
 
   it('przejście między sekcjami nie pyta API o turniej drugi raz', async () => {

@@ -1,5 +1,5 @@
-import type { Player, Team, Tournament, Venue } from '@tournament/api-client';
-import type { PlayerRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { Player, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
+import type { PlayerRow, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -15,7 +15,7 @@ import type { PlayerRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni wiersz
  * w `packages/ui/src/components/data/` (`tournament-row.ts`, `team-row.ts`,
- * `player-row.ts`, `venue-row.ts`).
+ * `player-row.ts`, `venue-row.ts`, `standings-table-row.ts`).
  */
 
 /**
@@ -44,3 +44,8 @@ export const contractFitsPlayerRow: ContractFitsPlayerRow = true;
 type ContractFitsVenueRow = Venue extends VenueRow ? true : never;
 
 export const contractFitsVenueRow: ContractFitsVenueRow = true;
+
+/** Wiersz tabeli z kontraktu daje się pokazać w `StandingsTable`. */
+type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;
+
+export const contractFitsStandingsRow: ContractFitsStandingsRow = true;

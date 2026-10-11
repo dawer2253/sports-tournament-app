@@ -70,11 +70,14 @@ export function TiebreakerEditor({
   const [pinned, ...rest] = value
   const unused = available.filter((item) => !value.includes(item.code))
   const unusedId = React.useId()
+  const titleId = React.useId()
 
   return (
-    <Card data-slot="tiebreaker-editor">
+    // Region z nazwą z tytułu: `CardTitle` to nie nagłówek, a czytnik ekranu
+    // ma móc przeskoczyć do karty obok tabeli.
+    <Card data-slot="tiebreaker-editor" role="region" aria-labelledby={titleId}>
       <CardHeader>
-        <CardTitle>Rozstrzyganie remisów</CardTitle>
+        <CardTitle id={titleId}>Rozstrzyganie remisów</CardTitle>
         <CardDescription>Kolejność kryteriów przy równej liczbie punktów. Tabela obok pokazuje skutek przed zapisem.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
