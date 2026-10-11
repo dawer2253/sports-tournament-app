@@ -19,7 +19,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Do odczytu: numeracja od 1, bez uchwytu, z dopiskiem o zmianie kolejności (S2). */
+/**
+ * Do odczytu: numeracja od 1, bez uchwytu. Zapowiedź edycji zniknęła, bo
+ * edycja stoi przy tabeli (#173), a odnośnik do niej dokłada ekran.
+ */
 export const Domyslna: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
@@ -28,6 +31,6 @@ export const Domyslna: Story = {
     await expect(items[0]).toHaveTextContent('1Punkty w tabeli')
     await expect(items[3]).toHaveTextContent('4Bramki zdobyte')
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
-    await expect(canvas.getByText(/kolejności/)).toBeInTheDocument()
+    await expect(canvas.queryByText(/kolejnej wersji/)).not.toBeInTheDocument()
   },
 }

@@ -162,7 +162,13 @@ export function AdminSettings({
                   </Button>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Kolejność rozstrzygania remisów w tabeli</p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-sm font-medium">Kolejność rozstrzygania remisów w tabeli</p>
+                    {/* Kolejność zmienia się przy tabeli (#173), z podglądem skutku. */}
+                    <Button variant="link" size="sm" className="h-auto p-0" asChild>
+                      <a href="#tabela">Zmień przy tabeli</a>
+                    </Button>
+                  </div>
                   <TiebreakerList items={config.tiebreakers} />
                 </div>
               </section>

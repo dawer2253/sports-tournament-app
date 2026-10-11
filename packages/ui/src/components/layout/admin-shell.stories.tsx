@@ -29,7 +29,7 @@ const wTurnieju = {
   subtitle: `${turniej.sport.name} · /t/${turniej.slug}`,
 }
 
-const SEKCJE = ['Drużyny', 'Obiekty', 'Ustawienia', 'Terminarz', 'Drabinka', 'Statystyki']
+const SEKCJE = ['Drużyny', 'Obiekty', 'Ustawienia', 'Terminarz', 'Tabela', 'Drabinka', 'Statystyki']
 
 /**
  * Poza turniejem sidebar ma tylko „Turnieje": bez karty turnieju i bez kart
@@ -125,7 +125,7 @@ export const NawigacjaCzesciowa: Story = {
     // Z klawiatury: Tab z ostatniej czynnej karty omija nieczynne.
     karty.getByRole('link', { name: 'Ustawienia' }).focus()
     await userEvent.tab()
-    for (const sekcja of ['Terminarz', 'Drabinka', 'Statystyki']) {
+    for (const sekcja of ['Terminarz', 'Tabela', 'Drabinka', 'Statystyki']) {
       await expect(karty.getByText(sekcja).closest('a')).not.toHaveFocus()
     }
 

@@ -54,6 +54,16 @@ export interface DataTableProps<Row extends RowData> {
   }
   /** Akcja w stanie pustym. Bez niej zostaje sam komunikat. */
   onCreate?: () => void
+  /**
+   * Akcja stanu pustego podana wprost, np. odnośnik do innej sekcji, kiedy
+   * pustej listy nie wypełnia się w tym samym miejscu. Zastępuje przycisk
+   * `onCreate`.
+   */
+  emptyAction?: React.ReactNode
+  /** Klasy nagłówka tabeli, np. tło odcinające go od wierszy. */
+  headerClassName?: string
+  /** Klasy wiersza danych, np. podświetlenie albo granica grupy wierszy. */
+  rowClassName?: (row: Row, index: number) => string | undefined
   /** Nazwa dostępna szkieletu, np. „Wczytywanie obiektów”. */
   loadingLabel: string
   /** Klasy paska szkieletu, np. wyższy `h-7`, gdy wiersze są wyższe od tekstu. */
@@ -80,6 +90,9 @@ export function DataTable<Row extends RowData>({
   onRetry,
   empty,
   onCreate,
+  emptyAction,
+  headerClassName,
+  rowClassName,
   loadingLabel,
   skeletonClassName,
   footer,
@@ -110,7 +123,7 @@ export function DataTable<Row extends RowData>({
         icon={empty.icon}
         title={empty.title}
         description={empty.description}
-        action={onCreate && <Button onClick={onCreate}>{empty.createLabel}</Button>}
+        action={emptyAction ?? (onCreate && <Button onClick={onCreate}>{empty.createLabel}</Button>)}
       />
     )
   }
@@ -118,7 +131,7 @@ export function DataTable<Row extends RowData>({
   return (
     <>
       <Table>
-        <TableHeader>
+        <TableHeader className={headerClassName}>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -145,7 +158,7 @@ export function DataTable<Row extends RowData>({
                 </TableRow>
               ))
             : table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row.id} className={rowClassName?.(row.original, row.index)}>
                   {row.getAllCells().map((cell) => (
                     <TableCell key={cell.id} className={cell.column.columnDef.meta?.className}>
                       <table.FlexRender cell={cell} />
