@@ -30,7 +30,7 @@ import {
 const demoMatch = scheduleInProgress.find((match) => (match.collisions?.length ?? 0) > 0) ?? scheduleInProgress[0]!
 
 /** Numer meczu w kolejce — makieta terminarza trzyma go w `id` (patrz `scheduleUndated`). */
-function matchNumber(match: ScheduleDemoMatch): number {
+function demoMatchNumber(match: ScheduleDemoMatch): number {
   return ((match.id - 1) % 10) + 1
 }
 
@@ -73,9 +73,9 @@ function MatchDialog({
     if (next === 'scheduled') {
       setHomeScore('')
       setAwayScore('')
-    } else if (next === 'live' && homeScore === '' && awayScore === '') {
-      setHomeScore('0')
-      setAwayScore('0')
+    } else if (next === 'live') {
+      setHomeScore((value) => (value === '' ? '0' : value))
+      setAwayScore((value) => (value === '' ? '0' : value))
     }
   }
 
@@ -85,7 +85,7 @@ function MatchDialog({
       onOpenChange={() => {}}
       onSubmit={(event) => event.preventDefault()}
       title={`${home} – ${away}`}
-      description={`${match.round.name} · mecz ${matchNumber(match)}`}
+      description={`${match.round.name} · mecz ${demoMatchNumber(match)}`}
       submitLabel="Zapisz"
     >
       <div className="grid gap-4">
@@ -158,7 +158,15 @@ function CollisionList({
       <ul className="space-y-1">
         {collisions.map((collision, index) => {
           const other = scheduleInProgress.find((candidate) => candidate.id === collision.matchId)
-          if (!other) return null
+          const type = collisionLabel(collision.type)
+          if (!other) {
+            return (
+              <li key={`${collision.type}-${index}`} className="flex items-center gap-2 px-2 text-sm">
+                <TriangleAlert aria-hidden className="size-4 shrink-0 text-destructive" />
+                <span>{type} z meczem innej fazy</span>
+              </li>
+            )
+          }
           const description = `${other.homeTeam?.name ?? 'Do ustalenia'} – ${other.awayTeam?.name ?? 'Do ustalenia'} (${other.round.name}, ${formatKickoff(other.kickoffAt, { timeZone: scheduleTimeZone })})`
           return (
             <li key={`${collision.type}-${index}`}>
@@ -169,7 +177,7 @@ function CollisionList({
               >
                 <TriangleAlert aria-hidden className="size-4 shrink-0 text-destructive" />
                 <span className="min-w-0">
-                  {collisionLabel(collision.type)}: {description}
+                  {type}: {description}
                 </span>
               </button>
             </li>

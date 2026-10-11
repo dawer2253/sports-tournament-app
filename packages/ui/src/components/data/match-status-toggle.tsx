@@ -8,8 +8,6 @@ const STATUS_ORDER: MatchStatus[] = ['scheduled', 'live', 'finished']
 export interface MatchStatusToggleProps {
   value: MatchStatus
   onChange: (status: MatchStatus) => void
-  /** Nazwa grupy radio; bez niej każdy egzemplarz dostaje własną z `useId`. */
-  name?: string
   disabled?: boolean
   /** Nazwa grupy dla czytnika ekranu, np. „Stan meczu”. */
   'aria-label'?: string
@@ -29,12 +27,11 @@ export interface MatchStatusToggleProps {
 export function MatchStatusToggle({
   value,
   onChange,
-  name,
   disabled,
   'aria-label': ariaLabel = 'Stan meczu',
   className,
 }: MatchStatusToggleProps) {
-  const fallbackName = useId()
+  const name = useId()
 
   return (
     <div
@@ -57,7 +54,7 @@ export function MatchStatusToggle({
             <input
               type="radio"
               className="sr-only"
-              name={name ?? fallbackName}
+              name={name}
               value={status}
               checked={selected}
               disabled={disabled}
