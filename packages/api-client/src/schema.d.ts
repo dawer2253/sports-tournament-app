@@ -614,7 +614,14 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Szczegóły turnieju */
+        /**
+         * Szczegóły turnieju
+         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+         *     Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
+         *     ten sam przełącznik obsługuje listę meczów i tabelę, więc w panelu
+         *     przestawia naraz turniej, terminarz i tabelę. Turniej koszykarski to
+         *     ten z seedu demo (`liga-koszykowki-2026`).
+         */
         get: {
             parameters: {
                 query?: never;
@@ -632,40 +639,6 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": {
-                         *         "id": 1,
-                         *         "name": "Liga Osiedlowa 2026",
-                         *         "slug": "liga-osiedlowa-2026",
-                         *         "status": "active",
-                         *         "sport": {
-                         *           "id": 1,
-                         *           "code": "football",
-                         *           "name": "Piłka nożna"
-                         *         },
-                         *         "branding": {
-                         *           "logoUrl": null,
-                         *           "primaryColor": "#1F7A45"
-                         *         },
-                         *         "points": {
-                         *           "win": 3,
-                         *           "draw": 1,
-                         *           "loss": 0
-                         *         },
-                         *         "tiebreakers": [
-                         *           "points",
-                         *           "head_to_head",
-                         *           "score_diff",
-                         *           "score_for"
-                         *         ],
-                         *         "matchDuration": 60,
-                         *         "teamsCount": 3,
-                         *         "createdAt": "2026-09-01T08:00:00+00:00",
-                         *         "updatedAt": "2026-09-14T16:30:00+00:00"
-                         *       }
-                         *     }
-                         */
                         "application/json": {
                             data: components["schemas"]["Tournament"];
                         };
@@ -2156,8 +2129,11 @@ export interface paths {
          *     odpowiedź przez `stageId`, bo faza pucharowa nawet przy szesnastu
          *     drużynach mieści się w jednej stronie.
          *
-         *     Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
-         *     wysłaniu nagłówka `Prefer: example=puchar`.
+         *     Przykłady są trzy: `liga` (domyślny), `puchar` i `koszykowka`. Mock
+         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=puchar`, a trzeci po
+         *     `Prefer: example=koszykowka`. Koszykarski jest zgodny z przykładem
+         *     `koszykowka` tabeli i turnieju, więc jeden przełącznik przestawia
+         *     w panelu turniej, terminarz i tabelę naraz.
          */
         get: {
             parameters: {
@@ -2220,6 +2196,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/matches/{match}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Wpisz wynik, zmień stan, termin albo obiekt meczu
+         * @description Częściowa zmiana meczu: wynik i stan (reguły z #159), a także korekta
+         *     terminu i obiektu (#158). Pole nieobecne zostaje bez zmian. Reguły
+         *     spójności, klucz `homeScore` oraz to, że termin i obiekt wolno zmieniać
+         *     przy każdym stanie, opisuje `MatchUpdate`.
+         *
+         *     Odpowiedź to ten sam `AdminMatch`, co na liście meczów, więc okno meczu
+         *     dostaje po zapisie świeże kolizje bez osobnego odczytu.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    match: components["parameters"]["MatchId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MatchUpdate"];
+                };
+            };
+            responses: {
+                /** @description Mecz po zmianie */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["AdminMatch"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Wynik niespójny ze stanem, obcy obiekt albo niepoprawne ciało */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/tournaments/{tournament}/standings": {
         parameters: {
             query?: never;
@@ -2250,9 +2293,10 @@ export interface paths {
          *     i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
          *     `Prefer: example=koszykowka`. Drugi przykład jest tu po to, żeby dało
          *     się sprawdzić, czy panel bierze nagłówek kolumny z odpowiedzi, a nie ze
-         *     sztywnego napisu. `/tournaments/{tournament}` nie ma jeszcze wariantu
-         *     koszykarskiego, więc w panelu przełącznik zmienia tylko tabele. Mock
-         *     nie liczy tabel, więc parametr `tiebreakers` niczego w nim nie zmienia.
+         *     sztywnego napisu. `GET /tournaments/{tournament}` i lista meczów panelu
+         *     mają ten sam przełącznik, więc w panelu przestawia naraz turniej,
+         *     terminarz i tabelę. Mock nie liczy tabel, więc parametr `tiebreakers`
+         *     niczego w nim nie zmienia.
          */
         get: {
             parameters: {
@@ -3544,6 +3588,55 @@ export interface components {
             advancesToSlot: "home" | "away" | null;
         };
         /**
+         * @description Częściowa zmiana meczu: wynik, stan, termin i obiekt. Pole nieobecne
+         *     zostaje bez zmian, a `null` czyści pole, które je dopuszcza.
+         *
+         *     Spójność wyniku ze stanem (#159), sprawdzana po scaleniu ciała żądania
+         *     z zapisanym meczem, bo `PATCH` jest częściowy:
+         *
+         *     | stan | `homeScore` i `awayScore` |
+         *     |---|---|
+         *     | `scheduled` | oba `null` |
+         *     | `live` | oba liczbami |
+         *     | `finished` | oba liczbami, a przy `allowsDraw: false` różne |
+         *
+         *     Wszystkie błędy pary wyników wracają pod klucz `homeScore`, bo
+         *     organizator poprawia je liczbami, a nie stanem: jeden wynik pusty,
+         *     wynik przy `scheduled`, brak wyniku przy `live` albo `finished` oraz
+         *     remis przy `finished` w sporcie bez remisów. Powrót do `scheduled`
+         *     nie czyści wyniku sam — klient musi wysłać `homeScore: null`
+         *     i `awayScore: null` jawnie, inaczej `422`.
+         *
+         *     Przejścia między stanami są dowolne (także `scheduled` → `finished`
+         *     bez `live`): nic nie przestawia meczu po upływie `kickoffAt` ani
+         *     `matchDuration`. Wynik wolno wpisać meczowi bez `kickoffAt` i w turnieju
+         *     `draft`, a wynik meczu `finished` zmienia się zawsze, bez ostrzeżenia —
+         *     tabela liczy się przy odczycie.
+         *
+         *     Termin i obiekt wolno korygować przy każdym stanie meczu, także
+         *     `finished` (#158). `kickoffAt` wymaga offsetu (ADR-0008), a `venueId`
+         *     musi należeć do tego turnieju i nie być usunięty. Karne nie wchodzą do
+         *     ciała żądania: należą do fazy pucharowej (S4).
+         */
+        MatchUpdate: {
+            homeScore?: number | null;
+            awayScore?: number | null;
+            status?: components["schemas"]["MatchStatus"];
+            /**
+             * Format: date-time
+             * @description Termin meczu. **Wymagany offset** (np. `+02:00` albo `Z`): data bez
+             *     offsetu daje `422`, bo nie wiadomo, który moment organizator miał na
+             *     myśli (ADR-0008). `null` znaczy „termin do ustalenia”.
+             */
+            kickoffAt?: string | null;
+            /**
+             * Format: int64
+             * @description Obiekt turnieju, na którym gra mecz. `null` znaczy „bez obiektu”.
+             *     Obcy turniejowi albo usunięty obiekt daje `422`.
+             */
+            venueId?: number | null;
+        };
+        /**
          * @description Rodzaj kolizji terminu. `team` to „Kolizja drużyny” (wspólna drużyna),
          *     `venue` to „Kolizja boiska” (ten sam obiekt).
          * @enum {string}
@@ -3825,6 +3918,7 @@ export interface components {
         PlayerId: number;
         VenueId: number;
         StageId: number;
+        MatchId: number;
         /**
          * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
          *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
