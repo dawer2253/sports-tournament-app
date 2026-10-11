@@ -53,6 +53,7 @@ Do zrobienia:
 
 ## S4 — Puchar (W prowadzi)
 - [ ] BracketService (seeding, pary, `winner_to_match_id` / `loser_to_match_id`) (W)
+  - Usunięcie drużyny kasuje jej mecze `scheduled` (#171, `Team::booted()`), a krawędzie drabinki mają `nullOnDelete`, więc w fazie `knockout` skasowany mecz wyzeruje `winner_to_match_id` / `loser_to_match_id` meczów, które do niego prowadzą. Rozstrzygnąć razem z drabinką: kasować mecz czy zerować slot drużyny
 - [ ] Cykl życia meczu + kaskada propagacji zwycięzcy (W)
 - [ ] Admin: kreator/podgląd drabinki (W)
 - [ ] Public: widok drabinki (W)
