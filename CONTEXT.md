@@ -249,9 +249,10 @@ uporządkowaną listę takich kryteriów, stosowanych po kolei aż do rozstrzygn
    z listy, bez ponownego zawężania do meczów między nimi.
 3. Jest pomijane, dopóki w fazie istnieje niezakończony mecz między remisującymi.
 
-4. Po liście turnieju zawsze rozstrzyga ukryte ostatnie kryterium: **nazwa
-   drużyny**, alfabetycznie po polsku, bez rozróżniania wielkości liter. Miejsce
-   w tabeli jest więc zawsze unikalne, a pozycji ex aequo nie ma.
+Po całej liście turnieju zawsze rozstrzyga ukryte ostatnie kryterium (#160,
+reguła 4): **nazwa drużyny**, alfabetycznie po polsku, bez rozróżniania
+wielkości liter. Nie należy do listy i organizer go nie zmienia. Miejsce
+w tabeli jest więc zawsze unikalne, a pozycji ex aequo nie ma.
 
 Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
 `score_for`, `score_against`.

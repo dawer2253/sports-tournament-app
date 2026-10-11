@@ -25,9 +25,12 @@ class ShowStandingsRequest extends FormRequest
      * komunikat co `[]` w `PATCH`. Tablica z notacji nawiasowej zostaje, jak
      * przyszła, i odrzuca ją `SingleCommaSeparatedQueryParam`.
      *
-     * Pusty element (`points,` albo `points,,score_diff`) staje się `null`, tak
-     * jak `""` w ciele `PATCH`. Pusty napis zostałby przez walidator pominięty
-     * (reguła nie jest „implicit”) i dotarłby do kalkulatora.
+     * Każdy element jest przycinany, a pusty (`points,`, `points,,score_diff`,
+     * `points,%20,score_diff`) staje się `null` — to samo robią z elementami
+     * ciała `PATCH` globalne `TrimStrings` i `ConvertEmptyStringsToNull`,
+     * które parametru po rozbiciu już nie widzą. Pusty albo biały napis
+     * walidator by pominął (reguła nie jest „implicit”) i dotarłby on do
+     * kalkulatora.
      */
     protected function prepareForValidation(): void
     {
@@ -41,7 +44,7 @@ class ShowStandingsRequest extends FormRequest
             $this->merge(['tiebreakers' => []]);
         } elseif (is_string($tiebreakers)) {
             $this->merge(['tiebreakers' => array_map(
-                fn (string $code): ?string => $code === '' ? null : $code,
+                fn (string $code): ?string => trim($code) === '' ? null : trim($code),
                 explode(',', $tiebreakers),
             )]);
         }

@@ -323,7 +323,7 @@ it('odrzuca podgląd z tymi samymi błędami co PATCH', function (array $list, s
         ->patchJson("/api/v1/tournaments/{$tournament->id}", ['tiebreakers' => $list])
         ->assertUnprocessable();
 
-    standingsOf($tournament, '?tiebreakers='.implode(',', $list))
+    standingsOf($tournament, '?tiebreakers='.rawurlencode(implode(',', $list)))
         ->assertValidResponse(422)
         ->assertJsonValidationErrors($key)
         ->assertJsonPath('errors', $patch->json('errors'));
@@ -339,6 +339,7 @@ it('odrzuca podgląd z tymi samymi błędami co PATCH', function (array $list, s
     // przejść walidacji i wywrócić kalkulatora.
     'pusty element na końcu' => [['points', ''], 'tiebreakers.1'],
     'pusty element w środku' => [['points', '', 'score_diff'], 'tiebreakers.1'],
+    'element ze spacji' => [['points', ' ', 'score_diff'], 'tiebreakers.1'],
 ]);
 
 // Bez Spectatora: kształtu spoza kontraktu (nawiasy) jego middleware nie umie
