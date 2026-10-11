@@ -264,6 +264,18 @@ it('obiekt z innego turnieju daje 422 pod venueId', function () {
         ->assertJsonPath('errors.venueId.0', 'Wybierz obiekt tego turnieju.');
 });
 
+it('usunięty obiekt tego turnieju daje 422 pod venueId', function () {
+    $tournament = updateMatchLeague();
+    $match = updateMatchIn($tournament);
+    $venue = Venue::factory()->for($tournament)->create();
+    $venue->delete();
+
+    updateMatch($match, ['venueId' => $venue->id])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('venueId')
+        ->assertJsonPath('errors.venueId.0', 'Wybierz obiekt tego turnieju.');
+});
+
 it('zmiana terminu meczu finished przechodzi', function () {
     $match = updateMatchIn(updateMatchLeague(), 2, 1, 'finished');
 
