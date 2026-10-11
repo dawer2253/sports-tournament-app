@@ -155,6 +155,10 @@ w backendzie nazywa się `GameMatch`
 Stan meczu: zaplanowany, trwający, zakończony. Tylko mecz zakończony wpływa na
 tabelę i na statystyki.
 
+Wynik ma mecz trwający i zakończony; zaplanowany go nie ma. Wynik wpisuje
+organizer ręcznie, a przy sporcie bez remisów (`allowsDraw: false`) remis jest
+dozwolony w meczu trwającym, ale nie w zakończonym.
+
 **Mecz rozpoczęty** to mecz trwający albo zakończony, czyli każdy poza
 zaplanowanym. Wiąże drużyny, zawodników i obiekt, które w nim uczestniczą:
 żadnego z nich nie da się usunąć, a turniej z meczem rozpoczętym nie przyjmuje
