@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Match, Stage, Team, Tournament } from '@tournament/api-client';
+import type { AdminMatch, Stage, Team, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -23,6 +23,7 @@ const TOURNAMENT: Tournament = {
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points', 'score_diff'],
+  matchDuration: 60,
   teamsCount: 4,
   createdAt: '2026-09-01T10:00:00+00:00',
   updatedAt: '2026-09-01T10:00:00+00:00',
@@ -39,7 +40,7 @@ const TEAMS = [team(1, 'Wilki Bemowo'), team(2, 'Sokoły Ursus'), team(3, 'Orły
 let nextId = 1;
 
 /** Mecz kolejki `order`; drużyny po id z `TEAMS`. */
-function match(order: number, matchNumber: number, home: number, away: number, overrides: Partial<Match> = {}): Match {
+function match(order: number, matchNumber: number, home: number, away: number, overrides: Partial<AdminMatch> = {}): AdminMatch {
   const byId = (id: number) => {
     const { name, logoUrl } = TEAMS.find((candidate) => candidate.id === id)!;
     return { id, name, logoUrl };
@@ -62,6 +63,7 @@ function match(order: number, matchNumber: number, home: number, away: number, o
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    collisions: [],
     ...overrides,
   };
 }
@@ -69,7 +71,7 @@ function match(order: number, matchNumber: number, home: number, away: number, o
 const FINISHED = { status: 'finished', homeScore: 2, awayScore: 1 } as const;
 
 /** Liga czterech drużyn, raz każdy z każdym: trzy kolejki po dwa mecze. */
-function season(overrides: Record<number, Partial<Match>> = {}): Match[] {
+function season(overrides: Record<number, Partial<AdminMatch>> = {}): AdminMatch[] {
   const pairs: [number, number, number, number][] = [
     [1, 1, 1, 4],
     [1, 2, 2, 3],
@@ -92,6 +94,7 @@ beforeEach(() => {
     http.get(`${API}/tournaments/${TOURNAMENT.id}`, () => HttpResponse.json({ data: TOURNAMENT })),
     http.get(`${API}/tournaments/${TOURNAMENT.id}/stages`, () => HttpResponse.json({ data: [LEAGUE] })),
     http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => HttpResponse.json({ data: TEAMS })),
+    http.get(`${API}/tournaments/${TOURNAMENT.id}/venues`, () => HttpResponse.json({ data: [] })),
   );
 });
 
@@ -99,7 +102,7 @@ beforeEach(() => {
  * Mecze fazy po stronie „serwera”, stronicowane po `perPage` z żądania, jak
  * na Laravelu. `requests` zapisuje parametry każdego pobrania.
  */
-function serveMatches(initial: Match[]) {
+function serveMatches(initial: AdminMatch[]) {
   const state = { matches: [...initial], requests: [] as URLSearchParams[] };
   server.use(
     http.get(MATCHES_URL, ({ request }) => {
@@ -307,5 +310,120 @@ describe('Terminarz — generowanie', () => {
     expect(await screen.findByText('Terminarz pucharu pojawi się razem z drabinką')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Wygeneruj/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Więcej akcji terminarza' })).not.toBeInTheDocument();
+  });
+});
+
+const DATES_URL = `${API}/stages/${LEAGUE.id}/schedule/dates`;
+
+/** Stan „serwera” rozkładu: kolejność żądań i ciała rozkładu. */
+function serveDates(calls: string[], bodies: unknown[]) {
+  server.use(
+    http.patch(`${API}/tournaments/${TOURNAMENT.id}`, async ({ request }) => {
+      calls.push('patch');
+      return HttpResponse.json({ data: { ...TOURNAMENT, ...(await request.json() as object) } });
+    }),
+    http.post(DATES_URL, async ({ request }) => {
+      calls.push('dates');
+      bodies.push(await request.json());
+      return HttpResponse.json({ data: { matchesCount: 6, collisionsCount: 0 } });
+    }),
+  );
+}
+
+/** Otwiera okno rozkładu z nagłówka (ten sam przycisk stoi też nad listą bez dat). */
+async function openDates(user: ReturnType<typeof userEvent.setup>) {
+  const buttons = await screen.findAllByRole('button', { name: 'Rozłóż daty' });
+  await user.click(buttons[0]!);
+  return screen.getByRole('dialog', { name: 'Rozłóż daty' });
+}
+
+function fillStart(dialog: HTMLElement, value = '2026-09-06T10:00') {
+  fireEvent.change(within(dialog).getByLabelText('Start (pierwsza kolejka)'), { target: { value } });
+}
+
+describe('Terminarz — rozkład dat (#175)', () => {
+  it('przy niezmienionej długości meczu nie wysyła PATCH turnieju', async () => {
+    serveMatches(season());
+    const calls: string[] = [];
+    serveDates(calls, []);
+    const { user } = renderSchedule();
+
+    const dialog = await openDates(user);
+    fillStart(dialog);
+    await user.click(within(dialog).getByRole('button', { name: 'Rozłóż' }));
+
+    expect(await screen.findByText('Rozłożono 6 meczów, bez kolizji')).toBeInTheDocument();
+    expect(calls).toEqual(['dates']);
+  });
+
+  it('przy zmienionej długości wysyła PATCH turnieju przed rozkładem', async () => {
+    serveMatches(season());
+    const calls: string[] = [];
+    const bodies: unknown[] = [];
+    serveDates(calls, bodies);
+    const { user } = renderSchedule();
+
+    const dialog = await openDates(user);
+    fillStart(dialog);
+    fireEvent.change(within(dialog).getByLabelText('Długość meczu (min)'), { target: { value: '90' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Rozłóż' }));
+
+    await screen.findByText('Rozłożono 6 meczów, bez kolizji');
+    expect(calls).toEqual(['patch', 'dates']);
+    expect(bodies[0]).toMatchObject({ mode: 'interval', timeZone: expect.any(String) });
+  });
+
+  it('krok potwierdzenia pojawia się tylko, gdy w zakresie są mecze scheduled z datą', async () => {
+    // Same daty: rozkład nadpisze istniejące terminy, więc pyta o potwierdzenie.
+    serveMatches(season({ 0: { kickoffAt: '2026-09-06T08:00:00+00:00' } }));
+    const calls: string[] = [];
+    serveDates(calls, []);
+    const { user } = renderSchedule();
+
+    const dialog = await openDates(user);
+    fillStart(dialog);
+    await user.click(within(dialog).getByRole('button', { name: 'Rozłóż' }));
+
+    expect(
+      within(dialog).getByText(/Nadpiszesz terminy i obiekty 1 zaplanowanych meczów od kolejki 1/),
+    ).toBeInTheDocument();
+    expect(calls).toEqual([]);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Tak, nadpisz terminy' }));
+    await waitFor(() => expect(calls).toEqual(['dates']));
+  });
+
+  it('bez zaplanowanych meczów z datą nie pyta o potwierdzenie', async () => {
+    serveMatches(season());
+    const calls: string[] = [];
+    serveDates(calls, []);
+    const { user } = renderSchedule();
+
+    const dialog = await openDates(user);
+    fillStart(dialog);
+    await user.click(within(dialog).getByRole('button', { name: 'Rozłóż' }));
+
+    expect(within(dialog).queryByText(/Nadpiszesz terminy/)).not.toBeInTheDocument();
+    await waitFor(() => expect(calls).toEqual(['dates']));
+  });
+
+  it('pokazuje plakietkę kolizji po obu stronach pary', async () => {
+    serveMatches([
+      match(1, 1, 1, 2, {
+        kickoffAt: '2026-09-06T08:00:00+00:00',
+        venue: { id: 1, name: 'Boisko A' },
+        collisions: [{ type: 'venue', matchId: 2 }],
+      }),
+      match(1, 2, 3, 4, {
+        kickoffAt: '2026-09-06T08:00:00+00:00',
+        venue: { id: 1, name: 'Boisko A' },
+        collisions: [{ type: 'venue', matchId: 1 }],
+      }),
+    ]);
+    renderSchedule();
+
+    await screen.findByRole('heading', { name: 'Kolejka 1' });
+    // Opis drugiej strony pary dokłada panel, bo kontrakt zna tylko `matchId`.
+    expect(screen.getAllByTitle(/^Kolizja boiska: /)).toHaveLength(2);
   });
 });

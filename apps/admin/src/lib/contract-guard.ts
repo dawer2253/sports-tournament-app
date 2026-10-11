@@ -1,4 +1,4 @@
-import type { Match, Player, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
+import type { AdminMatch, Match, Player, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
 import type { MatchRowData, PlayerRow, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
@@ -59,3 +59,12 @@ export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
 type ContractFitsMatchRow = Match extends MatchRowData ? true : never;
 
 export const contractFitsMatchRow: ContractFitsMatchRow = true;
+
+/**
+ * Mecz panelu (`AdminMatch`) niesie dodatkowo `collisions` (#175), więc musi
+ * dać się pokazać w tym samym wierszu `MatchRow`. Łapie rozjazd kształtu
+ * kolizji i to, że `collisions` przestaje być opcjonalne w wierszu.
+ */
+type ContractFitsAdminMatchRow = AdminMatch extends MatchRowData ? true : never;
+
+export const contractFitsAdminMatchRow: ContractFitsAdminMatchRow = true;

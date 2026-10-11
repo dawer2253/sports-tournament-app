@@ -1,8 +1,8 @@
-import type { Match } from '@tournament/api-client';
+import type { AdminMatch } from '@tournament/api-client';
 import { describe, expect, it } from 'vitest';
 import { defaultRound, roundRobinSize, scheduleRounds, teamsWithoutMatches } from './schedule';
 
-function match(id: number, order: number, matchNumber: number, overrides: Partial<Match> = {}): Match {
+function match(id: number, order: number, matchNumber: number, overrides: Partial<AdminMatch> = {}): AdminMatch {
   return {
     id,
     stageId: 1,
@@ -21,6 +21,7 @@ function match(id: number, order: number, matchNumber: number, overrides: Partia
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    collisions: [],
     ...overrides,
   };
 }
@@ -50,7 +51,18 @@ describe('scheduleRounds', () => {
       dates: 'sob., 5 wrz – niedz., 6 wrz',
       finished: 1,
       total: 2,
+      collisions: 0,
     });
+  });
+
+  it('liczy mecze z kolizją w kolejce (#175)', () => {
+    const [round] = scheduleRounds([
+      match(1, 1, 1, { collisions: [{ type: 'venue', matchId: 2 }] }),
+      match(2, 1, 2, { collisions: [{ type: 'venue', matchId: 1 }] }),
+      match(3, 1, 3),
+    ]);
+
+    expect(round!.summary.collisions).toBe(2);
   });
 });
 

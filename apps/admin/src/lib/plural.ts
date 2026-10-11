@@ -10,6 +10,9 @@ export const ROUNDS_ACCUSATIVE = ['kolejkę', 'kolejki', 'kolejek'] as const;
 /** Mecze w generowaniu terminarza: „190 meczów” (#174). */
 export const MATCHES = ['mecz', 'mecze', 'meczów'] as const;
 
+/** Kolizje w toaście rozkładu dat: „2 kolizje”, „5 kolizji” (#175). */
+export const COLLISIONS = ['kolizja', 'kolizje', 'kolizji'] as const;
+
 /** Pusty stan terminarza: „2 drużyny grają każdy z każdym” (#174). */
 export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] as const;
 

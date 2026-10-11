@@ -27,6 +27,7 @@ const SPORTS: Sport[] = [
     name: 'Piłka nożna',
     config: {
       allowsDraw: true,
+      defaultMatchDuration: 60,
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for'],
@@ -47,6 +48,7 @@ const SPORTS: Sport[] = [
     name: 'Koszykówka',
     config: {
       allowsDraw: false,
+      defaultMatchDuration: 40,
       defaultPoints: { win: 2, draw: 0, loss: 1 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff'],
@@ -73,6 +75,7 @@ const FOOTBALL: Tournament = {
   // Punktacja inna niż domyślna, żeby „Przywróć domyślne" miało co zmienić.
   points: { win: 2, draw: 1, loss: 0 },
   tiebreakers: ['points', 'score_diff', 'head_to_head'],
+  matchDuration: 60,
   teamsCount: 8,
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',

@@ -37,6 +37,11 @@ export function tournamentSettingsSchema(allowsDraw: boolean) {
       branding: z.object({
         primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Podaj kolor w formacie #RRGGBB.'),
       }),
+      matchDuration: z
+        .number({ error: 'Podaj długość meczu w minutach.' })
+        .int('Podaj liczbę całkowitą.')
+        .min(10, 'Długość meczu to co najmniej 10 minut.')
+        .max(600, 'Długość meczu to najwyżej 600 minut.'),
       points: z.object({ win: pointsValue, draw: pointsValue, loss: pointsValue }),
     })
     .superRefine(({ points }, ctx) => {
@@ -64,6 +69,7 @@ export function tournamentSettingsValues(tournament: Tournament): TournamentSett
     name: tournament.name,
     slug: tournament.slug,
     branding: { primaryColor: tournament.branding.primaryColor },
+    matchDuration: tournament.matchDuration,
     points: { ...tournament.points },
   };
 }
@@ -94,6 +100,7 @@ export function tournamentSettingsUpdate(
   if (values.branding.primaryColor !== saved.branding.primaryColor) {
     body.branding = { primaryColor: values.branding.primaryColor };
   }
+  if (values.matchDuration !== saved.matchDuration) body.matchDuration = values.matchDuration;
   const points = allowsDraw ? values.points : { ...values.points, draw: 0 };
   if (!samePoints(points, saved.points)) body.points = points;
   return body;

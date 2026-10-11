@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { Match } from '@tournament/api-client';
+import type { AdminMatch } from '@tournament/api-client';
 import { api } from './api';
 import { ApiError } from './api-error';
 
@@ -15,6 +15,7 @@ export const scheduleKeys = {
     stageId === undefined
       ? (['tournament', tournamentId, 'matches'] as const)
       : (['tournament', tournamentId, 'matches', stageId] as const),
+  venues: (tournamentId: number) => ['tournament', tournamentId, 'venues'] as const,
 };
 
 /** Największa strona listy meczów w kontrakcie. */
@@ -38,13 +39,15 @@ export function useStages(tournamentId: number) {
  * i liczniki panel liczy sam z kompletu. Strony idą po kolei, bo liczbę
  * stron zna dopiero pierwsza odpowiedź; liga dwudziestu drużyn z rewanżem
  * to 380 meczów, czyli dwie strony.
+ *
+ * `AdminMatch` niesie `collisions` liczone przy odczycie (#175).
  */
 export function useStageMatches(tournamentId: number, stageId: number | undefined) {
   return useQuery({
     queryKey: scheduleKeys.matches(tournamentId, stageId ?? 0),
     enabled: stageId !== undefined,
     queryFn: async () => {
-      const matches: Match[] = [];
+      const matches: AdminMatch[] = [];
       let page = 1;
       let lastPage = 1;
       do {
@@ -60,6 +63,20 @@ export function useStageMatches(tournamentId: number, stageId: number | undefine
         page += 1;
       } while (page <= lastPage);
       return matches;
+    },
+  });
+}
+
+/** Obiekty turnieju do wyboru w oknie rozkładu dat (#158). */
+export function useVenues(tournamentId: number) {
+  return useQuery({
+    queryKey: scheduleKeys.venues(tournamentId),
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/tournaments/{tournament}/venues', {
+        params: { path: { tournament: tournamentId } },
+      });
+      if (error) throw new ApiError(error.message, response.status);
+      return data.data;
     },
   });
 }

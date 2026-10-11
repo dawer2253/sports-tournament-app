@@ -19,6 +19,7 @@ export const TOURNAMENT: Tournament = {
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points'],
+  matchDuration: 60,
   teamsCount: 2,
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
