@@ -1,4 +1,5 @@
 import { Check, MapPin } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
@@ -18,32 +19,26 @@ import type { MatchRowData } from './match-row-data'
 const ROW_GRID =
   'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem]'
 
-const STATUS_LABEL: Record<MatchRowData['status'], string> = {
-  scheduled: 'Zaplanowany',
-  live: 'Trwa',
-  finished: 'Zakończony',
+const STATUS_BADGE: Record<
+  MatchRowData['status'],
+  { label: string; variant: 'secondary' | 'destructive' | 'outline'; icon?: ReactNode }
+> = {
+  scheduled: { label: 'Zaplanowany', variant: 'secondary' },
+  live: {
+    label: 'Trwa',
+    variant: 'destructive',
+    icon: <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-destructive" />,
+  },
+  finished: { label: 'Zakończony', variant: 'outline', icon: <Check /> },
 }
 
 /** Stan meczu jako plakietka, z tymi samymi nazwami co okno meczu (#159). */
 export function MatchStatusBadge({ status, className }: { status: MatchRowData['status']; className?: string }) {
-  if (status === 'live') {
-    return (
-      <Badge variant="destructive" className={className}>
-        <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-destructive" />
-        {STATUS_LABEL.live}
-      </Badge>
-    )
-  }
-  if (status === 'finished') {
-    return (
-      <Badge variant="outline" className={className}>
-        <Check /> {STATUS_LABEL.finished}
-      </Badge>
-    )
-  }
+  const badge = STATUS_BADGE[status]
   return (
-    <Badge variant="secondary" className={className}>
-      {STATUS_LABEL.scheduled}
+    <Badge variant={badge.variant} className={className}>
+      {badge.icon}
+      {badge.label}
     </Badge>
   )
 }
