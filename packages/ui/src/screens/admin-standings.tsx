@@ -1,39 +1,22 @@
 import { TournamentShellDemo } from './shell-demo'
 import { StandingsTable } from '../components/data/standings-table'
-import type { StandingsTableRow } from '../components/data/standings-table-row'
 import { TiebreakerEditor, TiebreakerSentence } from '../components/data/tiebreaker-editor'
-import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import { Heading } from '../components/ui/typography'
 import {
   basketballStandingsTableRows,
   sportSettings,
+  standingsTablePreviewDraft,
   standingsTablePreviewRows,
   standingsTableRows,
 } from '../lib/demo-data'
 
-/** Sport makiety: dane tabeli, nagłówek zdobyczy i kryteria. */
-const SPORTS = {
-  football: {
-    rows: standingsTableRows,
-    scoreLabel: 'Bramki',
-    available: [...sportSettings.football.tiebreakers, { code: 'wins', label: 'Zwycięstwa' }],
-  },
-  basketball: {
-    rows: basketballStandingsTableRows,
-    scoreLabel: 'Punkty',
-    available: [
-      ...sportSettings.basketball.tiebreakers,
-      { code: 'score_for', label: 'Zdobyte punkty' },
-      { code: 'wins', label: 'Zwycięstwa' },
-    ],
-  },
-} satisfies Record<string, { rows: StandingsTableRow[]; scoreLabel: string; available: TiebreakerItem[] }>
+const ROWS = { football: standingsTableRows, basketball: basketballStandingsTableRows }
 
 export interface AdminStandingsProps {
-  sport?: keyof typeof SPORTS
+  sport?: keyof typeof sportSettings
   /**
-   * Szkic kolejności różny od zapisanej (piłka): `score_diff` przed
-   * `head_to_head`, a tabela pokazuje podgląd ze zmianą miejsc.
+   * Szkic kolejności różny od zapisanej (piłka): `standingsTablePreviewDraft`,
+   * a tabela pokazuje podgląd ze zmianą miejsc.
    */
   preview?: boolean
 }
@@ -43,13 +26,13 @@ export interface AdminStandingsProps {
  * przychodzą z API; tu stoją statycznie, z `lib/demo-data`.
  */
 export function AdminStandings({ sport = 'football', preview = false }: AdminStandingsProps) {
-  const { rows, scoreLabel, available } = SPORTS[sport]
-  const saved = sportSettings[sport].tiebreakers.map((item) => item.code)
-  const value = preview ? ['points', 'score_diff', 'head_to_head', 'score_for'] : saved
-  const label = (code: string) => available.find((item) => item.code === code)?.label ?? code
+  const settings = sportSettings[sport]
+  const rows = ROWS[sport]
+  const value = preview ? standingsTablePreviewDraft : settings.tiebreakers.map((item) => item.code)
+  const label = (code: string) => settings.availableTiebreakers.find((item) => item.code === code)?.label ?? code
 
   return (
-    <TournamentShellDemo active="standings" sportName={sportSettings[sport].name}>
+    <TournamentShellDemo active="standings" sportName={settings.name}>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="min-w-0 space-y-6">
           <section className="space-y-3">
@@ -59,8 +42,8 @@ export function AdminStandings({ sport = 'football', preview = false }: AdminSta
             </div>
             <StandingsTable
               rows={preview ? standingsTablePreviewRows : rows}
-              scoreLabel={scoreLabel}
-              allowsDraw={sportSettings[sport].allowsDraw}
+              scoreLabel={settings.scoreLabel}
+              allowsDraw={settings.allowsDraw}
               previousPositions={preview ? new Map(rows.map((row) => [row.team.id, row.position])) : undefined}
             />
           </section>
@@ -70,7 +53,7 @@ export function AdminStandings({ sport = 'football', preview = false }: AdminSta
           <TiebreakerEditor
             value={value}
             onChange={() => {}}
-            available={available}
+            available={settings.availableTiebreakers}
             dirty={preview}
             preview={preview ? 'Podgląd: 4 drużyny zmieniają miejsce.' : undefined}
             onSave={() => {}}

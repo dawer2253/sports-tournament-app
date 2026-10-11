@@ -285,6 +285,13 @@ export type DemoSportSettings = {
   allowsDraw: boolean
   defaultPoints: { win: number; draw: number; loss: number }
   tiebreakers: TiebreakerItem[]
+  /**
+   * `availableTiebreakers` z etykietami, w kolejności sportu: z tego
+   * wybiera edytor przy tabeli (#173).
+   */
+  availableTiebreakers: TiebreakerItem[]
+  /** `StandingTable.scoreLabel` w turnieju tego sportu (ADR-0006). */
+  scoreLabel: string
 }
 
 export const sportSettings: Record<'football' | 'basketball', DemoSportSettings> = {
@@ -298,6 +305,14 @@ export const sportSettings: Record<'football' | 'basketball', DemoSportSettings>
       { code: 'score_diff', label: 'Różnica bramek' },
       { code: 'score_for', label: 'Bramki zdobyte' },
     ],
+    availableTiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica bramek' },
+      { code: 'score_for', label: 'Bramki zdobyte' },
+      { code: 'wins', label: 'Zwycięstwa' },
+    ],
+    scoreLabel: standingsScoreLabel,
   },
   basketball: {
     name: 'Koszykówka',
@@ -308,8 +323,20 @@ export const sportSettings: Record<'football' | 'basketball', DemoSportSettings>
       { code: 'head_to_head', label: 'Bezpośredni mecz' },
       { code: 'score_diff', label: 'Różnica punktów' },
     ],
+    availableTiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+      { code: 'score_diff', label: 'Różnica punktów' },
+      { code: 'score_for', label: 'Zdobyte punkty' },
+      { code: 'wins', label: 'Zwycięstwa' },
+    ],
+    scoreLabel: 'Punkty',
   },
 }
+
+// Szkic kolejności w podglądzie (#173): różnica bramek przed meczem
+// bezpośrednim. Według niego ułożone jest `standingsTablePreviewRows`.
+export const standingsTablePreviewDraft = ['points', 'score_diff', 'head_to_head', 'score_for']
 
 export const formColor: Record<FormResult, string> = {
   W: 'bg-primary',

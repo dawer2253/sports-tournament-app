@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
-import { sportSettings } from '../../lib/demo-data'
+import { sportSettings, standingsTablePreviewDraft } from '../../lib/demo-data'
 import { TiebreakerEditor, TiebreakerSentence } from './tiebreaker-editor'
 
 /** `availableTiebreakers` piłki z etykietami: domyślne kryteria i `wins`. */
-const available = [...sportSettings.football.tiebreakers, { code: 'wins', label: 'Zwycięstwa' }]
+const available = sportSettings.football.availableTiebreakers
 
 const meta = {
   title: 'UI/Edytor tiebreaków',
@@ -67,7 +67,7 @@ export const Domyslny: Story = {
 /** Szkic różny od zapisanej listy: zdanie o podglądzie, „Odrzuć” i „Zapisz”. */
 export const Zmieniony: Story = {
   args: {
-    value: ['points', 'score_diff', 'head_to_head', 'score_for'],
+    value: standingsTablePreviewDraft,
     dirty: true,
     preview: 'Podgląd: 4 drużyny zmieniają miejsce.',
   },
@@ -112,11 +112,7 @@ export const BladZapisu: Story = {
 export const Koszykowka: Story = {
   args: {
     value: sportSettings.basketball.tiebreakers.map((item) => item.code),
-    available: [
-      ...sportSettings.basketball.tiebreakers,
-      { code: 'score_for', label: 'Zdobyte punkty' },
-      { code: 'wins', label: 'Zwycięstwa' },
-    ],
+    available: sportSettings.basketball.availableTiebreakers,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
