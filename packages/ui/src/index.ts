@@ -3,6 +3,7 @@
 
 export { cn } from './lib/utils';
 export * from './lib/contrast';
+export * from './lib/kickoff';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
@@ -35,8 +36,12 @@ export * from './components/ui/tooltip';
 export * from './components/ui/typography';
 
 export * from './components/data/data-table';
+export * from './components/data/match-row';
+export * from './components/data/match-row-data';
 export * from './components/data/player-row';
 export * from './components/data/players-table';
+export * from './components/data/round-list';
+export * from './components/data/round-summary';
 export * from './components/data/standings-table';
 export * from './components/data/standings-table-row';
 export * from './components/data/team-row';

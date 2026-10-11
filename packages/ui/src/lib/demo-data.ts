@@ -1,11 +1,14 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
+import type { MatchRowData } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
+import type { RoundSummary } from '../components/data/round-summary'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
 import type { TeamRow } from '../components/data/team-row'
 import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
+import { formatRoundDates } from './kickoff'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 export type FormResult = 'W' | 'D' | 'L'
@@ -377,3 +380,93 @@ export const tournamentList: TournamentRow[] = [
     teamsCount: 12,
   },
 ]
+
+// Terminarz ligi w kształcie `Match` z kontraktu (makieta `admin-schedule`):
+// osiem drużyn z `teams`, mecz i rewanż, czyli 14 kolejek po 4 mecze, jak
+// w `tournament.rounds`. Pary układa ten sam przepis Bergera co backend
+// (`RoundRobin`), żeby makieta nie pokazywała układu, którego generator nie
+// zrobi. Kolejność drużyn jest stała — snapshoty Chromatica muszą być
+// powtarzalne.
+export type ScheduleDemoMatch = MatchRowData & { round: { id: number; name: string; order: number } }
+
+/** Strefa makiet terminarza: zrzut nie może zależeć od strefy maszyny. */
+export const scheduleTimeZone = 'Europe/Warsaw'
+
+function bergerPairs(n: number): [number, number][][] {
+  const shift = (x: number) => (x === n ? n : ((x - 1 + n / 2) % (n - 1)) + 1)
+  let round: [number, number][] = [[1, n], ...Array.from({ length: n / 2 - 1 }, (_, k) => [2 + k, n - 1 - k] as [number, number])]
+  const table = [round]
+  for (let r = 1; r < n - 1; r++) {
+    round = round.map(([home, away]): [number, number] =>
+      away === n ? [n, shift(home)] : home === n ? [shift(away), n] : [shift(home), shift(away)],
+    )
+    table.push(round)
+  }
+  return [...table, ...table.map((pairs) => pairs.map(([home, away]): [number, number] => [away, home]))]
+}
+
+/**
+ * Kolejki co tydzień w sobotę od 5 września 2026, mecze o 10:00 i 12:00
+ * czasu polskiego na dwóch boiskach. Offset w UTC zmienia się 25 października
+ * (ADR-0008), więc 10:00 to raz `08:00Z`, raz `09:00Z`.
+ */
+function demoKickoff(order: number, matchNumber: number): string {
+  const day = new Date(Date.UTC(2026, 8, 5 + (order - 1) * 7))
+  const offset = day < new Date(Date.UTC(2026, 9, 25)) ? 2 : 1
+  day.setUTCHours((matchNumber <= 2 ? 10 : 12) - offset)
+  return day.toISOString().replace('.000Z', '+00:00')
+}
+
+const scheduleVenues = [
+  { id: 1, name: 'Boisko A' },
+  { id: 2, name: 'Boisko B' },
+]
+
+/** Cały sezon bez dat i obiektów, tak jak oddaje go generator (#157). */
+export const scheduleUndated: ScheduleDemoMatch[] = bergerPairs(teams.length).flatMap((pairs, index) =>
+  pairs.map(([home, away], position) => ({
+    id: index * 10 + position + 1,
+    round: { id: index + 1, name: `Kolejka ${index + 1}`, order: index + 1 },
+    homeTeam: { id: teams[home - 1].id, name: teams[home - 1].name },
+    awayTeam: { id: teams[away - 1].id, name: teams[away - 1].name },
+    homeScore: null,
+    awayScore: null,
+    status: 'scheduled' as const,
+    kickoffAt: null,
+    venue: null,
+  })),
+)
+
+/**
+ * Sezon w trakcie: cztery kolejki rozegrane, w piątej dwa mecze zakończone,
+ * jeden trwa, jeden przed nami. Wyniki są deterministyczne.
+ */
+export const scheduleInProgress: ScheduleDemoMatch[] = scheduleUndated.map((match) => {
+  const matchNumber = (match.id - 1) % 10 + 1
+  const dated = {
+    ...match,
+    kickoffAt: demoKickoff(match.round.order, matchNumber),
+    venue: scheduleVenues[(matchNumber - 1) % 2],
+  }
+  const order = match.round.order
+  if (order < 5 || (order === 5 && matchNumber <= 2)) {
+    return { ...dated, status: 'finished' as const, homeScore: (match.id * 7) % 4, awayScore: (match.id * 3) % 3 }
+  }
+  if (order === 5 && matchNumber === 3) {
+    return { ...dated, status: 'live' as const, homeScore: 1, awayScore: 0 }
+  }
+  return dated
+})
+
+/** Kolejki z meczów, tak jak liczy je panel: zakres dat i „zakończone/wszystkie”. */
+export function scheduleRounds(matches: ScheduleDemoMatch[]): RoundSummary[] {
+  const byRound = new Map<number, ScheduleDemoMatch[]>()
+  for (const match of matches) byRound.set(match.round.id, [...(byRound.get(match.round.id) ?? []), match])
+  return [...byRound.values()].map((roundMatches) => ({
+    id: roundMatches[0].round.id,
+    name: roundMatches[0].round.name,
+    dates: formatRoundDates(roundMatches.map((match) => match.kickoffAt), scheduleTimeZone),
+    finished: roundMatches.filter((match) => match.status === 'finished').length,
+    total: roundMatches.length,
+  }))
+}
