@@ -27,6 +27,6 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "test:e2e": "npm run test:e2e -w @tournament/e2e"
+    "test:e2e": "npm run test:e2e -w @tournament/e2e --"
   }
 }

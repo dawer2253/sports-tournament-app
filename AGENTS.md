@@ -111,6 +111,11 @@ make up            # MySQL musi stać; Laravel E2E wstaje obok, na :8001
 npm run test:e2e   # za pierwszym razem: npx playwright install chromium
 ```
 
+Argumenty po `--` idą wprost do Playwrighta, więc da się odpalić jeden plik
+(`npm run test:e2e -- login`), test po tytule (`-- -g "wylogowanie"`), samą
+listę (`-- --list`) albo przebieg z podglądem (`-- --ui`, `-- --headed`).
+Serwery i reset bazy idą przy każdym uruchomieniu, także dla jednego testu.
+
 Jedno polecenie stawia panel (5173), stronę publiczną (5174) i Laravela na
 osobnej bazie `e2e`, wyczyszczonej i zaseedowanej raz na przebieg. **Porty
 5173 i 5174 muszą być wolne** — zatrzymaj `dev:admin`/`dev:public`. Podpięcie
