@@ -315,9 +315,11 @@ function GenerateDialog({
           params: { path: { stage: stage.id } },
           body: { meetings: value },
         });
-      } catch {
-        // `fetch` bez odpowiedzi (sieć) odrzuca `TypeError`.
-        throw new Error(GENERATE_FAILED);
+      } catch (cause) {
+        // `fetch` bez odpowiedzi (sieć) odrzuca `TypeError`. Inny wyjątek to
+        // błąd w kodzie i ma polecieć dalej, a nie udawać padniętej sieci.
+        if (cause instanceof TypeError) throw new Error(GENERATE_FAILED);
+        throw cause;
       }
       const { data, error, response } = result;
       if (data) return data.data;
