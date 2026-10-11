@@ -1,0 +1,19 @@
+{
+  "name": "@tournament/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Suita dymna Playwrighta: panel, strona publiczna i Laravel z osobną bazą.",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@tournament/api-client": "*",
+    "@types/node": "^24.13.2",
+    "oxlint": "^1.69.0",
+    "typescript": "~6.0.2"
+  }
+}
