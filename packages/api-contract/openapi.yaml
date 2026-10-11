@@ -811,7 +811,10 @@ paths:
                       matchesCount:
                         type: integer
                         minimum: 0
-                        description: Ile meczów `scheduled` dostało termin i obiekt.
+                        description: |
+                          Ile meczów `scheduled` dostało termin i obiekt. Bez
+                          wybranych obiektów mecz dostaje sam termin, a obiekt
+                          zostaje pusty.
                       collisionsCount:
                         type: integer
                         minimum: 0

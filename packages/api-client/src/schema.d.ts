@@ -1240,7 +1240,11 @@ export interface paths {
                          */
                         "application/json": {
                             data: {
-                                /** @description Ile meczów `scheduled` dostało termin i obiekt. */
+                                /**
+                                 * @description Ile meczów `scheduled` dostało termin i obiekt. Bez
+                                 *     wybranych obiektów mecz dostaje sam termin, a obiekt
+                                 *     zostaje pusty.
+                                 */
                                 matchesCount: number;
                                 /**
                                  * @description Ile meczów fazy po rozkładzie ma kolizję, licząc także
