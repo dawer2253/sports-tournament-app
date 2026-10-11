@@ -335,6 +335,10 @@ it('odrzuca podgląd z tymi samymi błędami co PATCH', function (array $list, s
     'duplikat' => [['points', 'score_diff', 'wins', 'score_diff'], 'tiebreakers.3'],
     'bez points na początku' => [['score_diff', 'points'], 'tiebreakers.0'],
     'pusta lista' => [[], 'tiebreakers'],
+    // `?tiebreakers=points,` i `points,,score_diff`: pusty element nie może
+    // przejść walidacji i wywrócić kalkulatora.
+    'pusty element na końcu' => [['points', ''], 'tiebreakers.1'],
+    'pusty element w środku' => [['points', '', 'score_diff'], 'tiebreakers.1'],
 ]);
 
 // Bez Spectatora: kształtu spoza kontraktu (nawiasy) jego middleware nie umie

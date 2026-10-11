@@ -119,14 +119,16 @@ final readonly class StandingsCalculator
         return $ranked;
     }
 
-    /** Wartość kryterium; wyżej staje drużyna z większą. */
+    /**
+     * Wartość kryterium; wyżej staje drużyna z większą. Przy `score_against`
+     * mniej straconych to lepiej, więc znak jest odwrócony.
+     */
     private function value(StandingRow $row, string $code): int
     {
         return match ($code) {
             'points' => $row->points,
             'score_diff' => $row->scoreDifference(),
             'score_for' => $row->scoreFor,
-            // Mniej straconych to lepiej, więc znak odwrócony.
             'score_against' => -$row->scoreAgainst,
             'wins' => $row->won,
             default => throw new RuntimeException("Nieznane kryterium kolejności: {$code}."),
