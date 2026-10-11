@@ -166,7 +166,12 @@ function StandingsSection({
     code,
     label: label(code),
   }));
-  const allowsDraw = sport?.config.allowsDraw ?? true;
+  // Kolumnę R rozstrzyga dopiero `GET /sports`, więc tabela czeka na niego
+  // (w szkielecie bez R), żeby koszykówka nie mignęła remisami. Gdy sporty
+  // padną, tabela wychodzi z kolumną R — lepsza niż brak tabeli.
+  const allowsDraw = sport?.config.allowsDraw ?? sportsFailed;
+  const columnsKnown = sport !== undefined || sportsFailed;
+  const ready = columnsKnown ? tables : undefined;
 
   // Faza pucharowa nie ma tabeli, więc i kolejności nie ma czego ustawiać.
   if (tables && tables.length === 0) {
@@ -209,8 +214,8 @@ function StandingsSection({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="min-w-0 space-y-6">
-        {tables ? (
-          tables.map((table) => (
+        {ready ? (
+          ready.map((table) => (
             <section key={`${table.stageId}-${table.groupId}`} className="space-y-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <Heading level="card">
@@ -239,7 +244,7 @@ function StandingsSection({
             onRetry={() => void base.refetch()}
           />
         )}
-        {tables && sport && <TiebreakerSentence items={current.map((code) => ({ code, label: label(code) }))} />}
+        {ready && sport && <TiebreakerSentence items={current.map((code) => ({ code, label: label(code) }))} />}
       </div>
       <div className="lg:sticky lg:top-4">{editor}</div>
       <UnsavedChangesGuard when={dirty} />

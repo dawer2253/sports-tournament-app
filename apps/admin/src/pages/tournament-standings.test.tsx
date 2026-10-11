@@ -208,6 +208,38 @@ describe('tabela: odczyt', () => {
     ]);
   });
 
+  // `allowsDraw` niesie dopiero `GET /sports`. Tabela koszykówki nie może do
+  // tego czasu pokazać kolumny R, więc czeka razem z nim.
+  it('dopóki nie ma konfiguracji sportu, tabela czeka zamiast pokazać kolumnę R', async () => {
+    let releaseSports!: () => void;
+    const sportsReleased = new Promise<void>((resolve) => {
+      releaseSports = resolve;
+    });
+    const { previews } = standingsApi({
+      tournament: { ...TOURNAMENT, sport: { id: 2, code: 'basketball', name: 'Koszykówka' } },
+    });
+    server.use(
+      http.get(`${API}/sports`, async () => {
+        await sportsReleased;
+        return HttpResponse.json({ data: SPORTS });
+      }),
+    );
+    const router = createMemoryRouter(routes, { initialEntries: ['/tournaments/7/standings'] });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => expect(previews).toHaveLength(1));
+    expect(await screen.findByRole('status', { name: 'Wczytywanie tabeli' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'R' })).not.toBeInTheDocument();
+
+    releaseSports();
+    expect(await screen.findByRole('columnheader', { name: 'Pkt' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'R' })).not.toBeInTheDocument();
+  });
+
   it('turniej bez drużyn ma pusty stan z odnośnikiem do Drużyn', async () => {
     standingsApi({ standings: (tiebreakers) => tables(tiebreakers).map((table) => ({ ...table, rows: [] })) });
     const router = createMemoryRouter(routes, { initialEntries: ['/tournaments/7/standings'] });
