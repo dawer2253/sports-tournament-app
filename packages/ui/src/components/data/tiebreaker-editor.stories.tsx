@@ -105,6 +105,32 @@ export const BladZapisu: Story = {
   },
 }
 
+/**
+ * Koszykówka: domyślna lista sportu i etykiety mówiące o punktach, a nie
+ * o bramkach. W „Nieużywane” jest `score_for` i `wins`.
+ */
+export const Koszykowka: Story = {
+  args: {
+    value: sportSettings.basketball.tiebreakers.map((item) => item.code),
+    available: [
+      ...sportSettings.basketball.tiebreakers,
+      { code: 'score_for', label: 'Zdobyte punkty' },
+      { code: 'wins', label: 'Zwycięstwa' },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const used = within(canvas.getByRole('list', { name: 'Używane kryteria' })).getAllByRole('listitem')
+    await expect(used.map((item) => item.textContent)).toEqual([
+      '1Punkty w tabeli zawsze pierwsze',
+      '2Bezpośredni mecz',
+      '3Różnica punktów',
+    ])
+    const unused = within(canvas.getByRole('region', { name: 'Nieużywane' })).getAllByRole('listitem')
+    await expect(unused.map((item) => item.textContent)).toEqual(['Zdobyte punkty', 'Zwycięstwa'])
+  },
+}
+
 /** Zdanie pod tabelą: lista turnieju i ukryte ostatnie kryterium. */
 export const ZdaniePodTabela: StoryObj<typeof TiebreakerSentence> = {
   render: () => <TiebreakerSentence items={sportSettings.football.tiebreakers} />,
