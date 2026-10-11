@@ -997,6 +997,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stages/{stage}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: components["parameters"]["StageId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wygeneruj terminarz fazy
+         * @description Układa fazę `league` w kolejki „każdy z każdym” według tablic Bergera
+         *     i zastępuje cały dotychczasowy terminarz fazy, także terminy i obiekty
+         *     poprawione ręcznie. Wszystko dzieje się w jednej transakcji.
+         *
+         *     - Grają wszystkie drużyny turnieju. Ich kolejność na wejściu jest
+         *       losowana przy każdym wywołaniu, więc kolejne generowanie daje inne
+         *       pary w kolejkach.
+         *     - `meetings: 2` dokłada rewanż jako czyste lustro: kolejka
+         *       `n − 1 + t` (`n` przy nieparzystej liczbie drużyn) to kolejka `t`
+         *       z odwróconym gospodarzem.
+         *     - Przy nieparzystej liczbie drużyn jedna drużyna pauzuje w każdej
+         *       kolejce. Pauza nie tworzy meczu.
+         *     - Kolejki nazywają się „Kolejka 1”, „Kolejka 2”… z numeracją ciągłą
+         *       przez obie rundy. Mecze są `scheduled`, bez `kickoffAt` i bez
+         *       obiektu.
+         *
+         *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
+         *     faza nie jest `league` albo ma mecz `live` lub `finished`, i pod
+         *     `teams`, gdy turniej ma mniej niż dwie drużyny. Mecze dociąga się potem
+         *     przez `GET /tournaments/{tournament}/matches?stageId=`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stage: components["parameters"]["StageId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "meetings": 2
+                     *     }
+                     */
+                    "application/json": {
+                        /**
+                         * @description Ile razy w fazie spotyka się każda para: `1` to jedna
+                         *     runda, `2` to mecz i rewanż. Bez wartości domyślnej.
+                         * @enum {integer}
+                         */
+                        meetings: 1 | 2;
+                    };
+                };
+            };
+            responses: {
+                /** @description Terminarz wygenerowany */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "roundsCount": 38,
+                         *         "matchesCount": 380
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: {
+                                roundsCount: number;
+                                matchesCount: number;
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Fazy nie da się wygenerować albo ciało jest niepoprawne */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tournaments/{tournament}/teams": {
         parameters: {
             query?: never;
@@ -1863,6 +1966,15 @@ export interface paths {
          * @description Odczyt. Wpisywanie wyniku i zmiana stanu meczu wchodzą w v0.2, ale kształt
          *     `Match` jest już zamrożony.
          *
+         *     Kolejność: faza (`order`), w niej kolejka (`round.order`), w kolejce
+         *     `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (po
+         *     usunięciu drużyny razem z jej meczami `scheduled`), więc pozycji meczu
+         *     nie wyliczaj z numeru. Faza albo kolejka spoza turnieju w `stageId`
+         *     i `roundId` daje puste `data`, nie `404`: `404` jest tu odpowiedzią
+         *     o turnieju. `perPage` ponad limit jest dociągane do 200, a nieczytelne
+         *     daje rozmiar domyślny. Filtr o złym typie albo nieznanym `status` daje
+         *     `422`, bo cicha lista bez filtra wyglądałaby jak filtr działający.
+         *
          *     Stronicowane: liga dwudziestu drużyn to sto dziewięćdziesiąt meczów,
          *     każdy z zagnieżdżonymi drużynami. Widok drabinki potrzebuje kompletu
          *     meczów fazy, żeby zbudować odwrotny indeks krawędzi — zawęża więc
@@ -1904,6 +2016,25 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                /** @description Filtr o złym typie albo nieznany stan meczu */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Nieznany stan meczu: bogus. Dozwolone: scheduled, live, finished.",
+                         *       "errors": {
+                         *         "status": [
+                         *           "Nieznany stan meczu: bogus. Dozwolone: scheduled, live, finished."
+                         *         ]
+                         *       }
+                         *     }
+                         */
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3461,6 +3592,7 @@ export interface components {
         TeamId: number;
         PlayerId: number;
         VenueId: number;
+        StageId: number;
         /**
          * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
          *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym

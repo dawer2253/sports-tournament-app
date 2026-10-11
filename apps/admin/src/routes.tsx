@@ -5,6 +5,7 @@ import { TeamPage } from './pages/team';
 import { TeamsPage } from './pages/teams';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentLayout } from './pages/tournament-layout';
+import { TournamentSchedulePage } from './pages/tournament-schedule';
 import { TournamentSettingsPage } from './pages/tournament-settings';
 import { TournamentStandingsPage } from './pages/tournament-standings';
 import { TournamentVenuesPage } from './pages/tournament-venues';
@@ -41,8 +42,8 @@ export const routes: RouteObject[] = [
     ),
   },
   // Trasa-rodzic wczytuje turniej raz dla wszystkich sekcji (#85). Po id, nie
-  // po slugu, bo slug organizer może zmienić w ustawieniach. Terminarz,
-  // Drabinka i Statystyki dostaną trasy razem ze swoimi ekranami.
+  // po slugu, bo slug organizer może zmienić w ustawieniach. Drabinka
+  // i Statystyki dostaną trasy razem ze swoimi ekranami.
   {
     path: '/tournaments/:id',
     element: (
@@ -61,6 +62,7 @@ export const routes: RouteObject[] = [
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
       { path: 'standings', element: <TournamentStandingsPage /> },
+      { path: 'schedule', element: <TournamentSchedulePage /> },
     ],
   },
 ];

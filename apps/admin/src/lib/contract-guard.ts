@@ -1,5 +1,5 @@
-import type { Player, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
-import type { PlayerRow, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { Match, Player, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
+import type { MatchRowData, PlayerRow, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -15,7 +15,8 @@ import type { PlayerRow, StandingsTableRow, TeamRow, TournamentRow, VenueRow } f
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni wiersz
  * w `packages/ui/src/components/data/` (`tournament-row.ts`, `team-row.ts`,
- * `player-row.ts`, `venue-row.ts`, `standings-table-row.ts`).
+ * `player-row.ts`, `venue-row.ts`, `standings-table-row.ts`,
+ * `match-row-data.ts`).
  */
 
 /**
@@ -49,3 +50,12 @@ export const contractFitsVenueRow: ContractFitsVenueRow = true;
 type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;
 
 export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
+
+/**
+ * Mecz z kontraktu daje się pokazać w `MatchRow`. Łapie zmianę nazwy pola,
+ * nową wartość w `status` i `null` dopuszczony w polu, w którym wiersz go nie
+ * przewiduje.
+ */
+type ContractFitsMatchRow = Match extends MatchRowData ? true : never;
+
+export const contractFitsMatchRow: ContractFitsMatchRow = true;

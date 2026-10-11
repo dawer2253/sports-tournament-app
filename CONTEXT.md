@@ -95,6 +95,17 @@ To jeden byt o dwóch etykietach w UI. W fazie `league` i `group` mówi się o n
 jest w obu przypadkach ta sama, więc w kodzie i w API występuje wyłącznie nazwa
 `Round`.
 
+## Meetings (liczba spotkań)
+
+Ile razy w fazie spotyka się każda para drużyn: `1` (jedna runda) albo `2`
+(mecz i rewanż). Organizer wybiera ją przy każdym generowaniu terminarza, bez
+wartości domyślnej. W UI: „Każdy z każdym: raz / dwa razy (mecz i rewanż)”.
+
+Nie mówimy tu „runda”, choć potocznie liga ma „rundę jesienną i wiosenną”:
+to słowo jest już etykietą `Round` w drabince. Przy `meetings: 2` rewanż jest
+czystym lustrem — druga połowa kolejek powtarza pierwszą z odwróconym
+gospodarzem (#157).
+
 ## Team (drużyna)
 
 Uczestnik turnieju. Należy do jednego turnieju. Dwie drużyny o tej samej nazwie

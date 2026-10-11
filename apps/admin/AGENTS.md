@@ -3,15 +3,35 @@
 Obowiązują [zasady globalne z rootu](../AGENTS.md), w tym „Testy frontendu”
 (vitest + msw, pułapka z `server.listen()`).
 
-## Edycja list
+## Formularze i okna
+
+Zasada całego panelu: list, ustawień, terminarza i każdego przyszłego ekranu.
+Wzorzec okien rozstrzygnął
+[#86](https://github.com/dawer2253/sports-tournament-app/issues/86) dla list,
+a [#162](https://github.com/dawer2253/sports-tournament-app/issues/162) (pkt 6
+i 7) rozciągnął go na cały panel. Ten plik jest ich jedynym opisem dla kodu.
+
+- **Każdy formularz i każde potwierdzenie to okno na środku**: `FormDialog`
+  albo `ConfirmDeleteDialog` z design systemu. Dotyczy to też terminarza:
+  generowanie, rozkład dat i mecz idą w oknach.
+- **Bez paneli bocznych, dymków z formularzem i osobnych stron formularzy.**
+  Dwa wzorce z regułą, kiedy który, trzeba by tłumaczyć, więc nie ujednolicają.
+- **Pola w kilku kolumnach równają się do góry**, więc podpis pod jednym polem
+  (np. „Zmieni długość meczu w całym turnieju”) nie przesuwa pola obok. Pole
+  w siatce ma `content-start`, jak `TextField`.
+- **Listy wyboru idą przez `Select` z design systemu**, a nie przez natywny
+  `<select>`, który ma inną wysokość i ramkę niż `Input` obok.
+- **Toasty** rysuje jeden `Toaster` w `main.tsx`. `toast` bierz z
+  `@tournament/ui`: do tego `Toaster` dociera tylko `toast` z tej samej kopii
+  `sonner`. Test ekranu montuje własny `<Toaster />` obok strony.
+
+### Edycja list
 
 Dotyczy bytów turnieju, które organizer dodaje, zmienia i usuwa na liście:
-obiektów, drużyn i zawodników. Wzorzec rozstrzygnął
-[#86](https://github.com/dawer2253/sports-tournament-app/issues/86), a ten plik
-jest jego jedynym opisem dla kodu.
+obiektów, drużyn i zawodników. Okna są te z zasady wyżej, a lista dokłada do
+nich miejsce akcji, walidację i zapis.
 
-- **Okna z design systemu.** Dodawanie i edycja idą w `FormDialog`, usuwanie
-  w `ConfirmDeleteDialog`. Ołówek i kosz stoją w wierszu, a „Dodaj …” w akcjach
+- **Miejsce akcji.** Ołówek i kosz stoją w wierszu, a „Dodaj …” w akcjach
   nagłówka i w pustym stanie. Wyjątkiem są drużyny: wiersz prowadzi do składu,
   więc ich akcje siedzą w nagłówku ekranu składu
   ([#89](https://github.com/dawer2253/sports-tournament-app/issues/89)).
@@ -41,11 +61,8 @@ jest jego jedynym opisem dla kodu.
     `404`, bo w nich rodzaj gramatyczny zmienia więcej niż końcówkę.
 
   Oba okna złożone tak, jak złoży je ekran, są w `use-list-mutation.test.tsx`.
-- **Toasty** rysuje jeden `Toaster` w `main.tsx`. `toast` bierz z
-  `@tournament/ui`: do tego `Toaster` dociera tylko `toast` z tej samej kopii
-  `sonner`. Test ekranu montuje własny `<Toaster />` obok strony.
 
-Odrzucone w #86 i dlaczego:
+Odrzucone w #86 i dlaczego (#162 potwierdził to samo dla całego panelu):
 
 - **Zapis optymistyczny.** Okno zamknięte przed odpowiedzią nie ma gdzie
   pokazać błędu pola, więc zostałby tylko toast z cofnięciem. Kolejność listy

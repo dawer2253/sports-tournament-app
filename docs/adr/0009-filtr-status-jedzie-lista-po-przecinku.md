@@ -91,6 +91,14 @@ pojedynczy i bez `422`. Rozjazd jest świadomy — tam nie ma znanej potrzeby
 pytania o dwa stany naraz — ale znaczy, że „`status` w query" nie ma w tym API
 jednego kształtu; domknięcie należy do ticketu, który dowozi mecze.
 
+> Domknięte w [#174](https://github.com/dawer2253/sports-tournament-app/issues/174):
+> `status` przy meczach zostaje pojedynczą wartością, bo dalej nikt nie pyta
+> o dwa stany naraz, ale zła wartość (`?status=bogus`, także `scheduled,live`)
+> i filtr o złym typie dają już `422`, z tego samego powodu co tutaj: cicha
+> lista bez filtra wyglądałaby jak filtr działający. Kształt parametru dalej
+> różni się od `GET /tournaments`; reguła o odrzucaniu złej wartości jest
+> wspólna.
+
 Płacimy też tym, że przecinek jest rozstrzygnięciem o **całej** serializacji
 tablic w query, nie tylko o tym parametrze: `querySerializer` jest globalny, więc
 każdy przyszły tablicowy parametr musi być w kontrakcie opisany tak samo.

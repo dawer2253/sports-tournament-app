@@ -17,6 +17,7 @@ const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   venues: 'venues',
   settings: 'settings',
   standings: 'standings',
+  schedule: 'schedule',
 };
 
 /** Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran. */

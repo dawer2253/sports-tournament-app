@@ -303,6 +303,8 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 - Wycofanie drużyny w trakcie sezonu, z walkowerami za jej pozostałe mecze.
   Dziś drużyny z meczem rozegranym albo trwającym nie da się usunąć, a bez
   takiego meczu usunięcie kasuje jej mecze zaplanowane (#171).
+- Zmiana nazwy kolejki przez organizatora. W S2 generator nadaje nazwy
+  „Kolejka 1”, „Kolejka 2”… i panel ich nie zmienia (#162).
 
 ---
 
