@@ -1,13 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+/* Warianty, których oczekują komponenty z generatora radix-nova (`data-checked`,
+   `data-open`, `data-active`…). Bez nich Tailwind czyta `data-checked:` jako
+   goły atrybut `[data-checked]`, a Radix ustawia `data-state="checked"`, więc
+   zaznaczony Switch wyglądał na pusty (#172). Plik idzie z tej samej wersji
+   paczki co CLI, więc kolejne `npx shadcn add` nie przyniosą wariantu bez
+   definicji. */
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
-
-/* Warianty wymagane przez komponenty shadcn radix-nova (normalnie z shadcn/tailwind.css) */
-@custom-variant data-horizontal (&[data-orientation="horizontal"]);
-@custom-variant data-vertical (&[data-orientation="vertical"]);
-@custom-variant data-active (&[data-state="active"]);
 
 /*
   MOTYW — „pitch" (TournamentApp)
