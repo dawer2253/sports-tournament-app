@@ -27,7 +27,7 @@ class StoreTeamRequest extends TeamRequest
     public function after(): array
     {
         return [
-            $this->checkPlayNotStarted(...),
+            $this->checkNoStartedMatches(...),
             ChildLimit::check(
                 $this->tournament()->teams(),
                 Tournament::MAX_TEAMS,
@@ -38,12 +38,12 @@ class StoreTeamRequest extends TeamRequest
     }
 
     /**
-     * Po rozpoczęciu gry (mecz `live` albo `finished`) nowa drużyna nie
+     * Przy meczu rozpoczętym (`live` albo `finished`) nowa drużyna nie
      * miałaby już miejsca w terminarzu, bo meczów do istniejących kolejek nikt
      * nie dopisuje (#171). Wcześniej dodanie przechodzi, a terminarz obejmie
      * nową drużynę dopiero po ponownym wygenerowaniu.
      */
-    private function checkPlayNotStarted(Validator $validator): void
+    private function checkNoStartedMatches(Validator $validator): void
     {
         if ($this->tournament()->hasStartedMatches()) {
             $validator->errors()->add('teams', 'Turniej ma rozegrane lub trwające mecze, więc nie można dodać drużyny.');
