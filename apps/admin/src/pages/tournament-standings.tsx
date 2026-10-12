@@ -166,12 +166,10 @@ function StandingsSection({
     code,
     label: label(code),
   }));
-  // Kolumnę R rozstrzyga dopiero `GET /sports`, więc tabela czeka na niego
-  // (w szkielecie bez R), żeby koszykówka nie mignęła remisami. Gdy sporty
-  // padną, tabela wychodzi z kolumną R — lepsza niż brak tabeli.
-  const allowsDraw = sport?.config.allowsDraw ?? sportsFailed;
-  const columnsKnown = sport !== undefined || sportsFailed;
-  const ready = columnsKnown ? tables : undefined;
+  // Kolumnę R, jak nagłówek zdobyczy i zdanie pod tabelą, niesie odpowiedź
+  // tabeli (`allowsDraw`), więc tabela nie czeka na `GET /sports`. Ten jest
+  // potrzebny już tylko edytorowi kryteriów.
+  const ready = tables;
 
   // Faza pucharowa nie ma tabeli, więc i kolejności nie ma czego ustawiać.
   if (tables && tables.length === 0) {
@@ -228,7 +226,7 @@ function StandingsSection({
               <StandingsTable
                 rows={table.rows}
                 scoreLabel={table.scoreLabel}
-                allowsDraw={allowsDraw}
+                allowsDraw={table.allowsDraw}
                 previousPositions={previousPositions}
                 emptyAction={teamsLink}
               />
@@ -238,7 +236,8 @@ function StandingsSection({
           <StandingsTable
             rows={[]}
             scoreLabel=""
-            allowsDraw={allowsDraw}
+            // Szkielet bez R: przed odpowiedzią nie wiadomo, czy sport zna remisy.
+            allowsDraw={false}
             status={base.isError ? 'error' : 'pending'}
             errorMessage={base.error?.message}
             onRetry={() => void base.refetch()}
