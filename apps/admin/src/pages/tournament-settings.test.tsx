@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { setToken } from '../lib/session';
 import { routes } from '../routes';
 import { API_URL as API, PUBLIC_URL, server } from '../test/server';
+import { allTournaments, currentTournaments } from '../test/current-tournaments';
 
 const ME = {
   data: { id: 1, name: 'Dawid Patko', email: 'dawid@example.com', createdAt: '2026-09-01T10:00:00+02:00' },
@@ -95,6 +96,7 @@ beforeEach(() => {
   setToken('1|token');
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
+    currentTournaments(),
     http.get(`${API}/sports`, () => HttpResponse.json({ data: SPORTS })),
   );
 });
@@ -636,7 +638,7 @@ describe('ustawienia turnieju: usuwanie', () => {
     const deletes: string[] = [];
     tournamentApi(FOOTBALL);
     server.use(
-      http.get(`${API}/tournaments`, () =>
+      allTournaments(() =>
         HttpResponse.json({
           data: tournaments,
           meta: { currentPage: 1, lastPage: 1, perPage: 20, total: tournaments.length },

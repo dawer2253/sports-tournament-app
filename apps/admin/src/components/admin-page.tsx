@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
+import { useCurrentTournaments } from '../lib/use-current-tournaments';
 
 /**
  * Sekcje turnieju, które mają już swoją trasę pod `/tournaments/:id`. Reszta
@@ -20,14 +21,18 @@ const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   schedule: 'schedule',
 };
 
+/** Adres turnieju, czyli jego domyślnej sekcji (indeks trasy przekierowuje). */
+function tournamentRoute(id: number): string {
+  return `/tournaments/${id}`;
+}
+
 /** Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran. */
 function navRoute(key: AdminNavKey, tournament: Tournament | undefined): string | undefined {
   if (key === 'dashboard') return '/';
+  if (key === 'create') return '/tournaments/new';
   if (!tournament) return undefined;
-  const base = `/tournaments/${tournament.id}`;
-  if (key === 'tournament') return base;
   const section = SECTION_ROUTES[key];
-  return section && `${base}/${section}`;
+  return section && `${tournamentRoute(tournament.id)}/${section}`;
 }
 
 interface CommonProps {
@@ -73,6 +78,7 @@ export function AdminPage(props: AdminPageProps) {
   const { tournament, actions, children } = props;
   const navigate = useNavigate();
   const account = useAccount();
+  const tournaments = useCurrentTournaments();
 
   /**
    * Wylogowanie unieważnia token po stronie API, a nie tylko zapomina go
@@ -105,11 +111,14 @@ export function AdminPage(props: AdminPageProps) {
         : { active: props.active, title: props.title, subtitle: props.subtitle })}
       actions={actions}
       user={account}
+      tournaments={tournaments}
       navHref={(key) => navRoute(key, tournament)}
       onNavigate={(key) => {
         const route = navRoute(key, tournament);
         if (route) void navigate(route);
       }}
+      tournamentHref={tournamentRoute}
+      onOpenTournament={(id) => void navigate(tournamentRoute(id))}
       // Drugi klik przed odpowiedzią wysłałby drugie `/logout`, a to już na
       // unieważnionym tokenie — czyli 401 i przekierowanie w poprzek pierwszego.
       onLogout={() => {

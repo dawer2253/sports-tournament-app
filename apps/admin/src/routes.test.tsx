@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { setToken } from './lib/session';
 import { routes } from './routes';
 import { API_URL as API, server } from './test/server';
+import { allTournaments, currentTournaments } from './test/current-tournaments';
 
 const ME = {
   data: {
@@ -38,6 +39,7 @@ beforeEach(() => {
   setToken('1|token');
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
+    currentTournaments(),
     // Drużyny są ekranem domyślnym turnieju; ich treść sprawdza `pages/teams.test.tsx`.
     http.get(`${API}/tournaments/:id/teams`, () => HttpResponse.json({ data: [] })),
     // Obiekty służą tu za zwykłą sekcję; ich treść sprawdza `pages/tournament-venues.test.tsx`.
@@ -101,7 +103,7 @@ describe('trasy turnieju', () => {
     expect(await screen.findByRole('heading', { name: 'Puchar Zimowy' })).toBeInTheDocument();
     expect(requestedIds).toEqual(['7']);
     expect(screen.getByText('Koszykówka · /t/puchar-zimowy')).toBeInTheDocument();
-    // Status jest dwa razy: na karcie turnieju w sidebarze i w nagłówku, bo
+    // Status jest dwa razy: przy turnieju w sidebarze i w nagłówku, bo
     // poniżej `md` sidebaru nie ma.
     expect(screen.getAllByText('Szkic')).toHaveLength(2);
   });
@@ -173,19 +175,26 @@ describe('trasy turnieju', () => {
     expect(requestedIds).toEqual(['7']);
   });
 
-  it('karta turnieju w sidebarze wraca na drużyny', async () => {
+  it('turniej w sidebarze prowadzi na drużyny, a nie do sekcji, w której stoi organizer', async () => {
     tournamentEndpoint(() => HttpResponse.json({ data: TOURNAMENT }));
+    server.use(currentTournaments([{ ...TOURNAMENT, id: 8, name: 'Liga Letnia' }, TOURNAMENT]));
+    // Każdy ekran ma własny shell, więc listę szukamy od nowa po każdym przejściu.
+    const sidebar = async () => within(await screen.findByRole('list', { name: 'Bieżące turnieje' }));
 
-    const { router, user } = renderAt('/tournaments/7/settings');
+    const { router, user } = renderAt('/tournaments/7/venues');
     await screen.findByRole('heading', { name: 'Puchar Zimowy' });
 
-    const card = within(screen.getByRole('navigation', { name: 'Panel' })).getByRole('link', {
-      name: /Puchar Zimowy/,
-    });
-    expect(card).toHaveAttribute('href', '/tournaments/7');
-    await user.click(card);
-
+    // Otwarty turniej jest pozycją listy, podświetloną; osobnej karty nie ma.
+    const open = (await sidebar()).getByRole('link', { name: /Puchar Zimowy/ });
+    expect(open).toHaveAttribute('aria-current', 'page');
+    expect(open).toHaveAttribute('href', '/tournaments/7');
+    await user.click(open);
     expect(router.state.location.pathname).toBe('/tournaments/7/teams');
+
+    // Przełączenie turnieju nie przenosi sekcji: z obiektów A idzie na drużyny B.
+    await user.click(sectionTabs().getByRole('link', { name: 'Obiekty' }));
+    await user.click((await sidebar()).getByRole('link', { name: /Liga Letnia/ }));
+    expect(router.state.location.pathname).toBe('/tournaments/8/teams');
   });
 
   describe.each(SECTION_PATHS)('/tournaments/:id/%s', (section) => {
@@ -206,7 +215,7 @@ describe('trasy turnieju', () => {
       // Bez turnieju nie ma czego pokazać w kontekście: ani karty, ani kart sekcji.
       expect(screen.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument();
 
-      server.use(http.get(`${API}/tournaments`, () => HttpResponse.json(emptyList())));
+      server.use(allTournaments(() => HttpResponse.json(emptyList())));
       await user.click(screen.getByRole('button', { name: 'Wróć do listy turniejów' }));
       expect(router.state.location.pathname).toBe('/');
     });
@@ -302,9 +311,9 @@ describe('poza turniejem', () => {
   it.each([
     ['lista', '/', 'Twoje turnieje'],
     ['kreator', '/tournaments/new', 'Nowy turniej'],
-  ])('%s nie ma karty turnieju ani kart sekcji', async (_, path, heading) => {
+  ])('%s nie ma otwartego turnieju ani kart sekcji', async (_, path, heading) => {
     server.use(
-      http.get(`${API}/tournaments`, () => HttpResponse.json(emptyList())),
+      allTournaments(() => HttpResponse.json(emptyList())),
       http.get(`${API}/sports`, () => HttpResponse.json({ data: [] })),
     );
 
@@ -312,11 +321,12 @@ describe('poza turniejem', () => {
 
     await screen.findByRole('heading', { name: heading });
     expect(screen.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument();
-    expect(
-      within(screen.getByRole('navigation', { name: 'Panel' }))
-        .getAllByRole('link')
-        .map((link) => link.textContent),
-    ).toEqual(['Turnieje']);
+    // Sidebar po przyjściu listy: bez bieżących jest tylko wyjście do kreatora.
+    const sidebar = within(screen.getByRole('navigation', { name: 'Panel' }));
+    await sidebar.findByText(/Brak bieżących turniejów/);
+    expect(sidebar.getAllByRole('link').map((link) => link.textContent)).toEqual(['Turnieje', 'Nowy turniej']);
+    expect(sidebar.getByRole('link', { name: 'Nowy turniej' })).toHaveAttribute('href', '/tournaments/new');
+    expect(sidebar.queryByRole('list', { name: 'Otwarty turniej' })).not.toBeInTheDocument();
   });
 });
 

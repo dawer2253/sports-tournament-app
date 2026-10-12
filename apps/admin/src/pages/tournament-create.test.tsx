@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_URL as API, server } from '../test/server';
+import { currentTournaments } from '../test/current-tournaments';
 import { TournamentCreatePage } from './tournament-create';
 
 const SPORTS = {
@@ -28,6 +29,7 @@ beforeEach(() => {
     http.get(`${API}/sports`, () => HttpResponse.json(SPORTS)),
     // Shell panelu pokazuje zalogowane konto na każdym ekranie.
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
+    currentTournaments(),
   );
 });
 
