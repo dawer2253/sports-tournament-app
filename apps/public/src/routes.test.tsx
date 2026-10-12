@@ -45,7 +45,8 @@ describe('trasa turnieju', () => {
     expect(router.state.location.pathname).toBe(`/t/${SLUG}/tabela`);
   });
 
-  it('404 turnieju daje „Nie ma takiego turnieju”, bez shella', async () => {
+  it('404 turnieju daje „Nie ma takiego turnieju”, bez shella i z tym samym tytułem karty', async () => {
+    document.title = 'Liga z poprzedniej wizyty';
     server.use(
       http.get(`${API}/public/t/:slug`, () => HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 })),
     );
@@ -53,6 +54,24 @@ describe('trasa turnieju', () => {
 
     expect(await screen.findByText('Nie ma takiego turnieju')).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument();
+    expect(document.title).toBe('Nie ma takiego turnieju');
+  });
+
+  it('po 404 turnieju odpytywanie staje', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let requests = 0;
+    server.use(
+      http.get(`${API}/public/t/:slug`, () => {
+        requests++;
+        return HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 });
+      }),
+    );
+    renderAt('/t/nie-ma-takiego');
+    await screen.findByText('Nie ma takiego turnieju');
+
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
+
+    expect(requests).toBe(1);
   });
 
   it('inny błąd turnieju pokazuje komunikat z odpowiedzi', async () => {
@@ -87,7 +106,7 @@ describe('trasa turnieju', () => {
     await waitFor(() => expect(document.title).toBe('Puchar Jesieni 2026'));
   });
 
-  it('meta pod nazwą ma „Zakończony” przy turnieju finished, a przy active nie', async () => {
+  it('meta pod nazwą ma „Zakończony” przy turnieju finished', async () => {
     publicApi({ data: tournament({ status: 'finished' }) });
     renderAt(`/t/${SLUG}`);
     const header = within(await screen.findByRole('banner'));

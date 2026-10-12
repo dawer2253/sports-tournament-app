@@ -1,6 +1,9 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { HttpResponse, http } from 'msw';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { POLL_INTERVAL_MS } from '../lib/api';
+import { API_URL as API, server } from '../test/server';
 import { SLUG, finished, match, publicApi, renderAt } from '../test/public-api';
 
 /** Lista kolejek w widoku od `lg` (pod `lg` stoi zwinięty przycisk). */
@@ -14,6 +17,10 @@ function roundNames() {
     .getAllByRole('button')
     .map((button) => button.textContent?.match(/^Kolejka \d+/)?.[0]);
 }
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('Terminarz', () => {
   it('kolejki idą rosnąco, a na starcie wybrana jest pierwsza', async () => {
@@ -61,6 +68,37 @@ describe('Wyniki', () => {
 
     expect(await screen.findByRole('region', { name: 'Kolejka 3' })).toBeInTheDocument();
     expect(roundNames()).toEqual(['Kolejka 3', 'Kolejka 2', 'Kolejka 1']);
+  });
+
+  it('po odświeżeniu z nową kolejką ekran przechodzi na nią, gdy kibic niczego nie wybrał', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    publicApi({ results: [finished(1, 1)] });
+    renderAt(`/t/${SLUG}/wyniki`);
+    await screen.findByRole('region', { name: 'Kolejka 1' });
+
+    server.use(http.get(`${API}/public/t/:slug/results`, () => HttpResponse.json({ data: [finished(2, 2), finished(1, 1)] })));
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+
+    expect(await screen.findByRole('region', { name: 'Kolejka 2' })).toBeInTheDocument();
+  });
+
+  it('kolejka wybrana przez kibica zostaje po odświeżeniu, a gdy zniknie, wybór wraca do pierwszej', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    publicApi({ fixtures: [match(1, 1), match(2, 2)] });
+    renderAt(`/t/${SLUG}/terminarz`);
+    await screen.findByRole('region', { name: 'Kolejka 1' });
+    await user.click(roundList().getByRole('button', { name: /Kolejka 2/ }));
+
+    // Nowa kolejka na początku listy nie zabiera wyboru kibica.
+    server.use(http.get(`${API}/public/t/:slug/fixtures`, () => HttpResponse.json({ data: [match(3, 1), match(2, 2)] })));
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+    expect(screen.getByRole('region', { name: 'Kolejka 2' })).toBeInTheDocument();
+
+    // Kolejka 2 wypadła z terminarza: wybór wraca do pierwszej z listy.
+    server.use(http.get(`${API}/public/t/:slug/fixtures`, () => HttpResponse.json({ data: [match(3, 1)] })));
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+    expect(await screen.findByRole('region', { name: 'Kolejka 1' })).toBeInTheDocument();
   });
 
   it('bez rozegranych meczów mówi o tym wprost', async () => {

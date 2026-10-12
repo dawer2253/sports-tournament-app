@@ -3,6 +3,7 @@ import { FixturesPage } from './pages/fixtures';
 import { NotFoundPage } from './pages/not-found';
 import { OverviewPage } from './pages/overview';
 import { ResultsPage } from './pages/results';
+import { StandalonePage } from './pages/standalone-page';
 import { StandingsPage } from './pages/standings';
 import { TournamentLayout, type TabHandle } from './pages/tournament-layout';
 
@@ -37,5 +38,12 @@ export const routes: RouteObject[] = [
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-  { path: '*', element: <main className="mx-auto max-w-5xl px-4 py-16 sm:px-6"><NotFoundPage /></main> },
+  {
+    path: '*',
+    element: (
+      <StandalonePage>
+        <NotFoundPage />
+      </StandalonePage>
+    ),
+  },
 ];
