@@ -32,6 +32,12 @@ turniej znaczy przestawić go ze szkicu na trwający. Zakończenie to deklaracja
 organizera, że rozgrywki się skończyły, a nie blokada zmian. Turniej, który ma
 mecz rozpoczęty (patrz `Match`), nie wraca do szkicu.
 
+**Bieżący turniej** to turniej w szkicu albo trwający, czyli każdy poza
+zakończonym. To ten, nad którym organizer jeszcze pracuje.
+
+_Unikaj_: „archiwalny” i „zarchiwizowany”. Archiwum nie jest osobnym stanem ani
+flagą. Turniej, który przestał być bieżący, jest po prostu zakończony.
+
 ## Slug
 
 Krótki, czytelny identyfikator turnieju używany w publicznym adresie. Unikalny
