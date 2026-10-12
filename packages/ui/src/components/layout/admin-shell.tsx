@@ -1,7 +1,7 @@
 import * as React from 'react'
 import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Settings,
-  Trophy, Search, Bell, LogOut, GitFork, ListOrdered,
+  Trophy, Search, Bell, LogOut, GitFork, ListOrdered, Menu,
 } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
@@ -12,6 +12,7 @@ import { Button } from '../ui/button'
 import { Avatar, AvatarFallback } from '../ui/avatar'
 import { Skeleton } from '../ui/skeleton'
 import { Heading } from '../ui/typography'
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '../ui/sheet'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
   DropdownMenuSeparator, DropdownMenuTrigger,
@@ -354,8 +355,8 @@ function TournamentList({
 /**
  * Karty sekcji pod tytułem. To nawigacja między ekranami, a nie ARIA
  * `tablist`: każda karta prowadzi pod inny adres, więc aktywną oznacza
- * `aria-current`. Na wąskim ekranie, gdzie nie ma sidebaru, karty przewijają
- * się w poziomie.
+ * `aria-current`. Na wąskim ekranie, gdzie sidebar chowa się do szuflady,
+ * karty przewijają się w poziomie.
  */
 function SectionTabs(nav: NavProps) {
   return (
@@ -388,6 +389,127 @@ function initials(name: string): string {
     .join('')
 }
 
+/** Konto tak, jak pokazują je sidebar i header. */
+interface AccountView {
+  name: string
+  avatar: string
+  email: string
+  isPending: boolean
+  isUnknown: boolean
+}
+
+function accountView(user: AdminShellAccount): AccountView {
+  const isPending = user === 'pending'
+  const isUnknown = user === null
+  // Nazwy ani inicjału nie zgadujemy: „W" od „Wczytywanie…" wyglądało jak
+  // inicjał prawdziwego konta, a nazwa zastępcza jak nazwa cudzego.
+  return {
+    name: isUnknown ? 'Konto nieustalone' : isPending ? 'Wczytywanie konta…' : user.name,
+    avatar: isUnknown || isPending ? '—' : initials(user.name),
+    email: isUnknown || isPending ? '' : user.email,
+    isPending,
+    isUnknown,
+  }
+}
+
+type SidebarProps = TournamentNavProps & Pick<AdminShellProps, 'tournaments' | 'tournament'> & { account: AccountView }
+
+/**
+ * Zawartość sidebaru: marka, „Turnieje" z listą bieżących i konto. Na
+ * desktopie stoi w `<aside>`, a poniżej `md` w szufladzie spod przycisku menu
+ * (#196), żeby telefon miał te same cele co desktop.
+ */
+function SidebarContent({ account, tournaments, tournament, tournamentHref, onOpenTournament, ...nav }: SidebarProps) {
+  return (
+    <>
+      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4">
+        <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
+          <Trophy className="size-4" />
+        </span>
+        <span className="text-sm font-bold tracking-tight">
+          Tournament<span className="text-primary">App</span>
+        </span>
+      </div>
+
+      {/* Sekcji turnieju tu nie ma: są kartami pod tytułem, a dwie nawigacje
+          na te same ekrany tylko by się dublowały. */}
+      <nav aria-label="Panel" className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
+        <TournamentsLink {...nav} />
+        <TournamentList
+          tournaments={tournaments}
+          tournament={tournament}
+          tournamentHref={tournamentHref}
+          onOpenTournament={onOpenTournament}
+          {...nav}
+        />
+      </nav>
+
+      <div className="border-t border-sidebar-border p-2">
+        <div className="flex items-center gap-2.5 rounded-md p-2 transition-colors hover:bg-sidebar-accent/50">
+          <Avatar shape="square">
+            <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{account.avatar}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 text-xs leading-tight">
+            <div
+              className={cn('truncate font-medium', account.isUnknown && 'italic text-muted-foreground')}
+              aria-busy={account.isPending || undefined}
+            >
+              {account.name}
+            </div>
+            {account.email && <div className="truncate text-muted-foreground">{account.email}</div>}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/** Szerokość, od której stoi sidebar (`md` w Tailwindzie). */
+const SIDEBAR_QUERY = '(min-width: 48rem)'
+
+/**
+ * Szuflada z zawartością sidebaru poniżej `md` (#196). Wybranie celu ją
+ * zamyka: router podmienia ekran bez przeładowania, a ten sam shell zostaje
+ * zamontowany, np. przy przejściu z turnieju do turnieju, więc otwarta
+ * szuflada zasłaniałaby nowy ekran.
+ */
+function MobileNav({ onNavigate, onOpenTournament, ...sidebar }: SidebarProps) {
+  const [open, setOpen] = React.useState(false)
+
+  // Telefon obrócony do poziomu przekracza `md`: wtedy stoi już sidebar,
+  // a modalna szuflada z przyciemnieniem zostałaby nad nim bez przycisku.
+  React.useEffect(() => {
+    if (!open) return
+    const query = window.matchMedia(SIDEBAR_QUERY)
+    const close = () => { if (query.matches) setOpen(false) }
+    close()
+    query.addEventListener('change', close)
+    return () => query.removeEventListener('change', close)
+  }, [open])
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu panelu">
+          <Menu className="size-4" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent
+        side="left"
+        aria-describedby={undefined}
+        className="w-72 max-w-[85vw] gap-0 bg-sidebar text-sidebar-foreground"
+      >
+        <SheetTitle className="sr-only">Menu panelu</SheetTitle>
+        <SidebarContent
+          {...sidebar}
+          onNavigate={onNavigate && ((key) => { setOpen(false); onNavigate(key) })}
+          onOpenTournament={onOpenTournament && ((id) => { setOpen(false); onOpenTournament(id) })}
+        />
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 export function AdminShell({
   active,
   tournament,
@@ -404,60 +526,19 @@ export function AdminShell({
   onLogout,
 }: AdminShellProps) {
   const nav: NavProps = { active, navHref, onNavigate }
-  const isPending = user === 'pending'
-  // Nazwy ani inicjału nie zgadujemy: „W" od „Wczytywanie…" wyglądało jak
-  // inicjał prawdziwego konta, a nazwa zastępcza jak nazwa cudzego.
-  const accountName = user === null ? 'Konto nieustalone' : isPending ? 'Wczytywanie konta…' : user.name
-  const avatar = user === null || isPending ? '—' : initials(user.name)
-  const accountEmail = user === null || isPending ? '' : user.email
+  const account = accountView(user)
+  const sidebar: SidebarProps = { ...nav, account, tournaments, tournament, tournamentHref, onOpenTournament }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      {/* Sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4">
-          <span className="grid size-7 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
-            <Trophy className="size-4" />
-          </span>
-          <span className="text-sm font-bold tracking-tight">
-            Tournament<span className="text-primary">App</span>
-          </span>
-        </div>
-
-        {/* Sekcji turnieju tu nie ma: są kartami pod tytułem, a dwie nawigacje
-            na te same ekrany tylko by się dublowały. */}
-        <nav aria-label="Panel" className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
-          <TournamentsLink {...nav} />
-          <TournamentList
-            tournaments={tournaments}
-            tournament={tournament}
-            tournamentHref={tournamentHref}
-            onOpenTournament={onOpenTournament}
-            {...nav}
-          />
-        </nav>
-
-        <div className="border-t border-sidebar-border p-2">
-          <div className="flex items-center gap-2.5 rounded-md p-2 transition-colors hover:bg-sidebar-accent/50">
-            <Avatar shape="square">
-              <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 text-xs leading-tight">
-              <div
-                className={cn('truncate font-medium', user === null && 'italic text-muted-foreground')}
-                aria-busy={isPending || undefined}
-              >
-                {accountName}
-              </div>
-              {accountEmail && <div className="truncate text-muted-foreground">{accountEmail}</div>}
-            </div>
-          </div>
-        </div>
+        <SidebarContent {...sidebar} />
       </aside>
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-card px-4 sm:px-6">
+          <MobileNav {...sidebar} />
           <div className="relative w-72 max-w-[40vw]">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="h-9 pl-9" placeholder="Szukaj turnieju, drużyny…" />
@@ -474,12 +555,12 @@ export function AdminShell({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="cursor-pointer rounded-md border-0" aria-label="Menu konta">
                   <Avatar shape="square">
-                    <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{avatar}</AvatarFallback>
+                    <AvatarFallback className="bg-primary text-xs font-semibold text-primary-foreground">{account.avatar}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{accountName}</DropdownMenuLabel>
+                <DropdownMenuLabel>{account.name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem><Settings className="size-4" /> Ustawienia konta</DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onClick={onLogout}><LogOut className="size-4" /> Wyloguj</DropdownMenuItem>
@@ -496,7 +577,7 @@ export function AdminShell({
             </div>
             {(tournament || actions) && (
               <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
-                {/* Status stoi też tutaj, bo poniżej `md` sidebaru z listą turniejów nie ma. */}
+                {/* Status stoi też tutaj, bo poniżej `md` lista turniejów siedzi w zamkniętej szufladzie. */}
                 {tournament && <TournamentStatusBadge status={tournament.status} />}
                 {actions}
               </div>
