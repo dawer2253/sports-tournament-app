@@ -1,5 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
+import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchCollision, MatchRowData } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
 import type { RoundSummary } from '../components/data/round-summary'
@@ -545,3 +546,69 @@ export function scheduleRounds(matches: ScheduleDemoMatch[]): RoundSummary[] {
     collisions: roundMatches.filter((match) => (match.collisions?.length ?? 0) > 0).length,
   }))
 }
+
+// --- Zdarzenia meczu (#200) --------------------------------------------------
+
+/** Typy zdarzeń sportów, dosłownie z przykładu `GET /sports` w kontrakcie. */
+export const eventTypesBySport: Record<'football' | 'basketball', EventTypeOption[]> = {
+  football: [
+    { code: 'goal', label: 'Bramka', hasPlayer: true, value: 1, stat: 'goals' },
+    { code: 'own_goal', label: 'Bramka samobójcza', hasPlayer: true, value: 1, stat: null },
+    { code: 'yellow_card', label: 'Żółta kartka', hasPlayer: true, value: 1, stat: 'yellowCards' },
+    { code: 'red_card', label: 'Czerwona kartka', hasPlayer: true, value: 1, stat: 'redCards' },
+  ],
+  basketball: [
+    { code: 'free_throw', label: 'Rzut wolny', hasPlayer: true, value: 1, stat: 'points' },
+    { code: 'two_pointer', label: 'Rzut za 2', hasPlayer: true, value: 2, stat: 'points' },
+    { code: 'three_pointer', label: 'Rzut za 3', hasPlayer: true, value: 3, stat: 'points' },
+    { code: 'foul', label: 'Faul', hasPlayer: true, value: 1, stat: 'fouls' },
+  ],
+}
+
+/**
+ * Statystyka-zdobycz sportu: pierwszy wpis `availableStats` (#190), czyli
+ * bramki w piłce i punkty w koszu. Jej typy dostają wyróżnione przyciski.
+ */
+export const scoringStatBySport: Record<'football' | 'basketball', string> = {
+  football: 'goals',
+  basketball: 'points',
+}
+
+const ROSTER_FIRST = ['Jan', 'Piotr', 'Marek', 'Tomasz', 'Kamil', 'Paweł', 'Adam', 'Michał', 'Łukasz', 'Bartosz', 'Szymon']
+const ROSTER_LAST = ['Kowalski', 'Nowak', 'Wiśniewski', 'Wójcik', 'Kamiński', 'Lewandowski', 'Zieliński', 'Szymański', 'Woźniak', 'Dąbrowski', 'Mazur']
+
+/**
+ * Skład drużyny do siatki numerów: jedenastu zawodników, dwóch ostatnich bez
+ * numeru, w kolejności z API (numery rosnąco, bez numeru na końcu).
+ * Deterministyczny, żeby snapshoty Chromatica się nie zmieniały.
+ */
+export function demoRoster(teamId: number): RosterPlayer[] {
+  return ROSTER_FIRST.map((first, index) => ({
+    id: teamId * 100 + index + 1,
+    name: `${first} ${ROSTER_LAST[(index + teamId) % ROSTER_LAST.length]}`,
+    number: index < 9 ? index * 2 + 1 + (teamId % 2) : null,
+  }))
+}
+
+/** Mecz w trakcie z terminarza demo — na nim okno meczu pokazuje zdarzenia. */
+export const matchInProgress: ScheduleDemoMatch = scheduleInProgress.find((match) => match.status === 'live')!
+
+/**
+ * Zdarzenia meczu w trakcie (wynik 1:0): bramka gospodarza, kartka gościa
+ * i kartka bez minuty, która stoi na końcu osi (#188, reguła 10).
+ */
+export const matchInProgressEvents: MatchEventRow[] = (() => {
+  const home = matchInProgress.homeTeam!
+  const away = matchInProgress.awayTeam!
+  const homeRoster = demoRoster(home.id)
+  const awayRoster = demoRoster(away.id)
+  return [
+    { id: 1, team: home, player: homeRoster[6], type: 'goal', typeLabel: 'Bramka', minute: 23 },
+    { id: 2, team: away, player: awayRoster[3], type: 'yellow_card', typeLabel: 'Żółta kartka', minute: 31 },
+    { id: 3, team: home, player: homeRoster[2], type: 'yellow_card', typeLabel: 'Żółta kartka', minute: null },
+  ].map((event) => ({
+    ...event,
+    team: { id: event.team.id, name: event.team.name },
+    player: { id: event.player.id, name: event.player.name },
+  }))
+})()

@@ -5,55 +5,80 @@ import * as Stories from './admin-match-result.stories'
 
 # Wynik meczu (Admin): specyfikacja
 
-Okno edycji pojedynczego meczu, otwierane z wiersza terminarza: wynik, stan,
-termin, obiekt i kolizje terminu. Bez sekcji zdarzeń — ta dojdzie tu w S3.
+Okno pojedynczego meczu, otwierane z wiersza terminarza: wynik, stan, termin,
+obiekt, kolizje terminu i zdarzenia meczu. Układ zdarzeń wybrał prototyp
+[#191](https://github.com/dawer2253/sports-tournament-app/issues/191) (wariant E
+na gałęzi `prototype/zdarzenia-meczu`), a reguły zapisu ustalił
+[#188](https://github.com/dawer2253/sports-tournament-app/issues/188).
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
 Umożliwić organizatorowi wpisanie wyniku, zmianę stanu i korektę terminu oraz
-obiektu jednego meczu, z jednego okna nad terminarzem.
+obiektu jednego meczu, a przy stoliku — szybkie wpisywanie zdarzeń meczu
+trwającego, z jednego okna nad terminarzem.
 
 ## Dane (wejście)
 - Pojedynczy mecz (`AdminMatch`): drużyny gospodarza i gościa,
   `homeScore`/`awayScore`, `status`, `round`, `matchNumber`, `kickoffAt`,
   `venue` i `collisions`.
 - Lista obiektów turnieju do pola „Obiekt” (`Venue`) plus pozycja „Bez obiektu”.
-- Tytuł okna to „Gospodarz – Gość”, a opis „Kolejka 7 · mecz 3”. Metadane
-  meczu stoją w opisie, bo wiersz w terminarzu już mówi, o który mecz chodzi.
+- Zdarzenia meczu (`GET /matches/{match}/events`), typy zdarzeń sportu z ich
+  etykietami i `value` (`GET /sports`) oraz składy obu drużyn
+  (`GET /teams/{team}/players`).
+- Tytuł okna to „Gospodarz – Gość”, a opis „Kolejka 7 · mecz 3”.
+
+## Układ
+- U góry wynik i przełącznik stanu w jednym rzędzie. Termin i obiekt są
+  zwinięte pod „Termin i obiekt”.
+- Pod nimi kolizje terminu, jeśli są.
+- Sekcja „Zdarzenia”: dwie kolumny drużyn z przyciskami typów
+  (`EventTypeButtons`). Klik w typ zamienia kolumnę na siatkę numerów
+  (`PlayerNumberGrid`), a klik w numer zapisuje zdarzenie i wraca do przycisków.
+- Pod sekcją oś meczu (`MatchTimeline`): gospodarz z lewej, gość z prawej,
+  minuta pośrodku.
 
 ## Reguły
 - Wynik: dwie liczby całkowite 0–999 rozdzielone dwukropkiem; puste pole to brak
-  wyniku. Pusty blok `__ : __` jest zapisywany jako `homeScore: null,
-  awayScore: null`.
-- Stan: dokładnie jeden z trzech (`Zaplanowany`, `Trwa`, `Zakończony`) jako grupa
-  radio. „Trwa” na meczu bez wyniku wstawia `0:0`, a „Zaplanowany” czyści oba
-  pola i wysyła jawne `null` (API nie gubi wyniku po cichu, #159).
-- Błędy pary wyniku stoją pod całym blokiem (klucz `homeScore`), a termin
-  i obiekt przy swoich polach.
+  wyniku. „Trwa” na meczu bez wyniku wstawia `0:0`, a „Zaplanowany” czyści oba
+  pola i wysyła jawne `null` (#159).
+- **Dwa sposoby zapisu w jednym oknie.** Zdarzenia zapisują się od razu,
+  osobnym zasobem; wynik, stan, termin i obiekt dopiero po „Zapisz”. Okno mówi
+  to jednym zdaniem przy przyciskach, a zdarzenia nie leżą w `<form>` meczu, więc
+  Enter w polu minuty nie wysyła meczu.
+- **Minuta** stoi nad siatką numerów i pamięta ostatnią wartość, dopóki okno
+  jest otwarte. Przy pierwszym wpisie jest pusta, a pusta zapisuje zdarzenie bez
+  minuty. Doliczony czas „90+3” wpisuje się jako 93.
+- **Mecz zapisany jako zaplanowany** nie przyjmuje zdarzeń: zamiast przycisków
+  typów stoi „Zdarzenia wpiszesz, gdy mecz się zacznie” i „Rozpocznij mecz”,
+  które od razu zapisuje stan „Trwa” z `0:0`.
+- **Edycja i usuwanie**: klik w zdarzenie na osi otwiera pod-okno z typem,
+  drużyną, zawodnikiem i minutą. W nim „Usuń zdarzenie” z potwierdzeniem.
+- **Samobój** należy do drużyny strzelca, a bramkę daje przeciwnikowi; na osi
+  ma dopisek, że nie wlicza się do klasyfikacji.
+- **Cicha linia zgodności**: pod osią, tylko przy rozjeździe, „Bramki ze
+  zdarzeń: 2:0 · wynik meczu 1:0” (w koszu „Punkty”). Niczego nie blokuje —
+  API zgodności nie sprawdza (#188, reguła 11).
 - Kolizje terminu to lista „Kolizja drużyny / boiska: Lwy – Żubry (Kolejka 8,
   ndz. 25 paź, 10:00)” z dopiskiem „Kolizja nie blokuje zapisu”. Kliknięcie
-  pozycji otwiera okno tamtego meczu (w panelu przełącza też listę kolejek).
+  pozycji otwiera okno tamtego meczu.
 
 ## Stany
-- **Edycja wyniku** (domyślny, powyżej): mecz z wynikiem i ewentualnymi kolizjami.
-- **Bez wyniku**: pola wyniku puste, status `Zaplanowany`, brak kolizji.
-- **Zapisywanie**: przycisk `Zapisz` w stanie ładowania, formularz zablokowany.
-- **Błąd**: komunikat `422` pod blokiem wyniku, przy terminie albo przy obiekcie.
+- **Mecz w trakcie** (domyślny, powyżej): zdarzenia na osi, przyciski typów
+  aktywne.
+- **Zaplanowany** (story `Zaplanowany`): sekcja zdarzeń z „Rozpocznij mecz”.
+- **Bez zdarzeń**: oś mówi „Brak zdarzeń.”.
+- **Zapisywanie**: przyciski typów i siatka niedostępne do odpowiedzi.
+- **Błąd**: `422` zdarzenia przy polu w pod-oknie edycji; `422` meczu pod
+  blokiem wyniku, przy terminie albo przy obiekcie.
 
 ## Zachowanie
-- Jeden `PATCH /matches/{match}` przy „Zapisz”, także przy zmianie samego
-  terminu albo obiektu. Sukces zamyka okno i pokazuje toast.
-- Edycja meczu `finished` odbywa się bez ostrzeżenia i bez potwierdzenia —
-  tabela liczy się przy odczycie.
-- Pusty termin wysyła `kickoffAt: null` („Termin do ustalenia”), a „Bez obiektu”
-  `venueId: null`.
+- Zdarzenie: `POST /matches/{match}/events` po kliknięciu numeru, z toastem
+  i „Cofnij”; poprawka `PATCH /match-events/{event}`, usunięcie
+  `DELETE /match-events/{event}`.
+- Mecz: jeden `PATCH /matches/{match}` przy „Zapisz”. Cofnięcie do
+  zaplanowanych meczu ze zdarzeniami daje `422` pod stanem.
 
 ## Poza zakresem
-- Zdarzenia meczowe (S3) dochodzą do tego samego okna; ten ekran ich nie
-  projektuje.
 - Karne (S4).
-
-## Otwarte pytania
-- Czy zdarzenia S3 wejdą do tego okna z przewijaniem, czy mecz dostanie osobną
-  stronę ze zdarzeniami w oknach (jak drużyna → skład)? Rozstrzyga S3.
+- Skróty klawiszowe przy stoliku i historia zmian zdarzeń.

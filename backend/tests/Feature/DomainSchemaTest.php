@@ -162,7 +162,7 @@ it('ma sporty w bazie zaraz po migracji, zgodne z kontraktem', function () {
         ->and($football->eventTypeCodes())->toBe(['goal', 'own_goal', 'yellow_card', 'red_card'])
         ->and($basketball->defaultPoints())->toBe(['win' => 2, 'draw' => 0, 'loss' => 1])
         ->and($basketball->allowsDraw())->toBeFalse()
-        ->and($basketball->eventTypeCodes())->toBe(['points', 'foul']);
+        ->and($basketball->eventTypeCodes())->toBe(['free_throw', 'two_pointer', 'three_pointer', 'foul']);
 });
 
 it('ma domyślną kolejność tiebreaków per sport, zgodną z kontraktem', function () {

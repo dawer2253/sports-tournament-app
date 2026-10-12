@@ -47,7 +47,21 @@ class UpdateMatchRequest extends FormRequest
         return [
             $this->checkVenueOwnership(...),
             $this->checkScoreAgainstStatus(...),
+            $this->checkEventsBeforeScheduled(...),
         ];
+    }
+
+    /**
+     * Mecz ze zdarzeniami nie wraca do `scheduled` (#188, reguła 8): zdarzeń
+     * nic nie kasuje kaskadowo, a mecz zaplanowany zdarzeń mieć nie może.
+     * Domyka to też guard zawodnika, który liczy zdarzenia tylko w meczach
+     * rozpoczętych (`Player::hasStartedMatches()`).
+     */
+    private function checkEventsBeforeScheduled(Validator $validator): void
+    {
+        if ($this->input('status') === 'scheduled' && $this->match()->events()->exists()) {
+            $validator->errors()->add('status', 'Mecz ma zdarzenia. Usuń je, zanim cofniesz mecz do zaplanowanych.');
+        }
     }
 
     /**

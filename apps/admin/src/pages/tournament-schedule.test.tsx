@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { AdminMatch, Stage, Team, Tournament } from '@tournament/api-client';
+import type { AdminMatch, MatchEvent, Player, Sport, Stage, Team, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -95,8 +95,36 @@ beforeEach(() => {
     http.get(`${API}/tournaments/${TOURNAMENT.id}/stages`, () => HttpResponse.json({ data: [LEAGUE] })),
     http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => HttpResponse.json({ data: TEAMS })),
     http.get(`${API}/tournaments/${TOURNAMENT.id}/venues`, () => HttpResponse.json({ data: [] })),
+    // Okno meczu rozpoczętego pobiera zdarzenia i typy sportu (#200).
+    http.get(`${API}/sports`, () => HttpResponse.json({ data: SPORTS })),
+    http.get(`${API}/matches/:match/events`, () => HttpResponse.json({ data: [] })),
+    http.get(`${API}/teams/:team/players`, () => HttpResponse.json({ data: [] })),
   );
 });
+
+/** Piłka z typami zdarzeń z kontraktu (`GET /sports`). */
+const SPORTS: Sport[] = [
+  {
+    id: 1,
+    code: 'football',
+    name: 'Piłka nożna',
+    config: {
+      allowsDraw: true,
+      defaultPoints: { win: 3, draw: 1, loss: 0 },
+      defaultMatchDuration: 60,
+      eventTypes: [
+        { code: 'goal', label: 'Bramka', hasPlayer: true, value: 1, stat: 'goals' },
+        { code: 'own_goal', label: 'Bramka samobójcza', hasPlayer: true, value: 1, stat: null },
+        { code: 'yellow_card', label: 'Żółta kartka', hasPlayer: true, value: 1, stat: 'yellowCards' },
+        { code: 'red_card', label: 'Czerwona kartka', hasPlayer: true, value: 1, stat: 'redCards' },
+      ],
+      defaultTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for'],
+      availableTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for', 'wins'],
+      tiebreakerLabels: {},
+      availableStats: ['goals', 'yellowCards', 'redCards'],
+    },
+  },
+];
 
 /**
  * Mecze fazy po stronie „serwera”, stronicowane po `perPage` z żądania, jak
@@ -578,5 +606,204 @@ describe('Terminarz — okno meczu (#176)', () => {
     expect(await within(dialog).findByText(message)).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Wynik Wilki Bemowo')).not.toHaveAttribute('aria-describedby');
     expect(within(dialog).getByLabelText('Wynik Sokoły Ursus')).not.toHaveAttribute('aria-describedby');
+  });
+});
+
+// --- zdarzenia meczu (#200) --------------------------------------------------
+
+const EVENTS_URL = `${API}/matches/:match/events`;
+const EVENT_URL = `${API}/match-events/:event`;
+
+/** Skład drużyny: dwóch zawodników z numerami. */
+function squad(teamId: number): Player[] {
+  return [
+    { id: teamId * 10 + 1, teamId, name: `Zawodnik ${teamId}A`, number: 7, position: null },
+    { id: teamId * 10 + 2, teamId, name: `Zawodnik ${teamId}B`, number: 9, position: null },
+  ];
+}
+
+function event(id: number, teamId: number, overrides: Partial<MatchEvent> = {}): MatchEvent {
+  const team = TEAMS.find((candidate) => candidate.id === teamId)!;
+  const player = squad(teamId)[0];
+  return {
+    id,
+    team: { id: team.id, name: team.name, logoUrl: null },
+    player: { id: player.id, name: player.name },
+    type: 'goal',
+    typeLabel: 'Bramka',
+    minute: 10,
+    ...overrides,
+  };
+}
+
+/**
+ * Zdarzenia meczu po stronie „serwera”: `POST` dopisuje, `DELETE` usuwa,
+ * a lista oddaje stan po zmianach. `posts` zbiera ciała zapisów.
+ */
+function serveEvents(initial: MatchEvent[] = []) {
+  const state = { events: [...initial], posts: [] as Record<string, unknown>[], deletes: [] as number[] };
+  server.use(
+    http.get(`${API}/teams/:team/players`, ({ params }) => HttpResponse.json({ data: squad(Number(params.team)) })),
+    http.get(EVENTS_URL, () => HttpResponse.json({ data: state.events })),
+    http.post(EVENTS_URL, async ({ request }) => {
+      const body = (await request.json()) as { teamId: number; playerId: number; type: string; minute: number | null };
+      state.posts.push(body);
+      const created = event(100 + state.posts.length, body.teamId, {
+        player: { id: body.playerId, name: squad(body.teamId).find((player) => player.id === body.playerId)!.name },
+        type: body.type,
+        typeLabel: SPORTS[0].config.eventTypes.find((type) => type.code === body.type)!.label,
+        minute: body.minute,
+      });
+      state.events.push(created);
+      return HttpResponse.json({ data: created }, { status: 201 });
+    }),
+    http.delete(EVENT_URL, ({ params }) => {
+      state.deletes.push(Number(params.event));
+      state.events = state.events.filter((candidate) => candidate.id !== Number(params.event));
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+  return state;
+}
+
+const LIVE = { status: 'live', homeScore: 1, awayScore: 0 } as const;
+
+describe('Terminarz — zdarzenia meczu (#200)', () => {
+  it('typ, potem numer wysyła POST z drużyną kolumny, zawodnikiem i minutą z pola', async () => {
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    const state = serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    const away = within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Sokoły Ursus' }));
+    await user.click(away.getByRole('button', { name: 'Bramka' }));
+    await user.type(await within(dialog).findByLabelText('Minuta'), '63');
+    await user.click(within(dialog).getByRole('button', { name: '9. Zawodnik 2B' }));
+
+    await waitFor(() => expect(state.posts).toHaveLength(1));
+    expect(state.posts[0]).toEqual({ type: 'goal', teamId: 2, playerId: 22, minute: 63 });
+    expect(await screen.findByText('63′ Bramka: Zawodnik 2B')).toBeInTheDocument();
+    // Po zapisie kolumna wraca do przycisków, a zdarzenie stoi na osi.
+    expect(
+      await within(dialog).findByRole('button', { name: 'Edytuj: 63′ Bramka, Zawodnik 2B (Sokoły Ursus)' }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByRole('group', { name: 'Zdarzenia: Sokoły Ursus' })).toBeInTheDocument();
+  });
+
+  it('minuta zostaje w polu po zapisie, a puste pole wysyła minute: null', async () => {
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    const state = serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    const homeButton = async (name: string) =>
+      within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' })).getByRole('button', { name });
+
+    // Bez minuty.
+    await user.click(await homeButton('Żółta kartka'));
+    await user.click(await within(dialog).findByRole('button', { name: '7. Zawodnik 1A' }));
+    await waitFor(() => expect(state.posts).toHaveLength(1));
+    expect(state.posts[0]).toMatchObject({ minute: null });
+
+    // Z minutą, która zostaje na kolejny wpis.
+    await user.click(await homeButton('Bramka'));
+    await user.type(await within(dialog).findByLabelText('Minuta'), '30');
+    await user.click(within(dialog).getByRole('button', { name: '7. Zawodnik 1A' }));
+    await waitFor(() => expect(state.posts).toHaveLength(2));
+    expect(state.posts[1]).toMatchObject({ minute: 30 });
+
+    await user.click(await homeButton('Bramka'));
+    expect(await within(dialog).findByLabelText('Minuta')).toHaveValue('30');
+  });
+
+  it('422 pod playerId w pod-oknie edycji siada przy polu zawodnika', async () => {
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    serveEvents([event(5, 1)]);
+    const message = 'Zawodnik nie gra w wybranej drużynie.';
+    server.use(
+      http.patch(EVENT_URL, () => HttpResponse.json({ message, errors: { playerId: [message] } }, { status: 422 })),
+    );
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(await within(dialog).findByRole('button', { name: 'Edytuj: 10′ Bramka, Zawodnik 1A (Wilki Bemowo)' }));
+    const edit = await screen.findByRole('dialog', { name: 'Edytuj zdarzenie' });
+    await user.click(within(edit).getByRole('button', { name: 'Zapisz' }));
+
+    const error = await within(edit).findByText(message);
+    // Pod polem zawodnika, a nie nad przyciskami.
+    expect(within(error.parentElement!).getByText('Zawodnik')).toBeInTheDocument();
+    expect(within(edit).queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('„Usuń zdarzenie” wymaga potwierdzenia i wysyła DELETE', async () => {
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    const state = serveEvents([event(5, 1)]);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(await within(dialog).findByRole('button', { name: 'Edytuj: 10′ Bramka, Zawodnik 1A (Wilki Bemowo)' }));
+    const edit = await screen.findByRole('dialog', { name: 'Edytuj zdarzenie' });
+    await user.click(within(edit).getByRole('button', { name: 'Usuń zdarzenie' }));
+
+    expect(state.deletes).toEqual([]);
+    const confirm = await screen.findByRole('alertdialog');
+    await user.click(within(confirm).getByRole('button', { name: /Usuń/ }));
+
+    await waitFor(() => expect(state.deletes).toEqual([5]));
+    expect(await within(dialog).findByText('Brak zdarzeń.')).toBeInTheDocument();
+  });
+
+  it('mecz zaplanowany nie ma przycisków typów, a „Rozpocznij mecz” wysyła live i 0:0', async () => {
+    const matches = [match(1, 1, 1, 2)];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(within(dialog).queryByRole('group', { name: /^Zdarzenia:/ })).not.toBeInTheDocument();
+    expect(within(dialog).getByText('Zdarzenia wpiszesz, gdy mecz się zacznie.')).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Rozpocznij mecz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toEqual({ status: 'live', homeScore: 0, awayScore: 0 });
+    expect(await within(dialog).findAllByRole('group', { name: /^Zdarzenia:/ })).toHaveLength(2);
+    expect(within(dialog).getByRole('radio', { name: 'Trwa' })).toBeChecked();
+  });
+
+  it('linia zgodności pojawia się tylko przy rozjeździe, a samobój liczy się przeciwnikowi', async () => {
+    // Wynik 1:0, a zdarzenia: bramka gospodarza i samobój gościa — razem 2:0.
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    serveEvents([event(1, 1), event(2, 2, { type: 'own_goal', typeLabel: 'Bramka samobójcza', minute: 20 })]);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(await within(dialog).findByText('Bramki ze zdarzeń: 2:0 · wynik meczu 1:0')).toBeInTheDocument();
+
+    // Po wpisaniu wyniku 2:0 rozjazdu nie ma i linia znika.
+    const homeScore = within(dialog).getByLabelText('Wynik Wilki Bemowo');
+    await user.clear(homeScore);
+    await user.type(homeScore, '2');
+    expect(within(dialog).queryByText(/ze zdarzeń/)).not.toBeInTheDocument();
+  });
+
+  it('Enter w polu minuty nie wysyła PATCH meczu', async () => {
+    const matches = [match(1, 1, 1, 2, LIVE)];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const state = serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    const home = within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' }));
+    await user.click(home.getByRole('button', { name: 'Bramka' }));
+    await user.type(await within(dialog).findByLabelText('Minuta'), '12{Enter}');
+
+    // Ani mecz, ani zdarzenie: zdarzenie zapisuje dopiero klik w numer.
+    expect(bodies).toEqual([]);
+    expect(state.posts).toEqual([]);
+    expect(within(dialog).getByLabelText('Minuta')).toHaveValue('12');
   });
 });

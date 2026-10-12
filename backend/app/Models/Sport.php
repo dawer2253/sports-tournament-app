@@ -74,6 +74,23 @@ class Sport extends Model
         return array_column($this->config['eventTypes'], 'code');
     }
 
+    /**
+     * Typ zdarzenia z `config.eventTypes` po kodzie (`code`, `label`,
+     * `hasPlayer`, `value`, `stat`), albo `null`, gdy sport go nie zna.
+     *
+     * @return array{code: string, label: string, hasPlayer: bool, value: int, stat: ?string}|null
+     */
+    public function eventType(string $code): ?array
+    {
+        foreach ($this->config['eventTypes'] as $type) {
+            if ($type['code'] === $code) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
     public function allowsDraw(): bool
     {
         return $this->config['allowsDraw'];

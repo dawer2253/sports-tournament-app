@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { isValidationError, type AdminMatch, type MatchStatus } from '@tournament/api-client';
+import { isValidationError, type AdminMatch, type MatchStatus, type Sport } from '@tournament/api-client';
 import {
   FormDialog,
   Label,
@@ -10,18 +10,22 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  cn,
   collisionLabel,
   formatKickoff,
   toast,
 } from '@tournament/ui';
-import { TriangleAlert } from 'lucide-react';
+import { ChevronDown, TriangleAlert } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { MatchEventsSection } from '../components/match-events-section';
 import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
 import { applyApiError } from '../lib/form-errors';
 import { scheduleKeys, useVenues } from '../lib/schedule-queries';
 
 const SAVE_FAILED = 'Nie udało się zapisać meczu. Spróbuj ponownie.';
+
+const START_FAILED = 'Nie udało się rozpocząć meczu. Spróbuj ponownie.';
 
 /** Wartość „bez obiektu” w `Select`; pusty napis `Select` traktuje jak brak wyboru. */
 const NO_VENUE = 'none';
@@ -59,6 +63,8 @@ export interface MatchDialogProps {
   /** Kliknięcie kolizji: otwiera okno tamtego meczu (panel przełącza też kolejkę). */
   onOpenMatch: (match: AdminMatch) => void;
   onClose: () => void;
+  /** Sport turnieju: z niego idą typy zdarzeń i ich etykiety (`GET /sports`). */
+  sportCode: Sport['code'];
 }
 
 /**
@@ -69,8 +75,13 @@ export interface MatchDialogProps {
  *
  * Edycja meczu `finished` idzie bez ostrzeżenia i bez potwierdzenia: tabela
  * liczy się przy odczycie, więc zmiana wyniku jest bezpieczna.
+ *
+ * Zdarzenia meczu (#200, wariant E z #191) stoją w tym samym oknie, ale poza
+ * formularzem (`aside`): zapisują się od razu, osobnym zasobem. Termin i obiekt
+ * są przy meczu rozpoczętym zwinięte, bo przy stoliku liczą się wynik
+ * i zdarzenia; przy zaplanowanym — rozwinięte, bo to wtedy się je ustawia.
  */
-export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose }: MatchDialogProps) {
+export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose, sportCode }: MatchDialogProps) {
   const queryClient = useQueryClient();
   const venues = useVenues(tournamentId);
   const [status, setStatus] = useState<MatchStatus>(match.status);
@@ -80,9 +91,65 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   const [venueId, setVenueId] = useState(match.venue ? String(match.venue.id) : NO_VENUE);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
   const [formError, setFormError] = useState<string>();
+  const [scheduleOpen, setScheduleOpen] = useState(match.status === 'scheduled');
+  // Po „Rozpocznij mecz” sekcja zdarzeń otwiera się od razu, nie dopiero po
+  // odświeżeniu listy meczów.
+  const [startedHere, setStartedHere] = useState(false);
+  const started = match.status !== 'scheduled' || startedHere;
 
   const home = match.homeTeam?.name ?? 'Do ustalenia';
   const away = match.awayTeam?.name ?? 'Do ustalenia';
+
+  /**
+   * „Rozpocznij mecz” z sekcji zdarzeń: od razu `PATCH` ze stanem `live`
+   * i wynikiem z pól, a pusty wynik dostaje zero — ta sama reguła co „Trwa”
+   * na przełączniku (#159). Termin i obiekt nie jadą: ich niezapisana zmiana
+   * zostaje w polach do „Zapisz”.
+   */
+  const start = useMutation({
+    mutationFn: async () => {
+      const result = await api.PATCH('/matches/{match}', {
+        params: { path: { match: match.id } },
+        body: {
+          status: 'live',
+          homeScore: homeScore === '' ? 0 : Number(homeScore),
+          awayScore: awayScore === '' ? 0 : Number(awayScore),
+        },
+      });
+      if (result.data) return result.data.data;
+      throw result.response.status === 422 && isValidationError(result.error) ? result.error : new Error(START_FAILED);
+    },
+    onSuccess: async (saved) => {
+      setStartedHere(true);
+      setStatus(saved.status);
+      setHomeScore(saved.homeScore?.toString() ?? '');
+      setAwayScore(saved.awayScore?.toString() ?? '');
+      setScheduleOpen(false);
+      await queryClient.invalidateQueries({ queryKey: scheduleKeys.matches(tournamentId) });
+      toast.success('Mecz trwa. Możesz wpisywać zdarzenia.');
+    },
+    onError: (error) => showErrors(error, START_FAILED),
+  });
+
+  function showErrors(error: unknown, fallback: string) {
+    setFieldErrors({});
+    setFormError(undefined);
+    applyApiError(
+      error,
+      FIELDS,
+      (field, { message }) => {
+        if (field === 'root') setFormError(message);
+        // Para wyników dzieli jeden komunikat pod blokiem `__ : __`.
+        else if (field === 'homeScore' || field === 'awayScore') setFieldErrors((current) => ({ ...current, homeScore: message }));
+        else {
+          // Błąd przy zwiniętym polu nie może zniknąć z widoku.
+          if (field === 'kickoffAt' || field === 'venueId') setScheduleOpen(true);
+          setFieldErrors((current) => ({ ...current, [field]: message }));
+        }
+      },
+      fallback,
+    );
+  }
 
   const save = useMutation({
     mutationFn: async () => {
@@ -107,21 +174,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       toast.success('Zapisano mecz.');
       onClose();
     },
-    onError: (error) => {
-      setFieldErrors({});
-      setFormError(undefined);
-      applyApiError(
-        error,
-        FIELDS,
-        (field, { message }) => {
-          if (field === 'root') setFormError(message);
-          // Para wyników dzieli jeden komunikat pod blokiem `__ : __`.
-          else if (field === 'homeScore' || field === 'awayScore') setFieldErrors((current) => ({ ...current, homeScore: message }));
-          else setFieldErrors((current) => ({ ...current, [field]: message }));
-        },
-        SAVE_FAILED,
-      );
-    },
+    onError: (error) => showErrors(error, SAVE_FAILED),
   });
 
   function changeStatus(next: MatchStatus) {
@@ -156,27 +209,46 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       submitLabel="Zapisz"
       pending={save.isPending}
       error={formError}
-      contentClassName="sm:max-w-lg"
+      contentClassName="max-h-[92vh] overflow-y-auto sm:max-w-3xl"
+      aside={
+        <MatchEventsSection
+          match={match}
+          sportCode={sportCode}
+          started={started}
+          homeScore={homeScore}
+          awayScore={awayScore}
+          onStart={() => start.mutate()}
+          starting={start.isPending}
+        />
+      }
     >
       <div className="grid gap-4">
-        <ScoreInputs
-          homeValue={homeScore}
-          awayValue={awayScore}
-          onHomeChange={setHomeScore}
-          onAwayChange={setAwayScore}
-          homeLabel={`Wynik ${home}`}
-          awayLabel={`Wynik ${away}`}
-          error={fieldErrors.homeScore}
-          disabled={save.isPending}
-        />
-        <MatchStatusToggle
-          value={status}
-          onChange={changeStatus}
-          disabled={save.isPending}
-          className="justify-self-center"
-        />
+        <div className="flex flex-wrap items-start gap-3">
+          <ScoreInputs
+            homeValue={homeScore}
+            awayValue={awayScore}
+            onHomeChange={setHomeScore}
+            onAwayChange={setAwayScore}
+            homeLabel={`Wynik ${home}`}
+            awayLabel={`Wynik ${away}`}
+            error={fieldErrors.homeScore}
+            disabled={save.isPending}
+          />
+          <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending} />
+        </div>
 
-        <div className="grid content-start gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          aria-expanded={scheduleOpen}
+          aria-controls="match-schedule-fields"
+          onClick={() => setScheduleOpen(!scheduleOpen)}
+          className="flex items-center gap-1 justify-self-start text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronDown aria-hidden className={cn('size-4 transition-transform', !scheduleOpen && '-rotate-90')} />
+          Termin i obiekt
+        </button>
+
+        <div id="match-schedule-fields" hidden={!scheduleOpen} className="grid content-start gap-3 sm:grid-cols-2">
           <TextField
             label="Termin"
             type="datetime-local"

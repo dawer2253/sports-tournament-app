@@ -6,6 +6,7 @@ use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
+use Symfony\Component\Yaml\Yaml;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,23 +75,85 @@ it('sieje pierwszą rundę rozegraną i rewanże w terminarzu', function () {
 it('sieje zdarzenia meczowe zgodne z wynikami', function () {
     // Klasyfikacja strzelców liczy się ze zdarzeń, a tabela z wyniku meczu.
     // Gdyby seed dawał inną liczbę bramek niż wynik, strona publiczna
-    // pokazywałaby dwie sprzeczne prawdy o tym samym meczu. Liga koszykówki
-    // nie ma zdarzeń (S3), więc sprawdzamy mecze piłkarskie.
+    // pokazywałaby dwie sprzeczne prawdy o tym samym meczu. Samobój należy do
+    // drużyny strzelca, a bramkę daje przeciwnikowi (#188, reguła 9).
     $matches = Tournament::firstWhere('slug', 'liga-osiedlowa-2026')
         ->matches()
         ->where('matches.status', 'finished')
         ->get();
 
     foreach ($matches as $match) {
-        $goals = fn (int $teamId) => MatchEvent::query()
+        $count = fn (int $teamId, string $type) => MatchEvent::query()
             ->where('match_id', $match->id)
             ->where('team_id', $teamId)
-            ->where('type', 'goal')
+            ->where('type', $type)
             ->count();
+        $goals = fn (int $teamId, int $opponentId) => $count($teamId, 'goal') + $count($opponentId, 'own_goal');
 
-        expect($goals($match->home_team_id))->toBe($match->home_score)
-            ->and($goals($match->away_team_id))->toBe($match->away_score);
+        expect($goals($match->home_team_id, $match->away_team_id))->toBe($match->home_score)
+            ->and($goals($match->away_team_id, $match->home_team_id))->toBe($match->away_score);
     }
+
+    // Seed pokazuje samobój, więc panel ma go na czym wyświetlić.
+    expect(MatchEvent::query()->where('type', 'own_goal')->count())->toBe(1);
+});
+
+it('sieje zdarzenia meczu 1 dokładnie takie, jak przykład pilka w kontrakcie', function () {
+    // Spectator waliduje schemat, nie przykład (`backend/AGENTS.md`), więc
+    // zgodność z przykładem sprawdzamy wprost. Bez `id` drużyn, zawodników
+    // i zdarzeń: autoinkrement w bazie testowej nie zeruje się między testami.
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $promised = $spec['paths']['/matches/{match}/events']['get']['responses']['200']['content']['application/json']['examples']['pilka']['value']['data'];
+
+    $tournament = Tournament::firstWhere('slug', 'liga-osiedlowa-2026');
+    $match = $tournament->matches()->where('rounds.order', 1)->join('rounds', 'rounds.id', '=', 'matches.round_id')->select('matches.*')->firstOrFail();
+
+    $withoutIds = fn (array $events): array => array_map(fn (array $event): array => [
+        'team' => $event['team']['name'],
+        'player' => $event['player']['name'],
+        'type' => $event['type'],
+        'typeLabel' => $event['typeLabel'],
+        'minute' => $event['minute'],
+    ], $events);
+
+    $actual = actingAsOrganizer($tournament->user)
+        ->getJson("/api/v1/matches/{$match->id}/events")
+        ->assertOk()
+        ->json('data');
+
+    expect($withoutIds($actual))->toBe($withoutIds($promised));
+});
+
+it('sieje rzuty koszykarskie, których value sumuje się do wyniku meczu', function () {
+    // Klasyfikacja „Punkty” to suma `value` rzutów (#190), a tabela liczy się
+    // z wyniku. API zgodności nie wymaga, ale demo bez niej wyglądałoby na
+    // zepsute.
+    $tournament = Tournament::firstWhere('slug', 'liga-koszykowki-2026');
+    $values = collect($tournament->sport->config['eventTypes'])
+        ->where('stat', 'points')
+        ->pluck('value', 'code');
+    $matches = $tournament->matches()->where('matches.status', 'finished')->get();
+
+    expect($matches)->toHaveCount(2);
+
+    foreach ($matches as $match) {
+        $points = fn (int $teamId) => MatchEvent::query()
+            ->where('match_id', $match->id)
+            ->where('team_id', $teamId)
+            ->whereIn('type', $values->keys())
+            ->get()
+            ->sum(fn (MatchEvent $event) => $values[$event->type]);
+
+        expect($points($match->home_team_id))->toBe($match->home_score)
+            ->and($points($match->away_team_id))->toBe($match->away_score);
+
+        // Każdy zawodnik należy do drużyny swojego zdarzenia (#188, reguła 7).
+        expect($match->events()->with('player')->get()->every(
+            fn (MatchEvent $event) => $event->player->team_id === $event->team_id,
+        ))->toBeTrue();
+    }
+
+    expect(MatchEvent::query()->whereIn('match_id', $matches->pluck('id'))->where('type', 'foul')->count())->toBeGreaterThan(0);
 });
 
 it('sieje klasyfikację strzelców zgodną z przykładem kontraktu', function () {
@@ -119,7 +182,7 @@ it('sieje klasyfikację strzelców zgodną z przykładem kontraktu', function ()
         ->all();
 
     expect($goals)->toBe([
-        'Marek Nowak 4',
+        'Marek Nowak 3',
         'Adam Zieliński 2',
         'Jakub Wrona 1',
         'Tomasz Lis 1',

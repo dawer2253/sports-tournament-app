@@ -275,24 +275,28 @@ export interface paths {
                          *                 "code": "goal",
                          *                 "label": "Bramka",
                          *                 "hasPlayer": true,
+                         *                 "value": 1,
                          *                 "stat": "goals"
                          *               },
                          *               {
                          *                 "code": "own_goal",
                          *                 "label": "Bramka samobójcza",
                          *                 "hasPlayer": true,
+                         *                 "value": 1,
                          *                 "stat": null
                          *               },
                          *               {
                          *                 "code": "yellow_card",
                          *                 "label": "Żółta kartka",
                          *                 "hasPlayer": true,
+                         *                 "value": 1,
                          *                 "stat": "yellowCards"
                          *               },
                          *               {
                          *                 "code": "red_card",
                          *                 "label": "Czerwona kartka",
                          *                 "hasPlayer": true,
+                         *                 "value": 1,
                          *                 "stat": "redCards"
                          *               }
                          *             ],
@@ -337,15 +341,31 @@ export interface paths {
                          *             "defaultMatchDuration": 40,
                          *             "eventTypes": [
                          *               {
-                         *                 "code": "points",
-                         *                 "label": "Punkty",
+                         *                 "code": "free_throw",
+                         *                 "label": "Rzut wolny",
                          *                 "hasPlayer": true,
+                         *                 "value": 1,
+                         *                 "stat": "points"
+                         *               },
+                         *               {
+                         *                 "code": "two_pointer",
+                         *                 "label": "Rzut za 2",
+                         *                 "hasPlayer": true,
+                         *                 "value": 2,
+                         *                 "stat": "points"
+                         *               },
+                         *               {
+                         *                 "code": "three_pointer",
+                         *                 "label": "Rzut za 3",
+                         *                 "hasPlayer": true,
+                         *                 "value": 3,
                          *                 "stat": "points"
                          *               },
                          *               {
                          *                 "code": "foul",
                          *                 "label": "Faul",
                          *                 "hasPlayer": true,
+                         *                 "value": 1,
                          *                 "stat": "fouls"
                          *               }
                          *             ],
@@ -2250,7 +2270,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                /** @description Wynik niespójny ze stanem, obcy obiekt albo niepoprawne ciało */
+                /** @description Wynik niespójny ze stanem, mecz ze zdarzeniami cofany do `scheduled`, obcy obiekt albo niepoprawne ciało */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -2259,6 +2279,234 @@ export interface paths {
                         "application/json": components["schemas"]["ValidationError"];
                     };
                 };
+            };
+        };
+        trace?: never;
+    };
+    "/matches/{match}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Zdarzenia meczu
+         * @description Pełna lista, bez stronicowania: `minute` rosnąco, zdarzenia bez minuty
+         *     na końcu, a przy tej samej minucie (albo jej braku) `id` rosnąco.
+         *
+         *     Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+         *     Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`, tak
+         *     jak listę meczów i turniej, więc panel na mocku pokazuje oba sporty.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    match: components["parameters"]["MatchId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Zdarzenia meczu */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["MatchEvent"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        /**
+         * Dodaj zdarzenie meczu
+         * @description Reguły zapisu opisuje `MatchEventCreate`. Zapis do meczu `scheduled`
+         *     daje `422` pod `match`; mecz `live` i `finished` przyjmuje zdarzenia
+         *     zawsze, bez ostrzeżenia. Stan turnieju niczego nie blokuje.
+         *
+         *     Zdarzenie nie zmienia wyniku meczu ani tabeli: wynik wpisuje się osobno
+         *     (`PATCH /matches/{match}`), a API nie sprawdza zgodności liczby bramek
+         *     z wynikiem.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    match: components["parameters"]["MatchId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "type": "goal",
+                     *       "teamId": 1,
+                     *       "playerId": 1,
+                     *       "minute": 63
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MatchEventCreate"];
+                };
+            };
+            responses: {
+                /** @description Zdarzenie dodane */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 41,
+                         *         "team": {
+                         *           "id": 1,
+                         *           "name": "Wilki Bemowo",
+                         *           "logoUrl": null
+                         *         },
+                         *         "player": {
+                         *           "id": 1,
+                         *           "name": "Marek Nowak"
+                         *         },
+                         *         "type": "goal",
+                         *         "typeLabel": "Bramka",
+                         *         "minute": 63
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["MatchEvent"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                422: components["responses"]["MatchEventInvalid"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/match-events/{event}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event: components["parameters"]["MatchEventId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Usuń zdarzenie meczu
+         * @description Zdarzenie meczu `scheduled` daje `422` pod `match`; przy `live` i `finished` usunięcie przechodzi zawsze.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    event: components["parameters"]["MatchEventId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usunięto */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Mecz jest zaplanowany */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Zdarzenia wpisuje się w meczu trwającym albo zakończonym.",
+                         *       "errors": {
+                         *         "match": [
+                         *           "Zdarzenia wpisuje się w meczu trwającym albo zakończonym."
+                         *         ]
+                         *       }
+                         *     }
+                         */
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Popraw zdarzenie meczu
+         * @description Częściowa zmiana: typ, drużyna, zawodnik albo minuta, bez kasowania
+         *     zdarzenia. Ciało jest walidowane **po scaleniu** z zapisanym
+         *     zdarzeniem tymi samymi regułami co przy dodawaniu, więc sama zmiana
+         *     `teamId` na drużynę przeciwną przy zostawionym zawodniku daje `422`
+         *     pod `playerId`. Zdarzenie meczu `scheduled` daje `422` pod `match`.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    event: components["parameters"]["MatchEventId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "minute": 93
+                     *     }
+                     */
+                    "application/json": components["schemas"]["MatchEventUpdate"];
+                };
+            };
+            responses: {
+                /** @description Zdarzenie po zmianie */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["MatchEvent"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                422: components["responses"]["MatchEventInvalid"];
             };
         };
         trace?: never;
@@ -3097,7 +3345,7 @@ export interface paths {
                          *               "name": "Wilki Bemowo",
                          *               "logoUrl": null
                          *             },
-                         *             "value": 4
+                         *             "value": 3
                          *           },
                          *           {
                          *             "position": 2,
@@ -3245,6 +3493,12 @@ export interface components {
             label: string;
             /** @description Czy zdarzenie wymaga wskazania zawodnika. */
             hasPlayer: boolean;
+            /**
+             * @description Wkład jednego zdarzenia do statystyki `stat`, np. 3 przy rzucie
+             *     za 3 w koszykówce. Ustawiony jawnie przy każdym typie, także gdy
+             *     wynosi 1: konsument nie przyjmuje domyślnej jedynki.
+             */
+            value: number;
             /** @description Kod statystyki, do której zdarzenie się wlicza. `null` oznacza zdarzenie bez wpływu na statystyki. */
             stat: string | null;
         };
@@ -3484,6 +3738,58 @@ export interface components {
             id: number;
             name: string;
         };
+        /**
+         * @description Zdarzenie meczu: bramka, kartka, rzut, faul. Typy i ich etykiety
+         *     pochodzą z `SportConfig.eventTypes` sportu turnieju. Samobój należy do
+         *     drużyny zawodnika, który go strzelił.
+         */
+        MatchEvent: {
+            /** Format: int64 */
+            id: number;
+            team: components["schemas"]["TeamSummary"];
+            /** @description `null` przy typie z `hasPlayer: false`. */
+            player: components["schemas"]["PlayerSummary"] | null;
+            /** @description Kod typu z `SportConfig.eventTypes`. */
+            type: string;
+            /** @description Etykieta typu z konfiguracji sportu, np. „Rzut za 3”. */
+            typeLabel: string;
+            /**
+             * @description Minuta meczu. Doliczony czas zapisuje się zwykłą liczbą
+             *     („90+3” → `93`). `null`, gdy minuty nie wpisano.
+             */
+            minute: number | null;
+        };
+        /**
+         * @description Reguły zapisu, sprawdzane także przy `PATCH` po scaleniu z zapisanym
+         *     zdarzeniem:
+         *
+         *     - `type` spoza `eventTypes` sportu turnieju daje `422` pod `type`;
+         *     - `teamId` musi być gospodarzem albo gościem meczu, inaczej `422` pod
+         *       `teamId`;
+         *     - przy `hasPlayer: true` `playerId` jest wymagany, a przy
+         *       `hasPlayer: false` zabroniony — oba przypadki dają `422` pod
+         *       `playerId`;
+         *     - zawodnik musi należeć do drużyny `teamId` i nie być usunięty,
+         *       inaczej `422` pod `playerId`;
+         *     - zdarzenie meczu `scheduled` daje `422` pod `match`.
+         */
+        MatchEventCreate: {
+            type: string;
+            /** Format: int64 */
+            teamId: number;
+            /** Format: int64 */
+            playerId: number | null;
+            minute: number | null;
+        };
+        /** @description Częściowa zmiana zdarzenia. Pole nieobecne zostaje bez zmian; reguły jak w `MatchEventCreate`, po scaleniu. */
+        MatchEventUpdate: {
+            type?: string;
+            /** Format: int64 */
+            teamId?: number;
+            /** Format: int64 */
+            playerId?: number | null;
+            minute?: number | null;
+        };
         Venue: {
             /** Format: int64 */
             id: number;
@@ -3612,6 +3918,10 @@ export interface components {
          *     `matchDuration`. Wynik wolno wpisać meczowi bez `kickoffAt` i w turnieju
          *     `draft`, a wynik meczu `finished` zmienia się zawsze, bez ostrzeżenia —
          *     tabela liczy się przy odczycie.
+         *
+         *     Meczu, który ma zdarzenia, nie da się cofnąć do `scheduled`: daje to
+         *     `422` pod `status`, a zdarzeń nic nie kasuje kaskadowo. Organizator
+         *     usuwa je najpierw sam (`DELETE /match-events/{event}`).
          *
          *     Termin i obiekt wolno korygować przy każdym stanie meczu, także
          *     `finished` (#158). `kickoffAt` wymaga offsetu (ADR-0008), a `venueId`
@@ -3892,6 +4202,15 @@ export interface components {
                 "application/json": components["schemas"]["ValidationError"];
             };
         };
+        /** @description Zdarzenie niezgodne ze sportem, meczem albo składem, albo mecz jest zaplanowany */
+        MatchEventInvalid: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ValidationError"];
+            };
+        };
         /** @description Usunięcie zablokowane przez mecze rozegrane albo trwające */
         DeleteBlocked: {
             headers: {
@@ -3919,6 +4238,7 @@ export interface components {
         VenueId: number;
         StageId: number;
         MatchId: number;
+        MatchEventId: number;
         /**
          * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
          *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
