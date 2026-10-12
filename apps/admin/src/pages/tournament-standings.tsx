@@ -244,7 +244,9 @@ function StandingsSection({
             onRetry={() => void base.refetch()}
           />
         )}
-        {ready && sport && <TiebreakerSentence items={current.map((code) => ({ code, label: label(code) }))} />}
+        {/* Zdanie z `tiebreakers` odpowiedzi, a nie ze szkicu: zgadza się
+            z wierszami, nad którymi stoi, także zanim podgląd dotrze. */}
+        {ready?.[0] && <TiebreakerSentence items={ready[0].tiebreakers} />}
       </div>
       <div className="lg:sticky lg:top-4">{editor}</div>
       <UnsavedChangesGuard when={dirty} />

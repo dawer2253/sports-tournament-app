@@ -212,6 +212,25 @@ describe('tabela: odczyt', () => {
     ).toBeInTheDocument();
   });
 
+  it('zdanie pod tabelą idzie za tiebreakers odpowiedzi, nie za etykietami sportu', async () => {
+    // Etykiety rozjechane z `tiebreakerLabels` sportu celowo: przejdzie tylko
+    // widok, który czyta listę z tabeli.
+    standingsApi({
+      standings: (tiebreakers) =>
+        tables(tiebreakers).map((table) => ({
+          ...table,
+          tiebreakers: table.tiebreakers.map((item) => ({ ...item, label: `Z odpowiedzi ${item.code}` })),
+        })),
+    });
+    await renderStandings();
+
+    expect(
+      screen.getByText(
+        'Kolejność: z odpowiedzi points → z odpowiedzi head_to_head → z odpowiedzi score_diff → nazwa drużyny (alfabetycznie).',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('w koszykówce nagłówek zdobyczy to „Punkty”, a kolumny R nie ma', async () => {
     standingsApi({
       tournament: { ...TOURNAMENT, sport: { id: 2, code: 'basketball', name: 'Koszykówka' } },
