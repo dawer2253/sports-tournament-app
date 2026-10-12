@@ -121,11 +121,27 @@ export const ProgUkladu: Story = {
     // Siatka wiersza → opakowanie `@container/match-row` → lista z `Rows`.
     const grid = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!
     const container = grid.parentElement!.parentElement!
+    // Mierzy bez `expect` w pętli: w Storybooku każde `expect` trafia do panelu
+    // Interactions, a kilkadziesiąt asercji na każdą z 37 szerokości
+    // przekraczało 30 s, po których Chromatic przerywa story.
+    const problems: string[] = []
     for (let width = 320; width <= 896; width += 16) {
       container.style.width = `${width}px`
-      await expectScoresAligned(canvasElement)
-      await expectNamesReadable(canvasElement)
+      for (const name of canvasElement.querySelectorAll('[data-slot="match-team"]')) {
+        const nameWidth = Math.round(name.getBoundingClientRect().width)
+        if (nameWidth < 80) problems.push(`${width}px: nazwa ma ${nameWidth} px`)
+      }
+      for (const row of canvasElement.querySelectorAll('[data-slot="match-row"]')) {
+        if (row.scrollWidth > row.clientWidth) problems.push(`${width}px: wiersz wystaje`)
+      }
+      const scoreLefts = [...canvasElement.querySelectorAll('[data-slot="match-score"]')].map(
+        (score) => score.getBoundingClientRect().left,
+      )
+      if (Math.max(...scoreLefts) - Math.min(...scoreLefts) > 0.5) {
+        problems.push(`${width}px: wyniki nie stoją w jednej kolumnie`)
+      }
     }
+    await expect(problems).toEqual([])
     await expectColumns(canvasElement, 6)
     container.style.width = '320px'
     await expectColumns(canvasElement, 3)
