@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tournaments\ShowStandingsRequest;
 use App\Http\Resources\StandingTableResource;
 use App\Models\Tournament;
+use App\Standings\TournamentStandings;
 use Illuminate\Http\JsonResponse;
 
 class StandingController extends Controller
@@ -17,7 +18,7 @@ class StandingController extends Controller
     public function index(ShowStandingsRequest $request, Tournament $tournament): JsonResponse
     {
         return response()->json([
-            'data' => StandingTableResource::forTournament($tournament, $request->tiebreakers()),
+            'data' => StandingTableResource::collection(TournamentStandings::of($tournament, $request->tiebreakers())),
         ]);
     }
 }

@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MatchResource;
-use App\Http\Resources\StageResource;
+use App\Http\Resources\PublicTournamentResource;
 use App\Http\Resources\StandingTableResource;
 use App\Models\GameMatch;
 use App\Models\Tournament;
+use App\Standings\TournamentStandings;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Http\JsonResponse;
 
@@ -23,29 +24,13 @@ class PublicTournamentController extends Controller
     {
         $tournament = Tournament::findPublishedBySlug($slug)->load(['sport', 'stages.groups']);
 
-        return response()->json([
-            'data' => [
-                'name' => $tournament->name,
-                'slug' => $tournament->slug,
-                'status' => $tournament->status,
-                'sport' => [
-                    'id' => $tournament->sport->id,
-                    'code' => $tournament->sport->code,
-                    'name' => $tournament->sport->name,
-                ],
-                'branding' => [
-                    'logoUrl' => $tournament->logoUrl(),
-                    'primaryColor' => $tournament->primary_color,
-                ],
-                'stages' => StageResource::collection($tournament->stages->sortBy('order')->values()),
-            ],
-        ]);
+        return response()->json(['data' => new PublicTournamentResource($tournament)]);
     }
 
     public function standings(string $slug): JsonResponse
     {
         return response()->json([
-            'data' => StandingTableResource::forTournament(Tournament::findPublishedBySlug($slug)),
+            'data' => StandingTableResource::collection(TournamentStandings::of(Tournament::findPublishedBySlug($slug))),
         ]);
     }
 
@@ -57,7 +42,7 @@ class PublicTournamentController extends Controller
     public function fixtures(string $slug): JsonResponse
     {
         $matches = $this->matches(Tournament::findPublishedBySlug($slug))
-            ->whereIn('matches.status', ['scheduled', 'live'])
+            ->whereIn('matches.status', GameMatch::FIXTURE_STATUSES)
             ->orderByRaw('matches.kickoff_at IS NULL')
             ->orderBy('matches.kickoff_at')
             ->orderBy('stages.order')
@@ -77,7 +62,7 @@ class PublicTournamentController extends Controller
     public function results(string $slug): JsonResponse
     {
         $matches = $this->matches(Tournament::findPublishedBySlug($slug))
-            ->where('matches.status', 'finished')
+            ->whereIn('matches.status', GameMatch::RESULT_STATUSES)
             ->orderByRaw('matches.kickoff_at IS NULL')
             ->orderByDesc('matches.kickoff_at')
             ->orderByDesc('stages.order')
