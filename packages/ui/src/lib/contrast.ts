@@ -28,3 +28,19 @@ export function contrastRatio(a: string, b: string): number {
   const [lighter, darker] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x) as [number, number]
   return (lighter + 0.05) / (darker + 0.05)
 }
+
+/** Tekst na kolorze turnieju, gdy biały ma za mało kontrastu: prawie czerń z chłodnym odcieniem rampy. */
+export const BRAND_FOREGROUND_DARK = '#141A21'
+
+/** Próg WCAG AA dla zwykłego tekstu. Ten sam pilnuje ostrzeżenia w `BrandColorPicker`. */
+export const MIN_TEXT_CONTRAST = 4.5
+
+/**
+ * Kolor tekstu na kolorze turnieju (`--brand-foreground`): biały, gdy ma
+ * z nim kontrast co najmniej `MIN_TEXT_CONTRAST`, inaczej ciemny. Kolor
+ * turnieju wybiera organizer, więc jasny żółty jest równie możliwy jak
+ * ciemna zieleń. Próg do oceny na żywym organizmie w kamieniu S3 (#192).
+ */
+export function brandForeground(color: string): string {
+  return contrastRatio(color, '#FFFFFF') >= MIN_TEXT_CONTRAST ? '#FFFFFF' : BRAND_FOREGROUND_DARK
+}

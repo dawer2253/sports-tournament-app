@@ -1,90 +1,167 @@
 import * as React from 'react'
 import { Trophy } from 'lucide-react'
+import { cva } from 'class-variance-authority'
+import { brandForeground } from '../../lib/contrast'
 import { cn } from '../../lib/utils'
 import { Heading } from '../ui/typography'
 import { MetaList } from './meta-list'
-import { tournament } from '../../lib/demo-data'
+import { TournamentLogo } from './tournament-logo'
+import type { PublicShellTournament } from './public-shell-tournament'
 import heroDay from '../../assets/public/hero-day.webp'
 import heroNight from '../../assets/public/hero-night.webp'
 
-export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'bracket' | 'scorers'
+/** Zakładka strony publicznej. Drabinkę dołoży S4, „Statystyki” — #207. */
+export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results'
 
 const TABS: { key: PublicNavKey; label: string }[] = [
   { key: 'home', label: 'Przegląd' },
   { key: 'standings', label: 'Tabela' },
   { key: 'fixtures', label: 'Terminarz' },
   { key: 'results', label: 'Wyniki' },
-  { key: 'bracket', label: 'Drabinka' },
-  { key: 'scorers', label: 'Strzelcy' },
 ]
 
+export type { PublicShellTournament }
+
+/** Zdjęcie hero w motywie jasnym i ciemnym. */
+type Hero = { day: string; night: string }
+
+/**
+ * Zdjęcie hero per sport. Sport bez wpisu ma płaski kolor turnieju: zdjęcie
+ * innej dyscypliny mówiłoby kibicowi nieprawdę o turnieju.
+ */
+const HERO_BY_SPORT: Record<string, Hero> = {
+  football: { day: heroDay, night: heroNight },
+}
+
 export interface PublicShellProps {
-  active: PublicNavKey
+  tournament: PublicShellTournament
+  /**
+   * Aktywna zakładka. Opcjonalna, bo nie każdy ekran turnieju jest zakładką
+   * (strona meczu, #205).
+   */
+  active?: PublicNavKey
+  /** Adres zakładki. Bez niego zakładki są dekoracją (Storybook). */
+  navHref?: (key: PublicNavKey) => string | undefined
+  /** Przejęcie kliknięcia w zakładkę, np. przez router. */
+  onNavigate?: (key: PublicNavKey) => void
   children: React.ReactNode
 }
 
-export function PublicShell({ active, children }: PublicShellProps) {
-  return (
-    <div className="min-h-screen bg-muted/40 text-foreground">
-      <header className="relative isolate overflow-hidden bg-brand text-brand-foreground">
-        {/* Zdjęcie tła — motywozależne: jasne boisko (dzień) / nocny mecz pod jupiterami */}
-        <img
-          src={heroDay}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 -z-20 size-full object-cover object-[center_30%] dark:hidden"
-        />
-        <img
-          src={heroNight}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 -z-20 hidden size-full object-cover object-[center_82%] dark:block"
-        />
-        {/* Nakładka marki: tożsamość „pitch" + kontrast dla białego tekstu.
-            Jasny motyw — zieleń dominuje (jasne, energetyczne boisko).
-            Ciemny motyw — nakładka słabnie, a ciemny scrim od dołu wydobywa
-            nocny mecz pod jupiterami (efekt „floodlights"). */}
-        <div aria-hidden className="absolute inset-0 -z-10 bg-brand/75 dark:bg-brand/30" />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 bg-gradient-to-t from-brand via-brand/50 to-brand/10 dark:from-background dark:via-background/55 dark:to-transparent"
-        />
+const tabVariants = cva('whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-colors', {
+  variants: {
+    active: {
+      true: 'bg-muted font-medium text-foreground shadow-sm',
+      false: 'cursor-pointer opacity-80 hover:bg-white/10 hover:opacity-100',
+    },
+  },
+})
 
-        <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 pb-5 pt-9">
-          <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-white/15 text-3xl shadow-sm ring-1 ring-white/25 backdrop-blur">
-            ⚽
-          </div>
+function Tabs({ active, navHref, onNavigate }: Pick<PublicShellProps, 'active' | 'navHref' | 'onNavigate'>) {
+  return (
+    <nav aria-label="Sekcje turnieju" className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 text-sm sm:px-6">
+      {TABS.map(({ key, label }) => {
+        const isActive = key === active
+        return (
+          <a
+            key={key}
+            href={navHref?.(key)}
+            aria-current={isActive ? 'page' : undefined}
+            onClick={(event) => {
+              if (!onNavigate) return
+              event.preventDefault()
+              onNavigate(key)
+            }}
+            className={tabVariants({ active: isActive })}
+          >
+            {label}
+          </a>
+        )
+      })}
+    </nav>
+  )
+}
+
+/**
+ * Warstwy hero: zdjęcie sportu pod nakładką marki albo, bez zdjęcia, sam
+ * kolor turnieju (`bg-brand` na nagłówku).
+ *
+ * Nakładka w jasnym motywie mocno kryje zdjęcie kolorem turnieju, więc
+ * `--brand-foreground` liczony z koloru trzyma kontrast. W ciemnym słabnie,
+ * a ciemny scrim od dołu wydobywa nocny mecz — tekst jest tam jasny
+ * niezależnie od koloru turnieju (`dark:text-foreground` na nagłówku).
+ */
+function HeroLayers({ hero }: { hero: Hero }) {
+  return (
+    <>
+      <img
+        src={hero.day}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 -z-20 size-full object-cover object-[center_30%] dark:hidden"
+      />
+      <img
+        src={hero.night}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 -z-20 hidden size-full object-cover object-[center_82%] dark:block"
+      />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-brand/75 dark:bg-brand/30" />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-gradient-to-t from-brand via-brand/50 to-brand/10 dark:from-background dark:via-background/55 dark:to-transparent"
+      />
+    </>
+  )
+}
+
+/**
+ * Shell strony publicznej turnieju: nagłówek w kolorze turnieju z logo,
+ * nazwą i metą, zakładki i stopka z adresem.
+ *
+ * `--brand` to `branding.primaryColor`, a `--brand-foreground` liczy
+ * `brandForeground()` z kontrastu: przy jasnym kolorze tekst jest ciemny.
+ * Obie zmienne stoją na korzeniu shella, więc trzymają się też ekranów pod
+ * nim (`PhotoPanel`, domyślne logo).
+ */
+export function PublicShell({ tournament, active, navHref, onNavigate, children }: PublicShellProps) {
+  const { primaryColor, logoUrl } = tournament.branding
+  const hero = HERO_BY_SPORT[tournament.sport.code]
+  const brand = {
+    '--brand': primaryColor,
+    '--brand-foreground': brandForeground(primaryColor),
+  } as React.CSSProperties
+
+  return (
+    <div className="min-h-screen bg-muted/40 text-foreground" style={brand}>
+      <header
+        data-hero={hero ? 'photo' : 'color'}
+        className={cn(
+          'relative isolate overflow-hidden bg-brand text-brand-foreground',
+          hero && 'dark:text-foreground',
+        )}
+      >
+        {hero && <HeroLayers hero={hero} />}
+
+        <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 pb-5 pt-9 sm:px-6">
+          <TournamentLogo
+            logoUrl={logoUrl}
+            color={primaryColor}
+            className="size-14 rounded-xl bg-white/15 shadow-sm ring-1 ring-white/25"
+          />
           <div className="min-w-0">
-            <Heading className="truncate font-extrabold text-current drop-shadow-sm">
-              {tournament.name}
-            </Heading>
-            <MetaList className="text-sm text-brand-foreground/85 drop-shadow-sm">
-              <>{tournament.season}</>
-              <>{tournament.teamsCount} drużyn</>
-              <>{tournament.sport}</>
+            <Heading className="truncate font-extrabold text-current drop-shadow-sm">{tournament.name}</Heading>
+            <MetaList className="text-sm opacity-85 drop-shadow-sm">
+              <>{tournament.sport.name}</>
+              {tournament.status === 'finished' && <>Zakończony</>}
             </MetaList>
           </div>
         </div>
-        <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-6 text-sm">
-          {TABS.map((t) => (
-            <span
-              key={t.key}
-              className={cn(
-                'cursor-pointer whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-colors',
-                t.key === active
-                  ? 'bg-muted font-medium text-foreground shadow-sm'
-                  : 'text-brand-foreground/80 hover:bg-white/10 hover:text-brand-foreground',
-              )}
-            >
-              {t.label}
-            </span>
-          ))}
-        </div>
+        <Tabs active={active} navHref={navHref} onNavigate={onNavigate} />
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">{children}</main>
 
-      <footer className="mx-auto flex max-w-5xl items-center justify-center px-6 py-8 text-xs text-muted-foreground">
+      <footer className="mx-auto flex max-w-5xl items-center justify-center px-4 py-8 text-xs text-muted-foreground sm:px-6">
         <MetaList>
           <span className="flex items-center gap-1.5">
             <Trophy className="size-3.5" /> Powered by TournamentApp

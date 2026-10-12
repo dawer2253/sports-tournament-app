@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { PublicShell } from '../components/layout/public-shell'
 import { PhotoPanel } from '../components/layout/photo-panel'
 import { TeamCrest } from '../components/layout/team-crest'
-import { bracket, bracketWinner } from '../lib/demo-data'
+import { bracket, bracketWinner, publicTournament } from '../lib/demo-data'
 import type { BracketMatch, BracketRound, Team } from '../lib/demo-data'
 import fieldImg from '../assets/public/field.webp'
 
@@ -156,7 +156,8 @@ export function PublicBracket({ rounds = bracket, winner = bracketWinner }: Publ
   )
 
   return (
-    <PublicShell active="bracket">
+    // Zakładki „Drabinka” nie ma, dopóki S4 nie dołoży jej razem z ekranem (#192).
+    <PublicShell tournament={publicTournament}>
       {earlierRounds.length === 0 ? (
         tree
       ) : (

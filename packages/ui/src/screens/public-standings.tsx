@@ -1,92 +1,32 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { PublicShell } from '../components/layout/public-shell'
-import { PhotoPanel } from '../components/layout/photo-panel'
-import { MetaList } from '../components/layout/meta-list'
-import { TeamCrest } from '../components/layout/team-crest'
+import { StandingsTable } from '../components/data/standings-table'
+import { TiebreakerSentence } from '../components/data/tiebreaker-editor'
 import { Heading } from '../components/ui/typography'
-import { cn } from '../lib/utils'
-import { standings, standingsScoreLabel, tiebreakers, formColor } from '../lib/demo-data'
-import fieldImg from '../assets/public/field.webp'
+import { basketballStandingsTableRows, publicTournament, sportSettings, standingsTableRows } from '../lib/demo-data'
 
-// Ile miejsc premiuje awansem — docelowo z ustawień turnieju.
-const PROMOTED = 4
+const ROWS = { football: standingsTableRows, basketball: basketballStandingsTableRows }
 
-// Kolejność sortowania bierze się z kryteriów turnieju, nie ze sztywnego zdania:
-// ich etykiety zależą od sportu tak samo jak nagłówek kolumny zdobyczy.
-const tiebreakerSentence = tiebreakers.map((t) => t.label.toLocaleLowerCase('pl')).join(' → ')
+export interface PublicStandingsProps {
+  sport?: keyof typeof sportSettings
+}
 
-export function PublicStandings() {
+/**
+ * Tabela strony publicznej (#206): te same `StandingsTable`
+ * i `TiebreakerSentence` co panel. Nagłówek kolumny zdobyczy, kolumnę R
+ * i zdanie o kolejności niesie odpowiedź tabeli (`scoreLabel`, `allowsDraw`,
+ * `tiebreakers`); tu stoją statycznie, z `lib/demo-data`.
+ */
+export function PublicStandings({ sport = 'football' }: PublicStandingsProps) {
+  const settings = sportSettings[sport]
+  const tournament = { ...publicTournament, sport: { code: sport, name: settings.name } }
+
   return (
-    <PublicShell active="standings">
-      <PhotoPanel src={fieldImg} className="mb-5 rounded-xl px-5 py-4">
-        <Heading level="section" className="text-current drop-shadow-sm">
-          Tabela ligowa
-        </Heading>
-        <MetaList className="mt-0.5 text-sm text-brand-foreground/85 drop-shadow-sm">
-          <>{standings.length} drużyn</>
-          <>{PROMOTED} awansuje do fazy pucharowej</>
-        </MetaList>
-      </PhotoPanel>
-
-      <div className="rounded-xl border bg-card shadow-sm">
-        <Table>
-          <TableHeader className="[&_th]:h-9 [&_th]:text-xs [&_th]:font-medium [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground">
-            <TableRow className="bg-muted/60 hover:bg-muted/60">
-              <TableHead className="w-10">#</TableHead>
-              <TableHead>Drużyna</TableHead>
-              <TableHead className="w-10 text-center">M</TableHead>
-              <TableHead className="w-10 text-center">W</TableHead>
-              <TableHead className="w-10 text-center">R</TableHead>
-              <TableHead className="w-10 text-center">P</TableHead>
-              <TableHead className="w-16 text-center">{standingsScoreLabel}</TableHead>
-              <TableHead className="w-12 text-center !text-foreground">Pkt</TableHead>
-              <TableHead className="w-24">Forma</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {standings.map((r) => (
-              <TableRow key={r.team.id}>
-                {/* Strefa awansu to pasmo, nie cecha pojedynczego wiersza —
-                    ciągła kreska na krawędzi czyta się jak klamra obejmująca
-                    miejsca 1–{PROMOTED}, plakietka przy każdej liczbie nie. */}
-                <TableCell
-                  className={cn(
-                    'relative font-semibold tabular-nums',
-                    r.pos <= PROMOTED &&
-                      'before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-primary',
-                  )}
-                >
-                  <span className="pl-2">{r.pos}</span>
-                </TableCell>
-                <TableCell className="font-medium">
-                  <span className="flex items-center gap-2">
-                    <TeamCrest abbr={r.team.abbr} />
-                    {r.team.name}
-                  </span>
-                </TableCell>
-                <TableCell className="text-center">{r.p}</TableCell>
-                <TableCell className="text-center">{r.w}</TableCell>
-                <TableCell className="text-center">{r.d}</TableCell>
-                <TableCell className="text-center">{r.l}</TableCell>
-                <TableCell className="text-center tabular-nums text-muted-foreground">
-                  {r.gf}:{r.ga}
-                </TableCell>
-                <TableCell className="text-center font-bold">{r.pts}</TableCell>
-                <TableCell>
-                  <span className="flex gap-0.5">
-                    {r.form.map((f, i) => (
-                      <span key={i} className={`size-2 rounded-full ${formColor[f]}`} title={f} />
-                    ))}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <p className="mt-3 text-xs text-muted-foreground">
-        Sortowanie: {tiebreakerSentence}. Zielona kreska przy pozycji oznacza strefę awansu do fazy pucharowej.
-      </p>
+    <PublicShell tournament={tournament} active="standings">
+      <section className="space-y-3">
+        <Heading level="section">Faza zasadnicza</Heading>
+        <StandingsTable rows={ROWS[sport]} scoreLabel={settings.scoreLabel} allowsDraw={settings.allowsDraw} />
+        <TiebreakerSentence items={settings.tiebreakers} />
+      </section>
     </PublicShell>
   )
 }

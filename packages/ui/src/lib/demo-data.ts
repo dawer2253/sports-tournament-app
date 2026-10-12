@@ -9,6 +9,7 @@ import type { TeamRow } from '../components/data/team-row'
 import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
+import type { PublicShellTournament } from '../components/layout/public-shell-tournament'
 import { formatRoundDates } from './kickoff'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
@@ -149,44 +150,6 @@ export const basketballStandingsTableRows: StandingsTableRow[] = [
   { position: 4, team: { id: 14, name: 'Orlęta Praga', logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 204, scoreAgainst: 243, scoreDifference: -39, points: 3 },
 ]
 
-export type MatchEvent = {
-  type: 'goal' | 'yellow' | 'red'
-  playerName: string
-  teamId: number
-  minute: number
-}
-
-export type Match = {
-  id: number
-  round: number
-  home: Team
-  away: Team
-  homeScore: number | null
-  awayScore: number | null
-  status: MatchStatus
-  kickoff: string // ISO-ish label
-  date: string
-  venue: string
-  collision?: boolean
-  events?: MatchEvent[]
-}
-
-export const fixtures: Match[] = [
-  {
-    id: 1, round: 5, home: teams[0], away: teams[3], homeScore: 2, awayScore: 1, status: 'finished',
-    kickoff: '17:00', date: '28.06.2026', venue: 'Boisko A',
-    events: [
-      { type: 'goal', playerName: 'J. Kowalski', teamId: 1, minute: 23 },
-      { type: 'yellow', playerName: 'M. Nowak', teamId: 4, minute: 41 },
-      { type: 'goal', playerName: 'J. Kowalski', teamId: 1, minute: 67 },
-      { type: 'goal', playerName: 'A. Wójcik', teamId: 4, minute: 80 },
-    ],
-  },
-  { id: 2, round: 5, home: teams[2], away: teams[1], homeScore: null, awayScore: null, status: 'scheduled', kickoff: '19:00', date: '28.06.2026', venue: 'Boisko A' },
-  { id: 3, round: 5, home: teams[5], away: teams[4], homeScore: null, awayScore: null, status: 'scheduled', kickoff: '19:00', date: '28.06.2026', venue: 'Boisko A', collision: true },
-  { id: 4, round: 5, home: teams[6], away: teams[7], homeScore: 1, awayScore: 1, status: 'live', kickoff: '20:30', date: '28.06.2026', venue: 'Boisko B' },
-]
-
 export type Scorer = { pos: number; player: string; team: Team; goals: number }
 
 export const scorers: Scorer[] = [
@@ -270,20 +233,10 @@ export const venueRows: VenueRow[] = [
   { id: 3, name: 'Hala Miejska', address: null },
 ]
 
-// Kryteria rozstrzygające turnieju demo, w kolejności stosowania. Etykiety
-// kryteriów ze zdobyczy zależą od sportu tak jak `standingsScoreLabel`, ale
-// wymagają innej formy („różnica bramek"), więc nie da się ich z niej złożyć.
-export const tiebreakers = [
-  { key: 'points', label: 'Punkty' },
-  { key: 'head_to_head', label: 'Bezpośredni mecz' },
-  { key: 'score_diff', label: 'Różnica bramek' },
-  { key: 'score_for', label: 'Bramki zdobyte' },
-]
-
 // Ustawienia turnieju w sporcie demo, w kształcie `SportConfig` z kontraktu
 // (przykład `GET /sports`), ograniczone do tego, co pokazuje ekran ustawień.
 // Tiebreaki to domyślna kolejność sportu z etykietami z `tiebreakerLabels`
-// (#117) — nie z `tiebreakers` wyżej, które mówią językiem strony publicznej.
+// (#117) — tymi samymi, które niesie `StandingTable.tiebreakers`.
 export type DemoSportSettings = {
   name: string
   allowsDraw: boolean
@@ -341,12 +294,6 @@ export const sportSettings: Record<'football' | 'basketball', DemoSportSettings>
 // Szkic kolejności w podglądzie (#173): różnica bramek przed meczem
 // bezpośrednim. Według niego ułożone jest `standingsTablePreviewRows`.
 export const standingsTablePreviewDraft = ['points', 'score_diff', 'head_to_head', 'score_for']
-
-export const formColor: Record<FormResult, string> = {
-  W: 'bg-primary',
-  D: 'bg-muted-foreground',
-  L: 'bg-destructive',
-}
 
 // Lista turniejów organizera (ekran startowy panelu). Kształt zgodny
 // z `Tournament` z kontraktu, ograniczony do pól, które pokazuje tabela.
@@ -546,6 +493,45 @@ export function scheduleRounds(matches: ScheduleDemoMatch[]): RoundSummary[] {
     collisions: roundMatches.filter((match) => (match.collisions?.length ?? 0) > 0).length,
   }))
 }
+
+// --- Strona publiczna (#206) -------------------------------------------------
+
+/** Turniej strony publicznej, w kształcie `PublicTournament` z przykładu `pilka` w kontrakcie. */
+export const publicTournament: PublicShellTournament = {
+  name: tournament.name,
+  slug: tournament.slug,
+  status: 'active',
+  sport: { code: 'football', name: 'Piłka nożna' },
+  branding: { logoUrl: null, primaryColor: '#1F7A45' },
+}
+
+/** Mecz strony publicznej: `Match` z kontraktu, czyli bez kolizji panelu. */
+function withoutCollisions({ collisions: _collisions, ...match }: ScheduleDemoMatch): ScheduleDemoMatch {
+  return match
+}
+
+/** Termin rosnąco, mecz bez terminu na końcu, remis po kolejce — tak sortuje API. */
+function byKickoff(a: ScheduleDemoMatch, b: ScheduleDemoMatch): number {
+  if (a.kickoffAt === b.kickoffAt) return a.round.order - b.round.order
+  if (a.kickoffAt === null) return 1
+  if (b.kickoffAt === null) return -1
+  return a.kickoffAt.localeCompare(b.kickoffAt)
+}
+
+/**
+ * `GET /public/t/{slug}/fixtures` sezonu w trakcie: mecze zaplanowane
+ * i trwające, rosnąco po terminie, bez terminu na końcu.
+ */
+export const publicFixtures: ScheduleDemoMatch[] = scheduleInProgress
+  .filter((match) => match.status !== 'finished')
+  .map(withoutCollisions)
+  .toSorted(byKickoff)
+
+/** `GET /public/t/{slug}/results` sezonu w trakcie: mecze zakończone, malejąco po terminie. */
+export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
+  .filter((match) => match.status === 'finished')
+  .map(withoutCollisions)
+  .toSorted((a, b) => byKickoff(b, a))
 
 // --- Zdarzenia meczu (#200) --------------------------------------------------
 

@@ -2,6 +2,7 @@ import { AlertTriangle, Check, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
+import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
 import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
 
@@ -118,6 +119,13 @@ export interface MatchRowProps {
    * Bez tego zostaje grupą tylko do odczytu (makieta terminarza).
    */
   onSelect?: () => void
+  /**
+   * `badge` (panel): stan każdego meczu jako plakietka. `live` (strona
+   * publiczna): oznaczony jest tylko mecz trwający, `LiveMarker`-em —
+   * „Zaplanowany” przy każdym meczu terminarza nic kibicowi nie mówi,
+   * a „Zakończony” powtarza wypełniony wynik.
+   */
+  statusDisplay?: 'badge' | 'live'
   /** Klasy opakowania wiersza, czyli kontenera, od którego liczy się próg układu. */
   className?: string
 }
@@ -127,7 +135,7 @@ export interface MatchRowProps {
  * gość | stan. Z `onSelect` cały wiersz otwiera okno meczu (#176); makieta
  * terminarza zostawia go tylko do odczytu.
  */
-export function MatchRow({ match, showDate = true, timeZone, onSelect, className }: MatchRowProps) {
+export function MatchRow({ match, showDate = true, timeZone, onSelect, statusDisplay = 'badge', className }: MatchRowProps) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
   const label = `${home} – ${away}`
@@ -155,7 +163,11 @@ export function MatchRow({ match, showDate = true, timeZone, onSelect, className
           <CollisionBadge collisions={match.collisions ?? []} />
         </span>
         <span className="flex shrink-0 justify-end @2xl/match-row:w-[6.5rem]">
-          <MatchStatusBadge status={match.status} />
+          {statusDisplay === 'badge' ? (
+            <MatchStatusBadge status={match.status} />
+          ) : (
+            match.status === 'live' && <LiveMarker />
+          )}
         </span>
       </span>
     </>

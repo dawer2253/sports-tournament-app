@@ -5,36 +5,42 @@ import * as Stories from './public-home.stories'
 
 # Przegląd turnieju (Public): specyfikacja
 
-Publiczny, read-only ekran startowy turnieju (dostępny po `slug`, np. `/t/liga-osiedlowa`). Skrót najważniejszych informacji: co się teraz dzieje, kto prowadzi w tabeli i kto strzela gole.
+Publiczny, read-only ekran startowy turnieju pod `/t/{slug}`. Jeden rzut oka na stan rozgrywek: co się teraz dzieje, co przed nami, jak skończyła się ostatnia kolejka i kto prowadzi w tabeli.
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Dać kibicowi jeden rzut oka na stan rozgrywek: trwające i najbliższe mecze, czołówkę tabeli oraz króla strzelców, bez logowania i bez wchodzenia w podstrony.
+Dać kibicowi skrót turnieju bez logowania i bez wchodzenia w zakładki.
 
 ## Dane (wejście)
-- **Mecze**: `fixtures` o statusie `live` lub `scheduled` (godzina, boisko, drużyny). Zakończone mecze pomijamy.
-- **Tabela (skrót)**: pierwsze 5 pozycji z `standings` (pozycja, monogram drużyny, nazwa, punkty).
-- **Strzelcy**: lider (`scorers[0]`) plus kolejnych 3 zawodników z `scorers`.
-- Branding turnieju: kolor wiodący (`--brand`), logo, nazwa (z nagłówka `PublicShell`).
+- **Mecze trwające i najbliższe**: `GET /public/t/{slug}/fixtures` (mecze `scheduled` i `live`, rosnąco po terminie, bez terminu na końcu).
+- **Ostatnie wyniki**: `GET /public/t/{slug}/results` (mecze `finished`, malejąco po terminie).
+- **Tabela (skrót)**: pierwsza tabela z `GET /public/t/{slug}/standings`.
+- Nazwa, sport, status i branding z `GET /public/t/{slug}` (nagłówek `PublicShell`).
 
 ## Reguły
-- Sekcja meczów: `live` przed `scheduled`, w kolejności godziny rozpoczęcia.
-- Mecz `live` oznaczony plakietką „Na żywo" z pulsującą kropką; `scheduled` pokazuje godzinę.
-- Tabela w skrócie sortowana tak samo jak pełna (pkt → tiebreaki turnieju).
-- Król strzelców to pozycja 1 z listy; „gonić" go mogą zawodnicy z tą samą liczbą goli (kolejność wg listy).
+Sekcje od góry (#192):
+1. **Na żywo**: każdy mecz `live` jako `LiveMatchTile`. „Śledź na żywo” prowadzi do Terminarza.
+2. **Najbliższe mecze**: kolejka pierwszego meczu `scheduled` z `/fixtures`, z niej do 5 meczów (`nextRoundMatches`), z odnośnikiem „Cały terminarz”.
+3. **Ostatnie wyniki**: najnowsza kolejka z meczami `finished`, do 5 meczów (`latestRoundMatches`), z odnośnikiem „Wszystkie wyniki”.
+4. **Tabela (skrót)**: pierwsze 5 wierszy pierwszej tabeli (`StandingsSnippet`), z odnośnikiem „Zobacz pełną tabelę”. Kolejność z API.
+
+- Sekcja bez meczów znika.
+- Turniej `finished` niczego na Przeglądzie nie dokłada.
 
 ## Stany
-- **Domyślny**: mecze `live` i `scheduled`, top 5 tabeli, lider + 3 strzelców (powyżej).
-- **Brak meczów**: gdy nie ma pozycji `live`/`scheduled`, sekcja pokazuje komunikat „Brak zaplanowanych meczów".
-- **Przed startem sezonu**: tabela z zerami, brak strzelców (TODO: pusty stan sekcji strzelców).
+- **W trakcie**: wszystkie cztery sekcje (powyżej).
+- **Przed startem**: sama sekcja „Najbliższe mecze” i tabela z zerami, alfabetycznie — `StandingsCalculator` bierze komplet drużyn.
+
+<Canvas of={Stories.PrzedStartem} />
 
 ## Zachowanie
-- Auto-odświeżanie (polling): wskaźnik „Na żywo" w nagłówku `PublicShell`.
-- „Zobacz pełną tabelę" prowadzi do zakładki Tabela.
-- Responsywność: grid `lg:grid-cols-3`; na wąskich ekranach karty układają się w jedną kolumnę, sekcja strzelców łamie się na blok lider + lista.
+- Każde zapytanie odpytuje co `VITE_POLL_INTERVAL_MS`, także w turnieju `finished`; tanie dzięki `304` (ADR-0007).
+- Mecze to te same `MatchRow` co terminarz panelu, z oznaczeniem tylko meczu na żywo (`statusDisplay="live"`).
 
 ## Otwarte pytania
-- Ile najbliższych meczów pokazywać, gdy jest ich dużo: limit czy scroll?
-- Czy przy remisie w liczbie goli pokazywać wszystkich współliderów jako „króla strzelców"?
-- Czy dodać sekcję ostatnich wyników obok najbliższych meczów?
+Rozstrzygnięte w #192:
+- *Ile najbliższych meczów pokazywać?* Najbliższa kolejka, najwyżej 5 meczów.
+- *Czy dodać ostatnie wyniki?* Tak, osobna sekcja: najnowsza kolejka, do 5 meczów.
+- *Król strzelców przy remisie?* Sekcję lidera klasyfikacji (wszyscy z `position: 1`, tytuł z etykiety statystyki, bez zdjęcia) dokłada #207. Karta „Król strzelców” i jej zdjęcie odpadły.
+- *Co pokazuje turniej zakończony?* Nic więcej. Kafel „Zwycięzca” jest w future work (`docs/PLAN.md` §14).

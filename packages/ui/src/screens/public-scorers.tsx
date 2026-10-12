@@ -4,12 +4,13 @@ import { Card, CardHeader } from '../components/ui/card'
 import { Heading } from '../components/ui/typography'
 import { PublicShell } from '../components/layout/public-shell'
 import { PhotoPanel } from '../components/layout/photo-panel'
-import { scorers } from '../lib/demo-data'
+import { publicTournament, scorers } from '../lib/demo-data'
 import fieldImg from '../assets/public/field.webp'
 
 export function PublicScorers() {
   return (
-    <PublicShell active="scorers">
+    // Zakładka „Strzelcy” odpadła; klasyfikację pod nazwą „Statystyki” dokłada #207.
+    <PublicShell tournament={publicTournament}>
       <Card className="gap-0 overflow-hidden py-0">
         <PhotoPanel src={fieldImg}>
           {/* CardHeader jest gridem, więc ikona i tytuł idą we własny flex —

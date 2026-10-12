@@ -5,33 +5,31 @@ import * as Stories from './public-fixtures.stories'
 
 # Terminarz (Public): specyfikacja
 
-Publiczny, read-only widok terminarza pojedynczej kolejki (dostępny po `slug`, np. `/t/liga-osiedlowa`).
+Publiczny, read-only terminarz turnieju pod `/t/{slug}/terminarz`.
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Pokazać kibicom i zawodnikom rozkład meczów wybranej kolejki (godziny, boiska, wyniki i statusy) bez logowania.
+Pokazać kibicom i zawodnikom, kto, kiedy i gdzie gra, bez logowania.
 
 ## Dane (wejście)
-- Lista meczów kolejki (`Match[]`): gospodarz, gość, godzina (`kickoff`), boisko (`venue`), status, wynik (`homeScore` / `awayScore`).
-- Numer kolejki (`round`) oraz data rozgrywania (`date`), brane z meczów kolejki.
+`GET /public/t/{slug}/fixtures`: mecze `scheduled` i `live`, rosnąco po terminie, mecz bez terminu na końcu.
 
 ## Reguły
-- Wynik (pigułka `bg-foreground`) wyświetlany tylko dla statusów `finished` i `live`.
-- Dla statusu `scheduled` w miejscu wyniku pokazujemy godzinę w obramowanym placeholderze.
-- Status meczu jako Badge: `finished` → default „Zakończony", `scheduled` → secondary „Zaplanowany", `live` → secondary z pulsującą kropką „Na żywo".
-- Widok jest read-only: brak akcji edycji (to strona publiczna).
+- Mecze po kolejce, kolejki rosnąco (`groupByRound`). Na starcie pierwsza kolejka listy.
+- Lista kolejek i wiersze to `RoundList` i `MatchRow` z terminarza panelu, bez plakietki kolizji i bez ułamka „zakończone/wszystkie” (`progress={false}`).
+- Mecz `live` stoi tutaj, aż organizator go zakończy, i ma `LiveMarker`. Zaplanowane nie mają plakietki stanu (`statusDisplay="live"`).
+- Godziny w strefie przeglądarki (`Tournament.timezone` odłożone).
 
 ## Stany
-- **Domyślny**: kolejka z meczami zakończonymi, zaplanowanymi i trwającym na żywo (powyżej).
-- **Brak meczów w kolejce**: pusty stan z komunikatem (TODO).
-- **Kolejka w całości zaplanowana**: same placeholdery godzin, brak wyników (TODO).
+- **Sezon w trakcie**: kolejki z meczem trwającym i zaplanowanymi (powyżej).
+- **Brak meczów**: pusty stan (`apps/public`).
 
 ## Zachowanie
-- Nawigacja między kolejkami: strzałki `‹` / `›` przełączają `round` (na razie statyczne).
-- Auto-odświeżanie (polling) dla meczów `live`: aktualizacja wyniku i statusu.
-- Responsywność: na wąskich ekranach kolumna czasu/boiska skraca się (`truncate`), układ pozostaje jednowierszowy.
+- Poniżej `lg` lista kolejek zwija się do przycisku ze strzałkami (#198).
+- Odpytywanie co `VITE_POLL_INTERVAL_MS`. Kolejka, która zniknęła z odpowiedzi, oddaje wybór pierwszej.
 
 ## Otwarte pytania
-- Czy grupować mecze wg boiska lub godziny przy większej liczbie spotkań?
-- Czy pokazywać wskaźnik kolizji terminów (`collision`) w widoku publicznym?
+Rozstrzygnięte w #192:
+- *Grupować po boisku albo godzinie?* Nie — po kolejce, jak w panelu.
+- *Wskaźnik kolizji w widoku publicznym?* Nie: kolizja to narzędzie organizatora, a kontrakt oddaje stronie publicznej samo `Match`.
