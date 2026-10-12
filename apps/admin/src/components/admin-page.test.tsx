@@ -293,8 +293,8 @@ describe('AdminPage — bieżące turnieje w sidebarze', () => {
     expect(pinned.getByRole('link', { name: /Liga Osiedlowa 2026/ })).toHaveAttribute('aria-current', 'page');
     expect(pinned.getByText('Zakończony')).toBeInTheDocument();
     // Stan otwartego turnieju shell zna i bez listy, więc samo przejście pod
-    // kreskę niczego o odświeżeniu nie dowodzi; dowodzi go drugie żądanie
-    // i to, że w liście nie wisi już „+1 więcej" ze starego `total`.
+    // kreskę niczego o odświeżeniu nie dowodzi; dowodzi go dopiero kolejne
+    // żądanie listy.
     await waitFor(() => expect(sidebarRequests.mock.calls.length).toBeGreaterThan(before));
     const sidebar = within(screen.getByRole('navigation', { name: 'Panel' }));
     expect(await sidebar.findByText(/Brak bieżących turniejów/)).toBeInTheDocument();

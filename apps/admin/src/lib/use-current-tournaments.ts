@@ -1,5 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { SIDEBAR_TOURNAMENTS_LIMIT, type AdminShellTournaments } from '@tournament/ui';
+import {
+  CURRENT_TOURNAMENT_STATUSES,
+  SIDEBAR_TOURNAMENTS_LIMIT,
+  type AdminShellTournamentList,
+} from '@tournament/ui';
 import { api } from './api';
 
 /**
@@ -17,12 +21,14 @@ export const currentTournamentsKey = ['tournaments', 'current'] as const;
  * Dane przed błędem, jak w `TournamentLayout`: nieudane odświeżenie w tle nie
  * zamienia wczytanej listy w komunikat o błędzie.
  */
-export function useCurrentTournaments(): AdminShellTournaments {
+export function useCurrentTournaments(): AdminShellTournamentList {
   const query = useQuery({
     queryKey: currentTournamentsKey,
     queryFn: async () => {
       const { data, error } = await api.GET('/tournaments', {
-        params: { query: { status: ['draft', 'active'], perPage: SIDEBAR_TOURNAMENTS_LIMIT } },
+        params: {
+          query: { status: [...CURRENT_TOURNAMENT_STATUSES], perPage: SIDEBAR_TOURNAMENTS_LIMIT },
+        },
       });
       if (error) throw new Error(error.message);
       return data;
