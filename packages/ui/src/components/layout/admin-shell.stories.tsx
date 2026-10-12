@@ -1,15 +1,23 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { organizer, tournamentList } from '../../lib/demo-data'
-import { AdminShell, type AdminNavKey, type AdminShellTournament, type AdminShellTournaments } from './admin-shell'
+import { isCurrentTournament } from '../data/tournament-row'
+import { AdminShell, type AdminNavKey, type AdminShellTournament, type AdminShellTournamentList } from './admin-shell'
 
 /** Bieżące turnieje demo, tak jak oddaje je API: bez zakończonych. */
-const biezace = tournamentList.filter(({ status }) => status !== 'finished')
+const biezace = tournamentList.filter(isCurrentTournament)
 
 /** Lista w sidebarze, gdy zapytanie się powiodło. */
-function lista(items: AdminShellTournament[], total = items.length): AdminShellTournaments {
+function lista(items: AdminShellTournament[], total = items.length): AdminShellTournamentList {
   return { status: 'success', items, total }
 }
+
+/** Adresy panelu poza turniejem: lista i kreator. */
+const adresyPanelu = (key: AdminNavKey) =>
+  ({ dashboard: '/', create: '/tournaments/new' } as Partial<Record<AdminNavKey, string>>)[key]
+
+/** Adres turnieju z listy, czyli jego domyślnej sekcji. */
+const adresTurnieju = (id: number) => `/tournaments/${id}`
 
 const meta = {
   title: 'UI/Shell panelu',
@@ -157,6 +165,28 @@ export const WTurniejuZakonczonym: Story = {
   },
 }
 
+/**
+ * Turniej zakończony przed chwilą: lista jeszcze się nie odświeżyła i niesie
+ * go jako trwający. Shell wierzy świeższemu stanowi otwartego turnieju, a stare
+ * `total` nie daje fałszywego „+1 więcej".
+ */
+export const ListaNieaktualnaPoZakonczeniu: Story = {
+  args: {
+    ...wTurnieju,
+    tournament: { ...turniej, status: 'finished' },
+    active: 'settings',
+    tournaments: lista(biezace),
+  },
+  play: async ({ canvasElement }) => {
+    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+
+    const biezaceLista = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
+    await expect(biezaceLista.queryByText(turniej.name)).not.toBeInTheDocument()
+    await expect(within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText('Zakończony')).toBeInTheDocument()
+    await expect(sidebar.queryByText(/więcej/)).not.toBeInTheDocument()
+  },
+}
+
 /** Dwanaście bieżących: sidebar mieści osiem, resztę zlicza z `meta.total`. */
 const dwanascie: AdminShellTournament[] = Array.from({ length: 12 }, (_, index) => ({
   id: 100 + index,
@@ -173,8 +203,8 @@ const dwanascie: AdminShellTournament[] = Array.from({ length: 12 }, (_, index) 
 export const PonadOsiemBiezacych: Story = {
   args: {
     tournaments: lista(dwanascie.slice(0, 8), dwanascie.length),
-    navHref: (key: AdminNavKey) => ({ dashboard: '/', create: '/tournaments/new' } as Partial<Record<AdminNavKey, string>>)[key],
-    tournamentHref: (id: number) => `/tournaments/${id}`,
+    navHref: adresyPanelu,
+    tournamentHref: adresTurnieju,
     onNavigate: fn(),
     onOpenTournament: fn(),
   },
@@ -200,7 +230,8 @@ export const PonadOsiemBiezacych: Story = {
 
 /**
  * Otwarty turniej bieżący, który nie zmieścił się w ośmiu, też stoi pod
- * kreską: organizer ma widzieć, w którym turnieju jest.
+ * kreską: organizer ma widzieć, w którym turnieju jest. W „+N więcej" już się
+ * nie liczy, bo widać go pod kreską.
  */
 export const OtwartyPozaLimitem: Story = {
   args: {
@@ -215,7 +246,7 @@ export const OtwartyPozaLimitem: Story = {
 
     const otwarty = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText('Liga Firmowa 11').closest('a')!
     await expect(otwarty).toHaveAttribute('aria-current', 'page')
-    await expect(sidebar.getByText('+4 więcej')).toBeInTheDocument()
+    await expect(sidebar.getByText('+3 więcej')).toBeInTheDocument()
   },
 }
 
@@ -223,7 +254,7 @@ export const OtwartyPozaLimitem: Story = {
 export const BezBiezacych: Story = {
   args: {
     tournaments: lista([]),
-    navHref: (key: AdminNavKey) => ({ dashboard: '/', create: '/tournaments/new' } as Partial<Record<AdminNavKey, string>>)[key],
+    navHref: adresyPanelu,
     onNavigate: fn(),
   },
   play: async ({ args, canvasElement }) => {
@@ -248,6 +279,21 @@ export const ListaWczytywana: Story = {
     await expect(szkielet).toHaveAttribute('aria-busy', 'true')
     await expect(szkielet.children).toHaveLength(3)
     await expect(sidebar.queryByText(/Brak bieżących turniejów/)).not.toBeInTheDocument()
+  },
+}
+
+/**
+ * Lista nie przyszła, gdy organizer stoi w turnieju. Otwarty turniej zostaje
+ * pod kreską, żeby sidebar dalej mówił, gdzie organizer jest.
+ */
+export const ListaZBledemWTurnieju: Story = {
+  args: { ...wTurnieju, active: 'teams', tournaments: { status: 'error', onRetry: fn() } },
+  play: async ({ canvasElement }) => {
+    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+
+    await expect(sidebar.getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument()
+    const otwarty = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText(turniej.name).closest('a')!
+    await expect(otwarty).toHaveAttribute('aria-current', 'page')
   },
 }
 
@@ -279,7 +325,7 @@ export const NawigacjaCzesciowa: Story = {
     navHref: (key: AdminNavKey) =>
       ({ dashboard: '/', teams: '/tournaments/1/teams', venues: '/tournaments/1/venues', settings: '/tournaments/1/settings' } as Partial<Record<AdminNavKey, string>>)[key],
     onNavigate: fn(),
-    tournamentHref: (id: number) => `/tournaments/${id}`,
+    tournamentHref: adresTurnieju,
     onOpenTournament: fn(),
   },
   play: async ({ args, canvasElement }) => {

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
-import type { TournamentRow } from '../data/tournament-row'
+import { isCurrentTournament, type TournamentRow } from '../data/tournament-row'
 import { TournamentStatusBadge } from '../data/tournament-status-badge'
 import { Input } from '../ui/input'
 import { Button } from '../ui/button'
@@ -56,7 +56,7 @@ export const SIDEBAR_TOURNAMENTS_LIMIT = 8
  * wyglądałby jak „nie masz turniejów". `total` to `meta.total` z API, czyli
  * wszystkie bieżące, także te, które się nie zmieściły.
  */
-export type AdminShellTournaments =
+export type AdminShellTournamentList =
   | { status: 'pending' }
   | { status: 'error'; onRetry: () => void }
   | { status: 'success'; items: AdminShellTournament[]; total: number }
@@ -88,7 +88,7 @@ export interface AdminShellProps {
    * Bieżące turnieje organizera do sidebaru. Wymagane, jak `user`: shell nie
    * zna API, a pominięta lista wyglądałaby jak brak turniejów.
    */
-  tournaments: AdminShellTournaments
+  tournaments: AdminShellTournamentList
   title: string
   subtitle?: string
   actions?: React.ReactNode
@@ -116,8 +116,31 @@ export interface AdminShellProps {
 type NavProps = Pick<AdminShellProps, 'active' | 'navHref' | 'onNavigate'>
 
 /**
- * Wspólna mechanika odnośników nawigacji: pozycji „Turnieje", odnośników
- * w liście turniejów i kart sekcji.
+ * Wspólna mechanika odnośników nawigacji: pozycji „Turnieje", turniejów
+ * z listy, odnośników w notkach listy i kart sekcji. Przejęte kliknięcie
+ * (`onActivate`, np. router) zastępuje domyślne przejście pod `href`.
+ */
+function anchorProps({ href, isActive, isDisabled, onActivate }: {
+  href: string | undefined
+  isActive: boolean
+  isDisabled: boolean
+  onActivate: (() => void) | undefined
+}) {
+  return {
+    href,
+    onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
+      if (!onActivate) return
+      event.preventDefault()
+      if (!isDisabled) onActivate()
+    },
+    'aria-current': isActive ? ('page' as const) : undefined,
+    'aria-disabled': isDisabled || undefined,
+    tabIndex: isDisabled ? -1 : undefined,
+  }
+}
+
+/**
+ * Odnośnik do celu nawigacji panelu.
  *
  * Aplikacja podaje adresy tylko dla ekranów, które już istnieją. Cel bez
  * adresu nie udaje odnośnika: nie da się w niego wejść z klawiatury i widać po
@@ -133,17 +156,7 @@ function navLink(key: AdminNavKey, { active, navHref, onNavigate }: NavProps, { 
   return {
     isActive,
     isDisabled,
-    linkProps: {
-      href,
-      onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
-        if (!onNavigate) return
-        event.preventDefault()
-        if (!isDisabled) onNavigate(key)
-      },
-      'aria-current': isActive ? ('page' as const) : undefined,
-      'aria-disabled': isDisabled || undefined,
-      tabIndex: isDisabled ? -1 : undefined,
-    },
+    linkProps: anchorProps({ href, isActive, isDisabled, onActivate: onNavigate && (() => onNavigate(key)) }),
   }
 }
 
@@ -188,24 +201,22 @@ function TournamentsLink(nav: NavProps) {
 }
 
 /**
- * Odnośnik do turnieju z listy. Shell nie zna adresów, więc idzie przez
- * `tournamentHref`/`onOpenTournament`, ale semantykę bierze z `navLink`:
- * bez adresów (Storybook) pozycja jest dekoracją, a nie nieczynnością.
+ * Odnośnik do turnieju z listy. Adres niesie id, więc idzie przez
+ * `tournamentHref`/`onOpenTournament`, a nie przez klucz nawigacji. Turniej
+ * z listy zawsze istnieje, więc nigdy nie jest nieczynny; bez adresów
+ * (Storybook) jest dekoracją.
  */
 function tournamentLink(
   id: number,
   isCurrent: boolean,
   { tournamentHref, onOpenTournament }: Pick<AdminShellProps, 'tournamentHref' | 'onOpenTournament'>,
 ) {
-  return {
+  return anchorProps({
     href: tournamentHref?.(id),
-    onClick: (event: React.MouseEvent<HTMLAnchorElement>) => {
-      if (!onOpenTournament) return
-      event.preventDefault()
-      onOpenTournament(id)
-    },
-    'aria-current': isCurrent ? ('page' as const) : undefined,
-  }
+    isActive: isCurrent,
+    isDisabled: false,
+    onActivate: onOpenTournament && (() => onOpenTournament(id)),
+  })
 }
 
 type TournamentNavProps = NavProps & Pick<AdminShellProps, 'tournamentHref' | 'onOpenTournament'>
@@ -253,16 +264,22 @@ function TournamentList({
   const items = tournaments.status === 'success' ? tournaments.items.slice(0, SIDEBAR_TOURNAMENTS_LIMIT) : []
   // Zakończony nie jest bieżący, nawet jeśli lista jeszcze o tym nie wie:
   // stan otwartego turnieju jest świeższy niż lista, która odświeża się osobno.
-  const openIsCurrent = tournament !== undefined && tournament.status !== 'finished'
+  const openIsCurrent = tournament !== undefined && isCurrentTournament(tournament)
   const listed = openIsCurrent && items.some(({ id }) => id === tournament.id)
   const visible = items
     .filter(({ id }) => id !== tournament?.id || listed)
     // Otwarty turniej rysujemy z jego własnych, świeższych danych.
     .map((item) => (item.id === tournament?.id ? tournament : item))
-  // Dopóki lista nie przyszła, nie wiadomo, czy bieżący turniej na niej
-  // będzie; zakończony nie będzie na pewno.
-  const pinned = tournament && !listed && (tournaments.status === 'success' || !openIsCurrent) ? tournament : undefined
-  const more = tournaments.status === 'success' ? tournaments.total - visible.length : 0
+  // Dopóki lista jest w drodze, nie wiadomo, czy bieżący turniej na niej
+  // będzie; zakończony nie będzie na pewno. Przy błędzie listy otwarty turniej
+  // zostaje pod kreską, bo inaczej sidebar nie mówiłby, gdzie organizer stoi.
+  const pinned = tournament && !listed && (tournaments.status !== 'pending' || !openIsCurrent) ? tournament : undefined
+  // Z `items`, nie z `visible`: turniej właśnie zakończony, który nieaktualna
+  // lista jeszcze niesie, siedzi też w nieaktualnym `total`. Bieżący spoza
+  // limitu stoi pod kreską, więc nie liczy się drugi raz w „więcej".
+  const more = tournaments.status === 'success'
+    ? tournaments.total - items.length - (pinned && openIsCurrent ? 1 : 0)
+    : 0
 
   return (
     <div className="mt-1 space-y-0.5">

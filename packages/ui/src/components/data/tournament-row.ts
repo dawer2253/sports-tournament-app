@@ -14,3 +14,14 @@ export type TournamentRow = {
   sport: { name: string }
   teamsCount: number
 }
+
+/**
+ * Stany bieżącego turnieju (`CONTEXT.md`): szkic albo trwający, czyli każdy
+ * poza zakończonym. Jedno miejsce dla filtra listy w API i dla shella.
+ */
+export const CURRENT_TOURNAMENT_STATUSES: readonly TournamentRow['status'][] = ['draft', 'active']
+
+/** Czy turniej jest bieżący, czyli nie zakończony. */
+export function isCurrentTournament({ status }: Pick<TournamentRow, 'status'>): boolean {
+  return CURRENT_TOURNAMENT_STATUSES.includes(status)
+}

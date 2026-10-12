@@ -1,12 +1,12 @@
 import {
-  AdminShell, type AdminSectionKey, type AdminShellProps, type AdminShellTournaments,
+  AdminShell, type AdminSectionKey, type AdminShellProps, type AdminShellTournamentList,
 } from '../components/layout/admin-shell'
-import type { TournamentRow } from '../components/data/tournament-row'
+import { isCurrentTournament, type TournamentRow } from '../components/data/tournament-row'
 import { organizer, tournamentList } from '../lib/demo-data'
 
 /** Bieżące turnieje demo w sidebarze, tak jak oddaje je API: bez zakończonych. */
-const demoTournaments: AdminShellTournaments = (() => {
-  const items = tournamentList.filter(({ status }) => status !== 'finished')
+const demoTournaments: AdminShellTournamentList = (() => {
+  const items = tournamentList.filter(isCurrentTournament)
   return { status: 'success', items, total: items.length }
 })()
 
