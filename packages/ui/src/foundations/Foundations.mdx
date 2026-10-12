@@ -81,8 +81,9 @@ export function AdminExample() {
   return (
     <AdminShell
       user={organizer}                     // wymagany; ekrany w screens/ biorą go przez ShellDemo
+      tournaments={{ status: 'success', items: [tournament], total: 1 }} // bieżące w sidebarze; też z ShellDemo
       active="teams"                       // podświetla kartę sekcji
-      tournament={tournament}              // karta turnieju w sidebarze, karty sekcji, status
+      tournament={tournament}              // podświetlenie na liście w sidebarze, karty sekcji, status
       title={tournament.name}              // w turnieju: nazwa turnieju, wersalikami przez <Heading>
       subtitle={`${tournament.sport.name} · /t/${tournament.slug}`}
       actions={<Button><Plus className="size-4" /> Dodaj drużynę</Button>}
