@@ -49,10 +49,12 @@ export interface RoundListProps {
 }
 
 /**
- * Lista kolejek terminarza (#162, wariant D). Od `md` stoi w kolumnie obok
+ * Lista kolejek terminarza (#162, wariant D). Od `lg` stoi w kolumnie obok
  * meczów i pokazuje wszystkie kolejki. Niżej zwija się do jednego przycisku
  * z bieżącą kolejką i strzałkami ← →: pełna lista rozwija się po kliknięciu
  * i zwija po wyborze, więc na telefonie 38 kolejek nie spycha meczów w dół.
+ * Próg to `lg`, nie `md`: przy `md` wiersz meczu obok listy i sidebaru
+ * dostawał ok. 224 px i nazwy drużyn nie miały gdzie się zmieścić (#198).
  */
 export function RoundList({ rounds, value, onValueChange, className }: RoundListProps) {
   const [expanded, setExpanded] = useState(false)
@@ -66,7 +68,7 @@ export function RoundList({ rounds, value, onValueChange, className }: RoundList
   }
 
   const list = (id?: string) => (
-    <ul id={id} aria-label={id ? 'Kolejki' : undefined} className="max-h-[60vh] space-y-0.5 overflow-y-auto rounded-xl border bg-card p-1.5 md:max-h-[70vh]">
+    <ul id={id} aria-label={id ? 'Kolejki' : undefined} className="max-h-[60vh] space-y-0.5 overflow-y-auto rounded-xl border bg-card p-1.5 lg:max-h-[70vh]">
       {rounds.map((round) => (
         <li key={round.id}>
           <button
@@ -87,7 +89,7 @@ export function RoundList({ rounds, value, onValueChange, className }: RoundList
 
   return (
     <div className={className}>
-      <div className="space-y-2 md:hidden">
+      <div className="space-y-2 lg:hidden">
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -120,7 +122,7 @@ export function RoundList({ rounds, value, onValueChange, className }: RoundList
         </div>
         {expanded && list(listId)}
       </div>
-      <nav aria-label="Kolejki" className="hidden md:block">
+      <nav aria-label="Kolejki" className="hidden lg:block">
         {list()}
       </nav>
     </div>

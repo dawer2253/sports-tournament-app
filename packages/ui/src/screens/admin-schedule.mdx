@@ -29,11 +29,14 @@ bieżącą, i pozwolić mu wygenerować terminarz albo wygenerować go ponownie.
 
 ## Reguły
 - Lista kolejek to `RoundList`: nazwa, zakres dat, licznik meczów z kolizją
-  i „zakończone/wszystkie”. Od `md` stoi w kolumnie obok meczów.
+  i „zakończone/wszystkie”. Od `lg` stoi w kolumnie obok meczów; przy `md`
+  wiersz meczu obok listy i sidebaru miałby za mało miejsca na nazwy (#198).
 - Wiersz meczu to `MatchRow`: termin i obiekt | gospodarz | wynik | gość |
   plakietka kolizji | stan. Kolumny po bokach mają stałą szerokość, więc wynik
   stoi w tej samej pozycji w każdym wierszu, a slot kolizji przed stanem
   rezerwuje miejsce także w wierszu bez kolizji (#175).
+- Układ wiersza zależy od jego własnej szerokości, nie od okna: sześć kolumn
+  od 42rem, a węższy wiersz trzyma termin i stan w linii nad parą (#198).
 - Plakietka kolizji (`MatchRow`) niesie opis drugiej strony pary w `title`;
   licznik kolizji kolejki (`RoundList`) liczy mecze z co najmniej jedną
   kolizją, a nie pary (#175).
