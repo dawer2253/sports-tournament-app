@@ -100,4 +100,14 @@ class Sport extends Model
     {
         return self::SCORE_LABELS[$this->code];
     }
+
+    /**
+     * Etykieta kryterium z `config.tiebreakerLabels` (`StandingTable.tiebreakers`).
+     * Turniej przyjmuje wyłącznie kryteria z `availableTiebreakers` sportu,
+     * a klucze etykiet to dokładnie ta lista, więc brak etykiety to błąd danych.
+     */
+    public function tiebreakerLabel(string $code): string
+    {
+        return $this->config['tiebreakerLabels'][$code];
+    }
 }

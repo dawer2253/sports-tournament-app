@@ -307,6 +307,27 @@ it('liczy podgląd według podanej listy i niczego nie zapisuje', function () {
         ->and($tournament->fresh()->tiebreakers)->toBe(['points', 'head_to_head', 'score_for']);
 });
 
+it('w podglądzie tiebreakers to lista podglądu, a bez parametru — zapisana, z etykietami sportu', function () {
+    $tournament = standingsHeadToHeadLeague(['points', 'head_to_head', 'score_for']);
+
+    standingsOf($tournament)
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.0.allowsDraw', true)
+        ->assertJsonPath('data.0.tiebreakers', [
+            ['code' => 'points', 'label' => 'Punkty w tabeli'],
+            ['code' => 'head_to_head', 'label' => 'Bezpośredni mecz'],
+            ['code' => 'score_for', 'label' => 'Bramki zdobyte'],
+        ]);
+
+    standingsOf($tournament, '?tiebreakers=points,score_for,head_to_head')
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.0.tiebreakers', [
+            ['code' => 'points', 'label' => 'Punkty w tabeli'],
+            ['code' => 'score_for', 'label' => 'Bramki zdobyte'],
+            ['code' => 'head_to_head', 'label' => 'Bezpośredni mecz'],
+        ]);
+});
+
 it('podgląd z listą równą zapisanej oddaje to samo co odczyt bez parametru', function () {
     $tournament = standingsHeadToHeadLeague(['points', 'head_to_head', 'score_for']);
 

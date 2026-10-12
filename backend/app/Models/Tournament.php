@@ -49,6 +49,14 @@ class Tournament extends Model
     public const STATUSES = ['draft', 'active', 'finished'];
 
     /**
+     * Stany widoczne na stronie publicznej (`PublicTournament.status`). Szkic
+     * jest tam traktowany jak nieistniejący (opis parametru `Slug`, decyzja #82).
+     *
+     * @var list<string>
+     */
+    public const PUBLIC_STATUSES = ['active', 'finished'];
+
+    /**
      * Kryteria kolejności w tabeli, w kolejności z kontraktu (`TiebreakerCode`).
      * Które z nich wolno użyć w turnieju, mówi dopiero sport
      * (`Sport::availableTiebreakers()`). Zgodność z kontraktem pilnuje test
@@ -154,6 +162,16 @@ class Tournament extends Model
                 }
             }
         }
+    }
+
+    /**
+     * Turniej strony publicznej po slugu. Szkic i nieznany slug dają ten sam
+     * `ModelNotFoundException`, czyli to samo `404` z tym samym komunikatem,
+     * żeby odpowiedź nie zdradzała, że szkic istnieje.
+     */
+    public static function findPublishedBySlug(string $slug): self
+    {
+        return self::where('slug', $slug)->whereIn('status', self::PUBLIC_STATUSES)->firstOrFail();
     }
 
     /** Czy naruszenie unikatu dotyczy sluga, a nie innego indeksu. */

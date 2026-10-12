@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchEventController;
 use App\Http\Controllers\Api\PlayerController;
+use App\Http\Controllers\Api\PublicTournamentController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\SportController;
 use App\Http\Controllers\Api\StageController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Api\TeamLogoController;
 use App\Http\Controllers\Api\TournamentController;
 use App\Http\Controllers\Api\TournamentLogoController;
 use App\Http\Controllers\Api\VenueController;
+use App\Http\Middleware\AddHttpValidators;
 use Illuminate\Support\Facades\Route;
 
 // Prefiks `api/v1` dokłada `withRouting(apiPrefix: ...)` w bootstrap/app.php,
@@ -20,6 +22,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Strona publiczna: bez tokenu, turniej po slugu. Walidator HTTP (ADR-0007)
+// siedzi na całej grupie, więc kolejne trasy `/public/t/{slug}/*` dostają go
+// same, bez pamiętania o nim przy każdej z osobna.
+Route::prefix('/public/t/{slug}')->middleware(AddHttpValidators::class)->group(function () {
+    Route::get('/', [PublicTournamentController::class, 'show']);
+    Route::get('/standings', [PublicTournamentController::class, 'standings']);
+    Route::get('/fixtures', [PublicTournamentController::class, 'fixtures']);
+    Route::get('/results', [PublicTournamentController::class, 'results']);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
