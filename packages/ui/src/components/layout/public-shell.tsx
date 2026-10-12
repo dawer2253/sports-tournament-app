@@ -18,12 +18,19 @@ const TABS: { key: PublicNavKey; label: string }[] = [
   { key: 'scorers', label: 'Strzelcy' },
 ]
 
+// PROTOTYP (#205): `active` opcjonalne (strona meczu nie ma aktywnej zakładki),
+// turniej i zakładki-linki z zewnątrz. Docelowy kształt niesie #206.
 export interface PublicShellProps {
-  active: PublicNavKey
+  active?: PublicNavKey
   children: React.ReactNode
+  tournamentOverride?: { name: string; season: string; teams: number; sport: string; slug: string; emoji: string }
+  navHref?: (key: PublicNavKey) => string
+  onNavigate?: (key: PublicNavKey) => void
 }
 
-export function PublicShell({ active, children }: PublicShellProps) {
+export function PublicShell({ active, children, tournamentOverride, navHref, onNavigate }: PublicShellProps) {
+  const t = tournamentOverride ?? { ...tournament, teams: tournament.teamsCount, emoji: '⚽' }
+  const tabs = navHref ? TABS.filter((tab) => ['home', 'standings', 'fixtures', 'results'].includes(tab.key)) : TABS
   return (
     <div className="min-h-screen bg-muted/40 text-foreground">
       <header className="relative isolate overflow-hidden bg-brand text-brand-foreground">
@@ -52,32 +59,38 @@ export function PublicShell({ active, children }: PublicShellProps) {
 
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-6 pb-5 pt-9">
           <div className="grid size-14 shrink-0 place-items-center rounded-xl bg-white/15 text-3xl shadow-sm ring-1 ring-white/25 backdrop-blur">
-            ⚽
+            {t.emoji}
           </div>
           <div className="min-w-0">
             <Heading className="truncate font-extrabold text-current drop-shadow-sm">
-              {tournament.name}
+              {t.name}
             </Heading>
             <MetaList className="text-sm text-brand-foreground/85 drop-shadow-sm">
-              <>{tournament.season}</>
-              <>{tournament.teamsCount} drużyn</>
-              <>{tournament.sport}</>
+              <>{t.season}</>
+              <>{t.teams} drużyn</>
+              <>{t.sport}</>
             </MetaList>
           </div>
         </div>
         <div className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-6 text-sm">
-          {TABS.map((t) => (
-            <span
-              key={t.key}
+          {tabs.map((tab) => (
+            <a
+              key={tab.key}
+              href={navHref?.(tab.key)}
+              onClick={(e) => {
+                if (!onNavigate) return
+                e.preventDefault()
+                onNavigate(tab.key)
+              }}
               className={cn(
                 'cursor-pointer whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-colors',
-                t.key === active
+                tab.key === active
                   ? 'bg-muted font-medium text-foreground shadow-sm'
                   : 'text-brand-foreground/80 hover:bg-white/10 hover:text-brand-foreground',
               )}
             >
-              {t.label}
-            </span>
+              {tab.label}
+            </a>
           ))}
         </div>
       </header>
@@ -89,7 +102,7 @@ export function PublicShell({ active, children }: PublicShellProps) {
           <span className="flex items-center gap-1.5">
             <Trophy className="size-3.5" /> Powered by TournamentApp
           </span>
-          <>/t/{tournament.slug}</>
+          <>/t/{t.slug}</>
         </MetaList>
       </footer>
     </div>
