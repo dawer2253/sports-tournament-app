@@ -399,11 +399,11 @@ const phone375 = {
   parameters: {
     viewport: {
       options: {
-        telefon375: { name: 'Telefon 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
+        phone375: { name: 'Telefon 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
       },
     },
   },
-  globals: { viewport: { value: 'telefon375', isRotated: false } },
+  globals: { viewport: { value: 'phone375', isRotated: false } },
 } as const
 
 /**

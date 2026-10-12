@@ -481,10 +481,10 @@ function MobileNav({ onNavigate, onOpenTournament, ...sidebar }: SidebarProps) {
   React.useEffect(() => {
     if (!open) return
     const query = window.matchMedia(SIDEBAR_QUERY)
-    const close = () => { if (query.matches) setOpen(false) }
-    close()
-    query.addEventListener('change', close)
-    return () => query.removeEventListener('change', close)
+    const closeWhenSidebarShows = () => { if (query.matches) setOpen(false) }
+    closeWhenSidebarShows()
+    query.addEventListener('change', closeWhenSidebarShows)
+    return () => query.removeEventListener('change', closeWhenSidebarShows)
   }, [open])
 
   return (
@@ -497,7 +497,7 @@ function MobileNav({ onNavigate, onOpenTournament, ...sidebar }: SidebarProps) {
       <SheetContent
         side="left"
         aria-describedby={undefined}
-        className="w-72 max-w-[85vw] gap-0 bg-sidebar text-sidebar-foreground"
+        className="gap-0 bg-sidebar text-sidebar-foreground"
       >
         <SheetTitle className="sr-only">Menu panelu</SheetTitle>
         <SidebarContent
