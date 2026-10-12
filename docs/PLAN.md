@@ -307,6 +307,11 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
   [ADR 0008](adr/0008-czas-w-api-idzie-w-utc.md). W S2 rozkład dat bierze
   strefę z żądania (`timeZone`, panel z przeglądarki), a własnej strefy turniej
   jeszcze nie ma (#158).
+- Kafel „Zwycięzca” na Przeglądzie strony publicznej turnieju `finished`.
+  W S3 zakończony turniej niczego na Przeglądzie nie dokłada (#192, #206).
+- Kolumna „Forma” (wyniki ostatnich meczów) i strefy awansu/spadku w tabeli
+  strony publicznej. W S3 tabela publiczna to ta sama `StandingsTable` co
+  w panelu (#192, #206).
 
 ---
 
