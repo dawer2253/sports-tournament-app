@@ -229,12 +229,12 @@ type TournamentNavProps = NavProps & Pick<AdminShellProps, 'tournamentHref' | 'o
  */
 function TournamentItem({ tournament, isOpen, ...nav }: TournamentNavProps & { tournament: AdminShellTournament; isOpen: boolean }) {
   return (
-    <li>
+    <li className="py-1">
       <a
         {...tournamentLink(tournament.id, isOpen, nav)}
-        className={cn(sidebarLinkVariants({ active: isOpen, disabled: false }), 'flex-col items-stretch gap-1')}
+        className={cn(sidebarLinkVariants({ active: isOpen, disabled: false }), 'flex-col items-stretch gap-1.5')}
       >
-        <span className="truncate" title={tournament.name}>{tournament.name}</span>
+        <span className="truncate font-medium text-sidebar-foreground" title={tournament.name}>{tournament.name}</span>
         <span className="flex min-w-0 items-center gap-2 text-xs font-normal text-muted-foreground">
           <TournamentStatusBadge status={tournament.status} />
           <span className="truncate">{tournament.sport.name}</span>
@@ -315,7 +315,7 @@ function TournamentList({
       )}
 
       {visible.length > 0 && (
-        <ul aria-label="Bieżące turnieje" className="space-y-0.5">
+        <ul aria-label="Bieżące turnieje" className="divide-y divide-sidebar-border">
           {visible.map((item) => (
             <TournamentItem key={item.id} tournament={item} isOpen={item.id === tournament?.id} {...nav} />
           ))}
