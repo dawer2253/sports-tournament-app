@@ -147,11 +147,11 @@ function anchorProps({ href, isActive, isDisabled, onActivate }: {
  * nim, że jest nieczynny. W Storybooku (bez `navHref`) cała nawigacja zostaje
  * dekoracją, a nie nieczynnością.
  */
-function navLink(key: AdminNavKey, { active, navHref, onNavigate }: NavProps, { current = true } = {}) {
+function navLink(key: AdminNavKey, { active, navHref, onNavigate }: NavProps, { marksActive = true } = {}) {
   const href = navHref?.(key)
-  // `current: false` dla odnośników pobocznych, np. „+N więcej" prowadzi na
-  // listę, ale bieżącą stroną jest „Turnieje", a nie on.
-  const isActive = current && key === active
+  // `marksActive: false` dla odnośników pobocznych, np. „+N więcej" prowadzi na
+  // listę, ale aktywną pozycją jest „Turnieje", a nie on.
+  const isActive = marksActive && key === active
   const isDisabled = navHref !== undefined && href === undefined
   return {
     isActive,
@@ -208,12 +208,12 @@ function TournamentsLink(nav: NavProps) {
  */
 function tournamentLink(
   id: number,
-  isCurrent: boolean,
+  isOpen: boolean,
   { tournamentHref, onOpenTournament }: Pick<AdminShellProps, 'tournamentHref' | 'onOpenTournament'>,
 ) {
   return anchorProps({
     href: tournamentHref?.(id),
-    isActive: isCurrent,
+    isActive: isOpen,
     isDisabled: false,
     onActivate: onOpenTournament && (() => onOpenTournament(id)),
   })
@@ -227,12 +227,12 @@ type TournamentNavProps = NavProps & Pick<AdminShellProps, 'tournamentHref' | 'o
  * Kliknięcie prowadzi do domyślnej sekcji, niezależnie od tej, w której
  * organizer stoi.
  */
-function TournamentItem({ tournament, isCurrent, ...nav }: TournamentNavProps & { tournament: AdminShellTournament; isCurrent: boolean }) {
+function TournamentItem({ tournament, isOpen, ...nav }: TournamentNavProps & { tournament: AdminShellTournament; isOpen: boolean }) {
   return (
     <li>
       <a
-        {...tournamentLink(tournament.id, isCurrent, nav)}
-        className={cn(sidebarLinkVariants({ active: isCurrent, disabled: false }), 'flex-col items-stretch gap-1')}
+        {...tournamentLink(tournament.id, isOpen, nav)}
+        className={cn(sidebarLinkVariants({ active: isOpen, disabled: false }), 'flex-col items-stretch gap-1')}
       >
         <span className="truncate" title={tournament.name}>{tournament.name}</span>
         <span className="flex min-w-0 items-center gap-2 text-xs font-normal text-muted-foreground">
@@ -304,7 +304,8 @@ function TournamentList({
         </p>
       )}
 
-      {tournaments.status === 'success' && visible.length === 0 && (
+      {/* Bieżący turniej pod kreską (nieaktualna lista go nie niesie) przeczyłby „brakowi". */}
+      {tournaments.status === 'success' && visible.length === 0 && !(pinned && openIsCurrent) && (
         <p className={sidebarNoteClass}>
           Brak bieżących turniejów.{' '}
           <a {...navLink('create', nav).linkProps} className={sidebarNoteLinkClass}>
@@ -316,13 +317,13 @@ function TournamentList({
       {visible.length > 0 && (
         <ul aria-label="Bieżące turnieje" className="space-y-0.5">
           {visible.map((item) => (
-            <TournamentItem key={item.id} tournament={item} isCurrent={item.id === tournament?.id} {...nav} />
+            <TournamentItem key={item.id} tournament={item} isOpen={item.id === tournament?.id} {...nav} />
           ))}
         </ul>
       )}
 
       {more > 0 && (
-        <a {...navLink('dashboard', nav, { current: false }).linkProps} className={cn(sidebarNoteClass, 'block cursor-pointer hover:text-sidebar-foreground')}>
+        <a {...navLink('dashboard', nav, { marksActive: false }).linkProps} className={cn(sidebarNoteClass, 'block cursor-pointer hover:text-sidebar-foreground')}>
           +{more} więcej
         </a>
       )}
@@ -331,7 +332,7 @@ function TournamentList({
         <>
           <hr className="mx-3 my-2 border-sidebar-border" />
           <ul aria-label="Otwarty turniej">
-            <TournamentItem tournament={pinned} isCurrent {...nav} />
+            <TournamentItem tournament={pinned} isOpen {...nav} />
           </ul>
         </>
       )}

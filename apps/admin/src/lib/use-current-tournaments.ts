@@ -11,7 +11,7 @@ import { api } from './api';
  * więc każde unieważnienie listy turniejów (założenie, zmiana nazwy, stanu,
  * logo, usunięcie) odświeża też sidebar — bez osobnego wpisu w każdej mutacji.
  */
-export const currentTournamentsKey = ['tournaments', 'current'] as const;
+const currentTournamentsKey = ['tournaments', 'current'] as const;
 
 /**
  * Bieżące turnieje (szkice i trwające) do sidebaru panelu, w kształcie,

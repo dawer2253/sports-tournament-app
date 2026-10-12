@@ -269,6 +269,21 @@ export const BezBiezacych: Story = {
   },
 }
 
+/**
+ * Lista przyszła, zanim otwarty turniej powstał (np. w innej karcie), więc go
+ * nie niesie. Stoi pod kreską, a sidebar nie twierdzi, że bieżących brak.
+ */
+export const ListaNieaktualnaBezOtwartego: Story = {
+  args: { ...wTurnieju, active: 'teams', tournaments: lista([]) },
+  play: async ({ canvasElement }) => {
+    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+
+    const otwarty = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText(turniej.name).closest('a')!
+    await expect(otwarty).toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.queryByText(/Brak bieżących turniejów/)).not.toBeInTheDocument()
+  },
+}
+
 /** Lista w drodze: trzy szkieletowe pozycje zamiast pustego sidebaru. */
 export const ListaWczytywana: Story = {
   args: { tournaments: { status: 'pending' } },
