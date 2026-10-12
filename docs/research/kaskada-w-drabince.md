@@ -47,8 +47,9 @@ Ograniczenia:
 
 - **Dwie szkoły: blokada albo kaskada.** brackets-manager i Toornament
   **blokują** poprawkę meczu, gdy mecz zależny już się zaczął: trzeba najpierw
-  ręcznie wyczyścić mecz późniejszy. Challonge w API opisuje „Reopen” jako
-  operację, która **sama resetuje mecze następujące**. start.gg ma mutację
+  ręcznie wyczyścić mecz późniejszy. Challonge w API opisuje „Reopen” i zmianę
+  zwycięzcy w `matches/update` jako operacje, które **same resetują wszystkie
+  mecze w gałęzi** wychodzącej z poprawianego meczu, także już rozegrane. start.gg ma mutację
   `resetSet` z argumentem `resetDependentSets`, czyli kaskada jest tam opcją
   żądania; jej dokładnej semantyki dokumentacja nie opisuje.
 - **Czyszczony jest slot, nie wynik meczu zależnego.** W obu bibliotekach
@@ -56,7 +57,8 @@ Ograniczenia:
   (brackets-manager zachowuje przy tym `position`, czyli ślad pochodzenia
   slotu). Wyniku meczu zależnego nie ruszają: brackets-manager w ogóle nie
   dopuszcza do sytuacji, w której by go miał (blokada), tournament-organizer
-  nie sprawdza tego wcale.
+  nie sprawdza tego wcale. Challonge jest wyjątkiem: jego stary artykuł pomocy
+  pokazuje, że reset czyści **wyniki** meczów dalej w gałęzi (§3).
 - **Zmiana zwycięzcy bez resetu.** brackets-manager pozwala zmienić
   zwycięzcę zakończonego meczu wprost, dopóki mecz następny się nie zaczął:
   zwycięzca w meczu następnym zostaje podmieniony. start.gg tego zabrania
@@ -66,9 +68,12 @@ Ograniczenia:
   przestawia mecz w stan „trwa” (brackets-manager `Running`, Toornament
   `running`). W brackets-manager wpisanie wyniku w meczu następnym od razu
   blokuje poprawki meczów poprzednich.
-- **Ostrzeżenie.** Żadne źródło nie opisuje ostrzeżenia z listą meczów do
-  wyczyszczenia ani dwuetapowego potwierdzenia. Biblioteki rzucają błąd
-  („The match is locked.”), API start.gg ma flagę w żądaniu.
+- **Ostrzeżenie.** Żadna dokumentacja UI nie opisuje ostrzeżenia z listą
+  meczów do wyczyszczenia. Challonge pokazuje ogólne potwierdzenie zmiany
+  wyniku, start.gg przy resecie potwierdzenie „Yes, reset match” (opisane dla
+  free-for-all). Biblioteki rzucają błąd („The match is locked.”). API start.gg
+  ma flagę w żądaniu i **pozwala pobrać listę i liczbę setów, których dotknie
+  reset, zanim się go wykona** (`Set.resetAffectedData`).
 - **Termin, obiekt, statystyki wyczyszczonego meczu.** Żadna aplikacja tego
   nie opisuje. W bibliotekach reset dotyka tylko pól uczestników i statusu,
   pozostałe pola meczu zostają.
@@ -205,11 +210,30 @@ poprzedzającego tak, żeby jego zwycięzca ominął pusty mecz.
   that follow it” (snapshot
   [web.archive.org, 2023-12-21](https://web.archive.org/web/20231221070820/https://api.challonge.com/v1/documents/matches/reopen)).
   Jedyny parametr poza kluczem to identyfikator meczu, bez flagi
-  potwierdzenia. Opis nie mówi, jak daleko sięga reset (jeden mecz czy cała
-  gałąź) ani czy dotyczy meczów już rozegranych.
-- Pozostałych stron API v1 (aktualizacja meczu, oznaczanie „underway”,
-  usuwanie uczestnika) nie udało mi się przeczytać: archiwum zwracało
-  „Temporarily Offline”, a bieżąca dokumentacja to SPA. Patrz §5.
+  potwierdzenia.
+- API v1, „Update a match”, opis `winner_id`: „If you change the outcome of a
+  completed match, all matches in the bracket that branch from the updated
+  match will be reset.” Sam wynik (`scores_csv`) wolno aktualizować bez
+  `winner_id` „for live score updates”
+  ([challonge.apidog.io](https://challonge.apidog.io/update-a-match-23832578e0.md),
+  bieżąca oficjalna dokumentacja, v1 oznaczone jako przestarzałe).
+- Zasięg resetu pokazuje stary artykuł pomocy Challonge (snapshot
+  [web.archive.org, 2020-02-16](https://web.archive.org/web/20200216203142/http://feedback.challonge.com/knowledgebase/articles/257725-how-to-edit-match-results)):
+  gdy w meczu A zwycięzcą zostaje inny gracz, „match E will require a new
+  score”, a „reopening match A clears scores for matches E and G”. Reset
+  sięga więc dalej niż mecz następny i czyści wyniki. Żadne źródło nie mówi
+  o blokadzie przy meczu zależnym w toku albo zakończonym.
+- UI ([kb.challonge.com](https://kb.challonge.com/en/article/how-to-edit-match-results-1bf545k/)):
+  przy zmianie pojawia się ogólne potwierdzenie zmiany wyniku albo
+  rozstrzygnięcia, bez listy meczów.
+- Wycofanie uczestnika w trakcie turnieju (API v1 przez apidog): „mark a
+  participant inactive, automatically forfeiting his/her remaining matches”.
+  Przeciwnik awansuje bez wyniku
+  ([kb.challonge.com](https://kb.challonge.com/en/article/how-to-report-indicate-forfeits-by-removing-participants-vsb6tt/)).
+- Uzupełnienie powyżej pochodzi z sesji pomocniczej, która skończyła się po
+  pierwszej wersji notatki. Cytaty o resecie gałęzi i o meczach E i G
+  sprawdziłem ponownie u źródła, artykuły pomocy o potwierdzeniu i walkowerze
+  znam z jej odczytu.
 
 ### start.gg (GraphQL)
 
@@ -224,6 +248,12 @@ poprzedzającego tak, żeby jego zwycięzca ominął pusty mecz.
 - `updateBracketSet(...)`: aktualizuje statystyki gier; zwycięzcy nie da się
   nią zmienić, dokumentacja odsyła do `resetSet`.
 - `markSetInProgress`, `markSetCalled`: osobne stany „wywołany” i „w toku”.
+- `Set.resetAffectedData` („The sets that are affected from resetting this
+  set”) zwraca typ `ResetAffectedData` z polami `affectedSetCount`,
+  `affectedSets` i `affectedPhaseGroupCount`
+  ([Set](https://smashgg-schema.netlify.app/reference/set.doc.html),
+  [ResetAffectedData](https://smashgg-schema.netlify.app/reference/resetaffecteddata.doc.html)).
+  Klient może więc pokazać listę dotkniętych setów przed resetem.
 - `isDQ` to flaga dyskwalifikacji przy zgłoszeniu wyniku.
 
 Centrum pomocy start.gg nie ma artykułu o cofaniu zgłoszonego wyniku (szukane,
@@ -311,11 +341,11 @@ Odczyt sesji pomocniczej, nie czytałem ponownie:
 
 | Pytanie | brackets-manager | tournament-organizer | Challonge | start.gg | Toornament | Tournify | Battlefy |
 |---|---|---|---|---|---|---|---|
-| Mecz zależny już się zaczął | blokada (`Archived` od `Running`) | brak sprawdzenia | reset meczów następujących (zasięg nieopisany) | `resetDependentSets` w żądaniu (semantyka nieopisana) | blokada, reset ręczny od końca | nieopisane | nieopisane |
-| Co się czyści | slot w meczu następnym (`id: null`, `position` zostaje), status `Locked` | slot w meczu następnym, liczniki zostają | „matches that follow it” | „can affect other sets” | nic samo | nieopisane | wynik meczu (0:0) |
-| Zmiana zwycięzcy wprost | tak, gdy mecz następny się nie zaczął | nie ma osobnej ścieżki | przez Reopen | nie, tylko `resetSet` | nieopisane | edycja wyniku | reset i nowy wynik |
+| Mecz zależny już się zaczął | blokada (`Archived` od `Running`) | brak sprawdzenia | reset całej gałęzi, blokady nie opisano | `resetDependentSets` w żądaniu (semantyka nieopisana) | blokada, reset ręczny od końca | nieopisane | nieopisane |
+| Co się czyści | slot w meczu następnym (`id: null`, `position` zostaje), status `Locked` | slot w meczu następnym, liczniki zostają | wyniki meczów w gałęzi (przykład: E i G) | „can affect other sets” | nic samo | nieopisane | wynik meczu (0:0) |
+| Zmiana zwycięzcy wprost | tak, gdy mecz następny się nie zaczął | nie ma osobnej ścieżki | tak, `winner_id`, z resetem gałęzi | nie, tylko `resetSet` | nieopisane | edycja wyniku | reset i nowy wynik |
 | Zmiana wyniku bez zmiany zwycięzcy | bez skutków dalej, o ile podano `result` (z kodu) | nieopisane | nieopisane | `updateBracketSet` | nieopisane | nieopisane | nieopisane |
-| Ostrzeżenie | błąd `The match is locked.` | brak | brak opisu | flaga w żądaniu | blokada w UI | nieopisane | nieopisane |
+| Ostrzeżenie | błąd `The match is locked.` | brak | ogólne potwierdzenie w UI | flaga w żądaniu, lista `resetAffectedData` przed resetem | blokada w UI | nieopisane | nieopisane |
 | Moment awansu | rozstrzygnięcie, wynik daje `Running` | `enterResult` od razu | nieopisane (patrz §5) | `winnerId` kończy set | `completed` liczony z wyniku | automatycznie, kiedy dokładnie nieopisane | po wpisaniu wyniku |
 | Remis w drabince | zabroniony | zabroniony | nieopisane | nie dotyczy | zabroniony | zwycięzca lub seria karnych | nieopisane |
 | Karne | brak pola | brak pola (`meta`) | nieopisane | nie dotyczy | brak pola | wynik serii karnych | nie dotyczy |
@@ -323,16 +353,15 @@ Odczyt sesji pomocniczej, nie czytałem ponownie:
 
 ## 5. Nie sprawdzone
 
-- **Challonge poza „Reopen”.** Nie przeczytałem opisu `matches/update`
-  (`scores_csv`, `winner_id`, czy dopuszcza zmianę zakończonego meczu),
-  `mark_as_underway` ani `participants/destroy` (co dzieje się z meczami
-  wycofanego uczestnika w trakcie turnieju). Archiwum zwracało „Temporarily
-  Offline”, bieżąca dokumentacja to SPA. Nie wiem też, czy Reopen resetuje
-  tylko mecz następny, czy całą gałąź do finału.
+- **Challonge, reszta.** Czy poprawka samego wyniku zakończonego meczu
+  (bez zmiany zwycięzcy) rusza mecze dalej, co zostaje z terminu, miejsca
+  i stanowiska wyczyszczonego meczu, co z już rozegranymi meczami wycofanego
+  uczestnika i jak zapisuje się dogrywkę lub karne: nieopisane.
 - **start.gg `resetDependentSets`.** Brak opisu argumentu, więc nie wiem, co
   się dzieje przy `false`, gdy set zależny ma wynik (błąd czy zostawienie).
-- **Ostrzeżenie z listą meczów.** Żadne źródło nie opisuje, czy UI pokazuje
-  listę meczów do wyczyszczenia. Nie klikałem w żadnej aplikacji.
+- **Ostrzeżenie z listą meczów w UI.** API start.gg listę daje
+  (`resetAffectedData`), ale żadne źródło nie opisuje, czy UI ją pokazuje.
+  Nie klikałem w żadnej aplikacji.
 - **Termin, obiekt i statystyki wyczyszczonego meczu** w aplikacjach: żadna
   dokumentacja tego nie opisuje.
 - **Mecz trwający jako mecz zależny** w Challonge, start.gg i Tournify:
