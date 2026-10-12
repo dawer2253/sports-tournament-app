@@ -64,6 +64,13 @@ async function expectNamesReadable(canvasElement: HTMLElement) {
   }
 }
 
+/** Liczba kolumn siatki w każdym wierszu: 3 w wąskim, 6 w szerokim (#198). */
+async function expectColumns(canvasElement: HTMLElement, count: 3 | 6) {
+  for (const row of canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-row"]')) {
+    await expect(getComputedStyle(row).gridTemplateColumns.split(' ')).toHaveLength(count)
+  }
+}
+
 function Rows({ timeZone, className = 'max-w-3xl' }: { timeZone?: string; className?: string }) {
   return (
     <div className={cn('space-y-2', className)}>
@@ -79,10 +86,7 @@ export const RoznePlakietki: Story = {
   render: (args) => <Rows timeZone={args.timeZone} />,
   globals: { viewport: { value: 'desktop', isRotated: false } },
   play: async ({ canvasElement }) => {
-    // Sześć kolumn stoi od szerokości wiersza 42rem (#198); węższy wiersz
-    // sprawdzałby układ trzykolumnowy.
-    const row = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!
-    await expect(row.getBoundingClientRect().width).toBeGreaterThanOrEqual(672)
+    await expectColumns(canvasElement, 6)
     await expectScoresAligned(canvasElement)
     await expectNamesReadable(canvasElement)
   },
@@ -98,8 +102,33 @@ export const WaskiKontener: Story = {
   globals: { viewport: { value: 'desktop', isRotated: false } },
   play: async ({ canvasElement }) => {
     await expect(window.innerWidth).toBeGreaterThanOrEqual(1024)
+    await expectColumns(canvasElement, 3)
     await expectScoresAligned(canvasElement)
     await expectNamesReadable(canvasElement)
+  },
+}
+
+/**
+ * Próg układu: kontener rośnie od telefonu do szerokiego terminarza, a na
+ * każdej szerokości nazwy mają ≥ 80 px. Pilnuje, że próg nie zejdzie tam, gdzie
+ * sześć kolumn ściska nazwy (#198). Stories z jedną szerokością tego nie
+ * złapią: zbyt niski próg (np. `@xl`) dalej przechodzi przy 480 i 768 px.
+ */
+export const ProgUkladu: Story = {
+  render: (args) => <Rows timeZone={args.timeZone} className="w-[320px]" />,
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    // Siatka wiersza → opakowanie `@container/match-row` → lista z `Rows`.
+    const grid = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!
+    const container = grid.parentElement!.parentElement!
+    for (let width = 320; width <= 896; width += 16) {
+      container.style.width = `${width}px`
+      await expectScoresAligned(canvasElement)
+      await expectNamesReadable(canvasElement)
+    }
+    await expectColumns(canvasElement, 6)
+    container.style.width = '320px'
+    await expectColumns(canvasElement, 3)
   },
 }
 
@@ -108,7 +137,7 @@ export const Telefon: Story = {
   render: (args) => <Rows timeZone={args.timeZone} />,
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   play: async ({ canvasElement }) => {
-    await expect(window.innerWidth).toBeLessThan(640)
+    await expectColumns(canvasElement, 3)
     await expectScoresAligned(canvasElement)
     await expectNamesReadable(canvasElement)
   },
