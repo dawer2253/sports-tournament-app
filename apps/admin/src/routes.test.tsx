@@ -104,7 +104,7 @@ describe('trasy turnieju', () => {
     expect(requestedIds).toEqual(['7']);
     expect(screen.getByText('Koszykówka · /t/puchar-zimowy')).toBeInTheDocument();
     // Status jest dwa razy: przy turnieju w sidebarze i w nagłówku, bo
-    // poniżej `md` sidebaru nie ma.
+    // poniżej `md` sidebar siedzi w zamkniętej szufladzie.
     expect(screen.getAllByText('Szkic')).toHaveLength(2);
   });
 

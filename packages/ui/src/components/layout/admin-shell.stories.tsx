@@ -71,6 +71,8 @@ export const Domyslny: Story = {
       await expect(canvas.queryByText(section)).not.toBeInTheDocument()
     }
     await expect(canvas.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument()
+    // Szuflada jest tylko dla telefonu: obok sidebaru przycisk menu by go dublował.
+    await expect(canvas.queryByRole('button', { name: 'Menu panelu' })).not.toBeInTheDocument()
 
     // Bieżące w kolejności z API, bez zakończonych i bez podświetlenia, bo
     // żaden turniej nie jest otwarty. Podświetlone są tylko „Turnieje".
@@ -386,6 +388,75 @@ export const NawigacjaCzesciowa: Story = {
 
     await userEvent.click(canvas.getByRole('link', { name: 'Turnieje' }))
     await expect(args.onNavigate).toHaveBeenLastCalledWith('dashboard')
+  },
+}
+
+/**
+ * Telefon o szerokości 375 px (#196). Storybook nie ma takiego widoku wśród
+ * domyślnych (`mobile1` to 320, `mobile2` 414), a to szerokość z DoD.
+ */
+const phone375 = {
+  parameters: {
+    viewport: {
+      options: {
+        phone375: { name: 'Telefon 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
+      },
+    },
+  },
+  globals: { viewport: { value: 'phone375', isRotated: false } },
+} as const
+
+/**
+ * Na telefonie sidebaru nie ma, więc te same cele daje szuflada spod
+ * przycisku menu w headerze: z ekranu turnieju organizer dochodzi do listy
+ * turniejów i do innego bieżącego turnieju bez „Wstecz" przeglądarki.
+ * Wybranie celu zamyka szufladę, bo router podmienia ekran bez przeładowania.
+ */
+export const TelefonWTurnieju: Story = {
+  ...phone375,
+  args: {
+    ...inTournament,
+    active: 'teams',
+    navHref: panelHref,
+    onNavigate: fn(),
+    tournamentHref: tournamentHref,
+    onOpenTournament: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    // Szuflada to okno Radixa, portalowane do `body`, poza `canvasElement`.
+    const page = within(canvasElement.ownerDocument.body)
+
+    await expect(window.innerWidth).toBe(375)
+    // Sidebar jest schowany, a karty sekcji zostają.
+    await expect(canvas.queryByRole('navigation', { name: 'Panel' })).not.toBeInTheDocument()
+    await expect(canvas.getByRole('navigation', { name: 'Sekcje turnieju' })).toBeInTheDocument()
+
+    const menu = canvas.getByRole('button', { name: 'Menu panelu' })
+    await expect(menu).toHaveAttribute('aria-expanded', 'false')
+
+    // Inny bieżący turniej: pozycja listy w szufladzie prowadzi do niego.
+    await userEvent.click(menu)
+    const drawer = within(await page.findByRole('dialog', { name: 'Menu panelu' }))
+    const sidebar = within(drawer.getByRole('navigation', { name: 'Panel' }))
+    const currentList = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
+    await expect(currentList.getByText(demoTournament.name).closest('a')).toHaveAttribute('aria-current', 'page')
+    const other = currentList.getByText('Puchar Miasta — Kosz').closest('a')!
+    await expect(other).toHaveAttribute('href', tournamentHref(currentTournaments[1]!.id))
+    await userEvent.click(other)
+    await expect(args.onOpenTournament).toHaveBeenLastCalledWith(currentTournaments[1]!.id)
+    // Szuflada znika dopiero po animacji wyjścia.
+    await waitFor(() => expect(page.queryByRole('dialog')).not.toBeInTheDocument())
+    await expect(menu).toHaveAttribute('aria-expanded', 'false')
+
+    // Lista turniejów: pozycja „Turnieje".
+    await userEvent.click(menu)
+    const reopened = within(await page.findByRole('dialog', { name: 'Menu panelu' }))
+    const tournamentsLink = reopened.getByRole('link', { name: 'Turnieje' })
+    await expect(tournamentsLink).toHaveAttribute('href', '/')
+    await userEvent.click(tournamentsLink)
+    await expect(args.onNavigate).toHaveBeenLastCalledWith('dashboard')
+    await waitFor(() => expect(page.queryByRole('dialog')).not.toBeInTheDocument())
   },
 }
 

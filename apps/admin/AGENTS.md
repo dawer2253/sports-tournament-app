@@ -16,6 +16,8 @@ i 7) rozciągnął go na cały panel. Ten plik jest ich jedynym opisem dla kodu.
   generowanie, rozkład dat i mecz idą w oknach.
 - **Bez paneli bocznych, dymków z formularzem i osobnych stron formularzy.**
   Dwa wzorce z regułą, kiedy który, trzeba by tłumaczyć, więc nie ujednolicają.
+  Szuflada z nawigacją panelu na telefonie (`AdminShell`, #196) to nie panel
+  boczny w tym sensie: niesie odnośniki, nie formularz.
 - **Pola w kilku kolumnach równają się do góry**, więc podpis pod jednym polem
   (np. „Zmieni długość meczu w całym turnieju”) nie przesuwa pola obok. Pole
   w siatce ma `content-start`, jak `TextField`.
