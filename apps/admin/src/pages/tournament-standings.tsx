@@ -166,10 +166,6 @@ function StandingsSection({
     code,
     label: label(code),
   }));
-  // Kolumnę R, jak nagłówek zdobyczy i zdanie pod tabelą, niesie odpowiedź
-  // tabeli (`allowsDraw`), więc tabela nie czeka na `GET /sports`. Ten jest
-  // potrzebny już tylko edytorowi kryteriów.
-  const ready = tables;
 
   // Faza pucharowa nie ma tabeli, więc i kolejności nie ma czego ustawiać.
   if (tables && tables.length === 0) {
@@ -212,8 +208,11 @@ function StandingsSection({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="min-w-0 space-y-6">
-        {ready ? (
-          ready.map((table) => (
+        {/* Kolumnę R, jak nagłówek zdobyczy i zdanie pod tabelą, niesie
+            odpowiedź tabeli (`allowsDraw`), więc tabela nie czeka na
+            `GET /sports` — ten potrzebny jest już tylko edytorowi kryteriów. */}
+        {tables ? (
+          tables.map((table) => (
             <section key={`${table.stageId}-${table.groupId}`} className="space-y-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <Heading level="card">
@@ -245,7 +244,7 @@ function StandingsSection({
         )}
         {/* Zdanie z `tiebreakers` odpowiedzi, a nie ze szkicu: zgadza się
             z wierszami, nad którymi stoi, także zanim podgląd dotrze. */}
-        {ready?.[0] && <TiebreakerSentence items={ready[0].tiebreakers} />}
+        {tables?.[0] && <TiebreakerSentence items={tables[0].tiebreakers} />}
       </div>
       <div className="lg:sticky lg:top-4">{editor}</div>
       <UnsavedChangesGuard when={dirty} />

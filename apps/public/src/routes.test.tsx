@@ -142,13 +142,14 @@ describe('odpytywanie', () => {
     async (status) => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
       const requests = publicApi({ data: tournament({ status }) });
-      renderAt(`/t/${SLUG}/tabela`);
-      await screen.findByRole('table');
-      expect(requests).toMatchObject({ tournament: 1, standings: 1 });
+      // Przegląd pyta o wszystkie cztery zasoby naraz.
+      renderAt(`/t/${SLUG}`);
+      await screen.findByRole('region', { name: 'Tabela (skrót)' });
+      await waitFor(() => expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1 }));
 
       await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
-      await waitFor(() => expect(requests).toMatchObject({ tournament: 2, standings: 2 }));
+      await waitFor(() => expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2 }));
     },
   );
 });

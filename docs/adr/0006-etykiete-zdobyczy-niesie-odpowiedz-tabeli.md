@@ -75,4 +75,8 @@ Endpoint tabel po stronie backendu jeszcze nie istnieje — kiedy powstanie,
 `scoreLabel` wypełnia się ze sportu turnieju, a nie z pola w bazie: tabela nie
 jest bytem zapisywanym.
 
+*Aktualizacja (#206):* oba endpointy tabel stoją, a `scoreLabel` wypełnia
+`Sport::scoreLabel()` w `StandingTableResource`. Tym samym chwytem tabela
+niesie odtąd także `allowsDraw` i `tiebreakers`.
+
 Zapisane w [`CONTEXT.md`](../../CONTEXT.md) pod hasłem `Standing`.
