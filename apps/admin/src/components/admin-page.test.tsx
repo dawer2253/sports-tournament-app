@@ -3,12 +3,12 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Tournament } from '@tournament/api-client';
 import { HttpResponse, http } from 'msw';
-import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router';
+import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getToken, setToken } from '../lib/session';
-import { routes } from '../routes';
 import { API_URL as API, server } from '../test/server';
 import { allTournaments, currentTournaments, isCurrentTournamentsRequest } from '../test/current-tournaments';
+import { TOURNAMENT, renderPanel } from '../test/teams-api';
 import { AdminPage } from './admin-page';
 
 const TOKEN = '1|token-sprzed-wylogowania';
@@ -132,49 +132,24 @@ describe('AdminPage — wylogowanie', () => {
   });
 });
 
-const LIGA: Tournament = {
-  id: 7,
-  name: 'Liga Osiedlowa 2026',
-  slug: 'liga-osiedlowa-2026',
-  status: 'active',
-  sport: { id: 1, code: 'football', name: 'Piłka nożna' },
-  branding: { logoUrl: null, primaryColor: '#1F7A45' },
-  points: { win: 3, draw: 1, loss: 0 },
-  tiebreakers: ['points'],
-  matchDuration: 60,
-  teamsCount: 8,
-  createdAt: '2026-09-01T10:00:00+02:00',
-  updatedAt: '2026-09-01T10:00:00+02:00',
-};
+/** Trwający, bo zakończyć da się tylko trwający turniej. */
+const LIGA: Tournament = { ...TOURNAMENT, status: 'active' };
 
 /** Lista bieżących w sidebarze; `findBy`, bo przychodzi osobnym żądaniem. */
 async function sidebarList() {
   return within(await screen.findByRole('list', { name: 'Bieżące turnieje' }));
 }
 
-/** Prawdziwe drzewo tras: odświeżenie po mutacji widać dopiero na ekranie, na który ona prowadzi. */
-function renderRoutes(path: string) {
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <RouterProvider router={router} />
-    </QueryClientProvider>,
-  );
-  return { router, user: userEvent.setup() };
-}
-
 describe('AdminPage — bieżące turnieje w sidebarze', () => {
   it('pyta o szkice i trwające, jedną stronę po 8, i pokazuje je pod „Turnieje"', async () => {
     const queries: URLSearchParams[] = [];
+    server.use(currentTournaments([LIGA]));
+    // Podsłuch przed odpowiedzią: msw sprawdza handlery od ostatnio dodanego,
+    // a ten przepuszcza żądanie dalej.
     server.use(
       http.get(`${API}/tournaments`, ({ request }) => {
         queries.push(new URL(request.url).searchParams);
-        return HttpResponse.json({
-          data: [LIGA],
-          meta: { currentPage: 1, lastPage: 1, perPage: 8, total: 1 },
-        });
+        return undefined;
       }),
     );
 
@@ -191,15 +166,12 @@ describe('AdminPage — bieżące turnieje w sidebarze', () => {
   it('błąd mówi o sobie, a „Spróbuj ponownie" pyta API jeszcze raz', async () => {
     let fail = true;
     const requests = vi.fn();
+    server.use(currentTournaments([LIGA]));
     server.use(
       http.get(`${API}/tournaments`, ({ request }) => {
         if (!isCurrentTournamentsRequest(request)) return undefined;
         requests();
-        if (fail) return HttpResponse.json({ message: 'Serwer nie odpowiada.' }, { status: 500 });
-        return HttpResponse.json({
-          data: [LIGA],
-          meta: { currentPage: 1, lastPage: 1, perPage: 8, total: 1 },
-        });
+        return fail ? HttpResponse.json({ message: 'Serwer nie odpowiada.' }, { status: 500 }) : undefined;
       }),
     );
 
@@ -238,7 +210,7 @@ describe('AdminPage — bieżące turnieje w sidebarze', () => {
       }),
     );
 
-    const { router, user } = renderRoutes('/tournaments/new');
+    const { router, user } = renderPanel('/tournaments/new');
     const sidebar = within(screen.getByRole('navigation', { name: 'Panel' }));
     expect(await sidebar.findByText(/Brak bieżących turniejów/)).toBeInTheDocument();
 
@@ -278,7 +250,7 @@ describe('AdminPage — bieżące turnieje w sidebarze', () => {
       }),
     );
 
-    const { user } = renderRoutes('/tournaments/7/settings');
+    const { user } = renderPanel('/tournaments/7/settings');
     const finish = await screen.findByRole('button', { name: 'Zakończ' });
     const open = (await sidebarList()).getByRole('link', { name: /Liga Osiedlowa 2026/ });
     expect(open).toHaveAttribute('aria-current', 'page');

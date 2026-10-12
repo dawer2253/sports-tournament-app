@@ -5,19 +5,19 @@ import { isCurrentTournament } from '../data/tournament-row'
 import { AdminShell, type AdminNavKey, type AdminShellTournament, type AdminShellTournamentList } from './admin-shell'
 
 /** Bieżące turnieje demo, tak jak oddaje je API: bez zakończonych. */
-const biezace = tournamentList.filter(isCurrentTournament)
+const currentTournaments = tournamentList.filter(isCurrentTournament)
 
 /** Lista w sidebarze, gdy zapytanie się powiodło. */
-function lista(items: AdminShellTournament[], total = items.length): AdminShellTournamentList {
+function listOf(items: AdminShellTournament[], total = items.length): AdminShellTournamentList {
   return { status: 'success', items, total }
 }
 
 /** Adresy panelu poza turniejem: lista i kreator. */
-const adresyPanelu = (key: AdminNavKey) =>
+const panelHref = (key: AdminNavKey) =>
   ({ dashboard: '/', create: '/tournaments/new' } as Partial<Record<AdminNavKey, string>>)[key]
 
 /** Adres turnieju z listy, czyli jego domyślnej sekcji. */
-const adresTurnieju = (id: number) => `/tournaments/${id}`
+const tournamentHref = (id: number) => `/tournaments/${id}`
 
 const meta = {
   title: 'UI/Shell panelu',
@@ -28,7 +28,7 @@ const meta = {
     title: 'Twoje turnieje',
     subtitle: 'Zarządzaj ligami i turniejami',
     user: organizer,
-    tournaments: lista(biezace),
+    tournaments: listOf(currentTournaments),
     children: <p className="text-sm text-muted-foreground">Miejsce na treść ekranu.</p>,
   },
 } satisfies Meta<typeof AdminShell>
@@ -37,16 +37,21 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /** Turniej demo w kształcie, w jakim shell go przyjmuje. */
-const turniej = tournamentList[0]!
+const demoTournament = tournamentList[0]!
 
 /** Argumenty shella wewnątrz turnieju, w układzie nagłówka z makiet. */
-const wTurnieju = {
-  tournament: turniej,
-  title: turniej.name,
-  subtitle: `${turniej.sport.name} · /t/${turniej.slug}`,
+const inTournament = {
+  tournament: demoTournament,
+  title: demoTournament.name,
+  subtitle: `${demoTournament.sport.name} · /t/${demoTournament.slug}`,
 }
 
-const SEKCJE = ['Drużyny', 'Obiekty', 'Ustawienia', 'Terminarz', 'Tabela', 'Drabinka', 'Statystyki']
+/** Sidebar panelu, w którym stoi lista turniejów. */
+function sidebarOf(canvasElement: HTMLElement) {
+  return within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+}
+
+const SECTIONS = ['Drużyny', 'Obiekty', 'Ustawienia', 'Terminarz', 'Tabela', 'Drabinka', 'Statystyki']
 
 /**
  * Poza turniejem sidebar ma „Turnieje" i pod nimi bieżące turnieje, bez kart
@@ -62,18 +67,18 @@ export const Domyslny: Story = {
     const sidebar = within(canvas.getByRole('navigation', { name: 'Panel' }))
     await expect(sidebar.getByText('Turnieje')).toBeInTheDocument()
     await expect(sidebar.queryByText('Turniej')).not.toBeInTheDocument()
-    for (const sekcja of SEKCJE) {
-      await expect(canvas.queryByText(sekcja)).not.toBeInTheDocument()
+    for (const section of SECTIONS) {
+      await expect(canvas.queryByText(section)).not.toBeInTheDocument()
     }
     await expect(canvas.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument()
 
     // Bieżące w kolejności z API, bez zakończonych i bez podświetlenia, bo
     // żaden turniej nie jest otwarty. Podświetlone są tylko „Turnieje".
-    const listaBiezacych = sidebar.getByRole('list', { name: 'Bieżące turnieje' })
-    const pozycje = within(listaBiezacych).getAllByRole('listitem')
-    await expect(pozycje.map((pozycja) => pozycja.querySelector('[title]')?.textContent)).toEqual(biezace.map(({ name }) => name))
+    const currentList = sidebar.getByRole('list', { name: 'Bieżące turnieje' })
+    const items = within(currentList).getAllByRole('listitem')
+    await expect(items.map((item) => item.querySelector('[title]')?.textContent)).toEqual(currentTournaments.map(({ name }) => name))
     await expect(sidebar.queryByText('Turniej Zimowy')).not.toBeInTheDocument()
-    await expect(listaBiezacych.querySelector('[aria-current]')).toBeNull()
+    await expect(currentList.querySelector('[aria-current]')).toBeNull()
     await expect(sidebar.getByText('Turnieje').closest('a')).toHaveAttribute('aria-current', 'page')
 
     // Dekoracja to nie to samo co pozycja nieczynna: bez `navHref` żadna pozycja
@@ -90,7 +95,7 @@ export const Domyslny: Story = {
  */
 export const WTurnieju: Story = {
   args: {
-    ...wTurnieju,
+    ...inTournament,
     active: 'teams',
   },
   play: async ({ canvasElement }) => {
@@ -98,33 +103,33 @@ export const WTurnieju: Story = {
 
     // Otwarty turniej to pozycja listy: nazwa, status i sport, podświetlona.
     const sidebar = within(canvas.getByRole('navigation', { name: 'Panel' }))
-    const listaBiezacych = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
-    const otwarty = listaBiezacych.getByText(turniej.name).closest('a')!
-    await expect(otwarty).toHaveAttribute('aria-current', 'page')
-    await expect(within(otwarty).getByText('Trwa')).toBeInTheDocument()
-    await expect(within(otwarty).getByText(turniej.sport.name)).toBeInTheDocument()
-    await expect(listaBiezacych.getByText('Puchar Miasta — Kosz').closest('a')).not.toHaveAttribute('aria-current')
+    const currentList = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
+    const open = currentList.getByText(demoTournament.name).closest('a')!
+    await expect(open).toHaveAttribute('aria-current', 'page')
+    await expect(within(open).getByText('Trwa')).toBeInTheDocument()
+    await expect(within(open).getByText(demoTournament.sport.name)).toBeInTheDocument()
+    await expect(currentList.getByText('Puchar Miasta — Kosz').closest('a')).not.toHaveAttribute('aria-current')
 
     // Bez osobnej karty: nazwa turnieju stoi w sidebarze raz, bez etykiety
     // „Turniej" i bez listy „Otwarty turniej" pod kreską.
-    await expect(sidebar.getAllByText(turniej.name)).toHaveLength(1)
+    await expect(sidebar.getAllByText(demoTournament.name)).toHaveLength(1)
     await expect(sidebar.queryByText('Turniej')).not.toBeInTheDocument()
     await expect(sidebar.queryByRole('list', { name: 'Otwarty turniej' })).not.toBeInTheDocument()
     await expect(sidebar.getByText('Turnieje').closest('a')).not.toHaveAttribute('aria-current')
 
     // Sidebar nie ma listy sekcji — sekcje są tylko kartami w nagłówku.
-    for (const sekcja of SEKCJE) {
-      await expect(sidebar.queryByText(sekcja)).not.toBeInTheDocument()
+    for (const section of SECTIONS) {
+      await expect(sidebar.queryByText(section)).not.toBeInTheDocument()
     }
 
-    const karty = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
-    for (const sekcja of SEKCJE) {
-      await expect(karty.getByText(sekcja)).toBeInTheDocument()
+    const tabs = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
+    for (const section of SECTIONS) {
+      await expect(tabs.getByText(section)).toBeInTheDocument()
     }
     // To nawigacja, nie ARIA `tablist`: aktywną kartę oznacza `aria-current`.
     await expect(canvas.queryByRole('tablist')).not.toBeInTheDocument()
-    await expect(karty.getByText('Drużyny').closest('a')).toHaveAttribute('aria-current', 'page')
-    await expect(karty.getByText('Obiekty').closest('a')).not.toHaveAttribute('aria-current')
+    await expect(tabs.getByText('Drużyny').closest('a')).toHaveAttribute('aria-current', 'page')
+    await expect(tabs.getByText('Obiekty').closest('a')).not.toHaveAttribute('aria-current')
 
     // Status stoi w nagłówku strony niezależnie od sidebaru, który poniżej `md`
     // znika.
@@ -138,30 +143,31 @@ export const WTurnieju: Story = {
  */
 export const WTurniejuZakonczonym: Story = {
   args: {
-    ...wTurnieju,
+    ...inTournament,
     tournament: tournamentList[2]!,
     title: tournamentList[2]!.name,
     active: 'standings',
   },
   play: async ({ canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
-    const biezaceLista = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
-    await expect(biezaceLista.queryByText('Turniej Zimowy')).not.toBeInTheDocument()
-    await expect(biezaceLista.getAllByRole('listitem')).toHaveLength(biezace.length)
+    const currentListElement = sidebar.getByRole('list', { name: 'Bieżące turnieje' })
+    const currentList = within(currentListElement)
+    await expect(currentList.queryByText('Turniej Zimowy')).not.toBeInTheDocument()
+    await expect(currentList.getAllByRole('listitem')).toHaveLength(currentTournaments.length)
 
-    const otwartaLista = sidebar.getByRole('list', { name: 'Otwarty turniej' })
-    const otwarty = within(otwartaLista).getByText('Turniej Zimowy').closest('a')!
-    await expect(otwarty).toHaveAttribute('aria-current', 'page')
-    await expect(within(otwarty).getByText('Zakończony')).toBeInTheDocument()
+    const openList = sidebar.getByRole('list', { name: 'Otwarty turniej' })
+    const open = within(openList).getByText('Turniej Zimowy').closest('a')!
+    await expect(open).toHaveAttribute('aria-current', 'page')
+    await expect(within(open).getByText('Zakończony')).toBeInTheDocument()
 
     // Pod listą bieżących, za kreską — nie przed nią.
-    const kreska = otwartaLista.previousElementSibling
-    await expect(kreska?.tagName).toBe('HR')
-    await expect(sidebar.getByRole('list', { name: 'Bieżące turnieje' }).compareDocumentPosition(otwartaLista) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const separator = openList.previousElementSibling
+    await expect(separator?.tagName).toBe('HR')
+    await expect(currentListElement.compareDocumentPosition(openList) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 
     // Na liście bieżących nic nie jest podświetlone.
-    await expect(sidebar.getByRole('list', { name: 'Bieżące turnieje' }).querySelector('[aria-current]')).toBeNull()
+    await expect(currentListElement.querySelector('[aria-current]')).toBeNull()
   },
 }
 
@@ -172,23 +178,23 @@ export const WTurniejuZakonczonym: Story = {
  */
 export const ListaNieaktualnaPoZakonczeniu: Story = {
   args: {
-    ...wTurnieju,
-    tournament: { ...turniej, status: 'finished' },
+    ...inTournament,
+    tournament: { ...demoTournament, status: 'finished' },
     active: 'settings',
-    tournaments: lista(biezace),
+    tournaments: listOf(currentTournaments),
   },
   play: async ({ canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
-    const biezaceLista = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
-    await expect(biezaceLista.queryByText(turniej.name)).not.toBeInTheDocument()
+    const currentList = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
+    await expect(currentList.queryByText(demoTournament.name)).not.toBeInTheDocument()
     await expect(within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText('Zakończony')).toBeInTheDocument()
     await expect(sidebar.queryByText(/więcej/)).not.toBeInTheDocument()
   },
 }
 
 /** Dwanaście bieżących: sidebar mieści osiem, resztę zlicza z `meta.total`. */
-const dwanascie: AdminShellTournament[] = Array.from({ length: 12 }, (_, index) => ({
+const twelve: AdminShellTournament[] = Array.from({ length: 12 }, (_, index) => ({
   id: 100 + index,
   name: `Liga Firmowa ${index + 1}`,
   status: index % 2 === 0 ? 'active' : 'draft',
@@ -202,28 +208,28 @@ const dwanascie: AdminShellTournament[] = Array.from({ length: 12 }, (_, index) 
  */
 export const PonadOsiemBiezacych: Story = {
   args: {
-    tournaments: lista(dwanascie.slice(0, 8), dwanascie.length),
-    navHref: adresyPanelu,
-    tournamentHref: adresTurnieju,
+    tournaments: listOf(twelve.slice(0, 8), twelve.length),
+    navHref: panelHref,
+    tournamentHref: tournamentHref,
     onNavigate: fn(),
     onOpenTournament: fn(),
   },
   play: async ({ args, canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
     await expect(within(sidebar.getByRole('list', { name: 'Bieżące turnieje' })).getAllByRole('listitem')).toHaveLength(8)
-    const wiecej = sidebar.getByRole('link', { name: '+4 więcej' })
-    await expect(wiecej).toHaveAttribute('href', '/')
+    const more = sidebar.getByRole('link', { name: '+4 więcej' })
+    await expect(more).toHaveAttribute('href', '/')
     // „Turnieje" są bieżącą stroną; odnośnik poboczny na ten sam adres nią nie jest.
-    await expect(wiecej).not.toHaveAttribute('aria-current')
+    await expect(more).not.toHaveAttribute('aria-current')
 
-    await userEvent.click(wiecej)
+    await userEvent.click(more)
     await expect(args.onNavigate).toHaveBeenLastCalledWith('dashboard')
 
     // Pozycja prowadzi do turnieju, czyli jego domyślnej sekcji.
-    const pozycja = sidebar.getByText('Liga Firmowa 3').closest('a')!
-    await expect(pozycja).toHaveAttribute('href', '/tournaments/102')
-    await userEvent.click(pozycja)
+    const item = sidebar.getByText('Liga Firmowa 3').closest('a')!
+    await expect(item).toHaveAttribute('href', '/tournaments/102')
+    await userEvent.click(item)
     await expect(args.onOpenTournament).toHaveBeenLastCalledWith(102)
   },
 }
@@ -235,17 +241,17 @@ export const PonadOsiemBiezacych: Story = {
  */
 export const OtwartyPozaLimitem: Story = {
   args: {
-    ...wTurnieju,
-    tournament: dwanascie[10]!,
-    title: dwanascie[10]!.name,
+    ...inTournament,
+    tournament: twelve[10]!,
+    title: twelve[10]!.name,
     active: 'teams',
-    tournaments: lista(dwanascie.slice(0, 8), dwanascie.length),
+    tournaments: listOf(twelve.slice(0, 8), twelve.length),
   },
   play: async ({ canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
-    const otwarty = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText('Liga Firmowa 11').closest('a')!
-    await expect(otwarty).toHaveAttribute('aria-current', 'page')
+    const open = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText('Liga Firmowa 11').closest('a')!
+    await expect(open).toHaveAttribute('aria-current', 'page')
     await expect(sidebar.getByText('+3 więcej')).toBeInTheDocument()
   },
 }
@@ -253,18 +259,18 @@ export const OtwartyPozaLimitem: Story = {
 /** Bez bieżących turniejów sidebar mówi to wprost i prowadzi do kreatora. */
 export const BezBiezacych: Story = {
   args: {
-    tournaments: lista([]),
-    navHref: adresyPanelu,
+    tournaments: listOf([]),
+    navHref: panelHref,
     onNavigate: fn(),
   },
   play: async ({ args, canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
     await expect(sidebar.getByText(/Brak bieżących turniejów/)).toBeInTheDocument()
     await expect(sidebar.queryByRole('list', { name: 'Bieżące turnieje' })).not.toBeInTheDocument()
-    const nowy = sidebar.getByRole('link', { name: 'Nowy turniej' })
-    await expect(nowy).toHaveAttribute('href', '/tournaments/new')
-    await userEvent.click(nowy)
+    const createLink = sidebar.getByRole('link', { name: 'Nowy turniej' })
+    await expect(createLink).toHaveAttribute('href', '/tournaments/new')
+    await userEvent.click(createLink)
     await expect(args.onNavigate).toHaveBeenLastCalledWith('create')
   },
 }
@@ -274,12 +280,12 @@ export const BezBiezacych: Story = {
  * nie niesie. Stoi pod kreską, a sidebar nie twierdzi, że bieżących brak.
  */
 export const ListaNieaktualnaBezOtwartego: Story = {
-  args: { ...wTurnieju, active: 'teams', tournaments: lista([]) },
+  args: { ...inTournament, active: 'teams', tournaments: listOf([]) },
   play: async ({ canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
-    const otwarty = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText(turniej.name).closest('a')!
-    await expect(otwarty).toHaveAttribute('aria-current', 'page')
+    const open = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText(demoTournament.name).closest('a')!
+    await expect(open).toHaveAttribute('aria-current', 'page')
     await expect(sidebar.queryByText(/Brak bieżących turniejów/)).not.toBeInTheDocument()
   },
 }
@@ -288,11 +294,11 @@ export const ListaNieaktualnaBezOtwartego: Story = {
 export const ListaWczytywana: Story = {
   args: { tournaments: { status: 'pending' } },
   play: async ({ canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
-    const szkielet = sidebar.getByLabelText('Wczytywanie turniejów')
-    await expect(szkielet).toHaveAttribute('aria-busy', 'true')
-    await expect(szkielet.children).toHaveLength(3)
+    const skeleton = sidebar.getByLabelText('Wczytywanie turniejów')
+    await expect(skeleton).toHaveAttribute('aria-busy', 'true')
+    await expect(skeleton.children).toHaveLength(3)
     await expect(sidebar.queryByText(/Brak bieżących turniejów/)).not.toBeInTheDocument()
   },
 }
@@ -302,13 +308,13 @@ export const ListaWczytywana: Story = {
  * pod kreską, żeby sidebar dalej mówił, gdzie organizer jest.
  */
 export const ListaZBledemWTurnieju: Story = {
-  args: { ...wTurnieju, active: 'teams', tournaments: { status: 'error', onRetry: fn() } },
+  args: { ...inTournament, active: 'teams', tournaments: { status: 'error', onRetry: fn() } },
   play: async ({ canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
     await expect(sidebar.getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument()
-    const otwarty = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText(turniej.name).closest('a')!
-    await expect(otwarty).toHaveAttribute('aria-current', 'page')
+    const open = within(sidebar.getByRole('list', { name: 'Otwarty turniej' })).getByText(demoTournament.name).closest('a')!
+    await expect(open).toHaveAttribute('aria-current', 'page')
   },
 }
 
@@ -319,7 +325,7 @@ export const ListaZBledemWTurnieju: Story = {
 export const ListaZBledem: Story = {
   args: { tournaments: { status: 'error', onRetry: fn() } },
   play: async ({ args, canvasElement }) => {
-    const sidebar = within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
+    const sidebar = sidebarOf(canvasElement)
 
     await expect(sidebar.getByText(/Nie udało się wczytać turniejów/)).toBeInTheDocument()
     await expect(sidebar.queryByText(/Brak bieżących turniejów/)).not.toBeInTheDocument()
@@ -335,47 +341,47 @@ export const ListaZBledem: Story = {
  */
 export const NawigacjaCzesciowa: Story = {
   args: {
-    ...wTurnieju,
+    ...inTournament,
     active: 'venues',
     navHref: (key: AdminNavKey) =>
       ({ dashboard: '/', teams: '/tournaments/1/teams', venues: '/tournaments/1/venues', settings: '/tournaments/1/settings' } as Partial<Record<AdminNavKey, string>>)[key],
     onNavigate: fn(),
-    tournamentHref: adresTurnieju,
+    tournamentHref: tournamentHref,
     onOpenTournament: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
-    const karty = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
+    const tabs = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
 
     // Karty z adresem są odnośnikami — i tylko one.
-    await expect(karty.getAllByRole('link').map((link) => link.textContent)).toEqual(['Drużyny', 'Obiekty', 'Ustawienia'])
-    await expect(karty.getByRole('link', { name: 'Obiekty' })).toHaveAttribute('aria-current', 'page')
+    await expect(tabs.getAllByRole('link').map((link) => link.textContent)).toEqual(['Drużyny', 'Obiekty', 'Ustawienia'])
+    await expect(tabs.getByRole('link', { name: 'Obiekty' })).toHaveAttribute('aria-current', 'page')
 
     // Karta bez adresu nie udaje odnośnika: brak `href` odbiera jej rolę
     // `link`, więc czytnik ekranu nie ogłosi jej jako czegoś do kliknięcia.
-    const terminarz = karty.getByText('Terminarz').closest('a')!
-    await expect(terminarz).toHaveAttribute('aria-disabled', 'true')
-    await expect(terminarz).toHaveAttribute('title', 'Wkrótce')
+    const schedule = tabs.getByText('Terminarz').closest('a')!
+    await expect(schedule).toHaveAttribute('aria-disabled', 'true')
+    await expect(schedule).toHaveAttribute('title', 'Wkrótce')
 
     // Z klawiatury: Tab z ostatniej czynnej karty omija nieczynne.
-    karty.getByRole('link', { name: 'Ustawienia' }).focus()
+    tabs.getByRole('link', { name: 'Ustawienia' }).focus()
     await userEvent.tab()
-    for (const sekcja of ['Terminarz', 'Tabela', 'Drabinka', 'Statystyki']) {
-      await expect(karty.getByText(sekcja).closest('a')).not.toHaveFocus()
+    for (const section of ['Terminarz', 'Tabela', 'Drabinka', 'Statystyki']) {
+      await expect(tabs.getByText(section).closest('a')).not.toHaveFocus()
     }
 
     // Kliknięcie w nieczynną kartę nie prowadzi nigdzie.
-    await userEvent.click(terminarz)
+    await userEvent.click(schedule)
     await expect(args.onNavigate).not.toHaveBeenCalled()
 
-    await userEvent.click(karty.getByRole('link', { name: 'Drużyny' }))
+    await userEvent.click(tabs.getByRole('link', { name: 'Drużyny' }))
     await expect(args.onNavigate).toHaveBeenLastCalledWith('teams')
 
     // Otwarty turniej w sidebarze prowadzi do domyślnej sekcji, nie do
     // tej, na której organizer stoi.
-    const otwarty = within(canvas.getByRole('navigation', { name: 'Panel' })).getByText(turniej.name).closest('a')!
-    await expect(otwarty).toHaveAttribute('href', '/tournaments/1')
-    await userEvent.click(otwarty)
+    const open = within(canvas.getByRole('navigation', { name: 'Panel' })).getByText(demoTournament.name).closest('a')!
+    await expect(open).toHaveAttribute('href', '/tournaments/1')
+    await userEvent.click(open)
     await expect(args.onOpenTournament).toHaveBeenLastCalledWith(1)
 
     await userEvent.click(canvas.getByRole('link', { name: 'Turnieje' }))

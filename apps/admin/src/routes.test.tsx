@@ -212,7 +212,7 @@ describe('trasy turnieju', () => {
       await screen.findByText('Nie ma takiego turnieju');
       expect(screen.queryByText(message)).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Spróbuj ponownie' })).not.toBeInTheDocument();
-      // Bez turnieju nie ma czego pokazać w kontekście: ani karty, ani kart sekcji.
+      // Bez turnieju nie ma czego pokazać w kontekście: ani podświetlonej pozycji, ani kart sekcji.
       expect(screen.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument();
 
       server.use(allTournaments(() => HttpResponse.json(emptyList())));

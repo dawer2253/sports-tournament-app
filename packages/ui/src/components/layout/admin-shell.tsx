@@ -200,25 +200,6 @@ function TournamentsLink(nav: NavProps) {
   )
 }
 
-/**
- * Odnośnik do turnieju z listy. Adres niesie id, więc idzie przez
- * `tournamentHref`/`onOpenTournament`, a nie przez klucz nawigacji. Turniej
- * z listy zawsze istnieje, więc nigdy nie jest nieczynny; bez adresów
- * (Storybook) jest dekoracją.
- */
-function tournamentLink(
-  id: number,
-  isOpen: boolean,
-  { tournamentHref, onOpenTournament }: Pick<AdminShellProps, 'tournamentHref' | 'onOpenTournament'>,
-) {
-  return anchorProps({
-    href: tournamentHref?.(id),
-    isActive: isOpen,
-    isDisabled: false,
-    onActivate: onOpenTournament && (() => onOpenTournament(id)),
-  })
-}
-
 type TournamentNavProps = NavProps & Pick<AdminShellProps, 'tournamentHref' | 'onOpenTournament'>
 
 /**
@@ -226,12 +207,27 @@ type TournamentNavProps = NavProps & Pick<AdminShellProps, 'tournamentHref' | 'o
  * Otwarty turniej wyróżnia się tak samo jak aktywne „Turnieje", tłem i belką.
  * Kliknięcie prowadzi do domyślnej sekcji, niezależnie od tej, w której
  * organizer stoi.
+ *
+ * Adres niesie id, więc idzie przez `tournamentHref`/`onOpenTournament`,
+ * a nie przez klucz nawigacji. Turniej z listy zawsze istnieje, więc nigdy nie
+ * jest nieczynny; bez adresów (Storybook) jest dekoracją.
  */
-function TournamentItem({ tournament, isOpen, ...nav }: TournamentNavProps & { tournament: AdminShellTournament; isOpen: boolean }) {
+function TournamentItem({
+  tournament,
+  isOpen,
+  tournamentHref,
+  onOpenTournament,
+}: TournamentNavProps & { tournament: AdminShellTournament; isOpen: boolean }) {
+  const linkProps = anchorProps({
+    href: tournamentHref?.(tournament.id),
+    isActive: isOpen,
+    isDisabled: false,
+    onActivate: onOpenTournament && (() => onOpenTournament(tournament.id)),
+  })
   return (
     <li className="py-1">
       <a
-        {...tournamentLink(tournament.id, isOpen, nav)}
+        {...linkProps}
         className={cn(sidebarLinkVariants({ active: isOpen, disabled: false }), 'flex-col items-stretch gap-1.5')}
       >
         <span className="truncate font-medium text-sidebar-foreground" title={tournament.name}>{tournament.name}</span>
@@ -251,16 +247,15 @@ const sidebarNoteClass = 'px-3 py-1.5 text-xs text-muted-foreground'
 const sidebarNoteLinkClass = 'cursor-pointer font-medium text-sidebar-foreground underline-offset-2 hover:underline'
 
 /**
- * Bieżące turnieje pod „Turnieje" (#195). Otwarty turniej jest podświetloną
- * pozycją listy. Gdy na liście go nie ma — bo jest zakończony albo nie
- * zmieścił się w limicie — dokleja się pod nią, oddzielony kreską, żeby
- * organizer zawsze widział, w którym turnieju stoi.
+ * Co pokazuje lista turniejów w sidebarze: pozycje listy, turniej pod kreską,
+ * liczba w „+N więcej" i czy mówić o braku bieżących. Osobno od rysowania, bo
+ * stan listy i stan otwartego turnieju przychodzą z dwóch zapytań, które
+ * odświeżają się niezależnie, a tu się je godzi.
  */
-function TournamentList({
-  tournaments,
-  tournament,
-  ...nav
-}: TournamentNavProps & Pick<AdminShellProps, 'tournaments' | 'tournament'>) {
+function tournamentListView(
+  tournaments: AdminShellTournamentList,
+  tournament: AdminShellTournament | undefined,
+) {
   const items = tournaments.status === 'success' ? tournaments.items.slice(0, SIDEBAR_TOURNAMENTS_LIMIT) : []
   // Zakończony nie jest bieżący, nawet jeśli lista jeszcze o tym nie wie:
   // stan otwartego turnieju jest świeższy niż lista, która odświeża się osobno.
@@ -280,6 +275,23 @@ function TournamentList({
   const more = tournaments.status === 'success'
     ? tournaments.total - items.length - (pinned && openIsCurrent ? 1 : 0)
     : 0
+  // Bieżący turniej pod kreską (nieaktualna lista go nie niesie) przeczyłby „brakowi".
+  const isEmpty = tournaments.status === 'success' && visible.length === 0 && !(pinned && openIsCurrent)
+  return { visible, pinned, more, isEmpty }
+}
+
+/**
+ * Bieżące turnieje pod „Turnieje" (#195). Otwarty turniej jest podświetloną
+ * pozycją listy. Gdy na liście go nie ma — bo jest zakończony albo nie
+ * zmieścił się w limicie — dokleja się pod nią, oddzielony kreską, żeby
+ * organizer zawsze widział, w którym turnieju stoi.
+ */
+function TournamentList({
+  tournaments,
+  tournament,
+  ...nav
+}: TournamentNavProps & Pick<AdminShellProps, 'tournaments' | 'tournament'>) {
+  const { visible, pinned, more, isEmpty } = tournamentListView(tournaments, tournament)
 
   return (
     <div className="mt-1 space-y-0.5">
@@ -304,8 +316,7 @@ function TournamentList({
         </p>
       )}
 
-      {/* Bieżący turniej pod kreską (nieaktualna lista go nie niesie) przeczyłby „brakowi". */}
-      {tournaments.status === 'success' && visible.length === 0 && !(pinned && openIsCurrent) && (
+      {isEmpty && (
         <p className={sidebarNoteClass}>
           Brak bieżących turniejów.{' '}
           <a {...navLink('create', nav).linkProps} className={sidebarNoteLinkClass}>
