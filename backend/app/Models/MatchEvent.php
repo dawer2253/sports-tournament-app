@@ -19,9 +19,18 @@ class MatchEvent extends Model
 {
     use HasFactory;
 
+    /**
+     * Zdarzenia ma tylko mecz rozpoczęty (#188, reguła 8). Ten sam komunikat
+     * daje zapis, poprawka i usunięcie zdarzenia meczu `scheduled`.
+     */
+    public const NOT_STARTED_MESSAGE = 'Zdarzenia wpisuje się w meczu trwającym albo zakończonym.';
+
     protected function casts(): array
     {
-        return ['meta' => 'array'];
+        return [
+            'minute' => 'integer',
+            'meta' => 'array',
+        ];
     }
 
     public function match(): BelongsTo

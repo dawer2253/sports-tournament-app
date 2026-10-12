@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MatchController;
+use App\Http\Controllers\Api\MatchEventController;
 use App\Http\Controllers\Api\PlayerController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\SportController;
@@ -48,6 +49,14 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'tournament');
     Route::patch('/matches/{match}', [MatchController::class, 'update'])
         ->can('manage', 'match');
+    Route::get('/matches/{match}/events', [MatchEventController::class, 'index'])
+        ->can('manage', 'match');
+    Route::post('/matches/{match}/events', [MatchEventController::class, 'store'])
+        ->can('manage', 'match');
+    Route::patch('/match-events/{event}', [MatchEventController::class, 'update'])
+        ->can('manage', 'event');
+    Route::delete('/match-events/{event}', [MatchEventController::class, 'destroy'])
+        ->can('manage', 'event');
     Route::post('/stages/{stage}/schedule', [ScheduleController::class, 'store'])
         ->can('manage', 'stage');
     Route::post('/stages/{stage}/schedule/dates', [ScheduleController::class, 'dates'])

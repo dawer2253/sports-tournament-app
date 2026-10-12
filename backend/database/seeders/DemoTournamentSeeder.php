@@ -76,12 +76,16 @@ class DemoTournamentSeeder extends Seeder
     /**
      * Zdarzenia meczowe: [kolejka, zawodnik, typ, minuta]. Bramki muszą sumować
      * się do wyniku meczu — inaczej klasyfikacja strzelców i tabela mówiłyby
-     * o tym samym meczu co innego. Najwięcej ma Marek Nowak, tak jak
+     * o tym samym meczu co innego. Samobój należy do drużyny strzelca, a bramkę
+     * daje przeciwnikowi (#188, reguła 9). Najwięcej ma Marek Nowak, tak jak
      * w przykładzie `GET /public/t/{slug}/top-scorers`.
+     *
+     * Kolejka 1 to przykład `pilka` w `GET /matches/{match}/events`: kolejność
+     * wierszy wyznacza id z tamtego przykładu.
      */
     private const EVENTS = [
         [1, 'Marek Nowak', 'goal', 12],
-        [1, 'Marek Nowak', 'goal', 58],
+        [1, 'Tomasz Lis', 'own_goal', 58],
         [1, 'Adam Zieliński', 'goal', 34],
         [1, 'Tomasz Lis', 'yellow_card', 71],
         [2, 'Marek Nowak', 'goal', 21],
@@ -115,6 +119,36 @@ class DemoTournamentSeeder extends Seeder
 
     /** Drużyny ligi koszykówki, w kolejności z przykładu (id 4 i 5 w mocku). */
     private const BASKETBALL_TEAMS = ['Żubry Wola', 'Rysie Mokotów'];
+
+    /**
+     * Składy koszykarzy: drużyna => [nazwisko, numer, pozycja]. Na świeżej
+     * bazie dostają id 10–15, po dziewięciu piłkarzach — te id i nazwiska
+     * padają w przykładzie `koszykowka` w `GET /matches/{match}/events`.
+     */
+    private const BASKETBALL_SQUADS = [
+        'Żubry Wola' => [
+            ['Kacper Lipa', 4, 'rozgrywający'],
+            ['Oskar Dąb', 8, 'skrzydłowy'],
+            ['Bruno Klon', 15, 'środkowy'],
+        ],
+        'Rysie Mokotów' => [
+            ['Filip Sarna', 6, 'rozgrywający'],
+            ['Hubert Łoś', 10, 'skrzydłowy'],
+            ['Wiktor Bóbr', 23, 'środkowy'],
+        ],
+    ];
+
+    /**
+     * Kolejne rzuty drużyny w meczu koszykówki (wartości `value`), powtarzane
+     * w kółko. Stały wzór zamiast losowania, żeby seed był deterministyczny.
+     */
+    private const BASKETBALL_SHOT_PATTERN = [2, 2, 3, 1, 2, 3, 2, 1];
+
+    /** Kody typów rzutów po ich `value` (konfiguracja koszykówki). */
+    private const BASKETBALL_SHOT_TYPES = [1 => 'free_throw', 2 => 'two_pointer', 3 => 'three_pointer'];
+
+    /** Fauli na drużynę w każdym rozegranym meczu. */
+    private const BASKETBALL_FOULS_PER_TEAM = 3;
 
     /**
      * Składy: drużyna => [nazwisko, numer, pozycja]. Kolejność ma znaczenie —
@@ -280,19 +314,80 @@ class DemoTournamentSeeder extends Seeder
         );
 
         $teams = [];
+        $squads = [];
 
         foreach (self::BASKETBALL_TEAMS as $teamName) {
             $teams[$teamName] = Team::updateOrCreate(
                 ['tournament_id' => $tournament->id, 'name' => $teamName],
                 ['group_id' => null, 'logo_path' => null],
             );
+
+            $squads[$teamName] = array_map(
+                fn (array $player): Player => Player::updateOrCreate(
+                    ['team_id' => $teams[$teamName]->id, 'name' => $player[0]],
+                    ['number' => $player[1], 'position' => $player[2]],
+                ),
+                self::BASKETBALL_SQUADS[$teamName],
+            );
         }
 
         foreach (self::BASKETBALL_RESULTS as [$roundNumber, $home, $away, $homeScore, $awayScore, $kickoff]) {
-            $this->createMatch(
+            $match = $this->createMatch(
                 $stage, $roundNumber, $teams[$home], $teams[$away], $kickoff, $venue,
                 homeScore: $homeScore, awayScore: $awayScore,
             );
+
+            $this->seedBasketballEvents($match, [
+                [$squads[$home], $homeScore],
+                [$squads[$away], $awayScore],
+            ]);
+        }
+    }
+
+    /**
+     * Rzuty i faule meczu koszykówki (#188). Suma `value` rzutów drużyny daje
+     * jej wynik — inaczej klasyfikacja „Punkty” rozjechałaby się z tabelą,
+     * choć API zgodności nie wymaga. Rzuty idą po kolei przez skład, a ostatni
+     * dostaje taką wartość, żeby suma wyszła równo.
+     *
+     * Minuty rozkładamy po czterdziestu minutach meczu, a wiersze wstawiamy
+     * w kolejności minut, żeby lista z API i kolejność id mówiły to samo.
+     *
+     * @param  list<array{list<Player>, int}>  $sides  [skład, wynik] gospodarza i gościa
+     */
+    private function seedBasketballEvents(GameMatch $match, array $sides): void
+    {
+        $events = [];
+
+        foreach ($sides as [$squad, $score]) {
+            $shots = [];
+
+            for ($left = $score, $i = 0; $left > 0; $i++) {
+                $value = min(self::BASKETBALL_SHOT_PATTERN[$i % count(self::BASKETBALL_SHOT_PATTERN)], $left);
+                $shots[] = $value;
+                $left -= $value;
+            }
+
+            foreach ($shots as $i => $value) {
+                $player = $squad[$i % count($squad)];
+                $events[] = [$player, self::BASKETBALL_SHOT_TYPES[$value], intdiv($i * 40, count($shots)) + 1];
+            }
+
+            for ($i = 0; $i < self::BASKETBALL_FOULS_PER_TEAM; $i++) {
+                $events[] = [$squad[$i % count($squad)], 'foul', 10 * $i + 5];
+            }
+        }
+
+        usort($events, fn (array $a, array $b): int => $a[2] <=> $b[2]);
+
+        foreach ($events as [$player, $type, $minute]) {
+            MatchEvent::create([
+                'match_id' => $match->id,
+                'team_id' => $player->team_id,
+                'player_id' => $player->id,
+                'type' => $type,
+                'minute' => $minute,
+            ]);
         }
     }
 

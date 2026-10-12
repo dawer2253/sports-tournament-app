@@ -30,3 +30,23 @@ it('oddaje sporty z konfiguracją dokładnie taką, jaką obiecuje przykład w k
 
     expect($response->json('data'))->toEqual($promised);
 });
+
+// #188, reguła 4: `value` przy każdym typie, ustawione jawnie, a kosz liczy
+// punkty z rzutów, nie z jednego typu `points`. Sprawdzone niezależnie od
+// przykładu, żeby zmiana przykładu i migracji naraz tego nie zgubiła.
+it('oddaje value przy każdym typie zdarzenia, a kosz nie ma już typu points', function () {
+    $sports = actingAsOrganizer()
+        ->getJson('/api/v1/sports')
+        ->assertValidResponse(200)
+        ->collect('data')
+        ->keyBy('code');
+
+    foreach ($sports as $sport) {
+        foreach ($sport['config']['eventTypes'] as $type) {
+            expect($type['value'])->toBeInt()->toBeGreaterThanOrEqual(1);
+        }
+    }
+
+    expect(array_column($sports['basketball']['config']['eventTypes'], 'value', 'code'))
+        ->toBe(['free_throw' => 1, 'two_pointer' => 2, 'three_pointer' => 3, 'foul' => 1]);
+});
