@@ -41,7 +41,7 @@ export function MatchTimeline({ events, homeTeamId, types, onSelect, className }
             {note && <span className="text-xs text-muted-foreground">{note}</span>}
           </>
         )
-        const cellClass = cn('min-w-0 truncate rounded px-1.5 py-0.5 text-sm', home ? 'text-right' : 'text-left')
+        const cellClass = cn('min-w-0 rounded px-1.5 py-0.5 text-sm break-words', home ? 'text-right' : 'text-left')
 
         const cell = onSelect ? (
           <button

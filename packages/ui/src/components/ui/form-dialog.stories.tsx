@@ -206,3 +206,28 @@ export const CiemnyMotyw: Story = {
     await expectDarkPortal('[data-slot="dialog-content"]')
   },
 }
+
+/**
+ * Sekcja poza formularzem (`aside`, #200): stoi między polami a przyciskami,
+ * a Enter w jej polu nie wysyła formularza. „Dodaj” pod nią dalej wysyła
+ * formularz — przez atrybut `form`.
+ */
+export const SekcjaPozaFormularzem: Story = {
+  args: {
+    aside: (
+      <div className="grid gap-2 border-t pt-4">
+        <Label htmlFor="aside-minute">Minuta</Label>
+        <Input id="aside-minute" />
+      </div>
+    ),
+  },
+  play: async ({ args }) => {
+    await screen.findByRole('dialog', { name: 'Nowy obiekt' })
+
+    await userEvent.type(screen.getByLabelText('Minuta'), '12{Enter}')
+    await expect(args.onSubmit).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dodaj' }))
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
+  },
+}
