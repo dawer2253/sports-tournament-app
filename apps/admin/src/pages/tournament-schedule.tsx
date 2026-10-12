@@ -231,7 +231,7 @@ export function TournamentSchedulePage() {
         />
       )}
       {selectedMatch && (
-        // PROTOTYP (#191): okno meczu ze zdarzeniami w czterech wariantach (`?variant=`).
+        // PROTOTYP (#191): okno meczu ze zdarzeniami w pięciu wariantach (E to wynik przeglądu) (`?variant=`).
         <PrototypeMatchDialog
           key={selectedMatch.id}
           match={selectedMatch}

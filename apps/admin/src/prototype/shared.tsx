@@ -2,6 +2,7 @@
 import type { AdminMatch, MatchStatus } from '@tournament/api-client';
 import {
   Button,
+  ConfirmDeleteDialog,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -522,6 +523,7 @@ export function EventFormDialog({
   event,
   initial,
   onClose,
+  deletable,
 }: {
   match: AdminMatch;
   sport: SportCode;
@@ -529,8 +531,11 @@ export function EventFormDialog({
   event?: ProtoEvent;
   initial?: Partial<EventBody>;
   onClose: () => void;
+  /** Wariant E: usuwanie siedzi w oknie edycji, za potwierdzeniem. */
+  deletable?: boolean;
 }) {
   const actions = useEventActions(match, sport);
+  const [confirming, setConfirming] = useState(false);
   const proto = useProto();
   const [type, setType] = useState(event?.type ?? initial?.type ?? EVENT_TYPES[sport][0].code);
   const [teamId, setTeamId] = useState<number | null>(event?.teamId ?? initial?.teamId ?? match.homeTeam?.id ?? null);
@@ -592,7 +597,22 @@ export function EventFormDialog({
           </div>
         </div>
         <p className="text-xs text-muted-foreground">Minutę można zostawić pustą i uzupełnić później. Doliczony czas: „90+3” wpisz jako 93.</p>
+        {event && deletable && (
+          <Button type="button" variant="destructive" className="justify-self-start" disabled={actions.pending} onClick={() => setConfirming(true)}>
+            <Trash2 /> Usuń zdarzenie
+          </Button>
+        )}
       </div>
+      {event && confirming && (
+        <ConfirmDeleteDialog
+          open
+          onOpenChange={(open) => !open && setConfirming(false)}
+          entity="zdarzenie"
+          name={`${minuteLabel(event.minute)} ${typeOf(sport, event.type)?.label} · ${playerLabel(event.playerId)}`}
+          pending={actions.pending}
+          onConfirm={() => void actions.remove(event).then(onClose)}
+        />
+      )}
     </FormDialog>
   );
 }

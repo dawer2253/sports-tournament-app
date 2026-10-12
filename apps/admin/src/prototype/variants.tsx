@@ -273,7 +273,7 @@ export function VariantB({ match, tournamentId, sport, onClose }: VariantProps) 
 // C — stolik: przyciski typów przy każdej drużynie, potem siatka zawodników
 // =============================================================================
 
-export function VariantC({ match, tournamentId, sport, onClose }: VariantProps) {
+export function VariantC({ match, tournamentId, sport, onClose, deletable }: VariantProps & { deletable?: boolean }) {
   const form = useMatchForm(match, sport, onClose);
   const list = useMatchEvents(match);
   const gate = eventsGate(match, form);
@@ -371,7 +371,7 @@ export function VariantC({ match, tournamentId, sport, onClose }: VariantProps) 
         <MismatchHint match={match} form={form} sport={sport} list={list} />
         <Timeline match={match} sport={sport} list={list} onEdit={gate.open ? setEditing : undefined} />
       </div>
-      {editing && <EventFormDialog match={match} sport={sport} event={editing} onClose={() => setEditing(null)} />}
+      {editing && <EventFormDialog match={match} sport={sport} event={editing} onClose={() => setEditing(null)} deletable={deletable} />}
     </MatchDialogFrame>
   );
 }
@@ -599,3 +599,12 @@ function PlayerTally({ sport, events }: { sport: SportCode; events: ProtoEvent[]
 }
 
 export type { MatchForm };
+
+// =============================================================================
+// E — po przeglądzie: C (przyciski typów, siatka numerów, oś meczu) + okno
+// edycji z B, w którym siedzi też usuwanie za potwierdzeniem
+// =============================================================================
+
+export function VariantE(props: VariantProps) {
+  return <VariantC {...props} deletable />;
+}

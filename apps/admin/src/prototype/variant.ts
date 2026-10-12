@@ -7,6 +7,7 @@ export const VARIANTS = [
   { key: 'B', name: 'Zakładka „Zdarzenia”, dodawanie w pod-oknie' },
   { key: 'C', name: 'Stolik: najpierw typ, potem zawodnik' },
   { key: 'D', name: 'Składy: najpierw zawodnik, potem typ' },
+  { key: 'E', name: 'Po przeglądzie: C + okno edycji z B' },
 ] as const;
 
 export type EventsVariant = (typeof VARIANTS)[number]['key'];

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { matchEvents, sim, useProto, useSport, type FailMode } from './events-store';
 import { VARIANTS, useEventsVariant } from './variant';
-import { VariantA, VariantB, VariantC, VariantD } from './variants';
+import { VariantA, VariantB, VariantC, VariantD, VariantE } from './variants';
 
 export function PrototypeMatchDialog(props: { match: AdminMatch; tournamentId: number; sportCode: string; onClose: () => void }) {
   const variant = useEventsVariant();
@@ -16,6 +16,7 @@ export function PrototypeMatchDialog(props: { match: AdminMatch; tournamentId: n
   if (variant === 'B') return <VariantB key={key} {...common} />;
   if (variant === 'C') return <VariantC key={key} {...common} />;
   if (variant === 'D') return <VariantD key={key} {...common} />;
+  if (variant === 'E') return <VariantE key={key} {...common} />;
   return <VariantA key={key} {...common} />;
 }
 
