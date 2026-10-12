@@ -36,9 +36,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Od `md`: wszystkie kolejki w kolumnie, bieżąca podświetlona. */
+/** Od `lg`: wszystkie kolejki w kolumnie, bieżąca podświetlona. */
 export const Kolumna: Story = {
-  globals: { viewport: { value: 'tablet', isRotated: false } },
+  globals: { viewport: { value: 'desktop', isRotated: false } },
 }
 
 /**
@@ -49,7 +49,7 @@ export const Telefon: Story = {
   globals: { viewport: { value: 'mobile2', isRotated: false } },
   play: async ({ canvasElement, args }) => {
     // Bez telefonowej szerokości test sprawdzałby kolumnę, a nie zwinięcie.
-    await expect(window.innerWidth).toBeLessThan(768)
+    await expect(window.innerWidth).toBeLessThan(1024)
     const canvas = within(canvasElement)
 
     const toggle = canvas.getByRole('button', { expanded: false })

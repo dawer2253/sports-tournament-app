@@ -12,13 +12,22 @@ import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type
  * pkt 3). Slot kolizji jest stały i stoi przed stanem (#175), więc plakietka
  * kolizji nie przesuwa kolumny wyniku ani stanu.
  *
- * Na telefonie termin i stan idą w linię nad parą, a wynik dalej siedzi
+ * W wąskim wierszu termin i stan idą w linię nad parą, a wynik dalej siedzi
  * w środkowej kolumnie. Miejsce każdej komórki jest jawne (`col-start`,
  * `row-start`), więc kolejność w DOM — termin, gospodarz, wynik, gość, stan —
  * jest ta sama na każdej szerokości i tak też czyta ją czytnik ekranu.
+ *
+ * Układ przełącza szerokość samego wiersza (container query), nie okna: w
+ * panelu obok terminarza stoją sidebar i lista kolejek, więc przy oknie
+ * 1024 px wiersz ma ok. 480 px (#198). Sześć kolumn wymaga 478 px na stałe
+ * kolumny, odstępy, padding i ramkę; próg `@2xl` (42rem = 672 px) zostawia
+ * każdej nazwie drużyny przynajmniej 97 px. Granicę 80 px pilnują stories,
+ * więc te liczby to uzasadnienie progu, nie źródło prawdy. Kontener jest
+ * nazwany (`match-row`), żeby komórki i `CollisionBadge` nie łapały się na
+ * cudzy kontener, np. `@container/card-header` w `Card`.
  */
 const ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 sm:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
+  'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
 
 const STATUS_BADGE: Record<
   MatchRowData['status'],
@@ -52,7 +61,9 @@ export function collisionLabel(type: MatchCollisionType): string {
 /**
  * Plakietka kolizji z opisem drugiej strony w `title` (#158). Przy kilku
  * kolizjach pokazuje ich liczbę, a pełny opis niesie `title`. Nazwa rodzaju
- * jest `sr-only` na telefonie, gdzie wiersz jest ciasny — ikona zostaje.
+ * jest `sr-only` w wąskim wierszu — ikona zostaje. Próg czyta z nazwanego
+ * kontenera `match-row` (#198), więc poza `MatchRow` plakietka pokazuje samą
+ * ikonę, także wewnątrz innego kontenera.
  */
 export function CollisionBadge({ collisions, className }: { collisions: MatchCollision[]; className?: string }) {
   if (collisions.length === 0) return null
@@ -64,7 +75,7 @@ export function CollisionBadge({ collisions, className }: { collisions: MatchCol
   return (
     <Badge variant="destructive" title={title} className={className}>
       <AlertTriangle />
-      <span className="sr-only sm:not-sr-only">{label}</span>
+      <span className="sr-only @2xl/match-row:not-sr-only">{label}</span>
     </Badge>
   )
 }
@@ -107,6 +118,7 @@ export interface MatchRowProps {
    * Bez tego zostaje grupą tylko do odczytu (makieta terminarza).
    */
   onSelect?: () => void
+  /** Klasy opakowania wiersza, czyli kontenera, od którego liczy się próg układu. */
   className?: string
 }
 
@@ -122,7 +134,7 @@ export function MatchRow({ match, showDate = true, timeZone, onSelect, className
 
   const content = (
     <>
-      <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground sm:col-span-1 sm:block">
+      <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground @2xl/match-row:col-span-1 @2xl/match-row:block">
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (
           <span className="flex min-w-0 items-center gap-1">
@@ -131,47 +143,49 @@ export function MatchRow({ match, showDate = true, timeZone, onSelect, className
           </span>
         )}
       </div>
-      <span className="col-start-1 row-start-2 truncate text-right font-medium sm:col-start-2 sm:row-start-1">{home}</span>
-      <span className="col-start-2 row-start-2 flex sm:col-start-3 sm:row-start-1">
+      <span data-slot="match-team" className="col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1">{home}</span>
+      <span className="col-start-2 row-start-2 flex @2xl/match-row:col-start-3 @2xl/match-row:row-start-1">
         <Score match={match} />
       </span>
-      <span className="col-start-3 row-start-2 truncate font-medium sm:col-start-4 sm:row-start-1">{away}</span>
+      <span data-slot="match-team" className="col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1">{away}</span>
       {/* Stały slot kolizji przed stanem (#175): miejsce rezerwuje pusty
           wrapper, więc plakietka nie przesuwa kolumny wyniku. */}
-      <span className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 sm:col-span-2 sm:col-start-5">
-        <span className="flex shrink-0 justify-end sm:w-[6.5rem]">
+      <span className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 @2xl/match-row:col-span-2 @2xl/match-row:col-start-5">
+        <span className="flex shrink-0 justify-end @2xl/match-row:w-[6.5rem]">
           <CollisionBadge collisions={match.collisions ?? []} />
         </span>
-        <span className="flex shrink-0 justify-end sm:w-[6.5rem]">
+        <span className="flex shrink-0 justify-end @2xl/match-row:w-[6.5rem]">
           <MatchStatusBadge status={match.status} />
         </span>
       </span>
     </>
   )
 
-  const grid = cn(ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm', className)
+  const grid = cn(ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm')
 
-  if (onSelect) {
-    return (
-      <button
-        type="button"
-        data-slot="match-row"
-        aria-label={label}
-        onClick={onSelect}
-        className={cn(
-          grid,
-          'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-        )}
-      >
-        {content}
-      </button>
-    )
-  }
-
-  return (
+  const row = onSelect ? (
+    <button
+      type="button"
+      data-slot="match-row"
+      aria-label={label}
+      onClick={onSelect}
+      className={cn(
+        grid,
+        'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+      )}
+    >
+      {content}
+    </button>
+  ) : (
     <div data-slot="match-row" role="group" aria-label={label} className={grid}>
       {content}
     </div>
   )
+
+  // Kontener zapytania musi być przodkiem siatki (element nie odpytuje sam
+  // siebie), więc wiersz dostaje własne opakowanie i konsument nie musi
+  // pamiętać o `@container` (#198). `className` trafia na nie, bo to ono
+  // jest najbardziej zewnętrznym elementem i od niego liczy się próg.
+  return <div className={cn('@container/match-row', className)}>{row}</div>
 }

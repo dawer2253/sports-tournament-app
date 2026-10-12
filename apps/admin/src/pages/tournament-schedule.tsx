@@ -347,16 +347,16 @@ function RoundsView({
   }
 
   return (
-    <div className="grid items-start gap-4 md:grid-cols-[15rem_minmax(0,1fr)]">
+    <div className="grid items-start gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
       <RoundList
         rounds={rounds.map((candidate) => candidate.summary)}
         value={round.id}
         onValueChange={select}
-        className="md:sticky md:top-4"
+        className="lg:sticky lg:top-4"
       />
       <section aria-labelledby="schedule-round" className="min-w-0 space-y-2">
-        {/* Na telefonie nazwę i daty kolejki niesie już przycisk listy kolejek. */}
-        <div className="hidden flex-wrap items-baseline gap-x-2 md:flex">
+        {/* Poniżej `lg` nazwę i daty kolejki niesie już przycisk listy kolejek. */}
+        <div className="hidden flex-wrap items-baseline gap-x-2 lg:flex">
           <Heading level="card" id="schedule-round">
             {round.name}
           </Heading>
