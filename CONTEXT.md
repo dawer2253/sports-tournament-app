@@ -235,7 +235,19 @@ zwykle zawodnika i minutę.
 
 Zbiór dopuszczalnych rodzajów zdarzeń wynika ze sportu turnieju. Zdarzenia są
 źródłem statystyk indywidualnych (na przykład klasyfikacji strzelców), a nie
-źródłem wyniku meczu: wynik jest wpisywany osobno.
+źródłem wyniku meczu: wynik jest wpisywany osobno, a liczba bramek ze zdarzeń
+nie musi się z nim zgadzać.
+
+Każdy rodzaj zdarzenia ma **wartość** (`value`): wkład jednego zdarzenia do
+statystyki, do której się wlicza. W piłce każde zdarzenie jest warte 1,
+a koszykówka rozbija punkty na rzuty: wolny (1), za 2 i za 3 — przy stoliku
+klika się jeden rzut, a nie wpisuje liczbę punktów.
+
+**Samobój** należy do drużyny zawodnika, który go strzelił, choć bramkę dostaje
+przeciwnik. Do żadnej klasyfikacji się nie wlicza.
+
+Zdarzenia ma tylko mecz rozpoczęty (trwający albo zakończony). Meczu ze
+zdarzeniami nie da się cofnąć do zaplanowanych, dopóki ich nie usunąć.
 
 ## Score (zdobycze)
 

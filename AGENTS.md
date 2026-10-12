@@ -57,7 +57,8 @@ Mecze mają w kontrakcie trzy przykłady: ligowy (domyślny), pucharowy i
 koszykarski. Żeby mock oddał drabinkę, dołóż do żądania nagłówek
 `Prefer: example=puchar`. Osobny przełącznik, `Prefer: example=koszykowka`,
 oddaje turniej koszykarski — obsługują go publiczne tabele **i**
-`/public/t/{slug}`, a w panelu turniej, terminarz i tabela, więc oba widoki
+`/public/t/{slug}`, a w panelu turniej, terminarz, tabela i zdarzenia meczu
+(`GET /matches/{match}/events`, rzuty za 1, 2 i 3), więc oba widoki
 mówią o tym samym sporcie, a zdobycze nazywają się w nim „Punkty", a nie
 „Bramki". Ten turniej ma odpowiednik w seedzie demo (`liga-koszykowki-2026`).
 
