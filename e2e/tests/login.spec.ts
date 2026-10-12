@@ -21,7 +21,8 @@ test('organizer loguje się na koncie z seeda i widzi swoje turnieje', async ({ 
   await expect(page.getByRole('heading', { name: 'Twoje turnieje' })).toBeVisible();
   // Lista przyszła z bazy `e2e`, a nie z mocka: ten turniej założył przed
   // chwilą fixture. Lista idzie od najnowszego, więc jest na pierwszej stronie.
-  await expect(page.getByText(tournament.name)).toBeVisible();
+  // W treści ekranu, bo bieżące turnieje ma też sidebar (#195).
+  await expect(page.getByRole('main').getByText(tournament.name)).toBeVisible();
 });
 
 test('złe hasło nie wpuszcza do panelu', async ({ page }) => {
