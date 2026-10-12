@@ -4,6 +4,7 @@ import {
   Button,
   EventTypeButtons,
   MatchTimeline,
+  MetaList,
   PlayerNumberGrid,
   Skeleton,
   toast,
@@ -271,8 +272,10 @@ function MismatchLine({
   if (home === Number(homeScore) && away === Number(awayScore)) return null;
 
   return (
-    <p className="text-xs text-muted-foreground">
-      {SCORE_LABELS[sportCode]} ze zdarzeń: {home}:{away} · wynik meczu {homeScore}:{awayScore}
-    </p>
+    // Dwa niezależne fakty rozdziela kreska `MetaList`, nie kropka (#192).
+    <MetaList role="group" aria-label="Zgodność wyniku" className="text-xs text-muted-foreground">
+      <>{SCORE_LABELS[sportCode]} ze zdarzeń: {home}:{away}</>
+      <>wynik meczu {homeScore}:{awayScore}</>
+    </MetaList>
   );
 }
