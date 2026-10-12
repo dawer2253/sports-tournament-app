@@ -9,6 +9,7 @@ import { TournamentLogo } from './tournament-logo'
 import type { PublicShellTournament } from './public-shell-tournament'
 import heroDay from '../../assets/public/hero-day.webp'
 import heroNight from '../../assets/public/hero-night.webp'
+import heroBasketball from '../../assets/public/hero-basketball.webp'
 
 /** Zakładka strony publicznej. Drabinkę dołoży S4, „Statystyki” — #207. */
 export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results'
@@ -27,10 +28,12 @@ type Hero = { day: string; night: string }
 
 /**
  * Zdjęcie hero per sport. Sport bez wpisu ma płaski kolor turnieju: zdjęcie
- * innej dyscypliny mówiłoby kibicowi nieprawdę o turnieju.
+ * innej dyscypliny mówiłoby kibicowi nieprawdę o turnieju. Kosz ma jedno
+ * zdjęcie na oba motywy; w ciemnym robi swoje scrim od dołu (#192).
  */
 const HERO_BY_SPORT: Record<string, Hero> = {
   football: { day: heroDay, night: heroNight },
+  basketball: { day: heroBasketball, night: heroBasketball },
 }
 
 export interface PublicShellProps {

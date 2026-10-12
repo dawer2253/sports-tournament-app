@@ -77,6 +77,18 @@ export const JasnyKolor: Story = {
   },
 }
 
+/** Koszykówka: własne zdjęcie boiska do kosza, to samo w obu motywach. */
+export const Koszykowka: Story = {
+  args: { tournament: { ...publicTournament, sport: { code: 'basketball', name: 'Koszykówka' } } },
+  play: async ({ canvasElement }) => {
+    const header = canvasElement.querySelector('header')!
+    await expect(header).toHaveAttribute('data-hero', 'photo')
+    const sources = [...header.querySelectorAll('img')].map((img) => img.getAttribute('src'))
+    await expect(sources).toHaveLength(2)
+    for (const src of sources) await expect(src).toMatch(/hero-basketball/)
+  },
+}
+
 /** Sport bez własnego zdjęcia: płaski kolor turnieju zamiast boiska. */
 export const InnySport: Story = {
   args: {
