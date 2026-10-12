@@ -66,9 +66,7 @@ export const OVERVIEW_MATCHES_LIMIT = 5
  * mecze `scheduled`, najwyżej `limit`. Mecz trwający ma własną sekcję.
  */
 export function nextRoundMatches<M extends MatchInRound>(fixtures: readonly M[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
-  const scheduled = fixtures.filter((match) => match.status === 'scheduled')
-  const roundId = scheduled[0]?.round.id
-  return scheduled.filter((match) => match.round.id === roundId).slice(0, limit)
+  return firstRoundWith(fixtures, 'scheduled', limit)
 }
 
 /**
@@ -77,7 +75,12 @@ export function nextRoundMatches<M extends MatchInRound>(fixtures: readonly M[],
  * najwyżej `limit`.
  */
 export function latestRoundMatches<M extends MatchInRound>(results: readonly M[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
-  const finished = results.filter((match) => match.status === 'finished')
-  const roundId = finished[0]?.round.id
-  return finished.filter((match) => match.round.id === roundId).slice(0, limit)
+  return firstRoundWith(results, 'finished', limit)
+}
+
+/** Mecze o stanie `status` z kolejki pierwszego takiego meczu na liście, najwyżej `limit`. */
+function firstRoundWith<M extends MatchInRound>(matches: readonly M[], status: M['status'], limit: number): M[] {
+  const inStatus = matches.filter((match) => match.status === status)
+  const roundId = inStatus[0]?.round.id
+  return inStatus.filter((match) => match.round.id === roundId).slice(0, limit)
 }

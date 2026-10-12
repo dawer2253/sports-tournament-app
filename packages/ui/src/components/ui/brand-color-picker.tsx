@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { AlertTriangle, ChevronDown } from 'lucide-react'
-import { contrastRatio, isHexColor } from '../../lib/contrast'
+import { contrastRatio, isHexColor, MIN_TEXT_CONTRAST } from '../../lib/contrast'
 import { cn } from '../../lib/utils'
 import { Button } from './button'
 import { Input } from './input'
@@ -35,7 +35,6 @@ export const BRAND_PALETTES: readonly BrandPalette[] = [
 export const DEFAULT_BRAND_COLOR = BRAND_PALETTES[0]!.hex
 
 /** Próg WCAG AA dla zwykłego tekstu. */
-const MIN_CONTRAST = 4.5
 const WHITE = '#FFFFFF'
 
 export interface BrandColorPickerProps {
@@ -78,7 +77,7 @@ export function BrandColorPicker({
   // zaawansowany jest otwarty niezależnie od przełącznika.
   const showAdvanced = advancedOpen || !selected
 
-  const lowContrast = isHexColor(value) && contrastRatio(value, WHITE) < MIN_CONTRAST
+  const lowContrast = isHexColor(value) && contrastRatio(value, WHITE) < MIN_TEXT_CONTRAST
   const describedBy = [lowContrast && warningId, error && errorId].filter(Boolean).join(' ') || undefined
 
   return (
