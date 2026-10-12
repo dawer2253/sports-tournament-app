@@ -36,7 +36,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { ChoiceCards } from '../components/choice-cards';
-import { MatchDialog } from '../components/match-dialog';
+import { PrototypeMatchDialog, PrototypeSwitcher } from '../prototype/switcher';
 import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
 import { COLLISIONS, MATCHES, plural, ROUNDS, ROUNDS_ACCUSATIVE, TEAMS, TEAMS_PLAYING } from '../lib/plural';
@@ -231,15 +231,16 @@ export function TournamentSchedulePage() {
         />
       )}
       {selectedMatch && (
-        <MatchDialog
+        // PROTOTYP (#191): okno meczu ze zdarzeniami w czterech wariantach (`?variant=`).
+        <PrototypeMatchDialog
           key={selectedMatch.id}
           match={selectedMatch}
           tournamentId={tournament.id}
-          matches={matches.data ?? []}
-          onOpenMatch={openMatch}
+          sportCode={tournament.sport.code}
           onClose={() => setOpenMatchId(null)}
         />
       )}
+      <PrototypeSwitcher openMatchId={openMatchId} />
     </AdminPage>
   );
 }
