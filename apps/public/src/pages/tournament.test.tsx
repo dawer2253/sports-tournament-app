@@ -48,6 +48,8 @@ function table(overrides: Partial<StandingTable> = {}): StandingTable {
     groupId: null,
     groupName: null,
     scoreLabel: 'Bramki',
+    allowsDraw: true,
+    tiebreakers: [{ code: 'points', label: 'Punkty w tabeli' }],
     rows: [row()],
     ...overrides,
   };

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Sport, StandingRow, StandingTable, Tournament } from '@tournament/api-client';
+import type { Sport, StandingRow, StandingTable, TiebreakerCode, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -106,8 +106,19 @@ function tables(tiebreakers: string[]): StandingTable[] {
   const rows = diffFirst
     ? [row(1, 2, 'Sokoły Ursus', 4, 3), row(2, 1, 'Wilki Bemowo', 4, 1), row(3, 3, 'Orły Bielany', 1, -4)]
     : [row(1, 1, 'Wilki Bemowo', 4, 1), row(2, 2, 'Sokoły Ursus', 4, 3), row(3, 3, 'Orły Bielany', 1, -4)];
+  const labels = SPORTS[0]!.config.tiebreakerLabels;
   return [
-    { stageId: 1, stageName: 'Faza zasadnicza', groupId: null, groupName: null, scoreLabel: 'Bramki', rows },
+    {
+      stageId: 1,
+      stageName: 'Faza zasadnicza',
+      groupId: null,
+      groupName: null,
+      scoreLabel: 'Bramki',
+      allowsDraw: true,
+      // Jak backend: lista, według której ułożono tabelę, z etykietami sportu.
+      tiebreakers: tiebreakers.map((code) => ({ code: code as TiebreakerCode, label: labels[code] ?? code })),
+      rows,
+    },
   ];
 }
 

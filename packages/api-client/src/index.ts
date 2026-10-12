@@ -33,6 +33,7 @@ export type MatchEventUpdate = Schemas['MatchEventUpdate'];
 export type SportEventType = Schemas['SportEventType'];
 export type StandingTable = Schemas['StandingTable'];
 export type StandingRow = Schemas['StandingRow'];
+export type StandingTiebreaker = Schemas['StandingTiebreaker'];
 export type StatLeaderboard = Schemas['StatLeaderboard'];
 export type TiebreakerCode = Schemas['TiebreakerCode'];
 export type PublicTournament = Schemas['PublicTournament'];
