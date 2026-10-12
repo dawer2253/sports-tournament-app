@@ -1,10 +1,10 @@
 // PROTOTYP (#205) — klocki wspólne dla wariantów strony meczu. Nie do main.
 // Wspólne jest tylko to, co nie przesądza układu: wynik, link powrotu,
 // kolumny strzelców i ikony zdarzeń. Każdy wariant sam składa stronę.
-import { LiveMarker, MetaList, TeamLogo, cn } from '@tournament/ui';
+import { LiveMarker, MetaList, cn } from '@tournament/ui';
 import { CalendarClock, ChevronLeft, MapPin } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { kickoffDate, kickoffTime, useProto, type MatchEvent, type ProtoMatch, type Scorer, type Sport } from './demo';
+import { kickoffDate, kickoffTime, useProto, type MatchEvent, type ProtoMatch, type Sport } from './demo';
 
 export function useSlug() {
   return useParams().slug ?? 'liga-osiedlowa-2026';
@@ -32,9 +32,11 @@ export function ScoreText({ match }: { match: ProtoMatch }) {
 }
 
 /** Termin i obiekt jako osobne fakty, rozdzielone kreską `MetaList`, bez kropek. */
-export function MatchMeta({ match, className }: { match: ProtoMatch; className?: string }) {
+export function MetaFacts({ match, className, withRound }: { match: ProtoMatch; className?: string; withRound?: boolean }) {
   return (
-    <MetaList className={cn('flex-wrap justify-center', className)}>
+    // Telefon: fakty jeden pod drugim, bez kresek — zawinięty wiersz zostawiał kreskę na końcu linii.
+    <MetaList className={cn('justify-center gap-y-1 max-sm:flex-col max-sm:[&>[data-slot=separator]]:hidden', className)}>
+      {withRound && <span className="font-medium">{match.round.name}</span>}
       <span className="flex items-center gap-1.5">
         <CalendarClock className="size-3.5 shrink-0" />
         {kickoffDate(match.kickoffAt)}, {kickoffTime(match.kickoffAt)}
@@ -54,14 +56,14 @@ export function MatchMeta({ match, className }: { match: ProtoMatch; className?:
  * i po) albo historią przeglądarki z rezerwą na Wyniki, gdy kibic wszedł
  * z zewnętrznego linku. Tryb przełącza panel stanu.
  */
-export function BackLink({ match, className }: { match: ProtoMatch; className?: string }) {
+export function BackLink({ match, className, long }: { match: ProtoMatch; className?: string; long?: boolean }) {
   const { back } = useProto();
   const slug = useSlug();
   const navigate = useNavigate();
   const location = useLocation();
   const byState = match.status === 'scheduled'
-    ? { href: `/t/${slug}/terminarz`, label: 'Terminarz' }
-    : { href: `/t/${slug}/wyniki`, label: 'Wyniki' };
+    ? { href: `/t/${slug}/terminarz`, label: long ? 'Cały terminarz' : 'Terminarz' }
+    : { href: `/t/${slug}/wyniki`, label: long ? 'Wszystkie wyniki' : 'Wyniki' };
   const firstPage = location.key === 'default';
   const target = back === 'history' && !firstPage ? { href: byState.href, label: 'Wróć' } : byState;
 
@@ -78,61 +80,6 @@ export function BackLink({ match, className }: { match: ProtoMatch; className?: 
       <ChevronLeft className="size-4" />
       {target.label}
     </a>
-  );
-}
-
-/** Drużyna w nagłówku: nazwa się zawija, nigdy nie jest ucinana (#198). */
-export function TeamName({ team, align, size = 'md' }: { team: { name: string; logoUrl: string | null }; align: 'left' | 'right'; size?: 'md' | 'lg' }) {
-  return (
-    // Telefon: herb nad nazwą, wyśrodkowane — wąska kolumna nie łamie nazwy w pół słowa.
-    <div
-      className={cn(
-        'flex min-w-0 flex-col items-center gap-1.5 text-center sm:gap-2.5 sm:text-left',
-        align === 'right' ? 'sm:flex-row-reverse sm:text-right' : 'sm:flex-row',
-      )}
-    >
-      <TeamLogo logoUrl={team.logoUrl} name={team.name} className={size === 'lg' ? 'size-10' : 'size-8'} />
-      <span className={cn('min-w-0 break-words hyphens-auto font-semibold leading-tight', size === 'lg' && 'text-lg')}>{team.name}</span>
-    </div>
-  );
-}
-
-// --- Strzelcy ---------------------------------------------------------------
-
-/** Format z #208: minuty, gdy każde zdarzenie jest warte 1 i ma minutę, inaczej suma. */
-function scorerText(s: Scorer) {
-  const own = s.ownGoal ? ' (sam.)' : '';
-  if (s.minutes.length === s.value) return { name: s.player.name + own, detail: s.minutes.map((m) => `${m}′`).join(' ') };
-  return { name: s.player.name + own, detail: String(s.value) };
-}
-
-/**
- * Strzelcy pod gospodarzem i gościem, bez limitu. Samobój stoi po stronie
- * przeciwnika drużyny strzelca (#208).
- */
-export function ScorerColumns({ match, className }: { match: ProtoMatch; className?: string }) {
-  const side = (home: boolean) =>
-    match.scorers.filter((s) => ((s.team.id === match.homeTeam.id) !== s.ownGoal) === home);
-  const sumFormat = match.scorers.some((s) => s.minutes.length !== s.value);
-  const sorted = (rows: Scorer[]) => (sumFormat ? [...rows].sort((a, b) => b.value - a.value) : rows);
-
-  return (
-    <div className={cn('grid grid-cols-2 gap-x-6 text-sm', className)}>
-      {[true, false].map((home) => (
-        <ul key={String(home)} className={cn('space-y-1', home ? 'text-right' : 'text-left')}>
-          {sorted(side(home)).map((s) => {
-            const t = scorerText(s);
-            return (
-              <li key={`${s.player.id}-${s.ownGoal}`} className={cn('flex gap-2', home && 'justify-end')}>
-                <span className="min-w-0 break-words hyphens-auto">{t.name}</span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">{t.detail}</span>
-              </li>
-            );
-          })}
-          {side(home).length === 0 && <li className="text-muted-foreground">—</li>}
-        </ul>
-      ))}
-    </div>
   );
 }
 

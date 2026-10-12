@@ -9,7 +9,7 @@ import { TOURNAMENT, demoMatches, kickoffDate, kickoffTime, useProto, type Proto
 import { PrototypeSwitcher } from './switcher';
 import { ScoreText, useSlug } from './shared';
 import { useMatchVariant } from './variant';
-import { VariantA, VariantB, VariantC } from './variants';
+import { VariantB1, VariantB2, VariantB3 } from './variants';
 
 const PATHS: Partial<Record<PublicNavKey, string>> = { home: '', standings: '/tabela', fixtures: '/terminarz', results: '/wyniki' };
 
@@ -43,9 +43,9 @@ export function ProtoMatchPage() {
     <Shell>
       {match ? (
         <>
-          {variant === 'A' && <VariantA match={match} sport={sport} />}
-          {variant === 'B' && <VariantB match={match} sport={sport} />}
-          {variant === 'C' && <VariantC match={match} sport={sport} />}
+          {variant === 'B1' && <VariantB1 match={match} sport={sport} />}
+          {variant === 'B2' && <VariantB2 match={match} sport={sport} />}
+          {variant === 'B3' && <VariantB3 match={match} sport={sport} />}
         </>
       ) : (
         <p className="py-16 text-center text-sm text-muted-foreground">
