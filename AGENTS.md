@@ -159,6 +159,11 @@ pokaże kilku tygodni stabilnej zieleni.
   `Admin:` i `Public:` to zmiany w `apps/admin` i `apps/public`; `DS:` zostaje
   dla `packages/ui`. Zmiana obejmująca aplikację i design system bierze prefiks
   tego obszaru, w którym leży jej sedno.
+- Gałęzie: `<obszar>/<opis-po-polsku>`, np. `admin/terminarz-ligi`,
+  `ds/rama-tabel-danych`. Obszar to prefiks commita małymi literami; do tego
+  `fix/`, `research/` i `prototype/`. Nazwę nadaną automatycznie przez narzędzie
+  (worktree Claude Code daje np. `claude/sports-tournament-app-195-33bf40`)
+  zmień przed pierwszym pushem: `git branch -m admin/sidebar-biezace-turnieje`.
 - Nazywając byt domenowy, użyj terminu z [`CONTEXT.md`](CONTEXT.md). Jeżeli go tam
   nie ma, to sygnał: albo wymyślasz język, którego projekt nie używa, albo słownik
   ma lukę.
