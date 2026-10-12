@@ -21,13 +21,15 @@ export interface RoundMatchesProps {
  * (#198), obok mecze wybranej kolejki na `MatchRow`. Ten sam układ co
  * terminarz panelu, tylko do odczytu — Terminarz i Wyniki strony publicznej.
  *
- * Wybór trzyma komponent. Kolejka, która zniknęła z danych przy odświeżeniu
- * (np. jej ostatni mecz się zakończył i wypadł z terminarza), oddaje wybór
- * pierwszej z listy, zamiast zostawić pusty ekran.
+ * Dopóki kibic sam nie wybierze kolejki, wybrana jest pierwsza z listy —
+ * także po odświeżeniu, więc nowa kolejka w Wynikach albo kolejna
+ * w Terminarzu wchodzi na ekran sama. Kolejka wybrana ręcznie zostaje, aż
+ * zniknie z danych (np. jej ostatni mecz się zakończył i wypadł
+ * z terminarza); wtedy wybór wraca do pierwszej, zamiast zostawić pusty ekran.
  */
 export function RoundMatches({ rounds, timeZone, progress, statusDisplay }: RoundMatchesProps) {
-  const [value, setValue] = useState<number | undefined>(rounds[0]?.summary.id)
-  const round = rounds.find((candidate) => candidate.summary.id === value) ?? rounds[0]
+  const [chosen, setChosen] = useState<number | null>(null)
+  const round = rounds.find((candidate) => candidate.summary.id === chosen) ?? rounds[0]
   if (!round) return null
 
   const oneDay = matchDays(round.matches.map((match) => match.kickoffAt), timeZone).length === 1
@@ -38,7 +40,7 @@ export function RoundMatches({ rounds, timeZone, progress, statusDisplay }: Roun
       <RoundList
         rounds={rounds.map((candidate) => candidate.summary)}
         value={round.summary.id}
-        onValueChange={setValue}
+        onValueChange={setChosen}
         progress={progress}
         className="lg:sticky lg:top-4"
       />

@@ -34,7 +34,7 @@ export const BRAND_PALETTES: readonly BrandPalette[] = [
 /** Domyślny kolor turnieju, czyli paleta „Murawa”. */
 export const DEFAULT_BRAND_COLOR = BRAND_PALETTES[0]!.hex
 
-/** Próg WCAG AA dla zwykłego tekstu. */
+/** Biel, z którą porównujemy kontrast koloru turnieju (`--brand-text-light`). */
 const WHITE = '#FFFFFF'
 
 export interface BrandColorPickerProps {

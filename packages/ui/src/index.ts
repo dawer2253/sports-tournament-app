@@ -79,4 +79,4 @@ export * from './components/layout/tournament-logo';
 // PublicShell celowo poza barrel-em: importuje zdjęcia hero, a Vite emituje
 // zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby
 // ponad 500 kB grafiki, której nigdy nie użyje. Strona publiczna bierze go ze ścieżki:
-// import { PublicShell } from '@tournament/ui/components/layout/public-shell';
+// import { PublicShell } from '@tournament/ui/components/layout/public-shell.tsx';

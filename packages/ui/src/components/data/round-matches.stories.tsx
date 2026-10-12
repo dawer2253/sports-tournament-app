@@ -37,11 +37,17 @@ export const Terminarz: Story = {
   },
 }
 
-/** Wyniki strony publicznej: kolejki od najnowszej. */
+/** Wyniki strony publicznej: kolejki od najnowszej, na starcie najnowsza. */
 export const Wyniki: Story = {
   args: { rounds: groupByRound(publicResults, { direction: 'desc', timeZone: scheduleTimeZone }) },
-  play: async ({ args }) => {
-    const orders = args.rounds.map((round) => round.summary.id)
-    await expect(orders).toEqual(orders.toSorted((a, b) => b - a))
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const list = within(canvas.getByRole('navigation', { name: 'Kolejki' }))
+    const numbers = list
+      .getAllByRole('button')
+      .map((button) => Number(button.textContent?.match(/^Kolejka (\d+)/)?.[1]))
+    await expect(numbers.length).toBeGreaterThan(1)
+    await expect(numbers).toEqual(numbers.toSorted((a, b) => b - a))
+    await expect(canvas.getByRole('region', { name: `Kolejka ${numbers[0]}` })).toBeInTheDocument()
   },
 }

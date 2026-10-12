@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
-import { BRAND_FOREGROUND_DARK } from '../../lib/contrast'
 import { publicTournament } from '../../lib/demo-data'
 import { PublicShell, type PublicNavKey } from './public-shell'
 
@@ -42,6 +41,16 @@ function heading(canvasElement: HTMLElement) {
   return within(canvasElement).getByRole('heading', { level: 1 })
 }
 
+/** Kolor, w jaki przeglądarka rozwiązuje token, np. `--brand-text-dark`. */
+function tokenColor(token: string) {
+  const probe = document.createElement('span')
+  probe.style.color = `var(${token})`
+  document.body.append(probe)
+  const color = getComputedStyle(probe).color
+  probe.remove()
+  return color
+}
+
 /**
  * Piłka: zdjęcie boiska pod nakładką koloru turnieju, logo domyślne (puchar
  * na kolorze), meta ze sportem i zakładki w kolejności z #192. Ciemna zieleń
@@ -58,7 +67,7 @@ export const Domyslny: Story = {
       'Wyniki',
     ])
 
-    await expect(getComputedStyle(heading(canvasElement)).color).toBe(rgb('#FFFFFF'))
+    await expect(getComputedStyle(heading(canvasElement)).color).toBe(tokenColor('--brand-text-light'))
     await expect(canvasElement.querySelector('header')).toHaveAttribute('data-hero', 'photo')
     await expect(canvasElement.querySelector('[data-slot="tournament-logo-default"]')).toHaveStyle({
       backgroundColor: rgb('#1F7A45'),
@@ -73,7 +82,9 @@ export const Domyslny: Story = {
 export const JasnyKolor: Story = {
   args: { tournament: { ...publicTournament, branding: { logoUrl: null, primaryColor: '#FFD400' } } },
   play: async ({ canvasElement }) => {
-    await expect(getComputedStyle(heading(canvasElement)).color).toBe(rgb(BRAND_FOREGROUND_DARK))
+    const color = getComputedStyle(heading(canvasElement)).color
+    await expect(color).toBe(tokenColor('--brand-text-dark'))
+    await expect(color).not.toBe(tokenColor('--brand-text-light'))
   },
 }
 
