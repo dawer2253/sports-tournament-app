@@ -1,5 +1,5 @@
-import type { AdminMatch, Match, Player, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
-import type { MatchRowData, PlayerRow, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { AdminMatch, Match, MatchEvent, Player, SportEventType, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
+import type { EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -68,3 +68,22 @@ export const contractFitsMatchRow: ContractFitsMatchRow = true;
 type ContractFitsAdminMatchRow = AdminMatch extends MatchRowData ? true : never;
 
 export const contractFitsAdminMatchRow: ContractFitsAdminMatchRow = true;
+
+/**
+ * Zdarzenie z kontraktu daje się pokazać na osi meczu (`MatchTimeline`, #200).
+ * Łapie zmianę nazwy pola i `player` albo `minute`, które przestają dopuszczać
+ * `null`.
+ */
+type ContractFitsMatchEventRow = MatchEvent extends MatchEventRow ? true : never;
+
+export const contractFitsMatchEventRow: ContractFitsMatchEventRow = true;
+
+/** Typ zdarzenia sportu daje się pokazać jako przycisk (`EventTypeButtons`). */
+type ContractFitsEventTypeOption = SportEventType extends EventTypeOption ? true : never;
+
+export const contractFitsEventTypeOption: ContractFitsEventTypeOption = true;
+
+/** Zawodnik z kontraktu daje się pokazać w siatce numerów (`PlayerNumberGrid`). */
+type ContractFitsRosterPlayer = Player extends RosterPlayer ? true : never;
+
+export const contractFitsRosterPlayer: ContractFitsRosterPlayer = true;
