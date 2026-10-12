@@ -20,6 +20,10 @@ export interface ExpectedStandingRow {
 export async function expectStandings(table: Locator, expected: ExpectedStandingRow[]) {
   const rows = table.getByRole('row').filter({ has: table.page().getByRole('cell') });
   await expect(rows).toHaveCount(expected.length);
+  // Wczytująca się tabela ma już wiersze-szkielety, ale pusty nagłówek
+  // zdobyczy (`scoreLabel` przychodzi z odpowiedzi). Nagłówki niżej czytamy raz,
+  // bez ponawiania, więc najpierw czekamy, aż tabela naprawdę stanie.
+  await expect(table.getByRole('columnheader', { name: 'Bramki', exact: true })).toBeVisible();
 
   const headers = (await table.getByRole('columnheader').allTextContents()).map((text) => text.trim());
   const column = (...names: string[]) => {
