@@ -19,6 +19,10 @@ export interface ExpectedStandingRow {
  */
 export async function expectStandings(table: Locator, expected: ExpectedStandingRow[]) {
   const rows = table.getByRole('row').filter({ has: table.page().getByRole('cell') });
+  // Wczytywana tabela ma trzy szkieletowe wiersze bez tekstu, a nagłówek
+  // zdobyczy jeszcze pusty; przy trzech drużynach sama liczba wierszy zgodziłaby
+  // się przed danymi. Nazwa drużyny w wierszu znaczy, że dane już są.
+  await expect(rows.first()).toContainText(expected[0]!.team);
   await expect(rows).toHaveCount(expected.length);
   // Wczytująca się tabela ma już wiersze-szkielety, ale pusty nagłówek
   // zdobyczy (`scoreLabel` przychodzi z odpowiedzi). Nagłówki niżej czytamy raz,

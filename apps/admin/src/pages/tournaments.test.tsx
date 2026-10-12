@@ -5,6 +5,7 @@ import { HttpResponse, http } from 'msw';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { API_URL as API, server } from '../test/server';
+import { allTournaments, currentTournaments } from '../test/current-tournaments';
 import { TournamentsPage } from './tournaments';
 
 const ME = {
@@ -55,7 +56,7 @@ function list(tournaments: unknown[]) {
 }
 
 beforeEach(() => {
-  server.use(http.get(`${API}/me`, () => HttpResponse.json(ME)));
+  server.use(http.get(`${API}/me`, () => HttpResponse.json(ME)), currentTournaments());
 });
 
 function renderPage() {
@@ -80,7 +81,7 @@ function renderPage() {
 
 describe('TournamentsPage', () => {
   it('pusty stan ma wyjście do kreatora', async () => {
-    server.use(http.get(`${API}/tournaments`, () => HttpResponse.json(list([]))));
+    server.use(allTournaments(() => HttpResponse.json(list([]))));
 
     const user = renderPage();
     await screen.findByText('Nie masz jeszcze turniejów');
@@ -91,7 +92,7 @@ describe('TournamentsPage', () => {
   });
 
   it('niepusta lista też ma wyjście do kreatora — w nagłówku', async () => {
-    server.use(http.get(`${API}/tournaments`, () => HttpResponse.json(list([TOURNAMENT]))));
+    server.use(allTournaments(() => HttpResponse.json(list([TOURNAMENT]))));
 
     const user = renderPage();
     await screen.findByText('Liga Osiedlowa 2026');
@@ -103,7 +104,7 @@ describe('TournamentsPage', () => {
 
   it('w stanie błędu nie proponuje zakładania turnieju, tylko ponowienie', async () => {
     server.use(
-      http.get(`${API}/tournaments`, () =>
+      allTournaments(() =>
         HttpResponse.json({ message: 'Serwer nie odpowiada.' }, { status: 500 }),
       ),
     );
@@ -119,7 +120,7 @@ describe('TournamentsPage', () => {
     // Drugi wiersz ma id 7, więc ani „zawsze pierwszy", ani „pozycja w liście"
     // nie dadzą tego samego adresu co id z odpowiedzi.
     server.use(
-      http.get(`${API}/tournaments`, () =>
+      allTournaments(() =>
         HttpResponse.json(list([TOURNAMENT, TOURNAMENT_2])),
       ),
     );
@@ -134,7 +135,7 @@ describe('TournamentsPage', () => {
 
   it('każdy wiersz prowadzi pod własne id, nie pod id sąsiada', async () => {
     server.use(
-      http.get(`${API}/tournaments`, () =>
+      allTournaments(() =>
         HttpResponse.json(list([TOURNAMENT, TOURNAMENT_2])),
       ),
     );

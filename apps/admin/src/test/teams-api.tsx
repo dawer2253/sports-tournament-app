@@ -9,6 +9,7 @@ import { vi } from 'vitest';
 import { setToken } from '../lib/session';
 import { routes } from '../routes';
 import { API_URL as API, server } from './server';
+import { currentTournaments } from './current-tournaments';
 
 export const TOURNAMENT: Tournament = {
   id: 7,
@@ -113,6 +114,7 @@ export function serveTeams({
 
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
+    currentTournaments(),
     route('get', '/tournaments/:id', () =>
       HttpResponse.json({ data: { ...TOURNAMENT, teamsCount: state.teams.length } }),
     ),

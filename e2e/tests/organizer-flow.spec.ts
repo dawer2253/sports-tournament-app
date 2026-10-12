@@ -27,8 +27,10 @@ test('organizer zakłada ligę, układa terminarz i wpisuje wynik, a tabela go l
     await page.goto('/');
     await page.getByRole('button', { name: 'Nowy turniej' }).click();
     await page.getByLabel('Nazwa turnieju').fill(name);
-    await choose(page, 'Piłka nożna');
-    await choose(page, 'Liga każdy z każdym');
+    // W treści ekranu, bo sport stoi też przy turniejach w sidebarze (#195).
+    const form = page.getByRole('main');
+    await choose(form, 'Piłka nożna');
+    await choose(form, 'Liga każdy z każdym');
     await page.getByRole('button', { name: 'Załóż turniej' }).click();
 
     await page.getByRole('button', { name: `Otwórz turniej ${name}` }).click();
