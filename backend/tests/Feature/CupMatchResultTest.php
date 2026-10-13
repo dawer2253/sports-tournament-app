@@ -8,6 +8,7 @@ use App\Models\Venue;
 use App\Schedule\BracketGenerator;
 use Illuminate\Testing\TestResponse;
 use Spectator\Spectator;
+use Symfony\Component\Yaml\Yaml;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,18 +29,20 @@ beforeEach(function () {
 });
 
 /**
- * Puchar czterech drużyn z meczem o 3. miejsce: Półfinał 1 to Wilki – Rysie
- * (seedy 1 i 4, zasila stronę `home`), Półfinał 2 to Orły – Sokoły (seedy
- * 2 i 3, strona `away`).
+ * Puchar czterech drużyn z meczem o 3. miejsce. Nazwy idą w kolejności
+ * rozstawienia, więc domyślnie Półfinał 1 to Wilki – Rysie (seedy 1 i 4,
+ * zasila stronę `home`), a Półfinał 2 to Orły – Sokoły (seedy 2 i 3, strona
+ * `away`).
  *
+ * @param  list<string>  $names
  * @return array{sf1: GameMatch, sf2: GameMatch, final: GameMatch, third: GameMatch, teams: array<string, Team>}
  */
-function cupResultBracket(string $sport = 'football'): array
+function cupResultBracket(string $sport = 'football', array $names = ['Wilki', 'Orły', 'Sokoły', 'Rysie']): array
 {
     $factory = Tournament::factory();
     $tournament = ($sport === 'basketball' ? $factory->basketball() : $factory)->create();
     $teams = [];
-    foreach (['Wilki', 'Orły', 'Sokoły', 'Rysie'] as $name) {
+    foreach ($names as $name) {
         $teams[$name] = Team::factory()->for($tournament)->create(['name' => $name]);
     }
     $stage = Stage::factory()->knockout()->for($tournament)->create();
@@ -149,10 +152,15 @@ it('powrót z finished do live albo scheduled zeruje slot w obu meczach zależny
 
 // --- niezmiennik 5: atomowa blokada --------------------------------------------
 
-/** Półfinały rozegrane 2:0 i 1:0, więc finał to Wilki – Orły, a o 3. miejsce Rysie – Sokoły. */
-function cupResultPlayedSemis(): array
+/**
+ * Półfinały rozegrane 2:0 i 1:0, więc domyślnie finał to Wilki – Orły,
+ * a o 3. miejsce Rysie – Sokoły.
+ *
+ * @param  list<string>  $names  w kolejności rozstawienia, jak w `cupResultBracket()`
+ */
+function cupResultPlayedSemis(array $names = ['Wilki', 'Orły', 'Sokoły', 'Rysie']): array
 {
-    $bracket = cupResultBracket();
+    $bracket = cupResultBracket(names: $names);
     cupResultUpdate($bracket['sf1'], ['status' => 'finished', 'homeScore' => 2, 'awayScore' => 0])->assertValidResponse(200);
     cupResultUpdate($bracket['sf2'], ['status' => 'finished', 'homeScore' => 1, 'awayScore' => 0])->assertValidResponse(200);
 
@@ -182,6 +190,26 @@ it('blokuje też wtedy, gdy rozpoczęty jest tylko mecz o 3. miejsce, i nie rusz
 
     expect($sf1->fresh())->home_score->toBe(2)->away_score->toBe(0)
         ->and($final->fresh())->home_team_id->toBe($teams['Wilki']->id);
+});
+
+/**
+ * Treść blokady stoi w dwóch miejscach: tu i w notce panelu (`advanceNote`),
+ * bo panel ostrzega przed zapisem. Obie strony porównują ją z przykładem
+ * `blokadaAwansu` z kontraktu, więc rozjazd zapali test po tej stronie, która
+ * odjechała.
+ */
+it('komunikat blokady brzmi jak przykład blokadaAwansu z kontraktu', function () {
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $example = $spec['paths']['/matches/{match}']['patch']['responses']['422']['content']['application/json']['examples']['blokadaAwansu']['value'];
+    // Te same drużyny co w przykładzie: finał Wilki Bemowo – Orły Bielany, o 3. miejsce Rysie Wola – Żubry Praga.
+    ['sf1' => $sf1, 'final' => $final, 'third' => $third] = cupResultPlayedSemis(['Wilki Bemowo', 'Orły Bielany', 'Żubry Praga', 'Rysie Wola']);
+    cupResultUpdate($final, ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])->assertValidResponse(200);
+    cupResultUpdate($third, ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])->assertValidResponse(200);
+
+    cupResultUpdate($sf1, ['homeScore' => 0, 'awayScore' => 2])
+        ->assertValidResponse(422)
+        ->assertJsonPath('message', $example['message'])
+        ->assertJsonPath('errors.homeScore.0', $example['errors']['homeScore'][0]);
 });
 
 it('przy ciele z samym stanem błąd blokady idzie pod status', function () {
