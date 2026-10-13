@@ -20,20 +20,43 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * Terminarz strony publicznej: kolejki rosnąco, na starcie pierwsza. Mecz
- * trwający ma `LiveMarker`, zaplanowane nie mają plakietki stanu.
+ * Terminarz strony publicznej: kolejki rosnąco, na starcie kolejka z meczem
+ * trwającym. Mecz trwający ma `LiveMarker`, zaplanowane nie mają plakietki
+ * stanu.
  */
 export const Terminarz: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const [first, second] = args.rounds
-    await expect(canvas.getByRole('region', { name: first!.summary.name })).toBeInTheDocument()
+    const live = args.rounds.find((round) => round.matches.some((match) => match.status === 'live'))!
+    const other = args.rounds.find((round) => round !== live)!
+    await expect(canvas.getByRole('region', { name: live.summary.name })).toBeInTheDocument()
     await expect(canvas.getAllByText('Na żywo')).toHaveLength(1)
     await expect(canvas.queryByText('Zaplanowany')).not.toBeInTheDocument()
 
     const list = within(canvas.getByRole('navigation', { name: 'Kolejki' }))
-    await userEvent.click(list.getByRole('button', { name: new RegExp(second!.summary.name) }))
-    await expect(canvas.getByRole('region', { name: second!.summary.name })).toBeInTheDocument()
+    await userEvent.click(list.getByRole('button', { name: new RegExp(other.summary.name) }))
+    await expect(canvas.getByRole('region', { name: other.summary.name })).toBeInTheDocument()
+  },
+}
+
+/**
+ * Wcześniejsza kolejka ma jeszcze mecz zaplanowany (np. przełożony), a mecz
+ * trwa w późniejszej: Terminarz otwiera się na kolejce meczu trwającego, nie
+ * na pierwszej z listy, więc „Śledź na żywo” trafia na mecz.
+ */
+export const MeczNaZywoWPozniejszejKolejce: Story = {
+  args: {
+    rounds: groupByRound(
+      publicFixtures.map((match) =>
+        match.status === 'live' ? { ...match, round: { id: 999, name: 'Kolejka 9', order: 999 } } : match,
+      ),
+      { timeZone: scheduleTimeZone },
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement)
+    await expect(args.rounds[0]!.summary.name).not.toBe('Kolejka 9')
+    await expect(canvas.getByRole('region', { name: 'Kolejka 9' })).toBeInTheDocument()
   },
 }
 

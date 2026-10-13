@@ -49,6 +49,7 @@ export * from './components/data/players-table';
 export * from './components/data/round-list';
 export * from './components/data/round-groups';
 export * from './components/data/round-matches';
+export * from './components/data/public-overview';
 export * from './components/data/round-summary';
 export * from './components/data/score-inputs';
 export * from './components/data/standings-table';

@@ -6,7 +6,7 @@ import { RoundList } from './round-list'
 import type { RoundWithMatches } from './round-groups'
 
 export interface RoundMatchesProps {
-  /** Kolejki w kolejności listy; pierwsza jest wybrana na starcie. */
+  /** Kolejki w kolejności listy; na starcie wybrana pierwsza z meczem `live`, inaczej pierwsza. */
   rounds: RoundWithMatches[]
   /** Strefa terminów; bez niej strefa przeglądarki (ADR-0008). */
   timeZone?: string
@@ -21,15 +21,20 @@ export interface RoundMatchesProps {
  * (#198), obok mecze wybranej kolejki na `MatchRow`. Ten sam układ co
  * terminarz panelu, tylko do odczytu — Terminarz i Wyniki strony publicznej.
  *
- * Dopóki kibic sam nie wybierze kolejki, wybrana jest pierwsza z listy —
- * także po odświeżeniu, więc nowa kolejka w Wynikach albo kolejna
+ * Dopóki kibic sam nie wybierze kolejki, wybrana jest pierwsza z meczem
+ * trwającym, a bez takiego pierwsza z listy — także po odświeżeniu, więc
+ * „Śledź na żywo” z Przeglądu trafia na mecz trwający (także gdy wcześniejsza
+ * kolejka ma jeszcze mecz przełożony), a nowa kolejka w Wynikach albo kolejna
  * w Terminarzu wchodzi na ekran sama. Kolejka wybrana ręcznie zostaje, aż
  * zniknie z danych (np. jej ostatni mecz się zakończył i wypadł
- * z terminarza); wtedy wybór wraca do pierwszej, zamiast zostawić pusty ekran.
+ * z terminarza); wtedy wybór wraca do domyślnej, zamiast zostawić pusty ekran.
  */
 export function RoundMatches({ rounds, timeZone, progress, statusDisplay }: RoundMatchesProps) {
   const [chosen, setChosen] = useState<number | null>(null)
-  const round = rounds.find((candidate) => candidate.summary.id === chosen) ?? rounds[0]
+  const round =
+    rounds.find((candidate) => candidate.summary.id === chosen) ??
+    rounds.find((candidate) => candidate.matches.some((match) => match.status === 'live')) ??
+    rounds[0]
   if (!round) return null
 
   const oneDay = matchDays(round.matches.map((match) => match.kickoffAt), timeZone).length === 1

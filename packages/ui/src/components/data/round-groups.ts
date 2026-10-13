@@ -1,5 +1,5 @@
 import { formatRoundDates } from '../../lib/kickoff'
-import type { MatchRowData } from './match-row-data'
+import type { MatchRowData, MatchStatus } from './match-row-data'
 import type { RoundSummary } from './round-summary'
 
 // Grupowanie meczów strony publicznej po kolejce i wybór kolejek Przeglądu.
@@ -7,9 +7,9 @@ import type { RoundSummary } from './round-summary'
 // z nich makiety i `apps/public`.
 
 /** Kolejka z jej meczami w kolejności wyświetlania. */
-export type RoundWithMatches = {
+export type RoundWithMatches<M extends MatchRowData = MatchRowData> = {
   summary: RoundSummary
-  matches: MatchRowData[]
+  matches: M[]
 }
 
 /** Mecz z kolejką, jak `Match` z kontraktu (`round`, `stageId`). */
@@ -24,15 +24,15 @@ export type MatchInRound = MatchRowData & {
  * (`desc`, Wyniki). W kolejce mecze zostają w kolejności z wejścia, czyli
  * z API. Kolejka bez meczów nie powstaje.
  */
-export function groupByRound(
-  matches: readonly MatchInRound[],
+export function groupByRound<M extends MatchInRound>(
+  matches: readonly M[],
   {
     direction = 'asc',
     stageOrder = (stageId) => stageId,
     timeZone,
   }: { direction?: 'asc' | 'desc'; stageOrder?: (stageId: number) => number; timeZone?: string } = {},
-): RoundWithMatches[] {
-  const byRound = new Map<number, MatchInRound[]>()
+): RoundWithMatches<M>[] {
+  const byRound = new Map<number, M[]>()
   for (const match of matches) byRound.set(match.round.id, [...(byRound.get(match.round.id) ?? []), match])
 
   const sign = direction === 'asc' ? 1 : -1
@@ -61,26 +61,30 @@ export function groupByRound(
 export const OVERVIEW_MATCHES_LIMIT = 5
 
 /**
- * „Najbliższe mecze” Przeglądu: kolejka pierwszego meczu `scheduled`
- * w kolejności z API (`/fixtures` idzie rosnąco po terminie), a z niej
- * mecze `scheduled`, najwyżej `limit`. Mecz trwający ma własną sekcję.
+ * „Najbliższe mecze” Przeglądu: pierwsza kolejka Terminarza (`groupByRound`
+ * rosnąco) z meczem `scheduled`, a z niej mecze `scheduled`, najwyżej
+ * `limit`. Mecz trwający ma własną sekcję. Kolejka jest ta sama, którą
+ * Terminarz pokazuje pierwszą, więc „Cały terminarz” prowadzi dalej, a nie
+ * gdzie indziej.
  */
-export function nextRoundMatches<M extends MatchInRound>(fixtures: readonly M[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
-  return firstRoundWith(fixtures, 'scheduled', limit)
+export function nextRoundMatches<M extends MatchRowData>(rounds: readonly RoundWithMatches<M>[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
+  return firstRoundWith(rounds, 'scheduled', limit)
 }
 
 /**
- * „Ostatnie wyniki” Przeglądu: kolejka pierwszego meczu z `/results`
- * (malejąco po terminie, więc najnowsza), a z niej mecze `finished`,
- * najwyżej `limit`.
+ * „Ostatnie wyniki” Przeglądu: pierwsza kolejka Wyników (`groupByRound`
+ * od najnowszej), a z niej mecze `finished`, najwyżej `limit` — ta sama
+ * kolejka, na której otwierają się Wyniki.
  */
-export function latestRoundMatches<M extends MatchInRound>(results: readonly M[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
-  return firstRoundWith(results, 'finished', limit)
+export function latestRoundMatches<M extends MatchRowData>(rounds: readonly RoundWithMatches<M>[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
+  return firstRoundWith(rounds, 'finished', limit)
 }
 
-/** Mecze o stanie `status` z kolejki pierwszego takiego meczu na liście, najwyżej `limit`. */
-function firstRoundWith<M extends MatchInRound>(matches: readonly M[], status: M['status'], limit: number): M[] {
-  const inStatus = matches.filter((match) => match.status === status)
-  const roundId = inStatus[0]?.round.id
-  return inStatus.filter((match) => match.round.id === roundId).slice(0, limit)
+/** Mecze o stanie `status` z pierwszej kolejki, która takie ma, najwyżej `limit`. */
+function firstRoundWith<M extends MatchRowData>(rounds: readonly RoundWithMatches<M>[], status: MatchStatus, limit: number): M[] {
+  for (const round of rounds) {
+    const inStatus = round.matches.filter((match) => match.status === status)
+    if (inStatus.length > 0) return inStatus.slice(0, limit)
+  }
+  return []
 }
