@@ -1,5 +1,6 @@
 <?php
 
+use App\Matches\PeriodsBackfill;
 use App\Models\Stage;
 use App\Models\Tournament;
 use App\Models\User;
@@ -130,6 +131,35 @@ it('wypełnia istniejące turnieje długością ze swojego sportu', function () 
 
     expect($football->fresh()->match_duration)->toBe(60)
         ->and($basketball->fresh()->match_duration)->toBe(40);
+});
+
+// Podział meczu (#210) też jest kopią domyślnej dla sportu, literałem
+// z przykładu `GET /sports` w kontrakcie.
+it('kopiuje podział meczu z domyślnego dla sportu', function (string $sportCode, array $periods) {
+    $response = actingAsOrganizer()
+        ->postJson('/api/v1/tournaments', [
+            'name' => 'Turniej testowy',
+            'sportId' => sport($sportCode)->id,
+            'format' => 'league',
+        ])
+        ->assertValidResponse(201)
+        ->assertJsonPath('data.periods', $periods);
+
+    expect(Tournament::findOrFail($response->json('data.id'))->only('period_count', 'period_minutes'))
+        ->toBe(['period_count' => $periods['count'], 'period_minutes' => $periods['minutes']]);
+})->with([
+    'piłka nożna' => ['football', ['count' => 2, 'minutes' => 45]],
+    'koszykówka' => ['basketball', ['count' => 4, 'minutes' => 10]],
+]);
+
+it('wypełnia istniejące turnieje podziałem meczu ze swojego sportu', function () {
+    $football = Tournament::factory()->create(['period_count' => 1, 'period_minutes' => null]);
+    $basketball = Tournament::factory()->basketball()->create(['period_count' => 3, 'period_minutes' => 7]);
+
+    PeriodsBackfill::run();
+
+    expect($football->fresh()->only('period_count', 'period_minutes'))->toBe(['period_count' => 2, 'period_minutes' => 45])
+        ->and($basketball->fresh()->only('period_count', 'period_minutes'))->toBe(['period_count' => 4, 'period_minutes' => 10]);
 });
 
 // `assertValidRequest()` celowo nie ma: żądania są błędne z założenia, więc

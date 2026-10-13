@@ -24,7 +24,8 @@ use Illuminate\Support\Str;
  */
 #[Fillable([
     'user_id', 'sport_id', 'slug', 'name',
-    'logo_path', 'primary_color', 'points', 'tiebreakers', 'match_duration', 'status',
+    'logo_path', 'primary_color', 'points', 'tiebreakers', 'match_duration',
+    'period_count', 'period_minutes', 'status',
 ])]
 class Tournament extends Model
 {
@@ -130,7 +131,8 @@ class Tournament extends Model
      * Zakłada turniej organizera jako szkic, razem z fazami wynikającymi
      * z formatu, w jednej transakcji.
      *
-     * Punktacja i tiebreaki są kopią domyślnych dla sportu z chwili zakładania,
+     * Punktacja, tiebreaki, długość i podział meczu są kopią domyślnych dla
+     * sportu z chwili zakładania,
      * więc późniejsza zmiana w sporcie nie rusza istniejących turniejów.
      *
      * Slug bierze pierwszy wolny sufiks (`-2`, `-3`…). Sprawdzenie i zapis to
@@ -192,6 +194,8 @@ class Tournament extends Model
             'points' => $sport->defaultPoints(),
             'tiebreakers' => $sport->defaultTiebreakers(),
             'match_duration' => $sport->defaultMatchDuration(),
+            'period_count' => $sport->defaultPeriods()['count'],
+            'period_minutes' => $sport->defaultPeriods()['minutes'],
             'status' => 'draft',
         ]);
 
@@ -257,6 +261,8 @@ class Tournament extends Model
             'points' => 'array',
             'tiebreakers' => 'array',
             'match_duration' => 'integer',
+            'period_count' => 'integer',
+            'period_minutes' => 'integer',
         ];
     }
 

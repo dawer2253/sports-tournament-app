@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ShowLeaderboardRequest;
+use App\Http\Resources\PublicMatchDetailResource;
 use App\Http\Resources\PublicMatchResource;
 use App\Http\Resources\PublicTournamentResource;
 use App\Http\Resources\StandingTableResource;
 use App\Http\Resources\StatLeaderboardResource;
 use App\Leaderboards\MatchScorers;
 use App\Leaderboards\StatLeaderboard;
+use App\Matches\MatchPeriods;
+use App\Matches\MatchRelation;
 use App\Models\GameMatch;
 use App\Models\Tournament;
 use App\Standings\TournamentStandings;
@@ -53,6 +56,26 @@ class PublicTournamentController extends Controller
     public function results(string $slug): JsonResponse
     {
         return $this->matchList($slug, GameMatch::RESULT_STATUSES, 'desc');
+    }
+
+    /**
+     * Strona meczu (#210). Mecz szuka się przez relację turnieju, więc mecz
+     * innego turnieju i nieistniejący dają to samo `404` co szkic i nieznany
+     * slug. `$match` jest gołym napisem, nie modelem z wiązania trasy: wiązanie
+     * znalazłoby mecz dowolnego turnieju.
+     */
+    public function match(string $slug, string $match): JsonResponse
+    {
+        $tournament = Tournament::findPublishedBySlug($slug);
+
+        $game = $tournament->matches()
+            ->with(['round', 'homeTeam', 'awayTeam', 'venue', ...MatchRelation::eagerLoad()])
+            ->whereKey($match)
+            ->firstOrFail();
+
+        return response()->json([
+            'data' => (new PublicMatchDetailResource($game, $tournament->sport, MatchPeriods::of($tournament)))->resolve(),
+        ]);
     }
 
     /**

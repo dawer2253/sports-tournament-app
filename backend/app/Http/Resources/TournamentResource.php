@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Concerns\FormatsDates;
+use App\Matches\MatchPeriods;
 use App\Models\Tournament;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -39,6 +40,7 @@ class TournamentResource extends JsonResource
             'points' => $this->points,
             'tiebreakers' => $this->tiebreakers,
             'matchDuration' => $this->match_duration,
+            'periods' => MatchPeriods::of($this->resource)->toArray(),
             'teamsCount' => $this->teams_count,
             'createdAt' => $this->formatDate($this->created_at),
             'updatedAt' => $this->formatDate($this->updated_at),

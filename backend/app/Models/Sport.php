@@ -54,6 +54,17 @@ class Sport extends Model
     }
 
     /**
+     * Domyślny podział meczu na części, kopiowany do turnieju przy zakładaniu
+     * (#210), wzorem `defaultMatchDuration()`.
+     *
+     * @return array{count: int, minutes: ?int}
+     */
+    public function defaultPeriods(): array
+    {
+        return $this->config['defaultPeriods'];
+    }
+
+    /**
      * Domyślna kolejność tiebreaków, kopiowana do turnieju przy zakładaniu
      * (decyzja #25). Organizer zmienia ją potem u siebie, nie w sporcie.
      */

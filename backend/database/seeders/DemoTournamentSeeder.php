@@ -196,6 +196,8 @@ class DemoTournamentSeeder extends Seeder
                 'points' => $football->defaultPoints(),
                 'tiebreakers' => $football->defaultTiebreakers(),
                 'match_duration' => $football->defaultMatchDuration(),
+                'period_count' => $football->defaultPeriods()['count'],
+                'period_minutes' => $football->defaultPeriods()['minutes'],
                 'status' => 'active',
             ],
         );
@@ -296,6 +298,8 @@ class DemoTournamentSeeder extends Seeder
                 'points' => $basketball->defaultPoints(),
                 'tiebreakers' => $basketball->defaultTiebreakers(),
                 'match_duration' => $basketball->defaultMatchDuration(),
+                'period_count' => $basketball->defaultPeriods()['count'],
+                'period_minutes' => $basketball->defaultPeriods()['minutes'],
                 'status' => 'active',
             ],
         );
