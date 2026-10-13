@@ -9,7 +9,7 @@ import type { RoundSummary } from './round-summary'
  * i ułamek mają stałe sloty, więc ułamek nie skacze, gdy w kolejce pojawi się
  * kolizja (#162, pkt 1).
  */
-function RoundLabel({ round, progress }: { round: RoundSummary; progress: boolean }) {
+function RoundLabel({ round }: { round: RoundSummary }) {
   const collisions = round.collisions ?? 0
   return (
     <>
@@ -28,16 +28,14 @@ function RoundLabel({ round, progress }: { round: RoundSummary; progress: boolea
           </span>
         )}
       </span>
-      {progress && (
-        <span className="w-10 shrink-0 text-right text-xs font-normal tabular-nums text-muted-foreground">
-          <span aria-hidden>
-            {round.finished}/{round.total}
-          </span>
-          <span className="sr-only">
-            , zakończone {round.finished} z {round.total}
-          </span>
+      <span className="w-10 shrink-0 text-right text-xs font-normal tabular-nums text-muted-foreground">
+        <span aria-hidden>
+          {round.finished}/{round.total}
         </span>
-      )}
+        <span className="sr-only">
+          , zakończone {round.finished} z {round.total}
+        </span>
+      </span>
     </>
   )
 }
@@ -47,12 +45,6 @@ export interface RoundListProps {
   /** `id` wybranej kolejki. */
   value: number
   onValueChange: (id: number) => void
-  /**
-   * Ułamek „zakończone/wszystkie” przy kolejce. Strona publiczna go nie
-   * pokazuje: Terminarz ma same mecze nierozegrane, a Wyniki same
-   * rozegrane, więc ułamek byłby stale 0/n albo n/n.
-   */
-  progress?: boolean
   className?: string
 }
 
@@ -64,7 +56,7 @@ export interface RoundListProps {
  * Próg to `lg`, nie `md`: przy `md` wiersz meczu obok listy i sidebaru
  * dostawał ok. 224 px i nazwy drużyn nie miały gdzie się zmieścić (#198).
  */
-export function RoundList({ rounds, value, onValueChange, progress = true, className }: RoundListProps) {
+export function RoundList({ rounds, value, onValueChange, className }: RoundListProps) {
   const [expanded, setExpanded] = useState(false)
   const listId = useId()
   const index = rounds.findIndex((round) => round.id === value)
@@ -88,7 +80,7 @@ export function RoundList({ rounds, value, onValueChange, progress = true, class
               round.id === value && 'bg-muted font-medium',
             )}
           >
-            <RoundLabel round={round} progress={progress} />
+            <RoundLabel round={round} />
           </button>
         </li>
       ))}
@@ -115,7 +107,7 @@ export function RoundList({ rounds, value, onValueChange, progress = true, class
             onClick={() => setExpanded(!expanded)}
             className="flex min-w-0 flex-1 items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-left text-sm font-medium focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
           >
-            {current && <RoundLabel round={current} progress={progress} />}
+            {current && <RoundLabel round={current} />}
             <ChevronDown aria-hidden className={cn('size-4 shrink-0 transition-transform', expanded && 'rotate-180')} />
           </button>
           <Button

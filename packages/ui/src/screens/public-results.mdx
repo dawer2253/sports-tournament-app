@@ -16,8 +16,9 @@ Pokazać kibicom i zawodnikom wyniki rozegranych kolejek, bez logowania.
 `GET /public/t/{slug}/results`: wyłącznie mecze `finished`, malejąco po terminie, mecz bez terminu na końcu. Każdy mecz niesie `scorers` (`PublicMatch`), złożonych przez serwer.
 
 ## Reguły
-- Mecze po kolejce, od najnowszej (`groupByRound` z `direction: 'desc'`). Na starcie najnowsza.
-- `RoundList` i `MatchRow` z panelu, bez kolizji i bez ułamka „zakończone/wszystkie”.
+- Mecze po kolejce, od najnowszej (`groupByRound` z `direction: 'desc'`), **jedną listą** z nagłówkami kolejek, jak na Flashscore (`RoundSections`, #226). Nagłówek to nazwa i zakres dat, nie jest przyklejony przy przewijaniu.
+- Na start 3 najnowsze kolejki, każde „Pokaż więcej” dokłada kolejne 3; przy komplecie przycisku nie ma.
+- Wiersze to `MatchRow` z panelu na pełnej szerokości treści, bez kolizji. Datę w wierszu ma tylko kolejka rozłożona na kilka dni.
 - Mecz trwający jest w Terminarzu, nie tutaj.
 - **Strzelcy pod wynikiem** (#208), w dwóch kolumnach pod nazwami gospodarza i gościa, na siatce wiersza: długa lista wydłuża wiersz w dół, a wyniku nie przesuwa.
   - Samobój stoi po stronie **przeciwnika** drużyny strzelca, z dopiskiem „(sam.)”.
@@ -30,8 +31,9 @@ Pokazać kibicom i zawodnikom wyniki rozegranych kolejek, bez logowania.
 - **Brak rozegranych meczów**: pusty stan (`apps/public`).
 
 ## Zachowanie
-- Poniżej `lg` lista kolejek zwija się do przycisku ze strzałkami (#198).
-- Odpytywanie co `VITE_POLL_INTERVAL_MS`.
+- Ten sam układ na telefonie i desktopie: bez listy kolejek z boku.
+- Odpytywanie co `VITE_POLL_INTERVAL_MS`. Lista pamięta, do której kolejki kibic doczytał, więc nowa kolejka wchodzi na górę, a rozwinięte zostają na ekranie.
+- Rozwinięcie nie przeżywa powrotu ze strony meczu: „‹ Wyniki” wraca do 3 kolejek.
 
 ## Otwarte pytania
 Rozstrzygnięte w #192:

@@ -316,8 +316,19 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
   W S3 wiersz klasyfikacji to pozycja, zawodnik, drużyna i wartość (#190, #207).
 - Pole typu zdarzenia w konfiguracji sportu, które mówi, której drużynie
   liczy się zdobycz (własnej albo przeciwnika). W S3 samobój rozpoznaje się
-  po kodzie `own_goal`: w backendzie w jednym miejscu (`MatchScorers`),
-  a w panelu stałą `OWN_GOAL` (#188, #208).
+  po kodzie `own_goal`: w backendzie w jednym miejscu (`MatchScorers`, z którego
+  korzysta też relacja strony meczu), w panelu stałą `OWN_GOAL`, a na stronie
+  meczu dopisek drużyny i ikonę dobiera po kodzie `MatchRelation` (#188, #208,
+  #210).
+- Doliczony czas 1. połowy. Zapisuje się go zwykłą liczbą („45+2” → `47`,
+  #188 reguła 3), więc relacja strony meczu stawia takie zdarzenie w 2. połowie
+  (#210).
+- Osobne oznaczenie dogrywki. W S3 zdarzenie dogrywki trafia do ostatniej
+  części meczu, bo część to `min(liczba części, ⌈minuta / minuty części⌉)`
+  (#210).
+- Podział meczu ustawiany dla pojedynczego meczu. W S3 dotyczy całego
+  turnieju, więc mecz o innych częściach (np. finał z dłuższymi połowami)
+  dostaje podział turnieju (#210).
 
 ---
 

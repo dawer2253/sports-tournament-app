@@ -21,7 +21,8 @@ Kolejność tiebreaków jest tu tylko do odczytu; zmienia się ją przy tabeli.
 - `tournament.branding.primaryColor`: kolor wiodący `#RRGGBB`.
 - `tournament.branding.logoUrl`: adres logo albo `null`.
 - `tournament.points`, `tournament.tiebreakers`: punktacja i kolejność rozstrzygania remisów.
-- Konfiguracja sportu z `GET /sports`: `allowsDraw`, `defaultPoints`, `tiebreakerLabels`.
+- `tournament.matchDuration`, `tournament.periods`: długość meczu i podział meczu na części.
+- Konfiguracja sportu z `GET /sports`: `allowsDraw`, `defaultPoints`, `defaultPeriods`, `tiebreakerLabels`.
   `Tournament.sport` to tylko `SportSummary`, więc ekran bierze ją osobno.
 
 ## Układ i zapis
@@ -30,8 +31,9 @@ Ekran ma **trzy miejsca zapisu**, każde z jasnym zakresem:
 1. **Status**: karta z przyciskami, zapis od razu po kliknięciu.
 2. **Logo**: „Wgraj logo” / „Zmień logo” otwiera okno z polem pliku i własnym „Zapisz”;
    „Usuń logo” idzie przez okno potwierdzenia.
-3. **Formularz** (Dane, Wygląd, Punktacja z tiebreakami): jeden „Zapisz zmiany”
-   na końcu, który wysyła **tylko zmienione pola** (`points` zawsze w komplecie).
+3. **Formularz** (Dane, Wygląd, Rozgrywki, Punktacja z tiebreakami): jeden
+   „Zapisz zmiany” na końcu, który wysyła **tylko zmienione pola** (`points`
+   i `periods` zawsze w komplecie).
 
 Na dole „Strefa zagrożenia” z „Usuń turniej” ([#103](https://github.com/dawer2253/sports-tournament-app/issues/103)).
 
@@ -51,6 +53,11 @@ Na dole „Strefa zagrożenia” z „Usuń turniej” ([#103](https://github.co
   ([#88](https://github.com/dawer2253/sports-tournament-app/issues/88)). Bez logo
   ekran pokazuje **domyślne logo** (puchar na kolorze z formularza), które istnieje
   tylko w UI: w API zostaje `logoUrl: null`.
+- **Podział meczu** (#210): „Bez podziału”, „2 połowy”, „3 tercje”, „4 kwarty”
+  i „Minuty na część”, ukryte przy „Bez podziału” (wysyłane `minutes: null`).
+  Turniej dostaje podział sportu przy zakładaniu. Podpis mówi, że zmiana
+  przeliczy relacje wszystkich meczów na stronie publicznej: część zdarzenia
+  liczy się przy odczycie.
 - **Punktacja**: w sporcie bez remisów nie ma pola „Remis”, a wysyłane jest `draw: 0`.
 - **Tiebreaki** są do odczytu, z etykietami z konfiguracji sportu. Odnośnik
   „Zmień przy tabeli” prowadzi do edytora z podglądem na ekranie Tabela (#173).

@@ -4,7 +4,7 @@ import type { MatchRowData, MatchScorer } from './match-row-data'
 // formacie i ile ich widać. Osobno od `scorer-list.tsx`, bo to funkcje, a nie
 // komponent — korzystają z nich `MatchRow` i `LiveMatchTile`.
 
-/** Ile wierszy w formacie sumy widać na drużynę; pełna lista będzie na stronie meczu (#205). */
+/** Ile wierszy w formacie sumy widać na drużynę w wierszu meczu; pas strony meczu pokazuje wszystkie (#210). */
 export const SUM_LINES_LIMIT = 3
 
 /** Wiersz strzelca gotowy do pokazania w kolumnie gospodarza albo gościa. */
@@ -36,27 +36,33 @@ function toLine(scorer: MatchScorer): ScorerLine {
 
 /**
  * Wiersze jednej strony: w formacie minut wszystkie, w kolejności z API,
- * a za nimi w formacie sumy najwyżej `SUM_LINES_LIMIT`, malejąco po
- * `value` (przy równości w kolejności z API).
+ * a za nimi w formacie sumy najwyżej `limit`, malejąco po `value` (przy
+ * równości w kolejności z API).
  */
-function sideLines(scorers: MatchScorer[]): ScorerLine[] {
+function sideLines(scorers: MatchScorer[], limit: number): ScorerLine[] {
   const minutes = scorers.filter(hasMinuteFormat)
   const sums = scorers
     .filter((scorer) => !hasMinuteFormat(scorer))
     .toSorted((a, b) => b.value - a.value)
-    .slice(0, SUM_LINES_LIMIT)
+    .slice(0, limit)
   return [...minutes, ...sums].map(toLine)
 }
 
 /**
  * Strzelcy po stronie gospodarza i gościa. Samobój stoi po stronie
  * przeciwnika drużyny `team`, bo to jej przeciwnik dostał zdobycz (#188).
+ *
+ * `limit` ucina wiersze w formacie sumy: wiersz meczu pokazuje
+ * `SUM_LINES_LIMIT`, a pas strony meczu wszystkich (`Infinity`, #192).
  */
-export function scorerSides(match: Pick<MatchRowData, 'homeTeam' | 'scorers'>): { home: ScorerLine[]; away: ScorerLine[] } {
+export function scorerSides(
+  match: Pick<MatchRowData, 'homeTeam' | 'scorers'>,
+  { limit = SUM_LINES_LIMIT }: { limit?: number } = {},
+): { home: ScorerLine[]; away: ScorerLine[] } {
   const scorers = match.scorers ?? []
   const forHome = (scorer: MatchScorer) => (scorer.team.id === match.homeTeam?.id) !== scorer.ownGoal
   return {
-    home: sideLines(scorers.filter(forHome)),
-    away: sideLines(scorers.filter((scorer) => !forHome(scorer))),
+    home: sideLines(scorers.filter(forHome), limit),
+    away: sideLines(scorers.filter((scorer) => !forHome(scorer)), limit),
   }
 }

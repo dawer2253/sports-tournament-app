@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleTimeZone, scheduleUndated } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
 import { MatchRow } from './match-row'
@@ -171,6 +171,23 @@ export const SamaGodzina: Story = { args: { match: scheduled, showDate: false } 
 
 /** Kolizja terminu: plakietka w stałym slocie przed stanem, opis w `title` (#175). */
 export const Kolizja: Story = { args: { match: colliding } }
+
+/**
+ * Strona publiczna (#210): cały wiersz to jeden odnośnik na stronę meczu,
+ * ze strzałką. Klik idzie do routera przez `onNavigate`, a wynik stoi tam,
+ * gdzie w wierszu bez odnośnika.
+ */
+export const Odnosnik: Story = {
+  args: { match: finished, href: '/t/liga-osiedlowa-2026/mecze/1', onNavigate: fn(), statusDisplay: 'live' },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    const link = canvas.getByRole('link', { name: `${finished.homeTeam!.name} – ${finished.awayTeam!.name}` })
+    await expect(link).toHaveAttribute('href', '/t/liga-osiedlowa-2026/mecze/1')
+    await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
+    await userEvent.click(link)
+    await expect(args.onNavigate).toHaveBeenCalledOnce()
+  },
+}
 
 // --- Strzelcy pod wynikiem (#208) ---------------------------------------------
 

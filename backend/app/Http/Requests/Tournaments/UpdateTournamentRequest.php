@@ -45,6 +45,11 @@ class UpdateTournamentRequest extends TournamentRequest
             'status' => ['sometimes', 'required', 'string', Rule::in(Tournament::STATUSES)],
             // Długość meczu (#158): 10–600 minut razem z przerwą po nim.
             'matchDuration' => ['sometimes', 'required', 'integer:strict', 'between:10,600'],
+            // Podział meczu (#210) przychodzi w komplecie albo wcale, jak
+            // punktacja. Zgodność minut z liczbą części sprawdza `after()`.
+            'periods' => ['sometimes', 'required', 'array'],
+            'periods.count' => ['bail', 'required_with:periods', 'integer:strict', 'between:1,10'],
+            'periods.minutes' => ['bail', 'nullable', 'integer:strict', 'between:1,150'],
             // `additionalProperties: false` w kontrakcie: `logoUrl` tu nie
             // występuje, bo logo wgrywa osobna trasa. Bez `required`, bo
             // kontrakt nie wymaga `primaryColor`, więc `{}` niczego nie zmienia.
@@ -92,6 +97,7 @@ class UpdateTournamentRequest extends TournamentRequest
         return [
             $this->checkReturnToDraft(...),
             $this->checkPointsOrder(...),
+            $this->checkPeriodMinutes(...),
             $this->checkTiebreakersStartWithPoints(...),
         ];
     }
@@ -144,6 +150,29 @@ class UpdateTournamentRequest extends TournamentRequest
     }
 
     /**
+     * Minuty części idą za liczbą części: przy jednej („bez podziału”) ich
+     * nie ma, przy kilku są wymagane. Brak klucza `minutes` znaczy to samo
+     * co `null`. Błąd siada pod `periods.minutes`, bo to minuty poprawia
+     * organizer, gdy wybrał już liczbę części.
+     */
+    private function checkPeriodMinutes(Validator $validator): void
+    {
+        if (! $this->has('periods')
+            || $validator->errors()->hasAny(['periods', 'periods.count', 'periods.minutes'])) {
+            return;
+        }
+
+        $count = $this->input('periods.count');
+        $minutes = $this->input('periods.minutes');
+
+        if ($count === 1 && $minutes !== null) {
+            $validator->errors()->add('periods.minutes', 'Mecz bez podziału nie ma długości części.');
+        } elseif ($count > 1 && $minutes === null) {
+            $validator->errors()->add('periods.minutes', 'Podaj długość części w minutach.');
+        }
+    }
+
+    /**
      * Kolumny do zapisu, wyłącznie z pól, które przyszły. Punktacja jest
      * składana od nowa: kontrakt dopuszcza w niej dodatkowe klucze, a te nie
      * mogą trafić do kolumny, i klucze mają stać w stałej kolejności.
@@ -158,6 +187,11 @@ class UpdateTournamentRequest extends TournamentRequest
 
         if (Arr::has($validated, 'matchDuration')) {
             $attributes['match_duration'] = $validated['matchDuration'];
+        }
+
+        if (Arr::has($validated, 'periods')) {
+            $attributes['period_count'] = $validated['periods']['count'];
+            $attributes['period_minutes'] = $validated['periods']['minutes'] ?? null;
         }
 
         if (Arr::has($validated, 'branding.primaryColor')) {
@@ -182,6 +216,9 @@ class UpdateTournamentRequest extends TournamentRequest
             'branding' => 'branding',
             'branding.primaryColor' => 'kolor',
             'matchDuration' => 'długość meczu',
+            'periods' => 'podział meczu',
+            'periods.count' => 'liczba części',
+            'periods.minutes' => 'minuty na część',
             'points' => 'punktacja',
             'points.win' => 'punkty za wygraną',
             'points.draw' => 'punkty za remis',
@@ -199,6 +236,11 @@ class UpdateTournamentRequest extends TournamentRequest
             'slug.regex' => 'Adres może zawierać tylko małe litery bez polskich znaków, cyfry i pojedyncze myślniki między nimi.',
             'slug.unique' => self::SLUG_TAKEN_MESSAGE,
             'branding.primaryColor.regex' => 'Kolor podaj w formacie #RRGGBB.',
+            'periods.count.required_with' => 'Podaj liczbę części.',
+            'periods.count.integer' => 'Liczba części musi wynosić od 1 do 10.',
+            'periods.count.between' => 'Liczba części musi wynosić od 1 do 10.',
+            'periods.minutes.integer' => 'Część trwa od 1 do 150 minut.',
+            'periods.minutes.between' => 'Część trwa od 1 do 150 minut.',
             ...$this->tiebreakerMessages(),
         ];
     }

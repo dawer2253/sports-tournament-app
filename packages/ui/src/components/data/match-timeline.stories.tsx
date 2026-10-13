@@ -61,6 +61,23 @@ export const TylkoOdczyt: Story = {
   },
 }
 
+/** Typ i zawodnika rozdziela odstęp, a nie kropka „·” (#192). */
+export const BezKropki: Story = {
+  play: async ({ canvasElement }) => {
+    const list = within(canvasElement).getByRole('list', { name: 'Oś meczu' })
+    await expect(list.textContent).not.toContain('·')
+    await expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('Bramka Marek Nowak')
+  },
+}
+
+/** Bez `types` oś nie wie, co się nie wlicza, więc dopisku nie ma. */
+export const BezTypow: Story = {
+  args: { types: undefined },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByRole('list', { name: 'Oś meczu' })).not.toHaveTextContent('nie wlicza się')
+  },
+}
+
 export const Pusta: Story = {
   args: { events: [] },
   play: async ({ canvasElement }) => {

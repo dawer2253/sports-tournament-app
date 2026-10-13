@@ -1,11 +1,13 @@
 import type * as React from 'react'
 import { CalendarClock, ChevronRight, History, ListOrdered, Radio, Trophy } from 'lucide-react'
+import { isModifiedClick } from '../../lib/utils'
 import { PublicSection } from '../layout/public-section'
 import { Button } from '../ui/button'
 import { LeaderboardLeaders } from './leaderboard-leaders'
 import type { Leaderboard } from './leaderboard-data'
 import { LiveMatchTile } from './live-match-tile'
 import { MatchRow } from './match-row'
+import type { MatchRowData } from './match-row-data'
 import { latestRoundMatches, nextRoundMatches, type MatchInRound, type RoundWithMatches } from './round-groups'
 import { StandingsSnippet } from './standings-snippet'
 import type { StandingsTableRow } from './standings-table-row'
@@ -32,6 +34,13 @@ export interface PublicOverviewProps {
   /** Przejęcie kliknięcia w odnośnik, np. przez router — wzorem `PublicShell.onNavigate`. */
   onNavigate?: (key: PublicOverviewLink) => void
   /**
+   * Adres strony meczu (#210): każdy mecz Przeglądu jest wtedy całym
+   * wierszem-odnośnikiem, a „Śledź na żywo” prowadzi na stronę meczu.
+   */
+  matchHref?: (match: MatchRowData) => string
+  /** Przejęcie kliknięcia w mecz, np. przez router. */
+  onMatchNavigate?: (match: MatchRowData) => void
+  /**
    * Stan zapytania w miejscu jego sekcji, np. błąd z ponowieniem: meczów na
    * górze, wyników pod „Ostatnimi wynikami”, tabeli zamiast skrótu,
    * klasyfikacji zamiast karty lidera.
@@ -55,14 +64,26 @@ function SectionLink({ link, children }: { link: LinkProps; children: string }) 
 }
 
 /**
- * Przegląd strony publicznej (#206), od góry: Na żywo, Najbliższe mecze,
+ * Przegląd strony publicznej (#206), od góry: Na żywo („Śledź na żywo” na
+ * stronę meczu, #210), Najbliższe mecze,
  * Ostatnie wyniki, Tabela (skrót) i lider klasyfikacji (#207) pod tytułem
  * z etykiety statystyki. Sekcja bez meczów znika, a klasyfikacja przed
  * pierwszym meczem zakończonym ma pusty stan. Kolejki
  * „najbliższa” i „ostatnia” to te, na których otwierają się Terminarz
  * i Wyniki (`nextRoundMatches`, `latestRoundMatches`).
  */
-export function PublicOverview({ fixtures = [], results = [], standings, leaderboard, timeZone, linkHref, onNavigate, status = {} }: PublicOverviewProps) {
+export function PublicOverview({
+  fixtures = [],
+  results = [],
+  standings,
+  leaderboard,
+  timeZone,
+  linkHref,
+  onNavigate,
+  matchHref,
+  onMatchNavigate,
+  status = {},
+}: PublicOverviewProps) {
   const live = fixtures.flatMap((round) => round.matches).filter((match) => match.status === 'live')
   const upcoming = nextRoundMatches(fixtures)
   const latest = latestRoundMatches(results)
@@ -78,6 +99,32 @@ export function PublicOverview({ fixtures = [], results = [], standings, leaderb
     }
   }
 
+  /** Atrybuty odnośnika do strony meczu; bez `matchHref` „Śledź na żywo” idzie do Terminarza. */
+  function matchLink(match: MatchRowData): LinkProps {
+    if (!matchHref) return link('fixtures')
+    return {
+      href: matchHref(match),
+      onClick: (event: React.MouseEvent) => {
+        if (!onMatchNavigate || isModifiedClick(event)) return
+        event.preventDefault()
+        onMatchNavigate(match)
+      },
+    }
+  }
+
+  function row(match: MatchRowData) {
+    return (
+      <MatchRow
+        key={match.id}
+        match={match}
+        timeZone={timeZone}
+        statusDisplay="live"
+        href={matchHref?.(match)}
+        onNavigate={onMatchNavigate && (() => onMatchNavigate(match))}
+      />
+    )
+  }
+
   return (
     <div className="grid gap-6">
       {status.fixtures}
@@ -89,7 +136,7 @@ export function PublicOverview({ fixtures = [], results = [], standings, leaderb
               match={match}
               action={
                 <Button asChild size="sm" className="w-full">
-                  <a {...link('fixtures')}>
+                  <a {...matchLink(match)}>
                     <Radio className="size-4" />
                     Śledź na żywo
                   </a>
@@ -101,16 +148,12 @@ export function PublicOverview({ fixtures = [], results = [], standings, leaderb
       )}
       {upcoming.length > 0 && (
         <PublicSection title="Najbliższe mecze" icon={<CalendarClock />} action={<SectionLink link={link('fixtures')}>Cały terminarz</SectionLink>}>
-          {upcoming.map((match) => (
-            <MatchRow key={match.id} match={match} timeZone={timeZone} statusDisplay="live" />
-          ))}
+          {upcoming.map(row)}
         </PublicSection>
       )}
       {latest.length > 0 && (
         <PublicSection title="Ostatnie wyniki" icon={<History />} action={<SectionLink link={link('results')}>Wszystkie wyniki</SectionLink>}>
-          {latest.map((match) => (
-            <MatchRow key={match.id} match={match} timeZone={timeZone} statusDisplay="live" />
-          ))}
+          {latest.map(row)}
         </PublicSection>
       )}
       {status.results}

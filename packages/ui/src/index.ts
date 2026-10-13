@@ -5,6 +5,7 @@ export { cn } from './lib/utils';
 export * from './lib/bracket';
 export * from './lib/contrast';
 export * from './lib/kickoff';
+export * from './lib/match-band';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
@@ -21,6 +22,7 @@ export * from './components/ui/image-file-field';
 export * from './components/ui/image-with-fallback';
 export * from './components/ui/input';
 export * from './components/ui/label';
+export * from './components/ui/match-periods-field';
 export * from './components/ui/popover';
 export * from './components/ui/progress';
 export * from './components/ui/scroll-area';
@@ -52,12 +54,15 @@ export * from './components/data/match-event-data';
 export * from './components/data/event-type-buttons';
 export * from './components/data/player-number-grid';
 export * from './components/data/match-timeline';
+export * from './components/data/match-page-data';
+export * from './components/data/match-relation';
+export * from './components/data/event-icon';
 export * from './components/data/match-status-toggle';
 export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/round-list';
 export * from './components/data/round-groups';
-export * from './components/data/round-matches';
+export * from './components/data/round-sections';
 export * from './components/data/public-overview';
 export * from './components/data/round-summary';
 export * from './components/data/round-tabs';
@@ -81,6 +86,7 @@ export * from './components/data/venue-row';
 export * from './components/data/venues-table';
 
 export * from './components/layout/admin-shell';
+export * from './components/layout/back-link';
 export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
 export * from './components/layout/photo-panel';
@@ -94,3 +100,7 @@ export * from './components/layout/tournament-logo';
 // zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby
 // ponad 500 kB grafiki, której nigdy nie użyje. Strona publiczna bierze go ze ścieżki:
 // import { PublicShell } from '@tournament/ui/components/layout/public-shell.tsx';
+
+// MatchHeader (pas strony meczu) z tego samego powodu: importuje zdjęcia
+// sportów. Strona publiczna bierze go ze ścieżki:
+// import { MatchHeader } from '@tournament/ui/components/data/match-header.tsx';

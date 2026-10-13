@@ -36,6 +36,16 @@ function rgba(color: string): [number, number, number, number] {
   return [r!, g!, b!, a! / 255]
 }
 
+/** Kolor CSS (także `oklch`) jako `#RRGGBB`, przez canvas przeglądarki — np. do `contrastRatio`. */
+export function cssHex(color: string): string {
+  return hex(rgba(color))
+}
+
+/** Kanał alfa koloru CSS, np. tła nakładki `bg-brand/80`. */
+export function cssAlpha(color: string): number {
+  return rgba(color)[3]
+}
+
 const hex = ([r, g, b]: number[]) => `#${[r, g, b].map((channel) => Math.round(channel!).toString(16).padStart(2, '0')).join('')}`
 
 /**

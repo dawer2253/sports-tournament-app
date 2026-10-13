@@ -32,7 +32,7 @@ export const Domyslny: Story = {
     await userEvent.click(dialog.getByRole('button', { name: `${scorer.number}. ${scorer.name}` }))
 
     await expect(timeline()).toHaveLength(4)
-    await expect(timeline()[2]).toHaveTextContent(`Bramka · ${scorer.name}`)
+    await expect(timeline()[2]).toHaveTextContent(`Bramka ${scorer.name}`)
     await expect(timeline()[2]).toHaveTextContent('40′')
     // Dwie bramki gospodarza ze zdarzeń przy wyniku 1:0 — cicha linia, bez blokady.
     await expect(dialog.getByText('Bramki ze zdarzeń: 2:0 · wynik meczu 1:0')).toBeInTheDocument()

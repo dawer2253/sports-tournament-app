@@ -231,6 +231,25 @@ sport nigdy nie wyznacza go sam.
 Wyznacza zarówno slot rozkładu dat, jak i okno kolizji. Zmiana długości nie
 przesuwa żadnego terminu: zmienia tylko to, co liczy się jako kolizja.
 
+## Match period (część meczu)
+
+Połowa, tercja albo kwarta: jedna z części, na które dzieli się mecz, trzymana
+w `Tournament.periods` jako liczba części (1–10) i minuty jednej części. To
+**ustawienie turnieju**, a nie sportu, bo amatorskie mecze mają różne części,
+a w koszu bywa bez kwart. Turniej dostaje je przy zakładaniu jako kopię
+`SportConfig.defaultPeriods` (piłka 2 × 45, kosz 4 × 10), wzorem długości
+meczu. Jedna część znaczy „bez podziału”.
+
+**Etykieta wynika z liczby części, nie ze sportu**: 2 → „połowa”, 3 →
+„tercja”, 4 → „kwarta”, inna liczba → „część” („1. połowa”, „3. kwarta”).
+
+Zdarzenie należy do części `min(liczba części, ⌈minuta / minuty części⌉)`.
+Doliczony czas zapisany zwykłą liczbą trafia więc do następnej części („45+2”
+→ `47` → 2. połowa), a dogrywka do ostatniej. Zdarzenie bez minuty
+i każde zdarzenie turnieju bez podziału nie ma części. Część liczy się przy
+odczycie, więc zmiana ustawienia działa wstecz na wszystkie mecze turnieju.
+Z części korzysta relacja na stronie meczu (`PublicMatchDetail`).
+
 ## Collision (kolizja)
 
 Nakładanie się okien dwóch meczów **tego samego turnieju** (także z różnych

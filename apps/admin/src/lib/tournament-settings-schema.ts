@@ -4,6 +4,13 @@ import { z } from 'zod';
 /** Wzorzec sluga z `TournamentUpdate.slug` w `openapi.yaml`. */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** Minuty części meczu z `MatchPeriods.minutes` w `openapi.yaml`. */
+const periodMinutes = z
+  .number({ error: 'Podaj długość części w minutach.' })
+  .int('Podaj liczbę całkowitą.')
+  .min(1, 'Część trwa od 1 do 150 minut.')
+  .max(150, 'Część trwa od 1 do 150 minut.');
+
 const pointsValue = z
   .number({ error: 'Podaj liczbę od 0 do 10.' })
   .int('Podaj liczbę całkowitą.')
@@ -43,8 +50,16 @@ export function tournamentSettingsSchema(allowsDraw: boolean) {
         .min(10, 'Długość meczu to co najmniej 10 minut.')
         .max(600, 'Długość meczu to najwyżej 600 minut.'),
       points: z.object({ win: pointsValue, draw: pointsValue, loss: pointsValue }),
+      // Podział meczu (#210). Pole minut znika przy „Bez podziału”, więc jego
+      // wartość wtedy się nie liczy; przy kilku częściach jest wymagana.
+      periods: z.object({ count: z.number().int().min(1).max(10), minutes: z.number().nullable() }),
     })
-    .superRefine(({ points }, ctx) => {
+    .superRefine(({ points, periods }, ctx) => {
+      // `null` i puste pole (`NaN`) dają ten sam komunikat co brak liczby.
+      const minutes = periods.count > 1 ? periodMinutes.safeParse(periods.minutes) : undefined;
+      if (minutes?.error) {
+        ctx.addIssue({ code: 'custom', path: ['periods', 'minutes'], message: minutes.error.issues[0]!.message });
+      }
       if (points.loss >= points.win) {
         ctx.addIssue({
           code: 'custom',
@@ -70,6 +85,7 @@ export function tournamentSettingsValues(tournament: Tournament): TournamentSett
     slug: tournament.slug,
     branding: { primaryColor: tournament.branding.primaryColor },
     matchDuration: tournament.matchDuration,
+    periods: { ...tournament.periods },
     points: { ...tournament.points },
   };
 }
@@ -82,7 +98,7 @@ function samePoints(a: Points, b: Points) {
  * Ciało `PATCH /tournaments/{tournament}` z samych zmienionych pól.
  *
  * `points` idzie w komplecie, gdy zmieniło się którekolwiek z trzech, bo
- * backend nie przyjmuje części punktacji (#109). W sporcie bez remisów pola
+ * backend nie przyjmuje części punktacji (#109). Tak samo `periods` (#210). W sporcie bez remisów pola
  * „Remis" nie ma, więc `draw` jest zawsze `0`.
  *
  * Porównanie idzie z zapisanym turniejem, a nie z „brudnymi" polami formularza:
@@ -101,6 +117,10 @@ export function tournamentSettingsUpdate(
     body.branding = { primaryColor: values.branding.primaryColor };
   }
   if (values.matchDuration !== saved.matchDuration) body.matchDuration = values.matchDuration;
+  // Podział idzie w komplecie, a „Bez podziału” zawsze z `minutes: null`,
+  // choćby w ukrytym polu zostały minuty.
+  const periods = values.periods.count === 1 ? { count: 1, minutes: null } : values.periods;
+  if (periods.count !== saved.periods.count || periods.minutes !== saved.periods.minutes) body.periods = periods;
   const points = allowsDraw ? values.points : { ...values.points, draw: 0 };
   if (!samePoints(points, saved.points)) body.points = points;
   return body;

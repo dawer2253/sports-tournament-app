@@ -6,13 +6,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { BrandColorPicker, DEFAULT_BRAND_COLOR } from '../components/ui/brand-color-picker'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
+import { MatchPeriodsField } from '../components/ui/match-periods-field'
 import { Separator } from '../components/ui/separator'
 import { Heading } from '../components/ui/typography'
 import { TiebreakerList } from '../components/data/tiebreaker-list'
 import { TournamentStatusCard } from '../components/data/tournament-status-card'
 import type { TournamentRow } from '../components/data/tournament-row'
 import { TournamentLogo } from '../components/layout/tournament-logo'
-import { sportSettings, tournament } from '../lib/demo-data'
+import { demoPeriods, sportSettings, tournament } from '../lib/demo-data'
 
 /** Panel zna adres strony publicznej z `VITE_PUBLIC_URL` (#91 pkt 3). */
 const PUBLIC_ORIGIN = 'http://localhost:5174'
@@ -43,6 +44,7 @@ export function AdminSettings({
   const [color, setColor] = React.useState(primaryColor)
   const [slug, setSlug] = React.useState(initialSlug)
   const [points, setPoints] = React.useState(config.defaultPoints)
+  const [periods, setPeriods] = React.useState<{ count: number; minutes: number | null }>(demoPeriods[sport])
   // Jak w `ImageWithFallback`: pamiętamy adres, który zawiódł, a nie flagę.
   const [failedLogoUrl, setFailedLogoUrl] = React.useState<string | null>(null)
 
@@ -137,6 +139,20 @@ export function AdminSettings({
               <section className="space-y-4">
                 <Heading level="card">Wygląd</Heading>
                 <BrandColorPicker value={color} onChange={setColor} />
+              </section>
+
+              <Separator />
+
+              <section className="space-y-4">
+                <Heading level="card">Rozgrywki</Heading>
+                <div className="flex flex-wrap items-start gap-4">
+                  <div className="grid w-44 content-start gap-2">
+                    <Label htmlFor="match-duration">Długość meczu (min)</Label>
+                    <Input id="match-duration" type="number" min={10} max={600} defaultValue={sport === 'basketball' ? 40 : 60} />
+                  </div>
+                </div>
+                {/* Podział meczu (#210): strona meczu liczy z niego części relacji. */}
+                <MatchPeriodsField value={periods} onChange={setPeriods} fallbackMinutes={demoPeriods[sport].minutes} />
               </section>
 
               <Separator />
