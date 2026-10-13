@@ -1038,8 +1038,9 @@ export interface paths {
          *
          *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
          *     faza nie jest `league` albo ma mecz `live` lub `finished`, i pod
-         *     `teams`, gdy turniej ma mniej niż dwie drużyny. Mecze dociąga się potem
-         *     przez `GET /tournaments/{tournament}/matches?stageId=`.
+         *     `teams`, gdy turniej ma mniej niż dwie drużyny. Faza `knockout` dostaje
+         *     osobny komunikat, który odsyła do `POST /stages/{stage}/bracket`. Mecze
+         *     dociąga się potem przez `GET /tournaments/{tournament}/matches?stageId=`.
          */
         post: {
             parameters: {
@@ -1124,10 +1125,14 @@ export interface paths {
         /**
          * Rozłóż daty i obiekty terminarza
          * @description Nadaje terminy i obiekty meczom fazy, która ma już terminarz
-         *     (`POST /stages/{stage}/schedule`). To osobny krok po wygenerowaniu par,
+         *     (`POST /stages/{stage}/schedule`) albo drabinkę
+         *     (`POST /stages/{stage}/bracket`). To osobny krok po wygenerowaniu par,
          *     więc przestawienie dat nie losuje ich od nowa. Faza może trwale zostać
          *     bez dat, a pojedynczy mecz bez terminu i obiektu („termin do
          *     ustalenia”).
+         *
+         *     „Kolejka” znaczy niżej kolejkę lub rundę: kolejkę ligi albo rundę
+         *     drabinki, bo w API to jeden byt (`Round`).
          *
          *     - `mode: interval` — liga sezonowa: kolejka `k` (licząc od pierwszej
          *       rozkładanej) zaczyna się `startAt + (k − 1) × intervalDays` dni,
@@ -1139,7 +1144,10 @@ export interface paths {
          *     - Mecz `j` w kolejce (licząc od zera) dostaje obiekt
          *       `venueIds[j mod V]` i godzinę startu kolejki plus
          *       `⌊j / V⌋ × matchDuration`. Bez obiektów cała kolejka gra o jednej
-         *       godzinie i bez obiektu.
+         *       godzinie i bez obiektu. Mecze kolejki idą po `matchNumber`, z jednym
+         *       wyjątkiem: w rundzie z meczem o 3. miejsce (oba jego wejścia to
+         *       `loserToMatchId`) ten mecz idzie przed finałem, więc dostaje termin
+         *       przed nim.
          *     - `dayEndTime` (tylko `continuous`): slot, który **kończyłby się** po tej
          *       godzinie, przechodzi na następny dzień kalendarzowy o godzinie
          *       `startAt`. Kolejka może przez to rozciągnąć się na dwa dni. Wyjątkiem
@@ -1261,6 +1269,125 @@ export interface paths {
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
                 /** @description Faza nie ma terminarza albo ciało jest niepoprawne */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stages/{stage}/bracket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: components["parameters"]["StageId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Wygeneruj drabinkę fazy pucharowej
+         * @description Układa fazę `knockout` w drabinkę single elimination i zastępuje całą
+         *     dotychczasową drabinkę fazy, także terminy i obiekty poprawione ręcznie.
+         *     Wszystko dzieje się w jednej transakcji.
+         *
+         *     - `teamIds` to wszystkie drużyny turnieju, każda dokładnie raz,
+         *       w kolejności rozstawienia: pierwsza jest najwyżej rozstawiona.
+         *       Losowanie to wymieszanie tej listy po stronie klienta. Kolejność
+         *       nie jest przechowywana, zostaje po niej tylko kształt drabinki.
+         *     - Rozmiar drabinki to najbliższa potęga dwójki ≥ liczby drużyn.
+         *       Seed trafia na pozycję według standardowej reguły (1–16, 8–9, 4–13…),
+         *       więc seedy 1…2^k nie spotkają się, zanim zostanie 2^k drużyn.
+         *     - Wolne losy (2^k − n) dostają najwyżej rozstawieni. Wolny los nie
+         *       tworzy meczu: drużyna stoi od razu w meczu drugiej rundy.
+         *     - `matchNumber` to pozycja w pełnej drabince, więc w pierwszej rundzie
+         *       ma dziury w miejscach wolnych losów. Mecz o nieparzystym numerze
+         *       zasila gospodarza meczu następnego (ADR 0004).
+         *     - Rundy nazywają się według rozmiaru: „1/64 finału” … „1/8 finału”,
+         *       „Ćwierćfinał”, „Półfinał”, „Finał”.
+         *     - `thirdPlaceMatch: true` dokłada mecz o 3. miejsce w rundzie finału
+         *       (`matchNumber: 2`), do którego półfinały prowadzą `loserToMatchId`.
+         *     - Mecze są `scheduled`, bez `kickoffAt` i bez obiektu. Daty rozkłada
+         *       `POST /stages/{stage}/schedule/dates`.
+         *
+         *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
+         *     faza nie jest `knockout` albo ma mecz `live` lub `finished`; pod
+         *     `teams`, gdy turniej ma mniej niż dwie drużyny; pod `teamIds`, gdy
+         *     lista nie jest dokładnie zbiorem drużyn turnieju; pod
+         *     `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono przy mniej niż
+         *     czterech drużynach. Odmowa niczego nie zmienia. Mecze dociąga się potem
+         *     przez `GET /tournaments/{tournament}/matches?stageId=`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stage: components["parameters"]["StageId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "teamIds": [
+                     *         12,
+                     *         7,
+                     *         3,
+                     *         9,
+                     *         15,
+                     *         4
+                     *       ],
+                     *       "thirdPlaceMatch": true
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Drużyny turnieju w kolejności rozstawienia, od najwyżej rozstawionej. */
+                        teamIds: number[];
+                        /** @description Czy dołożyć mecz o 3. miejsce. Bez wartości domyślnej. */
+                        thirdPlaceMatch: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description Drabinka wygenerowana */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "roundsCount": 3,
+                         *         "matchesCount": 6
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: {
+                                roundsCount: number;
+                                matchesCount: number;
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Fazy nie da się wygenerować albo ciało jest niepoprawne */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1486,6 +1613,19 @@ export interface paths {
          *     Daje `422` z błędem pod `id`, jeżeli drużyna ma mecz rozegrany albo
          *     trwający (`finished` albo `live`): usunięcie zmieniłoby tabelę wstecz.
          *     Odmowa niczego nie zmienia — drużyna, jej zawodnicy i mecze zostają.
+         *
+         *     Drużyna w drabince (faza `knockout`, w której drużyna stoi w którymś
+         *     meczu) idzie inaczej, bo drabinki nie da się załatać jak kolejki:
+         *
+         *     - dopóki żaden mecz fazy nie jest rozpoczęty, usunięcie kasuje całą
+         *       drabinkę fazy, czyli jej rundy i mecze, a nie same mecze drużyny.
+         *       Drabinkę generuje się potem od nowa (`POST /stages/{stage}/bracket`);
+         *     - po pierwszym meczu rozpoczętym fazy daje `422` pod `id`
+         *       (`DeleteBlocked`), także dla drużyny, która jeszcze nie grała.
+         *       Wycofanie drużyny wpisuje się wtedy jako walkower.
+         *
+         *     Drużyna dodana po wygenerowaniu drabinki w niej nie stoi, więc usuwa
+         *     się jak w lidze.
          */
         delete: {
             parameters: {
@@ -2144,9 +2284,10 @@ export interface paths {
          *     a kształt `Match` jest zamrożony.
          *
          *     Kolejność: faza (`order`), w niej kolejka (`round.order`), w kolejce
-         *     `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (po
-         *     usunięciu drużyny razem z jej meczami `scheduled`), więc pozycji meczu
-         *     nie wyliczaj z numeru. Faza albo kolejka spoza turnieju w `stageId`
+         *     `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (w lidze
+         *     po usunięciu drużyny razem z jej meczami `scheduled`, w pierwszej
+         *     rundzie drabinki po wolnych losach), więc miejsca meczu na liście nie
+         *     wyliczaj z numeru. Faza albo kolejka spoza turnieju w `stageId`
          *     i `roundId` daje puste `data`, nie `404`: `404` jest tu odpowiedzią
          *     o turnieju. `perPage` ponad limit jest dociągane do 200, a nieczytelne
          *     daje rozmiar domyślny. Filtr o złym typie albo nieznanym `status` daje
@@ -3623,8 +3764,10 @@ export interface components {
             /**
              * @description Numer meczu w obrębie rundy, liczony od jedynki. W drabince razem
              *     z `round.order` tworzy pozycję własną meczu, z której widok wylicza
-             *     etykietę ("1/2 finału", "Finał") — etykiety nie ma w danych, bo
-             *     zależy od rozmiaru drabinki. W lidze daje stabilną kolejność meczów
+             *     etykietę pozycji („Półfinał 1”, „Finał”) — tej etykiety nie ma
+             *     w danych, a nazwa rundy jest w `round.name`. Numer to pozycja
+             *     w pełnej drabince, więc w pierwszej rundzie ma dziury w miejscach
+             *     wolnych losów. W lidze daje stabilną kolejność meczów
              *     w kolejce i niczego więcej nie znaczy, więc może mieć dziury (np.
              *     po usunięciu drużyny razem z jej meczami `scheduled`).
              */
