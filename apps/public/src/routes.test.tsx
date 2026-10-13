@@ -57,21 +57,24 @@ describe('trasa turnieju', () => {
     expect(document.title).toBe('Nie ma takiego turnieju');
   });
 
-  it('po 404 turnieju odpytywanie staje', async () => {
+  it('po 404 turnieju odpytywanie trwa, więc opublikowany szkic pojawia się sam', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    let requests = 0;
+    publicApi();
+    let published = false;
     server.use(
-      http.get(`${API}/public/t/:slug`, () => {
-        requests++;
-        return HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 });
-      }),
+      http.get(`${API}/public/t/:slug`, () =>
+        published
+          ? HttpResponse.json({ data: tournament() })
+          : HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 }),
+      ),
     );
-    renderAt('/t/nie-ma-takiego');
+    renderAt(`/t/${SLUG}`);
     await screen.findByText('Nie ma takiego turnieju');
 
-    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
+    published = true;
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
-    expect(requests).toBe(1);
+    expect(await screen.findByRole('navigation', { name: 'Sekcje turnieju' })).toBeInTheDocument();
   });
 
   it('inny błąd turnieju pokazuje komunikat z odpowiedzi', async () => {

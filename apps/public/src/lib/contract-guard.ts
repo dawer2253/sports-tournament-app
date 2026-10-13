@@ -1,5 +1,5 @@
 import type { Match, PublicTournament, StandingRow } from '@tournament/api-client';
-import type { MatchInRound, PublicShellTournament, StandingsTableRow } from '@tournament/ui';
+import type { MatchInRound, PublicShellTournament, SportCode, StandingsTableRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów z design systemu z kontraktem, jak
@@ -26,3 +26,9 @@ export const contractFitsMatch: ContractFitsMatch = true;
 type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;
 
 export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
+
+/** Kody sportu w DS to dokładnie kody z kontraktu: nowy sport w kontrakcie czerwieni tu, aż DS go pozna. */
+type ContractSportCode = PublicTournament['sport']['code'];
+type SportCodesMatch = [ContractSportCode] extends [SportCode] ? ([SportCode] extends [ContractSportCode] ? true : never) : never;
+
+export const sportCodesMatch: SportCodesMatch = true;

@@ -68,6 +68,21 @@ describe('Przegląd', () => {
     expect(section.getByRole('link', { name: /Wszystkie wyniki/ })).toHaveAttribute('href', `/t/${SLUG}/wyniki`);
   });
 
+  it('kolejki Przeglądu to te, na których otwierają się Terminarz i Wyniki, nie te z najwcześniejszym terminem', async () => {
+    // Przełożony mecz kolejki 1 rozegrano po kolejce 3, więc w `/results`
+    // (malejąco po terminie) stoi pierwszy. Wyniki otwierają się na kolejce 3.
+    // W `/fixtures` mecz kolejki 6 ma wcześniejszy termin niż kolejka 5.
+    publicApi({
+      results: [finished(1, 1), finished(2, 3), finished(3, 3), finished(4, 2)],
+      fixtures: [match(5, 6), match(6, 5), match(7, 5)],
+    });
+    renderAt(`/t/${SLUG}`);
+
+    await screen.findByRole('region', { name: 'Ostatnie wyniki' });
+    expect(pairsIn('Ostatnie wyniki')).toEqual(['Gospodarz 2 – Gość 2', 'Gospodarz 3 – Gość 3']);
+    expect(pairsIn('Najbliższe mecze')).toEqual(['Gospodarz 6 – Gość 6', 'Gospodarz 7 – Gość 7']);
+  });
+
   it('skrót tabeli ma 5 pierwszych wierszy pierwszej tabeli i odnośnik do pełnej', async () => {
     const names = ['Alfa', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta'];
     publicApi({
