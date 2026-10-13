@@ -5,12 +5,13 @@ import { OverviewPage } from './pages/overview';
 import { ResultsPage } from './pages/results';
 import { StandalonePage } from './pages/standalone-page';
 import { StandingsPage } from './pages/standings';
+import { StatsPage } from './pages/stats';
 import { TournamentLayout, type TabHandle } from './pages/tournament-layout';
 
 /**
  * Drzewo tras strony publicznej, osobno od `main.tsx`: testy renderują
  * dokładnie to drzewo w routerze pamięciowym. Trasy po polsku (#192).
- * Statystyki (#207), strona meczu (#205) i drabinka (S4) dołożą tu swoje.
+ * Strona meczu (#205) i drabinka (S4) dołożą tu swoje.
  */
 export const routes: RouteObject[] = [
   {
@@ -34,6 +35,7 @@ export const routes: RouteObject[] = [
       { path: 'tabela', element: <StandingsPage />, handle: { tab: 'standings' } satisfies TabHandle },
       { path: 'terminarz', element: <FixturesPage />, handle: { tab: 'fixtures' } satisfies TabHandle },
       { path: 'wyniki', element: <ResultsPage />, handle: { tab: 'results' } satisfies TabHandle },
+      { path: 'statystyki', element: <StatsPage />, handle: { tab: 'stats' } satisfies TabHandle },
       // Nieznana podtrasa: 404 aplikacji pod nagłówkiem turnieju, bez aktywnej zakładki.
       { path: '*', element: <NotFoundPage /> },
     ],

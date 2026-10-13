@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SLUG, finished, match, publicApi, renderAt, row, table } from '../test/public-api';
+import { SLUG, finished, leaderRow, leaderboard, match, publicApi, renderAt, row, table } from '../test/public-api';
 
 /** Nazwy par w sekcji, w kolejności z DOM-u (`MatchRow` ma nazwę „gospodarz – gość”). */
 function pairsIn(section: string) {
@@ -103,12 +103,14 @@ describe('Przegląd', () => {
     expect(snippet.getByRole('link', { name: /Zobacz pełną tabelę/ })).toHaveAttribute('href', `/t/${SLUG}/tabela`);
   });
 
-  it('sekcja bez meczów znika: przed startem jest tylko tabela', async () => {
+  it('sekcja bez meczów znika: przed startem jest tylko tabela i klasyfikacja z pustym stanem', async () => {
     publicApi({ fixtures: [], results: [] });
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Tabela (skrót)' });
-    expect(sections()).toEqual(['Tabela (skrót)']);
+    const card = within(await screen.findByRole('region', { name: 'Bramki' }));
+    expect(sections()).toEqual(['Tabela (skrót)', 'Bramki']);
+    expect(card.getByText(/Klasyfikacja ruszy po pierwszym zakończonym meczu/)).toBeInTheDocument();
+    expect(card.queryByRole('listitem')).not.toBeInTheDocument();
   });
 
   it('sekcje idą w kolejności: Na żywo, Najbliższe mecze, Ostatnie wyniki, Tabela', async () => {
@@ -120,6 +122,57 @@ describe('Przegląd', () => {
 
     await screen.findByRole('region', { name: 'Na żywo' });
     await screen.findByRole('region', { name: 'Ostatnie wyniki' });
-    expect(sections()).toEqual(['Na żywo', 'Najbliższe mecze', 'Ostatnie wyniki', 'Tabela (skrót)']);
+    await screen.findByRole('region', { name: 'Bramki' });
+    expect(sections()).toEqual(['Na żywo', 'Najbliższe mecze', 'Ostatnie wyniki', 'Tabela (skrót)', 'Bramki']);
+  });
+
+  it('karta klasyfikacji pyta o domyślną statystykę, a tytuł i etykietę bierze z odpowiedzi', async () => {
+    // Para rozjechana celowo: turniej jest piłkarski, a odpowiedź mówi
+    // „Punkty” — przejdzie tylko widok, który czyta `label`, nie sport.
+    const requests = publicApi({ leaderboards: () => leaderboard({ label: 'Punkty', rows: [leaderRow(1, { value: 57 })] }) });
+    renderAt(`/t/${SLUG}`);
+
+    const card = within(await screen.findByRole('region', { name: 'Punkty' }));
+    expect(screen.queryByRole('region', { name: 'Bramki' })).not.toBeInTheDocument();
+    expect(card.getByRole('listitem')).toHaveTextContent(/Zawodnik 1.*57.*Punkty/);
+    expect(card.getByRole('link', { name: /Wszystkie statystyki/ })).toHaveAttribute('href', `/t/${SLUG}/statystyki`);
+    expect(requests.leaderboard).toEqual([null]);
+  });
+
+  it('karta klasyfikacji dopełnia liderów do 5 wierszy kolejnymi pozycjami', async () => {
+    publicApi({
+      leaderboards: () =>
+        leaderboard({
+          rows: [
+            leaderRow(1, { position: 1, value: 5 }),
+            leaderRow(2, { position: 1, value: 5 }),
+            ...[3, 4, 5, 6, 7].map((id) => leaderRow(id, { position: 3, value: 2 })),
+          ],
+        }),
+    });
+    renderAt(`/t/${SLUG}`);
+
+    const card = within(await screen.findByRole('region', { name: 'Bramki' }));
+    expect(card.getAllByRole('listitem').map((item) => item.textContent)).toEqual(
+      [1, 2, 3, 4, 5].map((id) => expect.stringContaining(`Zawodnik ${id}`)),
+    );
+  });
+
+  it('karta klasyfikacji pokazuje wszystkich z pierwszym miejscem, także sześciu, i nikogo więcej', async () => {
+    publicApi({
+      leaderboards: () =>
+        leaderboard({
+          rows: [
+            ...[1, 2, 3, 4, 5, 6].map((id) => leaderRow(id, { position: 1, value: 2 })),
+            leaderRow(7, { position: 7, value: 1 }),
+          ],
+        }),
+    });
+    renderAt(`/t/${SLUG}`);
+
+    const card = within(await screen.findByRole('region', { name: 'Bramki' }));
+    expect(card.getAllByRole('listitem').map((item) => item.textContent)).toEqual(
+      [1, 2, 3, 4, 5, 6].map((id) => expect.stringContaining(`Zawodnik ${id}`)),
+    );
   });
 });
