@@ -287,7 +287,7 @@ function GenerateDialogA({ onClose }: { onClose: () => void }) {
       submitLabel={replacing ? 'Zastąp drabinkę' : 'Wygeneruj'}
       pending={pending}
       error={errors.form ?? errors.thirdPlaceMatch}
-      contentClassName="sm:max-w-lg"
+      contentClassName="max-h-[92vh] overflow-y-auto sm:max-w-lg"
     >
       <div className="grid gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -366,14 +366,33 @@ export function VariantB() {
           )}
         </>
       )}
-      {generating && <GenerateDialogB onClose={() => setGenerating(false)} />}
+      {generating && (
+        <GenerateDialogB
+          onClose={() => setGenerating(false)}
+          onDone={() => {
+            setGenerating(false);
+            // Nowa drabinka zaczyna od 1. rundy, a nie od rundy zapamiętanej w adresie.
+            setParams(
+              (p) => {
+                const next = new URLSearchParams(p);
+                next.delete('round');
+                return next;
+              },
+              { replace: true },
+            );
+          }}
+        />
+      )}
       {open && <BracketMatchDialog key={open.id} match={open} light onClose={() => setOpen(null)} />}
     </AdminPage>
   );
 }
 
 function RoundDetailB({ matches, all, onSelect }: { matches: BMatch[]; all: BMatch[]; onSelect: (m: BMatch) => void }) {
-  const byes = matches.flatMap((m) => byeSlots(m, all).map((side) => ({ m, team: side === 'home' ? m.homeTeam : m.awayTeam })));
+  // Wolne losy widać w 1. rundzie (tam brakuje meczu) i w 2. (tam drużyna już stoi).
+  const order = matches[0]?.round.order;
+  const byeSource = order === 1 ? all.filter((m) => m.round.order === 2) : order === 2 ? matches : [];
+  const byes = byeSource.flatMap((m) => byeSlots(m, all).map((side) => ({ m, team: side === 'home' ? m.homeTeam : m.awayTeam })));
   return (
     <div className="space-y-2">
       {matches.map((m) => {
@@ -417,13 +436,13 @@ function RoundDetailB({ matches, all, onSelect }: { matches: BMatch[]; all: BMat
 
 const LOCK_OPTIONS = [0, 1, 2, 4, 8];
 
-function GenerateDialogB({ onClose }: { onClose: () => void }) {
+function GenerateDialogB({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
   const s = useBracket();
   const initial = useSeedingDefault();
   const [order, setOrder] = useState<Team[]>(initial);
   const [locked, setLocked] = useState(0);
   const [third, setThird] = useState(s.teams.length >= 4);
-  const { pending, errors, run } = useGenerate(onClose);
+  const { pending, errors, run } = useGenerate(onDone);
   const preview = firstRoundPreview(order);
   const replacing = s.matches.length > 0;
 
@@ -547,7 +566,9 @@ function GenerateDialogC({ onClose }: { onClose: () => void }) {
   const size = bracketSize(n);
   const pos = seedPositions(size);
   const missing = seeds.filter((t) => t === null).length;
-  const [localError, setLocalError] = useState<string>();
+  const [submitted, setSubmitted] = useState(false);
+  // Liczone na bieżąco: komunikat znika, gdy organizator uzupełni miejsca.
+  const localError = submitted && missing > 0 ? `Brakuje drużyn na ${missing} ${missing === 1 ? 'miejscu' : 'miejscach'}.` : undefined;
 
   function assign(seed: number, teamId: string) {
     const team = s.teams.find((t) => t.id === Number(teamId)) ?? null;
@@ -592,11 +613,8 @@ function GenerateDialogC({ onClose }: { onClose: () => void }) {
       onOpenChange={(o) => !o && onClose()}
       onSubmit={(e: FormEvent) => {
         e.preventDefault();
-        if (missing > 0) {
-          setLocalError(`Brakuje drużyn na ${missing} miejscach.`);
-          return;
-        }
-        setLocalError(undefined);
+        setSubmitted(true);
+        if (missing > 0) return;
         void run(seeds.map((t) => t!.id), third && n >= 4);
       }}
       title="Rozstaw drużyny w drabince"
@@ -676,7 +694,8 @@ export function VariantD() {
           <Button variant="outline" size="sm" className="mb-3 lg:hidden" onClick={() => setMapOpen(!mapOpen)}>
             <MapIcon className="size-4" /> {mapOpen ? 'Ukryj mapę drabinki' : 'Pokaż mapę drabinki'}
           </Button>
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+          {/* Mapa ma stałą szerokość i przewija się sama: przy 33 drużynach ma 6 kolumn. */}
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div className="min-w-0 space-y-4">
               {orders.map((o) => {
                 const ms = s.matches
@@ -730,7 +749,7 @@ export function VariantD() {
                 </div>
               )}
             </div>
-            <aside className={cn('lg:sticky lg:top-4 lg:block', mapOpen ? 'block' : 'hidden', 'order-first lg:order-none')}>
+            <aside className={cn('min-w-0 lg:sticky lg:top-4 lg:block', mapOpen ? 'block' : 'hidden', 'order-first lg:order-none')}>
               <MiniMap matches={s.matches} path={path} onHover={setHover} onSelect={setOpen} />
             </aside>
           </div>
@@ -754,7 +773,7 @@ function MiniMap({ matches, path, onHover, onSelect }: { matches: BMatch[]; path
         {Array.from({ length: roundsCount }, (_, r) => {
           const cells = size / 2 ** (r + 1);
           return (
-            <div key={r} className="flex w-24 flex-col" style={{ height: `${(size / 2) * 2.25}rem` }}>
+            <div key={r} className="flex w-24 shrink-0 flex-col" style={{ height: `${(size / 2) * 2.25}rem` }}>
               {Array.from({ length: cells }, (_, i) => {
                 const m = matches.find((x) => x.round.order === r + 1 && x.matchNumber === i + 1 && !isThirdPlace(x, matches));
                 const w = m && winnerSide(m);

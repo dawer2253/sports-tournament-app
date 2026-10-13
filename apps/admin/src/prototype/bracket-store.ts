@@ -273,7 +273,11 @@ export function advanceNotes(original: BMatch, draft: BMatch, matches: BMatch[])
   return changes.map(({ dep, from, to }) => {
     const label = matchLabel(dep, matches);
     if (from && to) return { tone: 'info', text: `${capital(roundCase(label, 'loc'))} ${to.name} zastąpią ${from.name}.` };
-    if (to) return { tone: 'info', text: `${to.name} ${label === 'Mecz o 3. miejsce' ? 'zagrają' : 'awansują'} ${roundCase(label, 'gen')}.` };
+    if (to) {
+      return label === 'Mecz o 3. miejsce'
+        ? { tone: 'info', text: `${to.name} zagrają ${roundCase(label, 'loc')}.` }
+        : { tone: 'info', text: `${to.name} awansują ${roundCase(label, 'gen')}.` };
+    }
     return { tone: 'info', text: `${from!.name} znikną ${roundCase(label, 'gen').replace(/^do /, 'z ')}.` };
   });
 }
@@ -392,17 +396,9 @@ export const api = {
     const start = new Date();
     start.setDate(start.getDate() + ((6 - start.getDay() + 7) % 7 || 7));
     start.setHours(10, 0, 0, 0);
-    const matches = state.matches.map((m) => {
-      if (m.status !== 'scheduled') return m;
-      const day = new Date(start);
-      day.setDate(day.getDate() + 7 * (m.round.order - 1));
-      const ordered = state.matches
-        .filter((x) => x.round.id === m.round.id)
-        .sort((a, b) => (isThirdPlace(b, state.matches) ? 1 : 0) - (isThirdPlace(a, state.matches) ? 1 : 0) || a.matchNumber - b.matchNumber);
-      const slot = ordered.findIndex((x) => x.id === m.id);
-      day.setMinutes(Math.floor(slot / VENUES.length) * 90);
-      return { ...m, kickoffAt: day.toISOString(), venue: VENUES[slot % VENUES.length] };
-    });
+    const dated = datesFor(state.matches, start);
+    // Mecze rozpoczęte zachowują swój termin.
+    const matches = state.matches.map((m, i) => (m.status === 'scheduled' ? dated[i] : m));
     set({ matches });
     return matches.length;
   },
@@ -491,17 +487,22 @@ function build(scenario: ScenarioKey, teamCount: number, sport: Sport): State {
   return { ...base, matches, lastSeeding };
 }
 
-function datesFor(matches: BMatch[]): BMatch[] {
-  const start = new Date('2026-10-03T10:00:00+02:00');
+/**
+ * Runda co tydzień, mecze na obiektach równolegle. W rundzie z meczem
+ * o 3. miejsce mecze idą po kolei na jednym obiekcie, a brąz przed finałem (#215).
+ */
+function datesFor(matches: BMatch[], start = new Date('2026-10-03T10:00:00+02:00')): BMatch[] {
   return matches.map((m) => {
-    const ordered = matches
-      .filter((x) => x.round.id === m.round.id)
-      .sort((a, b) => (isThirdPlace(b, matches) ? 1 : 0) - (isThirdPlace(a, matches) ? 1 : 0) || a.matchNumber - b.matchNumber);
+    const inRound = matches.filter((x) => x.round.id === m.round.id);
+    const sequential = inRound.some((x) => isThirdPlace(x, matches));
+    const ordered = inRound.sort(
+      (a, b) => Number(isThirdPlace(b, matches)) - Number(isThirdPlace(a, matches)) || a.matchNumber - b.matchNumber,
+    );
     const slot = ordered.findIndex((x) => x.id === m.id);
     const day = new Date(start);
     day.setDate(day.getDate() + 7 * (m.round.order - 1));
-    day.setMinutes(day.getMinutes() + Math.floor(slot / VENUES.length) * 90);
-    return { ...m, kickoffAt: day.toISOString(), venue: VENUES[slot % VENUES.length] };
+    day.setMinutes(day.getMinutes() + (sequential ? slot : Math.floor(slot / VENUES.length)) * 90);
+    return { ...m, kickoffAt: day.toISOString(), venue: sequential ? VENUES[0] : VENUES[slot % VENUES.length] };
   });
 }
 

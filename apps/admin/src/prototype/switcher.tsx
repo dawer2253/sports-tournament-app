@@ -40,7 +40,8 @@ export function PrototypeSwitcher() {
             <ChevronLeft className="size-4" />
           </button>
           <span className="font-semibold">
-            PROTOTYP {variant} · {VARIANTS[index].name}
+            PROTOTYP {variant}
+            <span className="hidden sm:inline"> · {VARIANTS[index].name}</span>
           </span>
           <button type="button" onClick={() => go(1)} aria-label="Następny wariant" className="rounded p-1 hover:bg-white/10">
             <ChevronRight className="size-4" />
@@ -54,7 +55,8 @@ export function PrototypeSwitcher() {
 
 function StatePanel() {
   const s = useBracket();
-  const [open, setOpen] = useState(true);
+  // Na telefonie panel zasłaniałby pół ekranu, więc startuje zwinięty.
+  const [open, setOpen] = useState(() => window.innerWidth >= 640);
   const started = s.matches.filter((m) => m.status !== 'scheduled').length;
 
   return (
@@ -120,7 +122,7 @@ function StatePanel() {
               reset
             </button>
           </div>
-          <div className="font-mono text-zinc-400">
+          <div className="font-mono break-all text-zinc-400">
             drużyn {s.teams.length} · meczów {s.matches.length} · rozpoczętych {started}
             <br />
             ostatnie rozstawienie: {s.lastSeeding ? s.lastSeeding.map((id) => id - 100).join(',') : '—'}
