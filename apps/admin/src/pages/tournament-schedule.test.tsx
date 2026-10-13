@@ -124,6 +124,7 @@ const SPORTS: Sport[] = [
       availableTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for', 'wins'],
       tiebreakerLabels: {},
       availableStats: ['goals', 'yellowCards', 'redCards'],
+      statLabels: { goals: 'Bramki', yellowCards: 'Żółte kartki', redCards: 'Czerwone kartki' },
     },
   },
 ];

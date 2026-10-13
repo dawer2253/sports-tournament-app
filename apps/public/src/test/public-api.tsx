@@ -17,6 +17,11 @@ export function tournament(overrides: Partial<PublicTournament> = {}): PublicTou
     sport: { id: 1, code: 'football', name: 'Piłka nożna' },
     branding: { logoUrl: null, primaryColor: '#1F7A45' },
     stages: [{ id: 1, type: 'league', name: 'Faza zasadnicza', order: 1, groups: [] }],
+    stats: [
+      { code: 'goals', label: 'Bramki' },
+      { code: 'yellowCards', label: 'Żółte kartki' },
+      { code: 'redCards', label: 'Czerwone kartki' },
+    ],
     ...overrides,
   };
 }

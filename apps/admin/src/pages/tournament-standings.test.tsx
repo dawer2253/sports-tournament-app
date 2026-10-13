@@ -40,6 +40,7 @@ const SPORTS: Sport[] = [
         head_to_head: 'Bezpośredni mecz',
       },
       availableStats: [],
+      statLabels: {},
     },
   },
   {
@@ -61,6 +62,7 @@ const SPORTS: Sport[] = [
         head_to_head: 'Bezpośredni mecz',
       },
       availableStats: [],
+      statLabels: {},
     },
   },
 ];
