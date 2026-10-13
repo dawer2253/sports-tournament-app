@@ -314,6 +314,10 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
   w panelu (#192, #206).
 - Liczba rozegranych meczów i średnia na mecz w klasyfikacji zawodników.
   W S3 wiersz klasyfikacji to pozycja, zawodnik, drużyna i wartość (#190, #207).
+- Pole typu zdarzenia w konfiguracji sportu, które mówi, której drużynie
+  liczy się zdobycz (własnej albo przeciwnika). W S3 samobój rozpoznaje się
+  po kodzie `own_goal`: w backendzie w jednym miejscu (`MatchScorers`),
+  a w panelu stałą `OWN_GOAL` (#188, #208).
 
 ---
 
