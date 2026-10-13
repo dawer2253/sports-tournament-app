@@ -782,7 +782,10 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     const { user } = renderSchedule('?round=1');
 
     const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
-    expect(await within(dialog).findByText('Bramki ze zdarzeń: 2:0 · wynik meczu 1:0')).toBeInTheDocument();
+    expect(await within(dialog).findByText('Bramki ze zdarzeń: 2:0')).toBeInTheDocument();
+    expect(within(dialog).getByText('wynik meczu 1:0')).toBeInTheDocument();
+    // Fakty rozdziela układ (kreska `MetaList`), nie znak.
+    expect(within(dialog).getByLabelText('Zgodność wyniku')).not.toHaveTextContent('·');
 
     // Po wpisaniu wyniku 2:0 rozjazdu nie ma i linia znika.
     const homeScore = within(dialog).getByLabelText('Wynik Wilki Bemowo');

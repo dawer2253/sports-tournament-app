@@ -166,12 +166,6 @@ function StandingsSection({
     code,
     label: label(code),
   }));
-  // Kolumnę R rozstrzyga dopiero `GET /sports`, więc tabela czeka na niego
-  // (w szkielecie bez R), żeby koszykówka nie mignęła remisami. Gdy sporty
-  // padną, tabela wychodzi z kolumną R — lepsza niż brak tabeli.
-  const allowsDraw = sport?.config.allowsDraw ?? sportsFailed;
-  const columnsKnown = sport !== undefined || sportsFailed;
-  const ready = columnsKnown ? tables : undefined;
 
   // Faza pucharowa nie ma tabeli, więc i kolejności nie ma czego ustawiać.
   if (tables && tables.length === 0) {
@@ -214,8 +208,11 @@ function StandingsSection({
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="min-w-0 space-y-6">
-        {ready ? (
-          ready.map((table) => (
+        {/* Kolumnę R, jak nagłówek zdobyczy i zdanie pod tabelą, niesie
+            odpowiedź tabeli (`allowsDraw`), więc tabela nie czeka na
+            `GET /sports` — ten potrzebny jest już tylko edytorowi kryteriów. */}
+        {tables ? (
+          tables.map((table) => (
             <section key={`${table.stageId}-${table.groupId}`} className="space-y-3">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <Heading level="card">
@@ -228,7 +225,7 @@ function StandingsSection({
               <StandingsTable
                 rows={table.rows}
                 scoreLabel={table.scoreLabel}
-                allowsDraw={allowsDraw}
+                allowsDraw={table.allowsDraw}
                 previousPositions={previousPositions}
                 emptyAction={teamsLink}
               />
@@ -238,13 +235,16 @@ function StandingsSection({
           <StandingsTable
             rows={[]}
             scoreLabel=""
-            allowsDraw={allowsDraw}
+            // Szkielet bez R: przed odpowiedzią nie wiadomo, czy sport zna remisy.
+            allowsDraw={false}
             status={base.isError ? 'error' : 'pending'}
             errorMessage={base.error?.message}
             onRetry={() => void base.refetch()}
           />
         )}
-        {ready && sport && <TiebreakerSentence items={current.map((code) => ({ code, label: label(code) }))} />}
+        {/* Zdanie z `tiebreakers` odpowiedzi, a nie ze szkicu: zgadza się
+            z wierszami, nad którymi stoi, także zanim podgląd dotrze. */}
+        {tables?.[0] && <TiebreakerSentence items={tables[0].tiebreakers} />}
       </div>
       <div className="lg:sticky lg:top-4">{editor}</div>
       <UnsavedChangesGuard when={dirty} />

@@ -49,6 +49,21 @@ class GameMatch extends Model
      */
     public const STATUSES = ['scheduled', 'live', 'finished'];
 
+    /**
+     * Mecze terminarza strony publicznej (`/fixtures`): jeszcze nierozegrane,
+     * także trwający — ten stoi w terminarzu, aż organizator go zakończy.
+     *
+     * @var list<string>
+     */
+    public const FIXTURE_STATUSES = ['scheduled', 'live'];
+
+    /**
+     * Mecze wyników strony publicznej (`/results`): wyłącznie zakończone.
+     *
+     * @var list<string>
+     */
+    public const RESULT_STATUSES = ['finished'];
+
     protected function casts(): array
     {
         return ['kickoff_at' => 'datetime'];

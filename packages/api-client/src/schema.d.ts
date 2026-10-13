@@ -2914,6 +2914,13 @@ export interface paths {
          * Terminarz (mecze jeszcze nierozegrane)
          * @description Widok chronologiczny przez całość turnieju. Komplet meczów jednej fazy,
          *     bez podziału po stanie, daje `/public/t/{slug}/matches`.
+         *
+         *     Mecze `scheduled` i `live` — mecz trwający stoi tutaj, a nie
+         *     w `results`, aż organizator go zakończy. Kolejność rosnąco po
+         *     `kickoffAt`. **Mecz bez `kickoffAt` stoi na końcu listy**, za
+         *     wszystkimi meczami z terminem. Przy równym terminie (także między
+         *     meczami bez terminu) rozstrzyga kolejność fazy, kolejki i
+         *     `matchNumber`.
          */
         get: {
             parameters: {
@@ -3101,6 +3108,12 @@ export interface paths {
          * Wyniki (mecze zakończone)
          * @description Widok chronologiczny przez całość turnieju. Komplet meczów jednej fazy,
          *     bez podziału po stanie, daje `/public/t/{slug}/matches`.
+         *
+         *     Wyłącznie mecze `finished`, malejąco po `kickoffAt`. **Mecz bez
+         *     `kickoffAt` stoi na końcu listy**, za wszystkimi meczami z terminem
+         *     (wynik wolno wpisać meczowi bez terminu, patrz `MatchUpdate`). Przy
+         *     równym terminie (także między meczami bez terminu) rozstrzyga
+         *     kolejność fazy, kolejki i `matchNumber`, malejąco — tak jak termin.
          */
         get: {
             parameters: {
@@ -4021,7 +4034,30 @@ export interface components {
              *     `StatLeaderboard.label` robi to samo dla klasyfikacji.
              */
             scoreLabel: string;
+            /**
+             * @description `SportConfig.allowsDraw` sportu turnieju. Mówi, czy tabela ma
+             *     kolumnę remisów: w sporcie bez remisów `drawn` jest zawsze zerem
+             *     i nic nie znaczy. Jedzie z tabelą z tego samego powodu co
+             *     `scoreLabel` (ADR-0006) — strona publiczna nie zna `SportConfig`,
+             *     bo `GET /sports` wymaga logowania.
+             */
+            allowsDraw: boolean;
+            /**
+             * @description Kryteria, według których ułożono **tę** tabelę, w kolejności
+             *     stosowania, z etykietami z `SportConfig.tiebreakerLabels` sportu
+             *     turnieju. Bez parametru podglądu to `Tournament.tiebreakers`,
+             *     a z `?tiebreakers=` w `GET /tournaments/{tournament}/standings` —
+             *     lista podglądu. Zdanie o kolejności pod tabelą zgadza się dzięki
+             *     temu z wierszami, także w podglądzie. Ukrytego ostatniego
+             *     kryterium (nazwa drużyny) na liście nie ma.
+             */
+            tiebreakers: components["schemas"]["StandingTiebreaker"][];
             rows: components["schemas"]["StandingRow"][];
+        };
+        StandingTiebreaker: {
+            code: components["schemas"]["TiebreakerCode"];
+            /** @description Etykieta kryterium z `SportConfig.tiebreakerLabels` sportu turnieju. */
+            label: string;
         };
         StatLeaderboardRow: {
             /**

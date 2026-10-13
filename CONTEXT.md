@@ -290,8 +290,9 @@ bilans zdobyczy (`scoreFor`, `scoreAgainst`, `scoreDifference`), punkty
 i pozycję. `points` w wierszu tabeli to zawsze punkty za wyniki meczów, nigdy
 zdobycze.
 
-Tabela niesie ponadto `scoreLabel` — etykietę, pod jaką zdobycze występują
-w interfejsie tego turnieju.
+Tabela niesie też `scoreLabel` — etykietę, pod jaką zdobycze występują
+w interfejsie tego turnieju — oraz `allowsDraw` sportu i kryteria
+(`tiebreakers`), według których ją ułożono.
 
 ## Tiebreaker (kryterium rozstrzygające)
 

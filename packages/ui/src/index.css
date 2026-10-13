@@ -52,6 +52,11 @@
   --brand: oklch(0.5000 0.1350 155);
   --brand-foreground: oklch(0.9850 0.0200 155);
   --ring: oklch(0.5000 0.1350 155);
+  /* Tekst na kolorze turnieju (strona publiczna): jasny albo ciemny według
+     kontrastu z kolorem organizatora (`brandForeground()`). Kolor turnieju
+     jest ten sam w obu motywach, więc tych dwóch `.dark` nie przedefiniowuje. */
+  --brand-text-light: oklch(1.0000 0 0);
+  --brand-text-dark: oklch(0.2400 0.0200 250);
 
   /* Semantyka */
   --destructive: oklch(0.5500 0.2000 27);

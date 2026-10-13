@@ -3,7 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router';
 import './index.css';
-import { TournamentPage } from './pages/tournament';
+import { routes } from './routes';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,21 +11,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: (
-      <main className="p-8 text-muted-foreground">
-        Turniej otwiera się pod adresem <code>/t/{'{slug}'}</code>, na przykład{' '}
-        <a className="underline" href="/t/liga-osiedlowa-2026">
-          /t/liga-osiedlowa-2026
-        </a>
-        .
-      </main>
-    ),
-  },
-  { path: '/t/:slug', element: <TournamentPage /> },
-]);
+const router = createBrowserRouter(routes);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

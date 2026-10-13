@@ -9,6 +9,11 @@ klasy błędu. Pytanie brzmi: **gdzie jeszcze w
 przykład obiecuje ciało odpowiedzi, którego ten backend nie zwróci.** Data:
 21 września 2026.
 
+*Stan z dnia badania.* Odwołania do `apps/public/src/pages/tournament.tsx`
+opisują kod sprzed #206, który usunął ten plik. Dziś 404 turnieju obsługuje
+`apps/public/src/pages/tournament-layout.tsx` własnym tekstem („Nie ma takiego
+turnieju”), a nie `message` z odpowiedzi.
+
 Źródła: wyłącznie pierwotne — kod zainstalowanego frameworka
 (`backend/vendor/laravel/framework`, wersja **13.29.0** z
 `Illuminate\Foundation\Application::VERSION`), kod Sanctuma

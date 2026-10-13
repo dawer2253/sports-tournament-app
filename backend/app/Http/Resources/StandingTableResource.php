@@ -2,24 +2,22 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Stage;
 use App\Standings\StandingRow;
+use App\Standings\StandingTable;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Jedna tabela: faza `league` albo grupa (`StandingTable` w kontrakcie).
- * Tabela nie jest modelem, więc zasób dostaje fazę, etykietę i policzone
- * wiersze wprost.
+ * Policzona tabela (`StandingTable` z `App\Standings`) w kształcie
+ * kontraktu. Liczy `TournamentStandings`; zasób tylko serializuje.
+ *
+ * @property StandingTable $resource
  */
 class StandingTableResource extends JsonResource
 {
-    /**
-     * @param  list<StandingRow>  $rows
-     */
-    public function __construct(private readonly Stage $stage, private readonly string $scoreLabel, private readonly array $rows)
+    public function __construct(StandingTable $table)
     {
-        parent::__construct($stage);
+        parent::__construct($table);
     }
 
     /**
@@ -29,12 +27,19 @@ class StandingTableResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $table = $this->resource;
+
         return [
-            'stageId' => $this->stage->id,
-            'stageName' => $this->stage->name,
+            'stageId' => $table->stage->id,
+            'stageName' => $table->stage->name,
             'groupId' => null,
             'groupName' => null,
-            'scoreLabel' => $this->scoreLabel,
+            'scoreLabel' => $table->sport->scoreLabel(),
+            'allowsDraw' => $table->sport->allowsDraw(),
+            'tiebreakers' => array_map(fn (string $code): array => [
+                'code' => $code,
+                'label' => $table->sport->tiebreakerLabel($code),
+            ], $table->tiebreakers),
             'rows' => array_map(fn (StandingRow $row): array => [
                 'position' => $row->position,
                 'team' => [
@@ -50,7 +55,7 @@ class StandingTableResource extends JsonResource
                 'scoreAgainst' => $row->scoreAgainst,
                 'scoreDifference' => $row->scoreDifference(),
                 'points' => $row->points,
-            ], $this->rows),
+            ], $table->rows),
         ];
     }
 }

@@ -66,12 +66,17 @@ w kliencie.
 
 Decyzja obejmuje konsumentów kontraktu. Makiety w `packages/ui` renderują
 `lib/demo-data.ts` i kontraktu nie znają. `public-standings.tsx` miała
-początkowo sztywny napis „Bramki"; od #38 bierze etykietę ze
-`standingsScoreLabel`, który leży w danych demo obok tabeli, tak jak w
-kontrakcie.
+początkowo sztywny napis „Bramki"; od #38 brała etykietę ze
+`standingsScoreLabel`, który leżał w danych demo obok tabeli, tak jak w
+kontrakcie. Od #206 stoi na `StandingsTable` z panelu, a etykietę bierze
+z `sportSettings[sport].scoreLabel` w danych demo.
 
 Endpoint tabel po stronie backendu jeszcze nie istnieje — kiedy powstanie,
 `scoreLabel` wypełnia się ze sportu turnieju, a nie z pola w bazie: tabela nie
 jest bytem zapisywanym.
+
+*Aktualizacja (#206):* oba endpointy tabel stoją, a `scoreLabel` wypełnia
+`Sport::scoreLabel()` w `StandingTableResource`. Tym samym chwytem tabela
+niesie odtąd także `allowsDraw` i `tiebreakers`.
 
 Zapisane w [`CONTEXT.md`](../../CONTEXT.md) pod hasłem `Standing`.
