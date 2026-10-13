@@ -19,16 +19,6 @@ import { MatchEventDialog } from './match-event-dialog';
 
 const SAVE_FAILED = 'Nie udało się zapisać zdarzenia. Spróbuj ponownie.';
 
-/**
- * Nazwa zdobyczy w linii zgodności. Ta sama para co `StandingTable.scoreLabel`
- * (ADR-0006); kontrakt nie niesie jej przy sporcie, a etykiety statystyk
- * (`statLabels`, #190) jeszcze nie stoją.
- */
-const SCORE_LABELS: Record<Sport['code'], string> = {
-  football: 'Bramki',
-  basketball: 'Punkty',
-};
-
 /** Samobój należy do drużyny strzelca, a zdobycz daje przeciwnikowi (#188, reguła 9). */
 const OWN_GOAL = 'own_goal';
 
@@ -56,7 +46,7 @@ export interface MatchEventsSectionProps {
 export function MatchEventsSection({ match, sportCode, started, homeScore, awayScore, onStart, starting }: MatchEventsSectionProps) {
   const queryClient = useQueryClient();
   const events = useMatchEvents(match.id, started);
-  const { types, scoringStat } = useEventTypes(sportCode);
+  const { types, scoringStat, scoringLabel } = useEventTypes(sportCode);
   const [picking, setPicking] = useState<{ teamId: number; type: SportEventType } | null>(null);
   // Minuta zostaje między wpisami, dopóki okno jest otwarte: przy stoliku
   // organizator tylko ją podbija.
@@ -146,7 +136,7 @@ export function MatchEventsSection({ match, sportCode, started, homeScore, awayS
 
       {started && events.data && types && (
         <>
-          <MismatchLine match={match} sportCode={sportCode} events={events.data} types={types} scoringStat={scoringStat} homeScore={homeScore} awayScore={awayScore} />
+          <MismatchLine match={match} scoringLabel={scoringLabel} events={events.data} types={types} scoringStat={scoringStat} homeScore={homeScore} awayScore={awayScore} />
           <MatchTimeline events={events.data} homeTeamId={home.id} types={types} onSelect={(row) => setEditing(events.data.find((event) => event.id === row.id) ?? null)} />
         </>
       )}
@@ -241,7 +231,7 @@ function TeamColumn({
  */
 function MismatchLine({
   match,
-  sportCode,
+  scoringLabel,
   events,
   types,
   scoringStat,
@@ -249,7 +239,8 @@ function MismatchLine({
   awayScore,
 }: {
   match: AdminMatch;
-  sportCode: Sport['code'];
+  /** Etykieta zdobyczy ze `statLabels` sportu, np. „Bramki”. */
+  scoringLabel: string | undefined;
   events: MatchEvent[];
   types: SportEventType[];
   scoringStat: string | undefined;
@@ -274,7 +265,7 @@ function MismatchLine({
   return (
     // Dwa niezależne fakty rozdziela kreska `MetaList`, nie kropka (#192).
     <MetaList role="group" aria-label="Zgodność wyniku" className="text-xs text-muted-foreground">
-      <>{SCORE_LABELS[sportCode]} ze zdarzeń: {home}:{away}</>
+      <>{scoringLabel} ze zdarzeń: {home}:{away}</>
       <>wynik meczu {homeScore}:{awayScore}</>
     </MetaList>
   );

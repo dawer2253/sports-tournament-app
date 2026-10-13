@@ -795,6 +795,24 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     expect(within(dialog).queryByText(/ze zdarzeń/)).not.toBeInTheDocument();
   });
 
+  it('linia zgodności nazywa zdobycz etykietą statystyki ze sportu, a nie stałą w panelu', async () => {
+    // Etykieta inna niż „Bramki” celowo: przejdzie tylko widok, który czyta
+    // `statLabels` z `GET /sports`.
+    const [football] = SPORTS;
+    server.use(
+      http.get(`${API}/sports`, () =>
+        HttpResponse.json({ data: [{ ...football!, config: { ...football!.config, statLabels: { ...football!.config.statLabels, goals: 'Gole' } } }] }),
+      ),
+    );
+    // Wynik 1:0, a zdarzenia dają 2:0 — linia stoi.
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    serveEvents([event(1, 1), event(2, 1, { minute: 30 })]);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(await within(dialog).findByText('Gole ze zdarzeń: 2:0')).toBeInTheDocument();
+  });
+
   it('Enter w polu minuty nie wysyła PATCH meczu', async () => {
     const matches = [match(1, 1, 1, 2, LIVE)];
     serveMatches(matches);

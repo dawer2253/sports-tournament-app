@@ -34,13 +34,16 @@ export function useMatchEvents(matchId: number, enabled: boolean) {
 /**
  * Typy zdarzeń sportu turnieju i jego „zdobycz” — pierwszy wpis
  * `availableStats` (#190): bramki w piłce, punkty w koszu. Typy tej
- * statystyki dostają wyróżnione przyciski i liczą się do linii zgodności.
+ * statystyki dostają wyróżnione przyciski i liczą się do linii zgodności,
+ * która nazywa zdobycz etykietą ze `statLabels` (#207).
  */
 export function useEventTypes(sportCode: Sport['code']) {
   const sports = useSports();
   const config = sports.data?.find((sport) => sport.code === sportCode)?.config;
+  const scoringStat = config?.availableStats[0];
   return {
     types: config?.eventTypes,
-    scoringStat: config?.availableStats[0],
+    scoringStat,
+    scoringLabel: scoringStat ? config?.statLabels[scoringStat] : undefined,
   };
 }
