@@ -121,3 +121,23 @@ it('oddaje termin meczu z PATCH /matches/{match} w +00:00', function () {
 
     expectEveryDateInUtc($response, ['data.kickoffAt']);
 });
+
+it('oddaje terminy meczów z terminarza i wyników strony publicznej w +00:00', function (string $path, string $status) {
+    $tournament = Tournament::factory()->create(['status' => 'active']);
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    GameMatch::factory()->for($round)->create([
+        'kickoff_at' => '2026-10-25 09:00:00',
+        'status' => $status,
+        'home_score' => $status === 'finished' ? 1 : null,
+        'away_score' => $status === 'finished' ? 0 : null,
+    ]);
+
+    $response = $this->getJson("/api/v1/public/t/{$tournament->slug}{$path}")
+        ->assertOk()
+        ->assertJsonPath('data.0.kickoffAt', '2026-10-25T09:00:00+00:00');
+
+    expectEveryDateInUtc($response, ['data.0.kickoffAt']);
+})->with([
+    'terminarz' => ['/fixtures', 'scheduled'],
+    'wyniki' => ['/results', 'finished'],
+]);

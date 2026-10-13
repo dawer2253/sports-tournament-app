@@ -95,6 +95,11 @@ klienta.
 Publiczne endpointy nie istnieją jeszcze w Laravelu. Kiedy powstaną, obowiązek
 z tej decyzji jest częścią ich definicji gotowości, a nie osobnym ticketem.
 
+*Aktualizacja (#206):* endpointy powstały. Walidator dokłada middleware
+`AddHttpValidators` na całej grupie `/public/t/{slug}`, a odpytywanie
+przeniosło się z `apps/public/src/pages/tournament.tsx` (plik usunięty) do
+`apps/public/src/lib/queries.ts`.
+
 Mock ma tu granicę: Prism oddaje nagłówki z przykładów, więc `ETag` jest w nim
 stałą, a warunkowego `304` nie zwróci nigdy. Zachowanie walidatora sprawdza się
 dopiero na Laravelu, nie na `npm run mock`.

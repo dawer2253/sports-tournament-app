@@ -1,37 +1,40 @@
-import { Meta, Canvas, Story } from '@storybook/addon-docs/blocks'
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
 import * as Stories from './public-standings.stories'
 
 <Meta of={Stories} />
 
 # Tabela ligowa (Public): specyfikacja
 
-Publiczny, read-only widok tabeli rozgrywek (dostępny po `slug`, np. `/t/liga-osiedlowa`).
+Publiczny, read-only widok tabel turnieju pod `/t/{slug}/tabela`.
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Pokazać aktualną klasyfikację ligi zawodnikom, kibicom i sponsorom, bez logowania.
+Pokazać aktualną klasyfikację kibicom i zawodnikom, bez logowania.
 
 ## Dane (wejście)
-- Lista drużyn z agregatami liczonymi **on-read** z meczów: `M, W, R, P, zdobycze+/−, pkt`.
-- `scoreLabel`: nazwa zdobyczy w tym turnieju — nagłówek ich kolumny („Bramki" w piłce, „Punkty" w koszykówce). Makieta bierze ją ze `standingsScoreLabel` w danych demo.
-- `form`: wyniki ostatnich 5 meczów (W/R/P) jako kropki.
-- Branding turnieju: kolor wiodący (`--brand`), logo, nazwa.
+`GET /public/t/{slug}/standings`, po jednej tabeli na fazę `league` (grupy dojdą z fazą grupową):
+- `rows`: miejsca i agregaty liczone przy odczycie;
+- `scoreLabel`: nagłówek kolumny zdobyczy („Bramki”, „Punkty”, ADR-0006);
+- `allowsDraw`: czy tabela ma kolumnę R;
+- `tiebreakers`: kryteria `{ code, label }`, według których ułożono tę tabelę.
 
 ## Reguły
-- Sortowanie wg konfigurowalnej listy tiebreaków turnieju. Zdanie pod tabelą składa się z tej listy (`tiebreakers` w danych demo), więc zmienia się razem z nią.
-- Pozycja 1 wyróżniona (tło + plakietka).
-- Strefy awansu/spadku: kolor lewej krawędzi wiersza (TODO: do ustalenia per turniej).
+- Tabela to `StandingsTable` z panelu, zdanie pod nią to `TiebreakerSentence` z `tiebreakers` odpowiedzi. Zdanie zgadza się więc zawsze z wierszami.
+- Nagłówek każdej tabeli: `groupName ?? stageName`.
+- Widok kolejności nie poprawia.
 
 ## Stany
-- **Pełna tabela**: domyślny (powyżej).
-- **Brak rozegranych meczów**: wszystkie zera, kolejność wg nazwy (TODO).
-- **Faza grupowa**: osobna tabela na grupę (TODO: wariant `Grupy`).
+- **Piłka**: kolumna R, zdobycze „Bramki” (powyżej).
+- **Koszykówka**: bez kolumny R, zdobycze „Punkty”.
+
+<Canvas of={Stories.Koszykowka} />
 
 ## Zachowanie
-- Auto-odświeżanie (polling) co X s: wskaźnik „Na żywo".
-- Responsywność: na mobile chowamy kolumnę „Forma".
+- Odpytywanie co `VITE_POLL_INTERVAL_MS` (ADR-0007).
 
 ## Otwarte pytania
-- Czy pokazywać kolumnę „Forma" na MVP?
-- Strefy awansu/spadku: konfigurowalne czy stałe?
+Rozstrzygnięte w #192:
+- *Kolumna „Forma” na MVP?* Nie — future work (`docs/PLAN.md` §14).
+- *Strefy awansu/spadku?* Nie w tym kamieniu — future work (`docs/PLAN.md` §14).
+- *Skąd zdanie o kolejności?* Z `StandingTable.tiebreakers`, nie z osobnego pola turnieju: turniej i tabela odświeżają się osobno i przez jeden cykl mogłyby mówić co innego.

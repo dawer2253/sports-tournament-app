@@ -36,6 +36,7 @@ export * from './components/ui/tooltip';
 export * from './components/ui/typography';
 
 export * from './components/data/data-table';
+export * from './components/data/live-match-tile';
 export * from './components/data/match-row';
 export * from './components/data/match-row-data';
 export * from './components/data/match-event-data';
@@ -46,9 +47,13 @@ export * from './components/data/match-status-toggle';
 export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/round-list';
+export * from './components/data/round-groups';
+export * from './components/data/round-matches';
+export * from './components/data/public-overview';
 export * from './components/data/round-summary';
 export * from './components/data/score-inputs';
 export * from './components/data/standings-table';
+export * from './components/data/standings-snippet';
 export * from './components/data/standings-table-row';
 export * from './components/data/team-row';
 export * from './components/data/teams-table';
@@ -66,11 +71,13 @@ export * from './components/layout/admin-shell';
 export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
 export * from './components/layout/photo-panel';
+export * from './components/layout/public-section';
+export * from './components/layout/public-shell-tournament';
 export * from './components/layout/team-crest';
 export * from './components/layout/team-logo';
 export * from './components/layout/tournament-logo';
 
 // PublicShell celowo poza barrel-em: importuje zdjęcia hero, a Vite emituje
 // zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby
-// 300 kB grafiki, której nigdy nie użyje. Strona publiczna bierze go ze ścieżki:
-// import { PublicShell } from '@tournament/ui/components/layout/public-shell';
+// ponad 500 kB grafiki, której nigdy nie użyje. Strona publiczna bierze go ze ścieżki:
+// import { PublicShell } from '@tournament/ui/components/layout/public-shell.tsx';
