@@ -262,6 +262,20 @@ async function expectEntriesWhole(canvasElement: HTMLElement) {
   await expect(clipped.map((item) => item.textContent)).toEqual([])
 }
 
+/**
+ * Lista gospodarza kończy się równo z jego nazwą, a lista gościa zaczyna
+ * równo z jego nazwą, obie pod nazwami.
+ */
+async function expectListsUnderNames(canvasElement: HTMLElement) {
+  const row = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!
+  const [homeName, awayName] = [...row.querySelectorAll('[data-slot="match-team"]')].map((name) => name.getBoundingClientRect())
+  const [homeList, awayList] = [...row.querySelectorAll('[data-slot="match-scorers"]')].map((list) => list.getBoundingClientRect())
+  await expect(homeList!.right).toBeCloseTo(homeName!.right, 0)
+  await expect(awayList!.left).toBeCloseTo(awayName!.left, 0)
+  await expect(homeList!.top).toBeGreaterThanOrEqual(homeName!.bottom)
+  await expect(awayList!.top).toBeGreaterThanOrEqual(awayName!.bottom)
+}
+
 function ScorerRows({ className = 'max-w-3xl' }: { className?: string }) {
   return (
     <div className={cn('space-y-2', className)}>
@@ -287,6 +301,7 @@ export const Strzelcy: Story = {
     await expect(canvasElement.textContent).not.toContain('·')
     await expectColumns(canvasElement, 6)
     await expectScoreUnmoved(canvasElement)
+    await expectListsUnderNames(canvasElement)
     await expectEntriesWhole(canvasElement)
   },
 }
@@ -301,12 +316,7 @@ export const StrzelcyNaTelefonie: Story = {
   play: async ({ canvasElement }) => {
     await expectColumns(canvasElement, 3)
     await expectScoreUnmoved(canvasElement)
-    const row = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!
-    const [homeName, awayName] = [...row.querySelectorAll('[data-slot="match-team"]')].map((name) => name.getBoundingClientRect())
-    const [homeList, awayList] = [...row.querySelectorAll('[data-slot="match-scorers"]')].map((list) => list.getBoundingClientRect())
-    await expect(homeList!.right).toBeCloseTo(homeName!.right, 0)
-    await expect(awayList!.left).toBeCloseTo(awayName!.left, 0)
-    await expect(homeList!.top).toBeGreaterThanOrEqual(homeName!.bottom)
+    await expectListsUnderNames(canvasElement)
     await expectEntriesWhole(canvasElement)
   },
 }
