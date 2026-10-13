@@ -6,6 +6,7 @@ use App\Models\Player;
 use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
+use App\Models\Tournament;
 use App\Models\Venue;
 use Spectator\Spectator;
 
@@ -171,3 +172,71 @@ it('zmniejsza liczbę drużyn w szczegółach turnieju', function () {
         ->assertValidResponse(200)
         ->assertJsonPath('data.teamsCount', 1);
 });
+
+/**
+ * Puchar czterech drużyn z drabinką z generatora. Zwraca fazę; drużyny idą
+ * po `id`, więc pierwsza jest seedem 1.
+ */
+function cupWithBracket(int $teams = 4): Stage
+{
+    $tournament = Tournament::factory()->create(['name' => 'Puchar Bemowa']);
+    $ids = Team::factory()->count($teams)->for($tournament)->create()->pluck('id')->all();
+    $stage = Stage::factory()->knockout()->for($tournament)->create();
+
+    actingAsOrganizer($tournament->user)
+        ->postJson("/api/v1/stages/{$stage->id}/bracket", ['teamIds' => $ids, 'thirdPlaceMatch' => false])
+        ->assertStatus(201);
+
+    return $stage;
+}
+
+// Niezmiennik 9 z #215: drabinki nie da się załatać jak kolejki, więc przed
+// startem znika cała, a nie same mecze drużyny.
+it('w pucharze przed startem kasuje całą drabinkę fazy razem z drużyną', function () {
+    $stage = cupWithBracket();
+    $team = $stage->tournament->teams()->orderBy('id')->firstOrFail();
+
+    actingAsOrganizer($stage->tournament->user)
+        ->deleteJson("/api/v1/teams/{$team->id}")
+        ->assertValidResponse(204);
+
+    expect($team->fresh()->trashed())->toBeTrue()
+        ->and($stage->rounds()->exists())->toBeFalse()
+        ->and($stage->matches()->exists())->toBeFalse();
+});
+
+// Drużyna z wolnym losem nie gra w pierwszej rundzie, a i tak stoi w drabince.
+it('w pucharze po starcie odmawia także drużynie, która jeszcze nie grała, i niczego nie zmienia', function () {
+    $stage = cupWithBracket(3);
+    $bye = $stage->tournament->teams()->orderBy('id')->firstOrFail();
+    $bye->update(['name' => 'Wilki Bemowo']);
+    $stage->matches()->whereHas('round', fn ($query) => $query->where('order', 1))->firstOrFail()
+        ->update(['status' => 'live', 'home_score' => 1, 'away_score' => 0]);
+    $before = teamDeletionScheduleSnapshot();
+
+    actingAsOrganizer($stage->tournament->user)
+        ->deleteJson("/api/v1/teams/{$bye->id}")
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors', ['id' => ['Nie można usunąć: drużyna „Wilki Bemowo” gra w drabince, która już się rozpoczęła. Wycofanie drużyny wpisz jako walkower.']]);
+
+    expect($bye->fresh()->trashed())->toBeFalse()
+        ->and(teamDeletionScheduleSnapshot())->toEqual($before);
+});
+
+// Drużyna dodana po wygenerowaniu nie stoi w drabince (#215, „Panel”), więc
+// jej usunięcie drabinki nie dotyczy — także po starcie.
+it('w pucharze usuwa drużynę spoza drabinki bez ruszania drabinki', function (bool $started) {
+    $stage = cupWithBracket();
+    if ($started) {
+        $stage->matches()->whereHas('round', fn ($query) => $query->where('order', 1))->firstOrFail()
+            ->update(['status' => 'finished', 'home_score' => 1, 'away_score' => 0]);
+    }
+    $late = Team::factory()->for($stage->tournament)->create();
+    $before = teamDeletionScheduleSnapshot();
+
+    actingAsOrganizer($stage->tournament->user)
+        ->deleteJson("/api/v1/teams/{$late->id}")
+        ->assertValidResponse(204);
+
+    expect(teamDeletionScheduleSnapshot())->toEqual($before);
+})->with(['przed startem' => false, 'po starcie' => true]);

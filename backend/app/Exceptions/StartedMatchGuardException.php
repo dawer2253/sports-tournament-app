@@ -26,4 +26,15 @@ class StartedMatchGuardException extends ValidationException
             'id' => ["Nie można usunąć: {$what} ma rozegrane lub trwające mecze."],
         ]);
     }
+
+    /**
+     * Drużyna w drabince, która już się rozpoczęła (#215). Drabinki nie da się
+     * załatać, więc odmowa obejmuje też drużynę bez rozegranego meczu.
+     */
+    public static function forBracket(string $teamName): self
+    {
+        return static::withMessages([
+            'id' => ["Nie można usunąć: drużyna „{$teamName}” gra w drabince, która już się rozpoczęła. Wycofanie drużyny wpisz jako walkower."],
+        ]);
+    }
 }
