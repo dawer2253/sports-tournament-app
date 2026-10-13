@@ -1,4 +1,4 @@
-import type { Match } from '@tournament/api-client';
+import type { PublicMatch } from '@tournament/api-client';
 import { EmptyState, RoundMatches, groupByRound } from '@tournament/ui';
 import { CalendarDays } from 'lucide-react';
 import { useMemo } from 'react';
@@ -9,7 +9,7 @@ import { useTournament } from './tournament-layout';
  * dla Terminarza, Wyników i Przeglądu, żeby „najbliższa” i „ostatnia”
  * kolejka znaczyły wszędzie to samo.
  */
-export function useRounds(matches: Match[] | undefined, direction: 'asc' | 'desc') {
+export function useRounds(matches: PublicMatch[] | undefined, direction: 'asc' | 'desc') {
   const { stages } = useTournament();
   return useMemo(() => {
     const stageOrder = new Map(stages.map((stage) => [stage.id, stage.order]));
@@ -20,7 +20,7 @@ export function useRounds(matches: Match[] | undefined, direction: 'asc' | 'desc
 /**
  * Mecze po kolejce dla Terminarza i Wyników: `RoundList` i `MatchRow`
  * z panelu, bez kolizji i ułamka „zakończone/wszystkie”, z oznaczeniem tylko
- * meczu na żywo. Godziny liczy strefa przeglądarki (`Tournament.timezone`
+ * meczu na żywo i ze strzelcami pod wynikiem (#208). Godziny liczy strefa przeglądarki (`Tournament.timezone`
  * odłożone, #158).
  */
 export function MatchRounds({
@@ -28,7 +28,7 @@ export function MatchRounds({
   direction,
   empty,
 }: {
-  matches: Match[];
+  matches: PublicMatch[];
   direction: 'asc' | 'desc';
   empty: string;
 }) {
