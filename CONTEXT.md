@@ -294,6 +294,23 @@ Tabela niesie też `scoreLabel` — etykietę, pod jaką zdobycze występują
 w interfejsie tego turnieju — oraz `allowsDraw` sportu i kryteria
 (`tiebreakers`), według których ją ułożono.
 
+## StatLeaderboard (klasyfikacja)
+
+Ranking zawodników turnieju według jednej statystyki sportu: bramek, kartek,
+punktów, fauli. Statystyki sportu to jego `availableStats`, z etykietami
+w `statLabels`, a pierwsza z nich jest domyślna. Tak jak tabela, klasyfikacja
+nie jest bytem zapisywanym: liczy się przy odczycie z meczów zakończonych ze
+wszystkich faz turnieju, jedna na turniej.
+
+Wartość zawodnika to suma `value` typów zdarzeń, których `stat` to wybrana
+statystyka: kartka i faul liczą się sztuką, rzuty w koszu po 1, 2 i 3.
+Samobój (`stat: null`) nie wchodzi do żadnej klasyfikacji, a zdarzenie bez
+zawodnika też nie. Na liście są wszyscy z wartością większą od zera. Przy
+równej wartości pozycja jest dzielona, a zawodnicy ex aequo idą po id.
+
+_Unikaj_: *top scorers* i „strzelcy” jako nazwy kanonicznej — to etykieta UI
+dla piłki, ten sam chwyt co przy `Score` (ADR 0003).
+
 ## Tiebreaker (kryterium rozstrzygające)
 
 Reguła ustalająca kolejność drużyn, które mają tyle samo punktów. Turniej ma
