@@ -62,6 +62,7 @@ export * from './components/data/public-overview';
 export * from './components/data/round-summary';
 export * from './components/data/round-tabs';
 export * from './components/data/seeding-list';
+export * from './components/data/seeding-team';
 export * from './components/data/score-inputs';
 export * from './components/data/standings-table';
 export * from './components/data/standings-snippet';

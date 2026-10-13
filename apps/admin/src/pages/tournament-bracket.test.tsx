@@ -162,11 +162,15 @@ function renderBracket(search = '') {
   return { user: userEvent.setup(), router };
 }
 
-/** Wiersze meczów wybranej rundy, po nazwie dostępnej. */
+/**
+ * Wiersze meczów wybranej rundy, po nazwie dostępnej. Są tylko do odczytu
+ * (okno meczu dokłada #228), więc to grupy, a nie przyciski.
+ */
 function matchRows() {
-  return screen
-    .getAllByRole('button')
-    .filter((element) => element.getAttribute('data-slot') === 'bracket-match-row')
+  const panel = screen.getByRole('tabpanel');
+  expect(within(panel).queryAllByRole('button')).toHaveLength(0);
+  return within(panel)
+    .getAllByRole('group')
     .map((row) => row.getAttribute('aria-label'));
 }
 

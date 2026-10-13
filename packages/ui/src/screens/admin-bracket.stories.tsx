@@ -23,7 +23,7 @@ export const Domyslny: Story = {
     await expect(canvas.getByText(/Wolne losy \(bez meczu w 1\. rundzie\)/)).toBeInTheDocument()
 
     await userEvent.click(canvas.getByRole('tab', { name: /^Finał/ }))
-    const rows = within(canvas.getByRole('list', { name: 'Finał' })).getAllByRole('button')
+    const rows = within(canvas.getByRole('list', { name: 'Finał' })).getAllByRole('group')
     await expect(rows.map((row) => row.getAttribute('aria-label'))).toEqual([
       'Mecz o 3. miejsce: Dragons – Przegrany: Półfinał 2',
       'Finał: FC Górka – Zwycięzca: Półfinał 2',

@@ -319,8 +319,8 @@ function RoundsView({ rounds, matches }: { rounds: BracketRound[]; matches: Admi
         <ul className="space-y-2">
           {round.matches.map((match) => (
             <li key={match.id}>
-              {/* Okno meczu z wynikiem i karnymi dokłada #228. */}
-              <BracketMatchRow match={bracketRow(match, matches)} onSelect={() => {}} />
+              {/* Tylko do odczytu: okno meczu z wynikiem i karnymi dokłada #228. */}
+              <BracketMatchRow match={bracketRow(match, matches)} />
             </li>
           ))}
         </ul>

@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { teams } from '../../lib/demo-data'
-import { SeedingList, type SeedingListProps, type SeedingTeam } from './seeding-list'
+import { SeedingList, type SeedingListProps } from './seeding-list'
+import type { SeedingTeam } from './seeding-team'
 
 const six: SeedingTeam[] = teams.slice(0, 6).map(({ id, name }) => ({ id, name }))
 

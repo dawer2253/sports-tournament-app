@@ -4,10 +4,8 @@ import { cn } from '../../lib/utils'
 import { Button } from '../ui/button'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
+import type { SeedingTeam } from './seeding-team'
 import { TiebreakerOrdinal } from './tiebreaker-list'
-
-/** Drużyna na liście rozstawienia; podzbiór `Team` z kontraktu. */
-export type SeedingTeam = { id: number; name: string }
 
 /** Ile pierwszych pozycji da się zablokować przed losowaniem (#217, ustalenie 2). */
 const SEEDING_LOCK_OPTIONS = [0, 1, 2, 4, 8] as const

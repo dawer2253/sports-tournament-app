@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { firstRoundPairs } from '../../lib/bracket'
 import { cn } from '../../lib/utils'
-import type { SeedingTeam } from './seeding-list'
+import type { SeedingTeam } from './seeding-team'
 
 export interface FirstRoundPreviewProps {
   /** Drużyny w kolejności rozstawienia, jak w `SeedingList`. */

@@ -4,7 +4,8 @@ import { TournamentShellDemo } from './shell-demo'
 import { BracketChampion, BracketMatchRow } from '../components/data/bracket-match-row'
 import { FirstRoundPreview } from '../components/data/first-round-preview'
 import { RoundTabs } from '../components/data/round-tabs'
-import { SeedingList, type SeedingTeam } from '../components/data/seeding-list'
+import { SeedingList } from '../components/data/seeding-list'
+import type { SeedingTeam } from '../components/data/seeding-team'
 import { Button } from '../components/ui/button'
 import {
   DropdownMenu,
@@ -136,7 +137,7 @@ export function AdminBracket({ state = 'w-trakcie' }: AdminBracketProps) {
       <ul aria-label={round.summary.name} className="space-y-2">
         {round.matches.map((match) => (
           <li key={match.id}>
-            <BracketMatchRow match={match} timeZone={scheduleTimeZone} onSelect={() => {}} />
+            <BracketMatchRow match={match} timeZone={scheduleTimeZone} />
           </li>
         ))}
       </ul>
