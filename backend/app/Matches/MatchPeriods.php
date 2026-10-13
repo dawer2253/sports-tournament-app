@@ -40,9 +40,10 @@ final readonly class MatchPeriods
     }
 
     /**
-     * Numer części zdarzenia z minuty: `min(count, ceil(minute / minutes))`,
-     * więc doliczony czas zapisany zwykłą liczbą i dogrywka trafiają do
-     * ostatniej części. `null` bez minuty i w turnieju bez podziału.
+     * Numer części zdarzenia z minuty: `min(count, ceil(minute / minutes))`.
+     * Doliczony czas zapisany zwykłą liczbą trafia więc do następnej części
+     * („45+2” → `47` → 2. połowa), a dogrywka do ostatniej. `null` bez
+     * minuty i w turnieju bez podziału.
      */
     public function periodOf(?int $minute): ?int
     {

@@ -4068,8 +4068,9 @@ components:
               minimum: 1
               description: |
                 Numer części meczu według `Tournament.periods`:
-                `min(count, ceil(minute / minutes))`, więc doliczony czas
-                i dogrywka trafiają do ostatniej części. `null` przy zdarzeniu
+                `min(count, ceil(minute / minutes))`. Doliczony czas zapisany
+                zwykłą liczbą trafia do następnej części („45+2” → `47` →
+                2. połowa), a dogrywka do ostatniej. `null` przy zdarzeniu
                 bez minuty i przy każdym zdarzeniu turnieju bez podziału
                 (`count: 1`).
             scoreAfter:

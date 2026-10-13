@@ -1,7 +1,7 @@
 import { AlertTriangle, Check, ChevronRight, MapPin } from 'lucide-react'
-import type { MouseEvent, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { formatKickoff } from '../../lib/kickoff'
-import { cn } from '../../lib/utils'
+import { cn, isModifiedClick } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
 import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
@@ -147,11 +147,6 @@ export interface MatchRowProps {
   statusDisplay?: 'badge' | 'live'
   /** Klasy opakowania wiersza, czyli kontenera, od którego liczy się próg układu. */
   className?: string
-}
-
-/** Czy klik ma zostać przeglądarce: inny przycisk albo klawisz modyfikujący (nowa karta, okno). */
-function isModifiedClick(event: MouseEvent) {
-  return event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
 }
 
 /**

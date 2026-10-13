@@ -1,5 +1,6 @@
 import type * as React from 'react'
 import { CalendarClock, ChevronRight, History, ListOrdered, Radio, Trophy } from 'lucide-react'
+import { isModifiedClick } from '../../lib/utils'
 import { PublicSection } from '../layout/public-section'
 import { Button } from '../ui/button'
 import { LeaderboardLeaders } from './leaderboard-leaders'
@@ -104,7 +105,7 @@ export function PublicOverview({
     return {
       href: matchHref(match),
       onClick: (event: React.MouseEvent) => {
-        if (!onMatchNavigate) return
+        if (!onMatchNavigate || isModifiedClick(event)) return
         event.preventDefault()
         onMatchNavigate(match)
       },

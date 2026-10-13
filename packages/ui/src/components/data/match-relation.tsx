@@ -109,7 +109,7 @@ function GroupBlock({
   const panelId = useId()
   return (
     <section className="rounded-xl border bg-card shadow-sm">
-      <h3>
+      <Heading level="card" as="h3">
         <button
           type="button"
           aria-expanded={open}
@@ -124,7 +124,7 @@ function GroupBlock({
             <ChevronDown aria-hidden className={cn('size-4 transition-transform', open && 'rotate-180')} />
           </span>
         </button>
-      </h3>
+      </Heading>
       <div id={panelId} hidden={!open} className="border-t px-4">
         {open && <EventList events={group.events} homeTeamId={homeTeamId} />}
       </div>

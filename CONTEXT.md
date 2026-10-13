@@ -225,8 +225,9 @@ meczu. Jedna część znaczy „bez podziału”.
 **Etykieta wynika z liczby części, nie ze sportu**: 2 → „połowa”, 3 →
 „tercja”, 4 → „kwarta”, inna liczba → „część” („1. połowa”, „3. kwarta”).
 
-Zdarzenie należy do części `min(liczba części, ⌈minuta / minuty części⌉)`, więc
-doliczony czas i dogrywka trafiają do ostatniej części. Zdarzenie bez minuty
+Zdarzenie należy do części `min(liczba części, ⌈minuta / minuty części⌉)`.
+Doliczony czas zapisany zwykłą liczbą trafia więc do następnej części („45+2”
+→ `47` → 2. połowa), a dogrywka do ostatniej. Zdarzenie bez minuty
 i każde zdarzenie turnieju bez podziału nie ma części. Część liczy się przy
 odczycie, więc zmiana ustawienia działa wstecz na wszystkie mecze turnieju.
 Z części korzysta relacja na stronie meczu (`PublicMatchDetail`).

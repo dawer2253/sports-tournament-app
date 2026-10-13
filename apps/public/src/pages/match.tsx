@@ -18,7 +18,8 @@ export function MatchPage() {
   const id = Number(matchId);
   const match = usePublicMatch(slug, id);
 
-  // Adres z nie-liczbą nie trafi w żaden mecz: od razu 404, bez pytania API.
+  // Adres z nie-liczbą nie trafi w żaden mecz: 404 od razu, nie po odpowiedzi
+  // API (zapytanie i tak idzie, bo hooka nie da się wołać warunkowo).
   if (!Number.isInteger(id) || id < 1 || match.data === null) {
     return (
       <EmptyState
