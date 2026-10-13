@@ -170,13 +170,13 @@ describe('odpytywanie', () => {
       renderAt(`/t/${SLUG}`);
       await screen.findByRole('region', { name: 'Tabela (skrót)' });
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null] }),
+        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0 }),
       );
 
       await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null] }),
+        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0 }),
       );
     },
   );

@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router';
 import { FixturesPage } from './pages/fixtures';
+import { MatchPage } from './pages/match';
 import { NotFoundPage } from './pages/not-found';
 import { OverviewPage } from './pages/overview';
 import { ResultsPage } from './pages/results';
@@ -11,7 +12,7 @@ import { TournamentLayout, type TabHandle } from './pages/tournament-layout';
 /**
  * Drzewo tras strony publicznej, osobno od `main.tsx`: testy renderują
  * dokładnie to drzewo w routerze pamięciowym. Trasy po polsku (#192).
- * Strona meczu (#205) i drabinka (S4) dołożą tu swoje.
+ * Drabinka (S4) dołoży tu swoje.
  */
 export const routes: RouteObject[] = [
   {
@@ -36,6 +37,8 @@ export const routes: RouteObject[] = [
       { path: 'terminarz', element: <FixturesPage />, handle: { tab: 'fixtures' } satisfies TabHandle },
       { path: 'wyniki', element: <ResultsPage />, handle: { tab: 'results' } satisfies TabHandle },
       { path: 'statystyki', element: <StatsPage />, handle: { tab: 'stats' } satisfies TabHandle },
+      // Strona meczu (#210) nie jest zakładką: shell niczego nie podświetla.
+      { path: 'mecze/:matchId', element: <MatchPage /> },
       // Nieznana podtrasa: 404 aplikacji pod nagłówkiem turnieju, bez aktywnej zakładki.
       { path: '*', element: <NotFoundPage /> },
     ],

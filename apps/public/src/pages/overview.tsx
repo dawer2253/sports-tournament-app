@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router';
 import { useFixtures, useLeaderboard, useResults, useStandings } from '../lib/queries';
 import { useRounds } from './match-rounds';
 import { QueryState } from './query-state';
-import { tabHref, useTournament } from './tournament-layout';
+import { matchHref, tabHref, useTournament } from './tournament-layout';
 
 /**
  * Przegląd (#206) na `PublicOverview` z DS, z kartą lidera domyślnej
- * statystyki (#207). Turniej `finished` niczego nie dokłada — kafel
+ * statystyki (#207). Każdy mecz i „Śledź na żywo” prowadzą na stronę meczu
+ * (#210). Turniej `finished` niczego nie dokłada — kafel
  * „Zwycięzca” jest w future work.
  *
  * Zapytania stoją niezależnie: sekcje z jednego źródła pokazują się,
@@ -29,6 +30,8 @@ export function OverviewPage() {
       leaderboard={leaderboard.data}
       linkHref={(key) => tabHref(slug, key)}
       onNavigate={(key) => void navigate(tabHref(slug, key))}
+      matchHref={(match) => matchHref(slug, match.id)}
+      onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
       status={{
         fixtures: !fixtures.data && (
           <QueryState error={fixtures.error} label="meczów" onRetry={() => void fixtures.refetch()} />

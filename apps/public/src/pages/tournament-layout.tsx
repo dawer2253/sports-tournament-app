@@ -20,6 +20,11 @@ export function tabHref(slug: string, key: PublicNavKey): string {
   return TAB_PATHS[key] ? `/t/${slug}/${TAB_PATHS[key]}` : `/t/${slug}`;
 }
 
+/** Adres strony meczu (#210). */
+export function matchHref(slug: string, matchId: number): string {
+  return `/t/${slug}/mecze/${matchId}`;
+}
+
 const NOT_FOUND = 'Nie ma takiego turnieju';
 const FAILED = 'Nie udało się wczytać turnieju';
 

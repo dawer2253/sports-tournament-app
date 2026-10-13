@@ -105,9 +105,9 @@ describe('Terminarz', () => {
     renderAt(`/t/${SLUG}/terminarz`);
 
     const round = within(await screen.findByRole('region', { name: 'Kolejka 1' }));
-    const live = round.getByRole('group', { name: 'Gospodarz 1 – Gość 1' });
+    const live = round.getByRole('link', { name: 'Gospodarz 1 – Gość 1' });
     expect(scorersOf('Gość 1', live)).toEqual(["Tomasz Lis 12'"]);
-    expect(within(round.getByRole('group', { name: 'Gospodarz 2 – Gość 2' })).queryByRole('list')).not.toBeInTheDocument();
+    expect(within(round.getByRole('link', { name: 'Gospodarz 2 – Gość 2' })).queryByRole('list')).not.toBeInTheDocument();
   });
 });
 

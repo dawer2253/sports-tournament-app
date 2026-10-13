@@ -2,11 +2,14 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SLUG, finished, leaderRow, leaderboard, match, publicApi, renderAt, row, table } from '../test/public-api';
 
-/** Nazwy par w sekcji, w kolejności z DOM-u (`MatchRow` ma nazwę „gospodarz – gość”). */
+/**
+ * Nazwy par w sekcji, w kolejności z DOM-u. `MatchRow` to odnośnik na stronę
+ * meczu (#210) z nazwą „gospodarz – gość”; odnośnik nagłówka sekcji odpada.
+ */
 function pairsIn(section: string) {
   return within(screen.getByRole('region', { name: section }))
-    .getAllByRole('group')
-    .map((group) => group.getAttribute('aria-label'));
+    .getAllByRole('link', { name: / – / })
+    .map((link) => link.getAttribute('aria-label'));
 }
 
 /** Tytuły sekcji Przeglądu w kolejności z DOM-u. */
@@ -30,7 +33,11 @@ describe('Przegląd', () => {
       'Gospodarz 1 – Gość 1',
       'Gospodarz 2 – Gość 2',
     ]);
-    expect(live.getAllByRole('link', { name: /Śledź na żywo/ })[0]).toHaveAttribute('href', `/t/${SLUG}/terminarz`);
+    // #210 zmienia punkt 1 Przeglądu z #206: „Śledź na żywo” prowadzi na stronę meczu.
+    expect(live.getAllByRole('link', { name: /Śledź na żywo/ }).map((link) => link.getAttribute('href'))).toEqual([
+      `/t/${SLUG}/mecze/1`,
+      `/t/${SLUG}/mecze/2`,
+    ]);
   });
 
   it('bez meczu live sekcji „Na żywo” nie ma', async () => {

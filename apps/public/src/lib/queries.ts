@@ -49,6 +49,21 @@ export const useStandings = (slug: string) =>
 export const useFixtures = (slug: string) =>
   usePublicQuery(['public', slug, 'fixtures'], () => unwrap(api.GET('/public/t/{slug}/fixtures', path(slug))));
 
+/**
+ * Strona meczu (#210) albo `null`, gdy meczu nie ma (`404`: nieznany mecz,
+ * mecz innego turnieju), z tego samego powodu co `usePublicTournament`:
+ * „nie ma” to odpowiedź, a odpytywanie trwa.
+ */
+export const usePublicMatch = (slug: string, matchId: number) =>
+  usePublicQuery(['public', slug, 'match', matchId], () =>
+    unwrap(api.GET('/public/t/{slug}/matches/{match}', { params: { path: { slug, match: matchId } } })).catch(
+      (error: unknown) => {
+        if (isNotFound(error)) return null;
+        throw error;
+      },
+    ),
+  );
+
 export const useResults = (slug: string) =>
   usePublicQuery(['public', slug, 'results'], () => unwrap(api.GET('/public/t/{slug}/results', path(slug))));
 
