@@ -88,49 +88,70 @@ export function MatchLink({
 export const TILE_H = 52;
 
 /**
- * Linia drużyny: nazwa i, po karnych, ich wynik w nawiasie tuż przed szarym
- * polem. Wysokość linii `leading-normal` mieści dolne wydłużenia („y”, „ę”),
- * które `truncate` przy `leading-none` obcinał.
+ * Linia drużyny. Wysokość linii `leading-normal` mieści dolne wydłużenia
+ * („y”, „ę”), które `truncate` przy `leading-none` obcinał.
  */
-function TeamLine({
-  team,
-  source,
-  outcome,
-  penalties,
-}: {
-  team: ProtoTeam | null;
-  source?: string;
-  outcome: 'won' | 'lost' | null;
-  penalties: number | null;
-}) {
+function TeamLine({ team, source, outcome }: { team: ProtoTeam | null; source?: string; outcome: 'won' | 'lost' | null }) {
   return (
     <span
       className={cn(
-        'flex h-[22px] min-w-0 items-center gap-1.5 leading-normal',
+        'flex h-[22px] min-w-0 items-center leading-normal',
         !team && 'text-[11px] italic text-muted-foreground',
         outcome === 'won' && 'font-semibold',
         outcome === 'lost' && 'text-muted-foreground',
       )}
     >
       <span className="min-w-0 flex-1 truncate">{team?.name ?? source ?? 'Do ustalenia'}</span>
-      {penalties !== null && (
-        <span className="shrink-0 text-[11px] font-normal text-muted-foreground tabular-nums">({penalties})</span>
-      )}
     </span>
   );
 }
 
-function ScoreLine({ score, outcome, live }: { score: number | null; outcome: 'won' | 'lost' | null; live: boolean }) {
+/**
+ * Wynik jednej drużyny w szarym polu: karne w nawiasie i wynik meczu, każde
+ * w swojej kolumnie. Kolumna karnych stoi w każdym kaflu sportu z remisem,
+ * także bez karnych, więc pole ma zawsze tę samą szerokość, a wynik to samo
+ * miejsce. Zwycięzca ma pogrubiony wynik i karne.
+ */
+function ScoreLine({
+  score,
+  penalties,
+  penaltySlot,
+  outcome,
+  live,
+}: {
+  score: number | null;
+  penalties: number | null;
+  penaltySlot: boolean;
+  outcome: 'won' | 'lost' | null;
+  live: boolean;
+}) {
   return (
     <span
       className={cn(
-        'flex h-[22px] items-center justify-end leading-normal',
-        outcome === 'won' && 'font-semibold',
-        outcome === 'lost' && 'text-muted-foreground',
-        live && 'font-semibold text-destructive',
+        'grid h-[22px] items-center justify-end gap-0.5 leading-normal',
+        penaltySlot ? 'grid-cols-[1.375rem_1.25rem]' : 'grid-cols-[1.75rem]',
       )}
     >
-      {score ?? '–'}
+      {penaltySlot && (
+        <span
+          className={cn(
+            'text-right text-[11px]',
+            outcome === 'won' ? 'font-semibold text-foreground' : 'text-muted-foreground',
+          )}
+        >
+          {penalties !== null && `(${penalties})`}
+        </span>
+      )}
+      <span
+        className={cn(
+          'text-right',
+          outcome === 'won' && 'font-semibold',
+          outcome === 'lost' && 'text-muted-foreground',
+          live && 'font-semibold text-destructive',
+        )}
+      >
+        {score ?? '–'}
+      </span>
     </span>
   );
 }
@@ -138,8 +159,8 @@ function ScoreLine({ score, outcome, live }: { score: number | null; outcome: 'w
 /**
  * Kafel meczu w dwóch liniach: drużyna na linię, wynik w szarym polu stałej
  * szerokości po prawej. Zaplanowany mecz ma tam termin, jak SofaScore. Karne
- * stoją w nawiasie przy nazwie, poza szarym polem, więc pole ma tę samą
- * szerokość w każdym kaflu, z karnymi i bez.
+ * stoją w szarym polu w nawiasie przed wynikiem; w sporcie z remisem pole
+ * zawsze ma na nie miejsce, w koszu (bez remisów) jest węższe.
  */
 export function MatchTile({
   match,
@@ -157,6 +178,8 @@ export function MatchTile({
   const outcome = (side: 'home' | 'away') => (winner === null ? null : winner === side ? 'won' : 'lost');
   const live = match.status === 'live';
   const when = kickoffParts(match.kickoffAt);
+  // Karne istnieją tylko w sporcie z remisem (#216); w koszu pole ich nie rezerwuje.
+  const penaltySlot = useProto().sport === 'football';
   return (
     <MatchLink
       match={match}
@@ -169,10 +192,15 @@ export function MatchTile({
     >
       {live && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-destructive" />}
       <span className="flex min-w-0 flex-col justify-center py-1 pr-1 pl-2.5">
-        <TeamLine team={match.homeTeam} source={sources ? match.homeSource : undefined} outcome={outcome('home')} penalties={match.homePenalties} />
-        <TeamLine team={match.awayTeam} source={sources ? match.awaySource : undefined} outcome={outcome('away')} penalties={match.awayPenalties} />
+        <TeamLine team={match.homeTeam} source={sources ? match.homeSource : undefined} outcome={outcome('home')} />
+        <TeamLine team={match.awayTeam} source={sources ? match.awaySource : undefined} outcome={outcome('away')} />
       </span>
-      <span className="flex w-12 shrink-0 flex-col justify-center border-l bg-muted/30 px-2 tabular-nums">
+      <span
+        className={cn(
+          'flex shrink-0 flex-col justify-center border-l bg-muted/30 px-1.5 tabular-nums',
+          penaltySlot ? 'w-14' : 'w-11',
+        )}
+      >
         {match.status === 'scheduled' ? (
           <span className="flex flex-col items-end gap-1 text-[11px] leading-none text-muted-foreground">
             <span>{when.day}</span>
@@ -180,8 +208,8 @@ export function MatchTile({
           </span>
         ) : (
           <>
-            <ScoreLine score={match.homeScore} outcome={outcome('home')} live={live} />
-            <ScoreLine score={match.awayScore} outcome={outcome('away')} live={live} />
+            <ScoreLine score={match.homeScore} penalties={match.homePenalties} penaltySlot={penaltySlot} outcome={outcome('home')} live={live} />
+            <ScoreLine score={match.awayScore} penalties={match.awayPenalties} penaltySlot={penaltySlot} outcome={outcome('away')} live={live} />
           </>
         )}
       </span>

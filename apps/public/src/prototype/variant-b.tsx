@@ -78,7 +78,7 @@ export function VariantB({ bracket }: { bracket: ProtoBracket }) {
                   onClick={() => shift(i)}
                   className={cn(
                     'relative h-8 rounded-md text-xs font-medium tabular-nums',
-                    inWindow ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70',
+                    inWindow ? 'bg-brand text-brand-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/70',
                   )}
                 >
                   {round.short}
