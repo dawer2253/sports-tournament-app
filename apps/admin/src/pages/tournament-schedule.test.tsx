@@ -508,6 +508,25 @@ describe('Terminarz — okno meczu (#176)', () => {
     expect(bodies[0]).toMatchObject({ status: 'scheduled', homeScore: null, awayScore: null });
   });
 
+  it('remis „Zakończony” w lidze nie pokazuje karnych ani notki i nie wysyła karnych', async () => {
+    const matches = [match(1, 1, 1, 2)];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(dialog).toHaveAccessibleDescription('Kolejka 1 · mecz 1');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await user.type(within(dialog).getByLabelText('Wynik Wilki Bemowo'), '1');
+    await user.type(within(dialog).getByLabelText('Wynik Sokoły Ursus'), '1');
+
+    expect(within(dialog).queryByLabelText(/^Karne /)).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('status')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).not.toHaveProperty('homePenalties');
+  });
+
   it('„Trwa” na meczu bez wyniku wstawia 0:0', async () => {
     const matches = [match(1, 1, 1, 2)];
     serveMatches(matches);

@@ -26,7 +26,7 @@ export interface BracketMatchRowProps {
   match: BracketMatchRowData
   /** Strefa terminu; bez niej strefa przeglądarki (ADR-0008). */
   timeZone?: string
-  /** Gdy podane, wiersz jest przyciskiem (okno meczu dokłada #228). */
+  /** Gdy podane, wiersz jest przyciskiem otwierającym okno meczu (#228). */
   onSelect?: () => void
   className?: string
 }

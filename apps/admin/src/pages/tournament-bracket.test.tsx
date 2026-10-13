@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { AdminMatch, Team, Tournament } from '@tournament/api-client';
+import type { AdminMatch, Sport, Team, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -106,6 +106,29 @@ function bracket(overrides: Record<number, Partial<AdminMatch>> = {}): AdminMatc
   ];
 }
 
+/** Sporty z kontraktu, okrojone do tego, czego używa okno meczu: remisy i typy zdarzeń. */
+function sport(id: number, code: Sport['code'], name: string, allowsDraw: boolean): Sport {
+  return {
+    id,
+    code,
+    name,
+    config: {
+      allowsDraw,
+      defaultPoints: { win: 3, draw: 1, loss: 0 },
+      defaultMatchDuration: 60,
+      defaultPeriods: { count: 2, minutes: 45 },
+      eventTypes: [{ code: 'goal', label: 'Bramka', hasPlayer: true, value: 1, stat: 'goals' }],
+      defaultTiebreakers: ['points'],
+      availableTiebreakers: ['points'],
+      tiebreakerLabels: {},
+      availableStats: ['goals'],
+      statLabels: { goals: 'Bramki' },
+    },
+  };
+}
+
+const SPORTS: Sport[] = [sport(1, 'football', 'Piłka nożna', true), sport(2, 'basketball', 'Koszykówka', false)];
+
 const MATCHES_URL = `${API}/tournaments/${TOURNAMENT.id}/matches`;
 const BRACKET_URL = `${API}/stages/${CUP_STAGE.id}/bracket`;
 
@@ -146,6 +169,9 @@ beforeEach(() => {
     tournamentStages([CUP_STAGE]),
     http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => HttpResponse.json({ data: TEAMS })),
     http.get(`${API}/tournaments/${TOURNAMENT.id}/venues`, () => HttpResponse.json({ data: [] })),
+    // Okno meczu bierze remisy i typy zdarzeń ze sportu, a mecz rozpoczęty pobiera zdarzenia.
+    http.get(`${API}/sports`, () => HttpResponse.json({ data: SPORTS })),
+    http.get(`${API}/matches/:match/events`, () => HttpResponse.json({ data: [] })),
   );
 });
 
@@ -163,15 +189,10 @@ function renderBracket(search = '') {
   return { user: userEvent.setup(), router };
 }
 
-/**
- * Wiersze meczów wybranej rundy, po nazwie dostępnej. Są tylko do odczytu
- * (okno meczu dokłada #228), więc to grupy, a nie przyciski.
- */
+/** Wiersze meczów wybranej rundy, po nazwie dostępnej. Każdy otwiera okno meczu (#228). */
 function matchRows() {
-  const panel = screen.getByRole('tabpanel');
-  expect(within(panel).queryAllByRole('button')).toHaveLength(0);
-  return within(panel)
-    .getAllByRole('group')
+  return within(screen.getByRole('tabpanel'))
+    .getAllByRole('button')
     .map((row) => row.getAttribute('aria-label'));
 }
 
@@ -452,5 +473,236 @@ describe('Drabinka — nawigacja', () => {
       expect(within(tabs).getByText('Terminarz').closest('a')).toHaveAttribute('href', `/tournaments/${TOURNAMENT.id}/schedule`),
     );
     expect(within(tabs).getByText('Terminarz').closest('a')).not.toHaveAttribute('aria-disabled');
+  });
+});
+
+/** Drużyna z `TEAMS` w kształcie slotu meczu. */
+function ref(teamId: number) {
+  const { name, logoUrl } = TEAMS.find((candidate) => candidate.id === teamId)!;
+  return { id: teamId, name, logoUrl };
+}
+
+const WON_2_1 = { status: 'finished', homeScore: 2, awayScore: 1 } as const;
+
+/**
+ * Ćwierćfinały rozegrane 2:1, więc półfinały mają już obie drużyny:
+ * Lwy Mokotów – Sokoły Ursus i Orły Wola – Rysie Bielany.
+ */
+function semis(extra: Record<number, Partial<AdminMatch>> = {}): AdminMatch[] {
+  const base: Record<number, Partial<AdminMatch>> = {
+    102: WON_2_1,
+    104: WON_2_1,
+    201: { awayTeam: ref(4) },
+    202: { awayTeam: ref(3) },
+  };
+  const ids = new Set([...Object.keys(base), ...Object.keys(extra)].map(Number));
+  return bracket(Object.fromEntries([...ids].map((id) => [id, { ...base[id], ...extra[id] }])));
+}
+
+const MATCH_PATCH_URL = `${API}/matches/:match`;
+
+/** Zapis meczu: zapisuje ciała i oddaje mecz z nałożonymi zmianami albo podaną odpowiedź. */
+function serveSave(state: { matches: AdminMatch[] }, respond?: () => Response) {
+  const bodies: Record<string, unknown>[] = [];
+  server.use(
+    http.patch(MATCH_PATCH_URL, async ({ request, params }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      bodies.push(body);
+      if (respond) return respond();
+      const saved = state.matches.find((candidate) => candidate.id === Number(params.match))!;
+      return HttpResponse.json({ data: { ...saved, ...body } });
+    }),
+  );
+  return bodies;
+}
+
+function validationError(field: string, message: string) {
+  return () => HttpResponse.json({ message, errors: { [field]: [message] } }, { status: 422 });
+}
+
+async function openRow(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(await screen.findByRole('button', { name }));
+  return screen.getByRole('dialog');
+}
+
+async function setScore(user: ReturnType<typeof userEvent.setup>, dialog: HTMLElement, home: string, away: string) {
+  const [homeInput, awayInput] = within(dialog).getAllByLabelText(/^Wynik /);
+  await user.clear(homeInput!);
+  await user.type(homeInput!, home);
+  await user.clear(awayInput!);
+  await user.type(awayInput!, away);
+}
+
+describe('Drabinka — okno meczu (#228)', () => {
+  it('klik w wiersz otwiera okno meczu z etykietą pozycji i terminem, a pusty slot ma podpis źródła', async () => {
+    serveMatches(bracket({ 201: { kickoffAt: '2026-10-10T12:00:00+00:00' } }));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Zwycięzca: Ćwierćfinał 2');
+
+    expect(dialog).toHaveAccessibleName('Lwy Mokotów – Zwycięzca: Ćwierćfinał 2');
+    expect(dialog).toHaveAccessibleDescription(/^Półfinał 1 · sob\., 10 paź, \d\d:00$/);
+  });
+
+  it('pola karnych pojawiają się dopiero przy remisie i „Zakończony”', async () => {
+    serveMatches(semis());
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Trwa' }));
+    await setScore(user, dialog, '1', '1');
+    expect(within(dialog).queryByLabelText('Karne Lwy Mokotów')).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    expect(within(dialog).getByLabelText('Karne Lwy Mokotów')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Karne Sokoły Ursus')).toBeInTheDocument();
+
+    await setScore(user, dialog, '2', '1');
+    expect(within(dialog).queryByLabelText('Karne Lwy Mokotów')).not.toBeInTheDocument();
+  });
+
+  it('w koszykówce pól karnych nie ma nigdy', async () => {
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}`, () =>
+        HttpResponse.json({ data: { ...TOURNAMENT, sport: { id: 2, code: 'basketball', name: 'Koszykówka' } } }),
+      ),
+    );
+    serveMatches(semis());
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await setScore(user, dialog, '50', '50');
+
+    expect(within(dialog).queryByLabelText(/^Karne /)).not.toBeInTheDocument();
+  });
+
+  it('ukrycie pól karnych wysyła null w obu karnych', async () => {
+    const state = serveMatches(
+      semis({ 201: { status: 'finished', homeScore: 1, awayScore: 1, homePenalties: 4, awayPenalties: 3 } }),
+    );
+    const bodies = serveSave(state);
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    expect(within(dialog).getByLabelText('Karne Lwy Mokotów')).toHaveValue(4);
+    expect(within(dialog).getByLabelText('Karne Sokoły Ursus')).toHaveValue(3);
+
+    await setScore(user, dialog, '2', '1');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ status: 'finished', homeScore: 2, awayScore: 1, homePenalties: null, awayPenalties: null });
+  });
+
+  it('422 pod homePenalties siada pod polami karnych', async () => {
+    const state = serveMatches(semis());
+    const message = 'Remis w meczu pucharowym rozstrzygają karne. Wpisz je.';
+    const bodies = serveSave(state, validationError('homePenalties', message));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await setScore(user, dialog, '1', '1');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    const error = await within(dialog).findByText(message);
+    expect(bodies[0]).toMatchObject({ homePenalties: null, awayPenalties: null });
+    expect(within(dialog).getByLabelText('Karne Lwy Mokotów')).toHaveAttribute('aria-describedby', error.id);
+    expect(within(dialog).getByLabelText('Wynik Lwy Mokotów')).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('notka przed zapisem: awans do finału i mecz o 3. miejsce', async () => {
+    serveMatches(semis());
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    expect(within(dialog).queryByText(/awansują/)).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await setScore(user, dialog, '2', '0');
+
+    expect(within(dialog).getByText('Lwy Mokotów awansują do finału.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Sokoły Ursus zagrają w meczu o 3. miejsce.')).toBeInTheDocument();
+  });
+
+  it('notka przed zapisem: podmiana w meczu zależnym', async () => {
+    serveMatches(semis());
+    const { user } = renderBracket('?round=1');
+
+    const dialog = await openRow(user, 'Ćwierćfinał 4: Rysie Bielany – Żubry Praga');
+    await setScore(user, dialog, '1', '2');
+
+    expect(within(dialog).getByText('W półfinale 2 Żubry Praga zastąpią Rysie Bielany.')).toBeInTheDocument();
+  });
+
+  it('notka przed zapisem: zniknięcie z meczów zależnych po powrocie do „Trwa”', async () => {
+    serveMatches(
+      semis({
+        201: { status: 'finished', homeScore: 2, awayScore: 0 },
+        301: { homeTeam: ref(1) },
+        302: { homeTeam: ref(4) },
+      }),
+    );
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Trwa' }));
+
+    expect(within(dialog).getByText('Lwy Mokotów znikną z finału.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Sokoły Ursus znikną z meczu o 3. miejsce.')).toBeInTheDocument();
+  });
+
+  it('przy rozpoczętym meczu zależnym stoi ostrzeżenie o blokadzie, a 422 pod homeScore siada pod wynikiem', async () => {
+    const blocked =
+      'Zwycięzca zagrał już dalej: Finał (Lwy Mokotów – Orły Wola). Cofnij te mecze do zaplanowanych, zanim zmienisz zwycięzcę.';
+    const state = serveMatches(
+      semis({
+        201: { status: 'finished', homeScore: 2, awayScore: 0 },
+        202: { status: 'finished', homeScore: 1, awayScore: 0 },
+        301: { homeTeam: ref(1), awayTeam: ref(2), status: 'live', homeScore: 0, awayScore: 0 },
+        302: { homeTeam: ref(4), awayTeam: ref(3) },
+      }),
+    );
+    serveSave(state, validationError('homeScore', blocked));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await setScore(user, dialog, '0', '2');
+
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(blocked);
+    expect(within(dialog).queryByText(/zastąpią/)).not.toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Zapisz' })).toBeEnabled();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await waitFor(() => expect(within(dialog).getByLabelText('Wynik Lwy Mokotów')).toHaveAttribute('aria-describedby'));
+    const describedBy = within(dialog).getByLabelText('Wynik Lwy Mokotów').getAttribute('aria-describedby')!;
+    expect(document.getElementById(describedBy)).toHaveTextContent(blocked);
+  });
+
+  it('mecz bez obu drużyn ma niedostępny wynik, stan i zdarzenia, a termin wysyła się normalnie', async () => {
+    const state = serveMatches(bracket());
+    const bodies = serveSave(state);
+    const { user } = renderBracket('?round=3');
+
+    const dialog = await openRow(user, 'Finał: Zwycięzca: Półfinał 1 – Zwycięzca: Półfinał 2');
+
+    expect(
+      within(dialog).getByText('Mecz czeka na rywali z poprzedniej rundy. Do tego czasu ustawisz mu tylko termin i obiekt.'),
+    ).toBeInTheDocument();
+    for (const input of within(dialog).getAllByLabelText(/^Wynik /)) expect(input).toBeDisabled();
+    for (const radio of within(dialog).getAllByRole('radio')) expect(radio).toBeDisabled();
+    expect(within(dialog).queryByRole('region', { name: 'Zdarzenia' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /Rozpocznij mecz/ })).not.toBeInTheDocument();
+
+    fireEvent.change(within(dialog).getByLabelText('Termin'), { target: { value: '2026-10-11T12:00' } });
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({
+      status: 'scheduled',
+      homeScore: null,
+      awayScore: null,
+      kickoffAt: new Date('2026-10-11T12:00').toISOString(),
+    });
   });
 });
