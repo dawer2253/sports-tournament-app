@@ -120,4 +120,58 @@ class GameMatch extends Model
     {
         return $this->status === 'finished';
     }
+
+    /**
+     * Strona zwycięzcy meczu zakończonego: z wyniku, a przy remisie z karnych
+     * (#216). `null`, dopóki mecz nie jest zakończony albo nie ma
+     * rozstrzygnięcia. Panel liczy to samo (`bracketWinnerSide` w DS).
+     *
+     * @return 'home'|'away'|null
+     */
+    public function winnerSide(): ?string
+    {
+        if (! $this->isFinished() || $this->home_score === null || $this->away_score === null) {
+            return null;
+        }
+
+        if ($this->home_score !== $this->away_score) {
+            return $this->home_score > $this->away_score ? 'home' : 'away';
+        }
+
+        if ($this->home_penalties === null || $this->away_penalties === null || $this->home_penalties === $this->away_penalties) {
+            return null;
+        }
+
+        return $this->home_penalties > $this->away_penalties ? 'home' : 'away';
+    }
+
+    /** Drużyna zwycięzcy albo przegranego meczu zakończonego, jeśli już jest. */
+    public function teamIdOf(string $role): ?int
+    {
+        $winner = $this->winnerSide();
+
+        if ($winner === null) {
+            return null;
+        }
+
+        $side = $role === 'winner' ? $winner : ($winner === 'home' ? 'away' : 'home');
+
+        return $this->{"{$side}_team_id"};
+    }
+
+    /**
+     * Etykieta pozycji meczu drabinki, której nie przechowujemy (`CONTEXT.md`,
+     * „Match”): „Półfinał 1”, „Finał”, „Mecz o 3. miejsce”. Panel liczy ją tak
+     * samo (`matchLabel` w `apps/admin/src/lib/bracket.ts`).
+     */
+    public function positionLabel(): string
+    {
+        if (self::query()->where('loser_to_match_id', $this->id)->exists()) {
+            return 'Mecz o 3. miejsce';
+        }
+
+        $round = $this->round->name;
+
+        return $round === 'Finał' ? $round : "{$round} {$this->match_number}";
+    }
 }

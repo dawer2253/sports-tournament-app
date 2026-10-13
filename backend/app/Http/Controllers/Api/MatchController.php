@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Matches\IndexMatchesRequest;
 use App\Http\Requests\Matches\UpdateMatchRequest;
 use App\Http\Resources\AdminMatchResource;
+use App\Matches\Advancement;
 use App\Models\GameMatch;
 use App\Models\Tournament;
 use App\Rules\Iso8601WithOffset;
@@ -68,20 +69,28 @@ class MatchController extends Controller
     }
 
     /**
-     * Zapis meczu (#159, #158): wynik i stan idą przez `UpdateMatchRequest`, który
-     * po scaleniu ciała z zapisanym wierszem pilnuje ich spójności, a termin
-     * i obiekt przyjmuje przy każdym stanie. Zmiana wyniku nie dotyka tabeli
-     * jawnie — jest liczona przy odczycie.
+     * Zapis meczu (#159, #158, #216): wynik, karne i stan idą przez
+     * `UpdateMatchRequest`, który po scaleniu ciała z zapisanym wierszem pilnuje
+     * ich spójności, a termin i obiekt przyjmuje przy każdym stanie. Zmiana
+     * wyniku nie dotyka tabeli jawnie — jest liczona przy odczycie. W drabince
+     * zapis idzie razem z awansem i jego blokadą (`Advancement`).
      *
      * Odpowiedź to `AdminMatch`, jak na liście, więc kolizje po zmianie terminu
-     * albo obiektu liczymy na świeżo dla całego turnieju.
+     * albo obiektu liczymy na świeżo dla całego turnieju. Mecze zależne panel
+     * odświeża listą meczów fazy.
      */
-    public function update(UpdateMatchRequest $request, GameMatch $match, CollisionCalculator $collisions): JsonResponse
+    public function update(UpdateMatchRequest $request, GameMatch $match, Advancement $advancement, CollisionCalculator $collisions): JsonResponse
     {
         $data = $request->validated();
         $changes = [];
+        $columns = [
+            'homeScore' => 'home_score',
+            'awayScore' => 'away_score',
+            'homePenalties' => 'home_penalties',
+            'awayPenalties' => 'away_penalties',
+        ];
 
-        foreach (['homeScore' => 'home_score', 'awayScore' => 'away_score'] as $field => $column) {
+        foreach ($columns as $field => $column) {
             if (array_key_exists($field, $data)) {
                 $changes[$column] = $data[$field];
             }
@@ -101,7 +110,7 @@ class MatchController extends Controller
             $changes['venue_id'] = $data['venueId'];
         }
 
-        $match->update($changes);
+        $match = $advancement->save($match, $changes, $request->advancementErrorKey());
         $match->load(['round', 'homeTeam', 'awayTeam', 'venue']);
 
         $collisions = $collisions->forTournament($match->stage->tournament);

@@ -207,15 +207,18 @@ it('odrzuca wynik 1000 albo -1 oraz jeden wynik pusty przy live', function () {
         ->assertJsonPath('errors.homeScore.0', 'Mecz trwający albo zakończony potrzebuje obu wyników.');
 });
 
-it('ignoruje karne w ciele i oddaje je jako null', function () {
+it('karne w meczu ligi dają 422 pod homePenalties, a jawne null przechodzi', function () {
     $match = updateMatchIn(updateMatchLeague());
 
-    updateMatch($match, ['status' => 'finished', 'homeScore' => 2, 'awayScore' => 1, 'homePenalties' => 4, 'awayPenalties' => 3])
-        ->assertValidResponse(200)
-        ->assertJsonPath('data.homePenalties', null)
-        ->assertJsonPath('data.awayPenalties', null);
+    updateMatch($match, ['status' => 'finished', 'homeScore' => 1, 'awayScore' => 1, 'homePenalties' => 4, 'awayPenalties' => 3])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.homePenalties.0', 'Karne wpisuje się tylko w meczu pucharowym.');
 
-    expect($match->fresh())->home_penalties->toBeNull()->away_penalties->toBeNull();
+    expect($match->fresh())->home_penalties->toBeNull()->status->toBe('scheduled');
+
+    updateMatch($match, ['status' => 'finished', 'homeScore' => 1, 'awayScore' => 1, 'homePenalties' => null, 'awayPenalties' => null])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homePenalties', null);
 });
 
 it('odrzuca nieznany stan meczu', function () {

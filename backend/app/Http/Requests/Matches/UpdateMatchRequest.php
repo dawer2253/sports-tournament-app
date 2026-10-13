@@ -9,17 +9,18 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * Częściowa zmiana meczu (#159, #158): wynik, stan, termin i obiekt.
+ * Częściowa zmiana meczu (#159, #158, #216): wynik, karne, stan, termin i obiekt.
  *
  * Ciało jest częściowe, więc spójności stanu z wynikiem nie da się wyrazić
  * regułami per pole — zależy od tego, co mecz ma już w bazie. Sprawdzamy ją po
  * scaleniu ciała z zapisanym wierszem, w `after()`, tak jak stan fazy sprawdza
  * dystrybutor rozkładu dat. Wszystkie błędy pary wyników lądują pod klucz
  * `homeScore`: organizator poprawia je liczbami, a nie stanem, a panel pokazuje
- * jeden komunikat pod całym blokiem `__ : __`.
+ * jeden komunikat pod całym blokiem `__ : __`. Karne idą tym samym torem pod
+ * klucz `homePenalties`.
  *
- * Karne nie mają tu reguły i nie wchodzą do `validated()`, więc pole
- * `homePenalties` w ciele niczego nie zmienia — karne należą do S4.
+ * Blokady awansu tu nie ma: zależy od meczów zależnych, więc sprawdza ją
+ * `App\Matches\Advancement` w transakcji zapisu, pod blokadą ich wierszy.
  */
 class UpdateMatchRequest extends FormRequest
 {
@@ -33,6 +34,8 @@ class UpdateMatchRequest extends FormRequest
             // obecne `null` czyści wynik, termin albo obiekt.
             'homeScore' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:999'],
             'awayScore' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:999'],
+            'homePenalties' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:99'],
+            'awayPenalties' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:99'],
             'status' => ['sometimes', 'string', Rule::in(GameMatch::STATUSES)],
             'kickoffAt' => ['sometimes', 'nullable', 'string', new Iso8601WithOffset],
             'venueId' => ['sometimes', 'nullable', 'integer:strict'],
@@ -47,8 +50,83 @@ class UpdateMatchRequest extends FormRequest
         return [
             $this->checkVenueOwnership(...),
             $this->checkScoreAgainstStatus(...),
+            $this->checkPenalties(...),
+            $this->checkTeamsBeforeStart(...),
             $this->checkEventsBeforeScheduled(...),
         ];
+    }
+
+    /**
+     * Mecz bez obu drużyn (pusty slot drabinki, #216) może być tylko
+     * `scheduled`: czeka, aż awans wpuści do niego rywali. Termin i obiekt
+     * wolno mu ustawić, więc reguła patrzy na stan po scaleniu, nie na ciało.
+     */
+    private function checkTeamsBeforeStart(Validator $validator): void
+    {
+        if ($validator->errors()->has('status')) {
+            return;
+        }
+
+        $match = $this->match();
+        $status = $this->input('status', $match->status);
+
+        if ($status !== 'scheduled' && ($match->home_team_id === null || $match->away_team_id === null)) {
+            $validator->errors()->add('status', 'Mecz czeka na rywali z poprzedniej rundy.');
+        }
+    }
+
+    /**
+     * Karne po scaleniu ciała z zapisanym meczem (#216): w fazie `knockout`,
+     * przy `finished` i remisie oba wymagane i różne, w każdym innym przypadku
+     * oba `null`. Nie czyszczą się same, wzorem wyniku przy `scheduled`.
+     * Wszystkie błędy idą pod `homePenalties`, wzorem `homeScore`.
+     *
+     * Gdy wynik albo stan mają już błąd, odpuszczamy: karne zależą od wyniku,
+     * a w koszykówce remis przy `finished` to błąd wyniku, nie karnych.
+     */
+    private function checkPenalties(Validator $validator): void
+    {
+        if ($validator->errors()->hasAny(['status', 'homeScore', 'awayScore', 'homePenalties', 'awayPenalties'])) {
+            return;
+        }
+
+        $data = $this->validated();
+        $match = $this->match();
+        $merged = fn (string $field, string $column): ?int => array_key_exists($field, $data) ? $data[$field] : $match->{$column};
+
+        $status = $data['status'] ?? $match->status;
+        $home = $merged('homeScore', 'home_score');
+        $away = $merged('awayScore', 'away_score');
+        $homePenalties = $merged('homePenalties', 'home_penalties');
+        $awayPenalties = $merged('awayPenalties', 'away_penalties');
+        $given = $homePenalties !== null || $awayPenalties !== null;
+
+        if ($match->stage->type !== 'knockout') {
+            if ($given) {
+                $validator->errors()->add('homePenalties', 'Karne wpisuje się tylko w meczu pucharowym.');
+            }
+
+            return;
+        }
+
+        if ($status !== 'finished' || $home === null || $home !== $away) {
+            if ($given) {
+                $validator->errors()->add('homePenalties', 'Karne należą tylko do remisu w meczu zakończonym. Wyczyść oba pola: homePenalties i awayPenalties.');
+            }
+
+            return;
+        }
+
+        $message = match (true) {
+            ! $given => 'Remis w meczu pucharowym rozstrzygają karne. Wpisz je.',
+            $homePenalties === null || $awayPenalties === null => 'Wpisz karne obu drużyn.',
+            $homePenalties === $awayPenalties => 'Karne muszą wyłonić zwycięzcę.',
+            default => null,
+        };
+
+        if ($message !== null) {
+            $validator->errors()->add('homePenalties', $message);
+        }
     }
 
     /**
@@ -137,9 +215,25 @@ class UpdateMatchRequest extends FormRequest
             'awayScore.integer' => 'Wynik podaj liczbą całkowitą.',
             'awayScore.min' => 'Wynik nie może być ujemny.',
             'awayScore.max' => 'Wynik może mieć najwyżej 999.',
+            'homePenalties.integer' => 'Karne podaj liczbą całkowitą.',
+            'homePenalties.min' => 'Karne nie mogą być ujemne.',
+            'homePenalties.max' => 'Karne mogą mieć najwyżej 99.',
+            'awayPenalties.integer' => 'Karne podaj liczbą całkowitą.',
+            'awayPenalties.min' => 'Karne nie mogą być ujemne.',
+            'awayPenalties.max' => 'Karne mogą mieć najwyżej 99.',
             'status.in' => 'Nieznany stan meczu. Dozwolone: scheduled, live, finished.',
             'venueId.integer' => 'Wybierz obiekt z listy.',
         ];
+    }
+
+    /**
+     * Klucz błędu blokady awansu (`App\Matches\Advancement`): `homeScore`,
+     * wzorem błędów pary wyników, a `status`, gdy ciało nie niesie wyniku ani
+     * karnych, tylko stan — organizator zmienił wtedy wyłącznie przełącznik.
+     */
+    public function advancementErrorKey(): string
+    {
+        return $this->hasAny(['homeScore', 'awayScore', 'homePenalties', 'awayPenalties']) ? 'homeScore' : 'status';
     }
 
     public function match(): GameMatch
