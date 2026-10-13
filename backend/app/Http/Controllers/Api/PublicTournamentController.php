@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ShowLeaderboardRequest;
-use App\Http\Resources\MatchResource;
+use App\Http\Resources\PublicMatchResource;
 use App\Http\Resources\PublicTournamentResource;
 use App\Http\Resources\StandingTableResource;
 use App\Http\Resources\StatLeaderboardResource;
+use App\Leaderboards\MatchScorers;
 use App\Leaderboards\StatLeaderboard;
 use App\Models\GameMatch;
 use App\Models\Tournament;
@@ -68,14 +69,19 @@ class PublicTournamentController extends Controller
     /**
      * Mecze turnieju w stanach `$statuses`, po terminie w kierunku `$direction`;
      * mecz bez terminu zawsze na końcu. Remis terminu rozstrzyga kolejność
-     * fazy, kolejki i numeru meczu, w tym samym kierunku co termin.
+     * fazy, kolejki i numeru meczu, w tym samym kierunku co termin. Strzelców
+     * całej listy wczytuje jedno zapytanie o zdarzenia (#208).
      *
      * @param  list<string>  $statuses
      * @param  'asc'|'desc'  $direction
      */
     private function matchList(string $slug, array $statuses, string $direction): JsonResponse
     {
-        $matches = $this->matches(Tournament::findPublishedBySlug($slug))
+        $tournament = Tournament::findPublishedBySlug($slug);
+        $sport = $tournament->sport;
+
+        $matches = $this->matches($tournament)
+            ->with(MatchScorers::eagerLoad($sport))
             ->whereIn('matches.status', $statuses)
             ->orderByRaw('matches.kickoff_at IS NULL')
             ->orderBy('matches.kickoff_at', $direction)
@@ -86,7 +92,7 @@ class PublicTournamentController extends Controller
             ->get();
 
         return response()->json([
-            'data' => $matches->map(fn (GameMatch $match): array => (new MatchResource($match))->resolve())->all(),
+            'data' => $matches->map(fn (GameMatch $match): array => (new PublicMatchResource($match, $sport))->resolve())->all(),
         ]);
     }
 

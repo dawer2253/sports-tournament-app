@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 /**
  * Mecz dla panelu: kształt `Match` (`MatchResource`) plus `collisions`
- * policzone przy odczycie (#158). Strona publiczna oddaje dalej `MatchResource`,
+ * policzone przy odczycie (#158). Strona publiczna oddaje `PublicMatchResource`,
  * bo kolizja to narzędzie organizatora.
  *
  * Kolizje przychodzą z zewnątrz, z jednego przebiegu po całym turnieju, a nie

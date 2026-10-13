@@ -1,5 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { Match, PublicTournament, StandingRow, StandingTable, StatLeaderboard, StatLeaderboardRow } from '@tournament/api-client';
+import type {
+  PublicMatch,
+  PublicMatchScorer,
+  PublicTournament,
+  StandingRow,
+  StandingTable,
+  StatLeaderboard,
+  StatLeaderboardRow,
+} from '@tournament/api-client';
 import { render } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -57,10 +65,11 @@ export function table(overrides: Partial<StandingTable> = {}): StandingTable {
 }
 
 /**
- * Mecz w kształcie kontraktu. Kolejka `round` dostaje id równe numerowi,
- * a para drużyn bierze się z `id`, żeby nazwy w wierszach były rozróżnialne.
+ * Mecz w kształcie kontraktu (`PublicMatch`). Kolejka `round` dostaje id
+ * równe numerowi, a para drużyn bierze się z `id`, żeby nazwy w wierszach
+ * były rozróżnialne. Bez strzelców, jak mecz zaplanowany.
  */
-export function match(id: number, round: number, overrides: Partial<Match> = {}): Match {
+export function match(id: number, round: number, overrides: Partial<PublicMatch> = {}): PublicMatch {
   return {
     id,
     stageId: 1,
@@ -79,13 +88,35 @@ export function match(id: number, round: number, overrides: Partial<Match> = {})
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    scorers: [],
     ...overrides,
   };
 }
 
 /** Mecz zakończony z wynikiem. */
-export function finished(id: number, round: number, overrides: Partial<Match> = {}): Match {
+export function finished(id: number, round: number, overrides: Partial<PublicMatch> = {}): PublicMatch {
   return match(id, round, { status: 'finished', homeScore: 2, awayScore: 1, ...overrides });
+}
+
+/**
+ * Wiersz strzelca meczu `matchId` z `match()`: `side` wskazuje drużynę
+ * strzelca (`home` to `Gospodarz {matchId}`), także przy samobóju.
+ */
+export function scorer(
+  matchId: number,
+  side: 'home' | 'away',
+  playerId: number,
+  overrides: Partial<PublicMatchScorer> = {},
+): PublicMatchScorer {
+  const { homeTeam, awayTeam } = match(matchId, 1);
+  return {
+    team: side === 'home' ? homeTeam! : awayTeam!,
+    player: { id: playerId, name: `Zawodnik ${playerId}` },
+    value: 1,
+    minutes: [10 + playerId],
+    ownGoal: false,
+    ...overrides,
+  };
 }
 
 /**
@@ -123,8 +154,8 @@ export function publicApi({
 }: {
   data?: PublicTournament;
   standings?: StandingTable[];
-  fixtures?: Match[];
-  results?: Match[];
+  fixtures?: PublicMatch[];
+  results?: PublicMatch[];
   leaderboards?: (stat: string | null) => StatLeaderboard;
 } = {}) {
   const requests = { tournament: 0, standings: 0, fixtures: 0, results: 0, leaderboard: [] as (string | null)[] };

@@ -2,6 +2,8 @@ import { MapPin } from 'lucide-react'
 import type * as React from 'react'
 import { LiveMarker } from '../layout/live-marker'
 import type { MatchRowData } from './match-row-data'
+import { scorerSides } from './scorer-lines'
+import { ScorerList } from './scorer-list'
 
 export interface LiveMatchTileProps {
   /** Mecz `live`; pole `round` to `Match.round` z kontraktu. */
@@ -12,13 +14,14 @@ export interface LiveMatchTileProps {
 
 /**
  * Wyróżniony kafel meczu trwającego na Przeglądzie strony publicznej:
- * kolejka, `LiveMarker`, obiekt, para i wynik cząstkowy. Wynik jest
- * najmocniejszym elementem kafla, więc stan nie dostaje plakietki, tylko
- * znacznik (patrz `LiveMarker`).
+ * kolejka, `LiveMarker`, obiekt, para, wynik cząstkowy i strzelcy (#208).
+ * Wynik jest najmocniejszym elementem kafla, więc stan nie dostaje
+ * plakietki, tylko znacznik (patrz `LiveMarker`).
  */
 export function LiveMatchTile({ match, action }: LiveMatchTileProps) {
   const home = match.homeTeam?.name ?? 'Do ustalenia'
   const away = match.awayTeam?.name ?? 'Do ustalenia'
+  const scorers = scorerSides(match)
 
   return (
     <article
@@ -48,6 +51,9 @@ export function LiveMatchTile({ match, action }: LiveMatchTileProps) {
           <span>{match.awayScore ?? 0}</span>
         </span>
         <span className="truncate font-semibold">{away}</span>
+        {/* Strzelcy pod nazwami, w ich kolumnach: wynik zostaje na miejscu (#208). */}
+        <ScorerList lines={scorers.home} team={home} align="end" className="col-start-1" />
+        <ScorerList lines={scorers.away} team={away} className="col-start-3" />
       </div>
       {action && <div className="mt-3">{action}</div>}
     </article>

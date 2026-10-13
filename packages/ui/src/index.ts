@@ -42,6 +42,8 @@ export * from './components/data/leaderboard-table';
 export * from './components/data/live-match-tile';
 export * from './components/data/match-row';
 export * from './components/data/match-row-data';
+export * from './components/data/scorer-lines';
+export * from './components/data/scorer-list';
 export * from './components/data/match-event-data';
 export * from './components/data/event-type-buttons';
 export * from './components/data/player-number-grid';

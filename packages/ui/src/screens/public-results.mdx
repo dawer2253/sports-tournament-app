@@ -13,12 +13,17 @@ Publiczny, read-only widok rozegranych meczów pod `/t/{slug}/wyniki`.
 Pokazać kibicom i zawodnikom wyniki rozegranych kolejek, bez logowania.
 
 ## Dane (wejście)
-`GET /public/t/{slug}/results`: wyłącznie mecze `finished`, malejąco po terminie, mecz bez terminu na końcu.
+`GET /public/t/{slug}/results`: wyłącznie mecze `finished`, malejąco po terminie, mecz bez terminu na końcu. Każdy mecz niesie `scorers` (`PublicMatch`), złożonych przez serwer.
 
 ## Reguły
 - Mecze po kolejce, od najnowszej (`groupByRound` z `direction: 'desc'`). Na starcie najnowsza.
 - `RoundList` i `MatchRow` z panelu, bez kolizji i bez ułamka „zakończone/wszystkie”.
 - Mecz trwający jest w Terminarzu, nie tutaj.
+- **Strzelcy pod wynikiem** (#208), w dwóch kolumnach pod nazwami gospodarza i gościa, na siatce wiersza: długa lista wydłuża wiersz w dół, a wyniku nie przesuwa.
+  - Samobój stoi po stronie **przeciwnika** drużyny strzelca, z dopiskiem „(sam.)”.
+  - Format bez wiedzy o sporcie: minuty („Marek Nowak 12' 58'”), gdy każde zdarzenie jest warte 1 i ma minutę (`minutes.length === value`), w przeciwnym razie sama suma („Oskar Dąb 31”) — rzuty w koszu albo bramka bez minuty.
+  - Wiersze w formacie minut idą wszystkie, w kolejności z API. W formacie sumy najwyżej 3 na drużynę, malejąco po `value`; pełna lista będzie na stronie meczu (#205).
+  - Każdy strzelec w osobnej linii, bez separatora z kropką.
 
 ## Stany
 - **Sezon w trakcie**: rozegrane kolejki (powyżej).
@@ -31,5 +36,5 @@ Pokazać kibicom i zawodnikom wyniki rozegranych kolejek, bez logowania.
 ## Otwarte pytania
 Rozstrzygnięte w #192:
 - *Kolejność?* Od najnowszej kolejki.
-- *Strzelcy i kartki?* Strzelców pod wynikiem dokłada #208 (minuty albo suma, w koszu najwyżej 3 na drużynę). Kartek nie ma.
+- *Strzelcy i kartki?* Strzelcy tak, według reguł wyżej (#208). Kartki nie: przy wyniku stoją tylko zdobycze, a kartki zostają w klasyfikacji (Statystyki).
 - *Minuta meczu live?* Nie dotyczy: mecz `live` jest w Terminarzu.

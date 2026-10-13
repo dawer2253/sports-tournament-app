@@ -5,6 +5,8 @@ import { cn } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
 import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
+import { scorerSides } from './scorer-lines'
+import { ScorerList } from './scorer-list'
 
 /**
  * Jedna siatka dla wszystkich wierszy, żeby kolumny stały równo w całej
@@ -26,6 +28,11 @@ import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type
  * więc te liczby to uzasadnienie progu, nie źródło prawdy. Kontener jest
  * nazwany (`match-row`), żeby komórki i `CollisionBadge` nie łapały się na
  * cudzy kontener, np. `@container/card-header` w `Card`.
+ *
+ * Strzelcy (#208) stoją w osobnym rzędzie pod nazwami drużyn, wyrównani do
+ * nich, więc długa lista wydłuża wiersz w dół, a wyniku nie przesuwa.
+ * W szerokim wierszu lista zajmuje też puste pod terminem (gospodarz) i pod
+ * stanem (gość) kolumny, żeby wpis nie zawijał się bez potrzeby.
  */
 const ROW_GRID =
   'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
@@ -139,6 +146,7 @@ export function MatchRow({ match, showDate = true, timeZone, onSelect, statusDis
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
   const label = `${home} – ${away}`
+  const scorers = scorerSides(match)
 
   const content = (
     <>
@@ -156,6 +164,17 @@ export function MatchRow({ match, showDate = true, timeZone, onSelect, statusDis
         <Score match={match} />
       </span>
       <span data-slot="match-team" className="col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1">{away}</span>
+      <ScorerList
+        lines={scorers.home}
+        team={home}
+        align="end"
+        className="col-start-1 row-start-3 @2xl/match-row:col-span-2 @2xl/match-row:row-start-2"
+      />
+      <ScorerList
+        lines={scorers.away}
+        team={away}
+        className="col-start-3 row-start-3 @2xl/match-row:col-span-3 @2xl/match-row:col-start-4 @2xl/match-row:row-start-2"
+      />
       {/* Stały slot kolizji przed stanem (#175): miejsce rezerwuje pusty
           wrapper, więc plakietka nie przesuwa kolumny wyniku. */}
       <span className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 @2xl/match-row:col-span-2 @2xl/match-row:col-start-5">

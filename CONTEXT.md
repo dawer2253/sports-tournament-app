@@ -246,6 +246,12 @@ klika się jeden rzut, a nie wpisuje liczbę punktów.
 **Samobój** należy do drużyny zawodnika, który go strzelił, choć bramkę dostaje
 przeciwnik. Do żadnej klasyfikacji się nie wlicza.
 
+Przy wyniku meczu na stronie publicznej stoją **strzelcy meczu**
+(`PublicMatch.scorers`): po jednym wierszu na zawodnika z sumą `value` zdarzeń
+statystyki-zdobyczy sportu (bramki, rzuty), samobój osobno. Liczą się też
+w meczu trwającym, inaczej niż klasyfikacja. Nazwa `scorers` obejmuje oba
+sporty, tak jak `score` obejmuje bramki i punkty.
+
 Zdarzenia ma tylko mecz rozpoczęty (trwający albo zakończony). Meczu ze
 zdarzeniami nie da się cofnąć do zaplanowanych, dopóki ich nie usunąć.
 

@@ -21,7 +21,7 @@ Dać kibicowi skrót turnieju bez logowania i bez wchodzenia w zakładki.
 
 ## Reguły
 Sekcje od góry (#192):
-1. **Na żywo**: każdy mecz `live` jako `LiveMatchTile`. „Śledź na żywo” prowadzi do Terminarza, który otwiera się na kolejce meczu trwającego.
+1. **Na żywo**: każdy mecz `live` jako `LiveMatchTile`, ze strzelcami pod nazwami drużyn (#208). „Śledź na żywo” prowadzi do Terminarza, który otwiera się na kolejce meczu trwającego.
 2. **Najbliższe mecze**: pierwsza kolejka Terminarza (po `round.order`, nie po terminie) z meczem `scheduled`, z niej do 5 meczów (`nextRoundMatches`), z odnośnikiem „Cały terminarz”.
 3. **Ostatnie wyniki**: najnowsza kolejka z meczami `finished`, czyli ta, na której otwierają się Wyniki (po `round.order`, nie po terminie: przełożony mecz kolejki 1 rozegrany po kolejce 3 nie zasłania kolejki 3), do 5 meczów (`latestRoundMatches`), z odnośnikiem „Wszystkie wyniki”.
 4. **Tabela (skrót)**: pierwsze 5 wierszy pierwszej tabeli (`StandingsSnippet`), z odnośnikiem „Zobacz pełną tabelę”. Kolejność z API.
@@ -38,7 +38,7 @@ Sekcje od góry (#192):
 
 ## Zachowanie
 - Każde zapytanie odpytuje co `VITE_POLL_INTERVAL_MS`, także w turnieju `finished` i po `404`; tanie dzięki `304` (ADR-0007).
-- Mecze to te same `MatchRow` co terminarz panelu, z oznaczeniem tylko meczu na żywo (`statusDisplay="live"`).
+- Mecze to te same `MatchRow` co terminarz panelu, z oznaczeniem tylko meczu na żywo (`statusDisplay="live"`). Strzelcy stoją pod wynikiem tak jak w Wynikach (#208), więc także w „Ostatnich wynikach”.
 - Makieta i `apps/public` renderują ten sam `PublicOverview`.
 
 ## Otwarte pytania

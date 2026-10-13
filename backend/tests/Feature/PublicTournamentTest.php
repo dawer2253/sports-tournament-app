@@ -7,6 +7,7 @@ use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Spectator\Spectator;
 
@@ -67,21 +68,41 @@ function publicPagePlayer(Tournament $tournament, string $team, string $name): P
 }
 
 /**
- * Zdarzenia meczu: każda pozycja to `[zawodnik, typ]`. Drużyna zdarzenia to
+ * Zdarzenia meczu: każda pozycja to `[zawodnik, typ]` albo `[zawodnik, typ,
+ * minuta]`; bez minuty zostaje losowa z fabryki. Drużyna zdarzenia to
  * drużyna zawodnika, tak jak przy zapisie przez API (#188, reguła 7).
  *
- * @param  list<array{Player, string}>  $events
+ * @param  list<array{0: Player, 1: string, 2?: ?int}>  $events
  */
 function publicPageEvents(GameMatch $match, array $events): void
 {
-    foreach ($events as [$player, $type]) {
+    foreach ($events as $event) {
+        [$player, $type] = $event;
+
         MatchEvent::factory()->create([
             'match_id' => $match->id,
             'team_id' => $player->team_id,
             'player_id' => $player->id,
             'type' => $type,
+            ...(array_key_exists(2, $event) ? ['minute' => $event[2]] : []),
         ]);
     }
+}
+
+/**
+ * Strzelcy meczu z `/fixtures` albo `/results` jako
+ * `[nazwisko, drużyna, value, minutes, ownGoal]`, w kolejności z odpowiedzi.
+ */
+function publicPageScorers(Tournament $tournament, string $path, GameMatch $match): array
+{
+    $matches = publicPageGet($tournament->slug, $path)->assertValidResponse(200)->json('data');
+    $found = array_values(array_filter($matches, fn (array $candidate): bool => $candidate['id'] === $match->id));
+
+    expect($found)->toHaveCount(1);
+
+    return array_map(fn (array $row): array => [
+        $row['player']['name'], $row['team']['name'], $row['value'], $row['minutes'], $row['ownGoal'],
+    ], $found[0]['scorers']);
 }
 
 /** Klasyfikacja jako `nazwisko => wartość`, w kolejności wierszy z odpowiedzi. */
@@ -443,4 +464,145 @@ it('nowe zdarzenie w meczu zakończonym zmienia ETag klasyfikacji', function () 
     publicPageEvents($match, [[$scorer, 'goal']]);
 
     expect($etag())->not->toBe($before);
+});
+
+// --- strzelcy przy meczu (#208) -----------------------------------------------
+
+it('samobój daje osobny wiersz z ownGoal i drużyną strzelca', function () {
+    $tournament = publicPageTournament();
+    $unlucky = publicPagePlayer($tournament, 'Sokoły Ursus', 'Tomasz Lis');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 1, 'away_score' => 1]);
+    publicPageEvents($match, [[$unlucky, 'own_goal', 30], [$unlucky, 'goal', 70]]);
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([
+        ['Tomasz Lis', 'Sokoły Ursus', 1, [30], true],
+        ['Tomasz Lis', 'Sokoły Ursus', 1, [70], false],
+    ]);
+});
+
+it('kosz sumuje value rzutów zawodnika w jeden wiersz', function () {
+    $tournament = publicPageTournament(sport: 'basketball');
+    $shooter = publicPagePlayer($tournament, 'Orły Bielany', 'Oskar Dąb');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 5, 'away_score' => 0]);
+    publicPageEvents($match, [[$shooter, 'three_pointer', 12], [$shooter, 'two_pointer', 4]]);
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([
+        ['Oskar Dąb', 'Orły Bielany', 5, [4, 12], false],
+    ]);
+});
+
+it('zdarzenia spoza statystyki zdobyczy nie dają wierszy', function (string $sport, array $types) {
+    $tournament = publicPageTournament(sport: $sport);
+    $player = publicPagePlayer($tournament, 'Orły Bielany', 'Tomasz Lis');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 1, 'away_score' => 0]);
+    publicPageEvents($match, array_map(fn (string $type): array => [$player, $type, 10], $types));
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([]);
+})->with([
+    'kartki' => ['football', ['yellow_card', 'red_card']],
+    'faul' => ['basketball', ['foul']],
+]);
+
+it('bramka bez minuty zwiększa value, ale nie trafia do minutes', function () {
+    $tournament = publicPageTournament();
+    $scorer = publicPagePlayer($tournament, 'Orły Bielany', 'Marek Nowak');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 2, 'away_score' => 0]);
+    publicPageEvents($match, [[$scorer, 'goal', null], [$scorer, 'goal', 23]]);
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([
+        ['Marek Nowak', 'Orły Bielany', 2, [23], false],
+    ]);
+});
+
+it('wiersze idą po pierwszej minucie, bez minut na końcu, a przy równości po id zawodnika', function () {
+    $tournament = publicPageTournament();
+    $undatedFirst = publicPagePlayer($tournament, 'Orły Bielany', 'Adam Bez');
+    $late = publicPagePlayer($tournament, 'Orły Bielany', 'Jan Późny');
+    $tieFirst = publicPagePlayer($tournament, 'Sokoły Ursus', 'Kamil Remis');
+    $tieSecond = publicPagePlayer($tournament, 'Orły Bielany', 'Piotr Remis');
+    $undatedSecond = publicPagePlayer($tournament, 'Sokoły Ursus', 'Rafał Bez');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 5, 'away_score' => 4]);
+    publicPageEvents($match, [
+        [$undatedSecond, 'goal', null],
+        [$tieSecond, 'goal', 10],
+        [$late, 'goal', 40],
+        [$tieFirst, 'goal', 70],
+        [$tieFirst, 'goal', 10],
+        [$undatedFirst, 'goal', null],
+        [$late, 'own_goal', 5],
+    ]);
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([
+        ['Jan Późny', 'Orły Bielany', 1, [5], true],
+        ['Kamil Remis', 'Sokoły Ursus', 2, [10, 70], false],
+        ['Piotr Remis', 'Orły Bielany', 1, [10], false],
+        ['Jan Późny', 'Orły Bielany', 1, [40], false],
+        ['Adam Bez', 'Orły Bielany', 1, [], false],
+        ['Rafał Bez', 'Sokoły Ursus', 1, [], false],
+    ]);
+});
+
+it('mecz live ma strzelców, a mecz zaplanowany pustą listę', function () {
+    $tournament = publicPageTournament();
+    $scorer = publicPagePlayer($tournament, 'Orły Bielany', 'Marek Nowak');
+    $live = publicPageMatch($tournament, 1, ['status' => 'live', 'home_score' => 1, 'away_score' => 0]);
+    $scheduled = publicPageMatch($tournament, 2);
+    publicPageEvents($live, [[$scorer, 'goal', 23]]);
+
+    expect(publicPageScorers($tournament, '/fixtures', $live))->toBe([['Marek Nowak', 'Orły Bielany', 1, [23], false]])
+        ->and(publicPageScorers($tournament, '/fixtures', $scheduled))->toBe([]);
+});
+
+it('zdarzenia jednego meczu nie trafiają do innego', function () {
+    $tournament = publicPageTournament();
+    $first = publicPagePlayer($tournament, 'Orły Bielany', 'Marek Nowak');
+    $second = publicPagePlayer($tournament, 'Sokoły Ursus', 'Adam Zieliński');
+    $finished = ['status' => 'finished', 'home_score' => 1, 'away_score' => 0];
+    $early = publicPageMatch($tournament, 1, $finished);
+    $later = publicPageMatch($tournament, 2, $finished);
+    publicPageEvents($early, [[$first, 'goal', 15]]);
+    publicPageEvents($later, [[$second, 'own_goal', 60]]);
+
+    expect(publicPageScorers($tournament, '/results', $early))->toBe([['Marek Nowak', 'Orły Bielany', 1, [15], false]])
+        ->and(publicPageScorers($tournament, '/results', $later))->toBe([['Adam Zieliński', 'Sokoły Ursus', 1, [60], true]]);
+});
+
+it('strzelec usunięty miękko zostaje z nazwiskiem, a zdarzenie bez zawodnika nie daje wiersza', function () {
+    $tournament = publicPageTournament();
+    $gone = publicPagePlayer($tournament, 'Orły Bielany', 'Jakub Wrona');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 2, 'away_score' => 0]);
+    publicPageEvents($match, [[$gone, 'goal', 30]]);
+    MatchEvent::factory()->create(['match_id' => $match->id, 'team_id' => $gone->team_id, 'player_id' => null, 'type' => 'goal', 'minute' => 10]);
+    // Guard nie pozwala usunąć zawodnika ze zdarzeniami w meczu rozegranym,
+    // więc stan ustawiamy z pominięciem zdarzeń modelu.
+    Player::withoutEvents(fn () => $gone->delete());
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([['Jakub Wrona', 'Orły Bielany', 1, [30], false]]);
+});
+
+it('liczba zapytań przy liście meczów nie rośnie z liczbą meczów', function () {
+    $tournament = publicPageTournament();
+    $home = publicPagePlayer($tournament, 'Orły Bielany', 'Marek Nowak');
+    $away = publicPagePlayer($tournament, 'Sokoły Ursus', 'Adam Zieliński');
+    $addMatch = function () use ($tournament, $home, $away): void {
+        $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 1, 'away_score' => 1]);
+        publicPageEvents($match, [[$home, 'goal', 20], [$away, 'own_goal', 50]]);
+    };
+    $queries = function () use ($tournament): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        expect(publicPageGet($tournament->slug, '/results')->assertOk()->json('data.0.scorers'))->not->toBe([]);
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+
+    $addMatch();
+    $single = $queries();
+    $addMatch();
+    $addMatch();
+    $addMatch();
+
+    expect(publicPageGet($tournament->slug, '/results')->json('data'))->toHaveCount(4)
+        ->and($queries())->toBe($single);
 });
