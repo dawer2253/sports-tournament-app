@@ -148,6 +148,25 @@ export const Nawigacja: Story = {
   },
 }
 
+/**
+ * Telefon: pięć zakładek się nie mieści, więc pasek przewija się w bok,
+ * a aktywna „Statystyki” na końcu stoi w widocznej części paska.
+ */
+export const TelefonOstatniaZakladka: Story = {
+  args: { active: 'stats' },
+  decorators: [(Story) => <div className="w-[375px]">{Story()}</div>],
+  play: async ({ canvasElement }) => {
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Sekcje turnieju' })
+    const tab = within(nav).getByRole('link', { name: 'Statystyki' })
+    await expect(nav.scrollWidth).toBeGreaterThan(nav.clientWidth)
+
+    const visible = nav.getBoundingClientRect()
+    const box = tab.getBoundingClientRect()
+    await expect(box.left).toBeGreaterThanOrEqual(visible.left)
+    await expect(box.right).toBeLessThanOrEqual(visible.right)
+  },
+}
+
 /** Strona bez aktywnej zakładki (np. strona meczu, #205). */
 export const BezAktywnejZakladki: Story = {
   args: { active: undefined },
