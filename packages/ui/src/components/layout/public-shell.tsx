@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils'
 import { Heading } from '../ui/typography'
 import { MetaList } from './meta-list'
 import { TournamentLogo } from './tournament-logo'
-import type { PublicShellTournament } from './public-shell-tournament'
+import type { PublicShellTournament, SportCode } from './public-shell-tournament'
 import heroDay from '../../assets/public/hero-day.webp'
 import heroNight from '../../assets/public/hero-night.webp'
 import heroBasketball from '../../assets/public/hero-basketball.webp'
@@ -30,11 +30,15 @@ type Hero = { day: string; night: string }
  * Zdjęcie hero per sport. Sport bez wpisu ma płaski kolor turnieju: zdjęcie
  * innej dyscypliny mówiłoby kibicowi nieprawdę o turnieju. Kosz ma jedno
  * zdjęcie na oba motywy; w ciemnym robi swoje scrim od dołu (#192).
+ *
+ * Klucze pilnuje `SportCode`, więc literówka nie przejdzie po cichu jako
+ * płaski kolor. Szukamy po gołym `sport.code`, bo sport spoza listy też ma
+ * się wyświetlić — właśnie z płaskim kolorem.
  */
-const HERO_BY_SPORT: Record<string, Hero> = {
+const HERO_BY_SPORT: Readonly<Record<string, Hero | undefined>> = {
   football: { day: heroDay, night: heroNight },
   basketball: { day: heroBasketball, night: heroBasketball },
-}
+} satisfies Partial<Record<SportCode, Hero>>
 
 export interface PublicShellProps {
   tournament: PublicShellTournament

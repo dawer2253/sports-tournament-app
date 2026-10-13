@@ -29,6 +29,13 @@ export function contrastRatio(a: string, b: string): number {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
+/**
+ * Biel tokenu `--brand-text-light`, z którą porównujemy kontrast koloru
+ * turnieju: kontrast liczy się w JS, a zmiennej CSS nie da się tu odczytać.
+ * Ta sama wartość pilnuje ostrzeżenia w `BrandColorPicker`.
+ */
+export const BRAND_TEXT_LIGHT = '#FFFFFF'
+
 /** Próg WCAG AA dla zwykłego tekstu. Ten sam pilnuje ostrzeżenia w `BrandColorPicker`. */
 export const MIN_TEXT_CONTRAST = 4.5
 
@@ -38,10 +45,7 @@ export const MIN_TEXT_CONTRAST = 4.5
  * `MIN_TEXT_CONTRAST`, inaczej `--brand-text-dark`. Kolor turnieju wybiera
  * organizer, więc jasny żółty jest równie możliwy jak ciemna zieleń. Próg do
  * oceny na żywym organizmie w kamieniu S3 (#192).
- *
- * Biel w porównaniu to wartość tokenu `--brand-text-light`: kontrast liczy się
- * w JS, a zmiennej CSS nie da się tu odczytać.
  */
 export function brandForeground(color: string): string {
-  return contrastRatio(color, '#FFFFFF') >= MIN_TEXT_CONTRAST ? 'var(--brand-text-light)' : 'var(--brand-text-dark)'
+  return contrastRatio(color, BRAND_TEXT_LIGHT) >= MIN_TEXT_CONTRAST ? 'var(--brand-text-light)' : 'var(--brand-text-dark)'
 }

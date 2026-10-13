@@ -13,3 +13,11 @@ export type PublicShellTournament = {
   sport: { code: string; name: string }
   branding: { logoUrl: string | null; primaryColor: string }
 }
+
+/**
+ * Kod sportu z kontraktu (`SportCode`). `PublicShellTournament.sport.code`
+ * zostaje stringiem, bo shell ma pokazać także sport spoza tej listy;
+ * typ służy kluczom map per sport. Zgodność pilnuje
+ * `apps/public/src/lib/contract-guard.ts`.
+ */
+export type SportCode = 'football' | 'basketball'
