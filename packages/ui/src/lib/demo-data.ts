@@ -1,6 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
-import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-row'
+import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchCollision, MatchRowData } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'

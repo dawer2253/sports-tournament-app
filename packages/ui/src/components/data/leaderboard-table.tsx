@@ -3,10 +3,7 @@ import { cn } from '../../lib/utils'
 import { TeamLogo } from '../layout/team-logo'
 import { EmptyState } from '../ui/empty-state'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
-import type { Leaderboard } from './leaderboard-row'
-
-/** Pusty stan klasyfikacji: przed pierwszym meczem zakończonym nie ma wierszy. */
-export const LEADERBOARD_EMPTY = 'Klasyfikacja ruszy po pierwszym zakończonym meczu'
+import { LEADERBOARD_EMPTY, type Leaderboard } from './leaderboard-data'
 
 export interface LeaderboardTableProps {
   leaderboard: Leaderboard

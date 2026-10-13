@@ -1,6 +1,5 @@
 import { TeamLogo } from '../layout/team-logo'
-import { leaderboardLeaders, type LeaderboardRow } from './leaderboard-row'
-import { LEADERBOARD_EMPTY } from './leaderboard-table'
+import { LEADERBOARD_EMPTY, leaderboardLeaders, type LeaderboardRow } from './leaderboard-data'
 
 export interface LeaderboardLeadersProps {
   /** Etykieta statystyki z odpowiedzi; stoi pod liczbą lidera. */

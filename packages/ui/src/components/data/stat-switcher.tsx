@@ -1,6 +1,6 @@
 import type * as React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import type { StatOption } from './leaderboard-row'
+import type { StatOption } from './leaderboard-data'
 
 export interface StatSwitcherProps {
   /** `PublicTournament.stats`, w kolejności `availableStats` sportu. */

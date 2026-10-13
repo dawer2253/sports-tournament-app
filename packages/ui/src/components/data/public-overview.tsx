@@ -3,7 +3,7 @@ import { CalendarClock, ChevronRight, History, ListOrdered, Radio, Trophy } from
 import { PublicSection } from '../layout/public-section'
 import { Button } from '../ui/button'
 import { LeaderboardLeaders } from './leaderboard-leaders'
-import type { Leaderboard } from './leaderboard-row'
+import type { Leaderboard } from './leaderboard-data'
 import { LiveMatchTile } from './live-match-tile'
 import { MatchRow } from './match-row'
 import { latestRoundMatches, nextRoundMatches, type MatchInRound, type RoundWithMatches } from './round-groups'

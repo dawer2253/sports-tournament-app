@@ -16,7 +16,7 @@ import type {
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni typ
  * w `packages/ui` (`public-shell-tournament.ts`, `round-groups.ts`,
- * `standings-table-row.ts`, `leaderboard-row.ts`).
+ * `standings-table-row.ts`, `leaderboard-data.ts`).
  */
 
 /** Turniej z kontraktu daje się pokazać w nagłówku `PublicShell`. */

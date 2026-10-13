@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
 import { leaderboardsBySport } from '../../lib/demo-data'
 import { LeaderboardLeaders } from './leaderboard-leaders'
-import { LEADERBOARD_LEADERS_ROWS, type LeaderboardRow } from './leaderboard-row'
+import { LEADERBOARD_LEADERS_ROWS, type LeaderboardRow } from './leaderboard-data'
 
 const goals = leaderboardsBySport.football.goals!
 

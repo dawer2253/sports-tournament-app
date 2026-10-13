@@ -29,10 +29,12 @@ export function PublicStats({ sport = 'football', state = 'w-trakcie' }: PublicS
         <section className="space-y-3">
           <Heading level="section">{shown.label}</Heading>
           <LeaderboardTable leaderboard={shown} />
-          <p className="text-xs text-muted-foreground">
-            Klasyfikacja obejmuje mecze zakończone ze wszystkich faz turnieju. Zawodnicy z równą wartością dzielą
-            miejsce.
-          </p>
+          {shown.rows.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Klasyfikacja obejmuje mecze zakończone ze wszystkich faz turnieju. Zawodnicy z równą wartością dzielą
+              miejsce.
+            </p>
+          )}
         </section>
       </StatSwitcher>
     </PublicShell>

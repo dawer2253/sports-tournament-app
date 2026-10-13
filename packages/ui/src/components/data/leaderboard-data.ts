@@ -23,6 +23,9 @@ export type Leaderboard = {
   rows: LeaderboardRow[]
 }
 
+/** Pusty stan klasyfikacji: przed pierwszym meczem zakończonym nie ma wierszy. */
+export const LEADERBOARD_EMPTY = 'Klasyfikacja ruszy po pierwszym zakończonym meczu'
+
 /** Statystyka do wyboru (`PublicTournament.stats`). */
 export type StatOption = { code: string; label: string }
 

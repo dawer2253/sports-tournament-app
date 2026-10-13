@@ -2,6 +2,7 @@
 
 namespace App\Leaderboards;
 
+use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use App\Models\Player;
 use App\Models\Team;
@@ -47,7 +48,7 @@ final readonly class StatLeaderboard
             ->join('matches', 'matches.id', '=', 'match_events.match_id')
             ->join('stages', 'stages.id', '=', 'matches.stage_id')
             ->where('stages.tournament_id', $tournament->id)
-            ->where('matches.status', 'finished')
+            ->whereIn('matches.status', GameMatch::RESULT_STATUSES)
             ->whereNotNull('match_events.player_id')
             ->whereIn('match_events.type', array_keys($values))
             ->groupBy('match_events.player_id', 'match_events.team_id', 'match_events.type')
