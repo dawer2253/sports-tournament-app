@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, delay } from 'msw';
+import type { AdminMatch } from '@tournament/api-client';
+import { HttpResponse, delay, http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import {
   TEAM_LOGO_URL,
@@ -12,6 +13,8 @@ import {
   serveTeams,
   validationError,
 } from '../test/teams-api';
+import { API_URL as API, server } from '../test/server';
+import { CUP_STAGE, tournamentStages } from '../test/tournament-stages';
 
 const LIST = '/tournaments/7/teams';
 const SQUAD = `${LIST}/${WILKI.id}`;
@@ -234,6 +237,90 @@ describe('usunięcie drużyny', () => {
     expect(within(dialog).queryByRole('button', { name: 'Usuń drużynę' })).not.toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Zamknij' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe(SQUAD);
+  });
+});
+
+/**
+ * Puchar z drabinką, w której Wilki stoją w półfinale (wolny los). `status`
+ * to stan ćwierćfinału bez Wilków: `live` znaczy, że drabinka już ruszyła.
+ */
+function serveCup(status: 'scheduled' | 'live') {
+  const base = {
+    stageId: CUP_STAGE.id,
+    groupId: null,
+    homePenalties: null,
+    awayPenalties: null,
+    kickoffAt: null,
+    venue: null,
+    loserToMatchId: null,
+    collisions: [],
+  };
+  const sokoly = { id: SOKOLY.id, name: SOKOLY.name, logoUrl: null };
+  const wilki = { id: WILKI.id, name: WILKI.name, logoUrl: null };
+  const matches: AdminMatch[] = [
+    {
+      ...base,
+      id: 101,
+      round: { id: 1, name: 'Półfinał', order: 1 },
+      matchNumber: 2,
+      homeTeam: sokoly,
+      awayTeam: { id: 9, name: 'Orły Wola', logoUrl: null },
+      homeScore: status === 'live' ? 0 : null,
+      awayScore: status === 'live' ? 0 : null,
+      status,
+      winnerToMatchId: 201,
+      advancesToSlot: 'away',
+    },
+    {
+      ...base,
+      id: 201,
+      round: { id: 2, name: 'Finał', order: 2 },
+      matchNumber: 1,
+      homeTeam: wilki,
+      awayTeam: null,
+      homeScore: null,
+      awayScore: null,
+      status: 'scheduled',
+      winnerToMatchId: null,
+      advancesToSlot: null,
+    },
+  ];
+  server.use(
+    tournamentStages([CUP_STAGE]),
+    http.get(`${API}/tournaments/7/matches`, () =>
+      HttpResponse.json({ data: matches, meta: { currentPage: 1, lastPage: 1, perPage: 200, total: matches.length } }),
+    ),
+  );
+}
+
+describe('usunięcie drużyny w pucharze', () => {
+  it('przed startem mówi, że drabinka zostanie skasowana, zamiast liczby meczów', async () => {
+    serveTeams({ teams: [{ ...WILKI, scheduledMatchesCount: 1 }, SOKOLY] });
+    serveCup('scheduled');
+    const { user } = await renderSquad();
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+
+    expect(await screen.findByRole('alertdialog')).toHaveAccessibleDescription(
+      'Usunie też 2 zawodników. Drabinka pucharu zostanie skasowana razem z terminami — trzeba będzie wygenerować ją ponownie.',
+    );
+  });
+
+  it('po starcie nie obiecuje skasowania, a 422 z serwera siada w oknie', async () => {
+    const reason =
+      'Nie można usunąć: drużyna „Wilki Bemowo” gra w drabince, która już się rozpoczęła. Wycofanie drużyny wpisz jako walkower.';
+    serveTeams({
+      teams: [{ ...WILKI, scheduledMatchesCount: 1 }, SOKOLY],
+      override: { 'DELETE /teams/3': () => validationError({ id: [reason] }) },
+    });
+    serveCup('live');
+    const { user } = await renderSquad();
+
+    await user.click(screen.getByRole('button', { name: 'Usuń drużynę' }));
+    const dialog = await screen.findByRole('alertdialog');
+    await waitFor(() => expect(dialog).toHaveAccessibleDescription('Usunie też 2 zawodników.'));
+    await user.click(within(dialog).getByRole('button', { name: 'Usuń drużynę' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(reason);
   });
 });
 

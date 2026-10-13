@@ -34,6 +34,18 @@ window.matchMedia = (query: string): MediaQueryList => ({
   dispatchEvent: () => false,
 });
 
+// Radix Select (np. blokada rozstawienia w oknie drabinki, #227) woła API
+// przechwytywania wskaźnika i przewijania, a Radix Switch mierzy się przez
+// `ResizeObserver`. Żadnego z nich jsdom nie ma; layoutu i tak nie liczy.
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.releasePointerCapture ??= () => {};
+Element.prototype.scrollIntoView ??= () => {};
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 afterEach(() => {
   server.resetHandlers();
   cleanup();

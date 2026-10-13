@@ -7,6 +7,9 @@ export const ROUNDS = ['kolejka', 'kolejki', 'kolejek'] as const;
 /** Kolejki w toaście po generowaniu: „Wygenerowano 1 kolejkę” (#174). */
 export const ROUNDS_ACCUSATIVE = ['kolejkę', 'kolejki', 'kolejek'] as const;
 
+/** Rundy drabinki w toaście po generowaniu: „Wygenerowano drabinkę: 3 rundy” (#227). */
+export const BRACKET_ROUNDS_ACCUSATIVE = ['rundę', 'rundy', 'rund'] as const;
+
 /** Mecze w generowaniu terminarza: „190 meczów” (#174). */
 export const MATCHES = ['mecz', 'mecze', 'meczów'] as const;
 

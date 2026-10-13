@@ -5,6 +5,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { api } from '../lib/api';
 import { LOGO_FILE_HINT, logoFileError, logoFormData, TEAM_LOGO } from '../lib/logo-file';
 import { plural, SCHEDULED_MATCHES } from '../lib/plural';
+import { hasStartedMatches } from '../lib/schedule';
+import { useStageMatches, useStages } from '../lib/schedule-queries';
 import { TEAM_LOGO_TEXTS, TEAM_TEXTS, teamKeys } from '../lib/team-queries';
 import { teamSchema, type TeamValues } from '../lib/team-schema';
 import { useListMutation } from '../lib/use-list-mutation';
@@ -82,14 +84,39 @@ function playersAccusative(count: number) {
 }
 
 /**
+ * Co stanie się z drabinką, gdy drużyna w niej stoi (#215): przed startem
+ * zniknie cała, a po starcie usunięcie odmówi serwer (`422`, okno pokaże
+ * powód). `none`, gdy drużyna nie stoi w żadnej drabince.
+ */
+type BracketImpact = 'none' | 'deleted' | 'blocked';
+
+/**
+ * Drabinka fazy pucharowej z drużyną. Fazy i mecze bierze z tych samych
+ * zapytań co karta Drabinka, więc po wejściu z niej nic nie idzie drugi raz.
+ */
+function useBracketImpact(tournamentId: number, team: Team): BracketImpact {
+  const stages = useStages(tournamentId);
+  const cup = stages.data?.find((stage) => stage.type === 'knockout');
+  const matches = useStageMatches(tournamentId, cup?.id);
+  const inBracket = (matches.data ?? []).some(
+    (match) => match.homeTeam?.id === team.id || match.awayTeam?.id === team.id,
+  );
+  if (!inBracket) return 'none';
+  return hasStartedMatches(matches.data ?? []) ? 'blocked' : 'deleted';
+}
+
+/**
  * Co jeszcze zniknie razem z drużyną: zawodnicy i jej mecze `scheduled`
  * (#171). Zdanie o meczach dopowiada, że reszta terminarza zostaje. Przy
- * zerach okno nie ma opisu.
+ * zerach okno nie ma opisu. W pucharze zamiast liczby meczów stoi zdanie
+ * o drabince (#227), a po starcie żadne, bo usunięcia i tak nie będzie.
  */
-function teamDeleteDescription({ playersCount, scheduledMatchesCount }: Team) {
+function teamDeleteDescription({ playersCount, scheduledMatchesCount }: Team, bracket: BracketImpact) {
   const sentences = [];
   if (playersCount > 0) sentences.push(`Usunie też ${playersAccusative(playersCount)}.`);
-  if (scheduledMatchesCount > 0) {
+  if (bracket === 'deleted') {
+    sentences.push('Drabinka pucharu zostanie skasowana razem z terminami — trzeba będzie wygenerować ją ponownie.');
+  } else if (bracket === 'none' && scheduledMatchesCount > 0) {
     sentences.push(
       `Usunie też ${scheduledMatchesCount} ${plural(scheduledMatchesCount, SCHEDULED_MATCHES)} drużyny.`,
       'Pozostałe mecze zostają bez zmian, z tymi samymi datami.',
@@ -107,6 +134,7 @@ type TeamDeleteDialogProps = {
 };
 
 export function TeamDeleteDialog({ tournamentId, team, onClose, onDeleted }: TeamDeleteDialogProps) {
+  const bracket = useBracketImpact(tournamentId, team);
   const mutation = useListMutation({
     texts: TEAM_TEXTS,
     // Bez kluczy usuniętej drużyny i jej składu — powód przy `teamKeys`.
@@ -128,7 +156,7 @@ export function TeamDeleteDialog({ tournamentId, team, onClose, onDeleted }: Tea
       }
       entity={TEAM_TEXTS.accusative}
       name={team.name}
-      description={teamDeleteDescription(team)}
+      description={teamDeleteDescription(team, bracket)}
       pending={mutation.pending}
       {...mutation.removeError}
     />
