@@ -123,6 +123,7 @@ export function AdminPage(props: AdminPageProps) {
       user={account}
       tournaments={tournaments}
       navHref={(key) => navRoute(key, tournament, knockoutOnly)}
+      navDisabledReason={(key) => (key === 'schedule' && knockoutOnly ? 'W pucharze terminarzem jest Drabinka' : undefined)}
       onNavigate={(key) => {
         const route = navRoute(key, tournament, knockoutOnly);
         if (route) void navigate(route);

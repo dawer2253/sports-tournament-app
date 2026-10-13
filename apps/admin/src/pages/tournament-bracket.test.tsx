@@ -434,6 +434,7 @@ describe('Drabinka — nawigacja', () => {
     const tabs = await screen.findByRole('navigation', { name: 'Sekcje turnieju' });
     await waitFor(() => expect(within(tabs).getByText('Terminarz').closest('a')).toHaveAttribute('aria-disabled', 'true'));
     expect(within(tabs).getByText('Terminarz').closest('a')).not.toHaveAttribute('href');
+    expect(within(tabs).getByText('Terminarz').closest('a')).toHaveAttribute('title', 'W pucharze terminarzem jest Drabinka');
     expect(within(tabs).getByText('Drabinka').closest('a')).toHaveAttribute('href', `/tournaments/${TOURNAMENT.id}/bracket`);
   });
 

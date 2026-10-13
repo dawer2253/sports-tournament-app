@@ -29,6 +29,10 @@ export const Domyslny: Story = {
       'Finał: FC Górka – Zwycięzca: Półfinał 2',
     ])
     await expect(canvas.queryByText(/Wolne losy/)).not.toBeInTheDocument()
+
+    // W pucharze Terminarz jest nieczynny z innego powodu niż „Wkrótce”.
+    const tabs = within(canvas.getByRole('navigation', { name: 'Sekcje turnieju' }))
+    await expect(tabs.getByText('Terminarz').closest('a')).toHaveAttribute('title', 'W pucharze terminarzem jest Drabinka')
   },
 }
 

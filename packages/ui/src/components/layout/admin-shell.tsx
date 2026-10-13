@@ -105,6 +105,12 @@ export interface AdminShellProps {
    * nawigacja jest martwa (Storybook).
    */
   navHref?: (key: AdminNavKey) => string | undefined
+  /**
+   * Dlaczego karta sekcji bez adresu jest nieczynna, do podpowiedzi
+   * (`title`). Bez powodu karta mówi „Wkrótce”, bo zwykle czeka na ekran;
+   * w pucharze Terminarz jest nieczynny z innego powodu (#227).
+   */
+  navDisabledReason?: (key: AdminSectionKey) => string | undefined
   /** Przejęcie kliknięcia w nawigację, np. przez router. */
   onNavigate?: (key: AdminNavKey) => void
   /** Adres turnieju z listy w sidebarze, czyli jego domyślnej sekcji. */
@@ -114,7 +120,7 @@ export interface AdminShellProps {
   onLogout?: () => void
 }
 
-type NavProps = Pick<AdminShellProps, 'active' | 'navHref' | 'onNavigate'>
+type NavProps = Pick<AdminShellProps, 'active' | 'navHref' | 'navDisabledReason' | 'onNavigate'>
 
 /**
  * Wspólna mechanika odnośników nawigacji: pozycji „Turnieje", turniejów
@@ -367,7 +373,7 @@ function SectionTabs(nav: NavProps) {
           <a
             key={key}
             {...linkProps}
-            title={isDisabled ? 'Wkrótce' : undefined}
+            title={isDisabled ? (nav.navDisabledReason?.(key) ?? 'Wkrótce') : undefined}
             className={sectionTabVariants({ active: isActive, disabled: isDisabled })}
           >
             <Icon className="size-4" />
@@ -520,12 +526,13 @@ export function AdminShell({
   children,
   user,
   navHref,
+  navDisabledReason,
   onNavigate,
   tournamentHref,
   onOpenTournament,
   onLogout,
 }: AdminShellProps) {
-  const nav: NavProps = { active, navHref, onNavigate }
+  const nav: NavProps = { active, navHref, navDisabledReason, onNavigate }
   const account = accountView(user)
   const sidebar: SidebarProps = { ...nav, account, tournaments, tournament, tournamentHref, onOpenTournament }
 

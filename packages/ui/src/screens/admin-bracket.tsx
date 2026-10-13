@@ -31,6 +31,7 @@ const six: SeedingTeam[] = teams.slice(0, 6).map(({ id, name }) => ({ id, name }
 
 /** W pucharze karta Terminarz jest nieczynna: Drabinka ją zastępuje (#217, ustalenie 5). */
 const navHref = (key: string) => (key === 'schedule' ? undefined : '#')
+const navDisabledReason = (key: string) => (key === 'schedule' ? 'W pucharze terminarzem jest Drabinka' : undefined)
 
 function Actions() {
   return (
@@ -105,7 +106,7 @@ export function AdminBracket({ state = 'w-trakcie' }: AdminBracketProps) {
 
   if (state === 'pusta' || state === 'rozstawienie') {
     return (
-      <TournamentShellDemo active="bracket" navHref={navHref}>
+      <TournamentShellDemo active="bracket" navHref={navHref} navDisabledReason={navDisabledReason}>
         <EmptyState
           icon={<GitFork />}
           title="Drabinka nie jest jeszcze wygenerowana"
@@ -125,7 +126,7 @@ export function AdminBracket({ state = 'w-trakcie' }: AdminBracketProps) {
   const round = rounds[index]!
 
   return (
-    <TournamentShellDemo active="bracket" navHref={navHref} actions={<Actions />}>
+    <TournamentShellDemo active="bracket" navHref={navHref} navDisabledReason={navDisabledReason} actions={<Actions />}>
       <RoundTabs
         rounds={rounds.map((candidate) => candidate.summary)}
         value={selected}
