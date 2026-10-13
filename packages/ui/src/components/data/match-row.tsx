@@ -94,16 +94,25 @@ export function CollisionBadge({ collisions, className }: { collisions: MatchCol
  */
 function Score({ match }: { match: MatchRowData }) {
   const hasScore = match.homeScore !== null && match.awayScore !== null
+  const penalties = match.homePenalties != null && match.awayPenalties != null
   return (
-    <span
-      data-slot="match-score"
-      className={cn(
-        'w-full rounded-md px-1 py-1 text-center text-sm tabular-nums',
-        hasScore ? 'font-semibold' : 'border text-muted-foreground',
-        hasScore && (match.status === 'live' ? 'bg-destructive text-destructive-foreground' : 'bg-foreground text-background'),
+    <span className="flex w-full flex-col items-center gap-0.5">
+      <span
+        data-slot="match-score"
+        className={cn(
+          'w-full rounded-md px-1 py-1 text-center text-sm tabular-nums',
+          hasScore ? 'font-semibold' : 'border text-muted-foreground',
+          hasScore && (match.status === 'live' ? 'bg-destructive text-destructive-foreground' : 'bg-foreground text-background'),
+        )}
+      >
+        {hasScore ? `${match.homeScore} : ${match.awayScore}` : '– : –'}
+      </span>
+      {/* PROTOTYP (#218): karne pod wynikiem, żeby kolumna wyniku nie rosła. */}
+      {penalties && (
+        <span className="whitespace-nowrap text-[11px] leading-none text-muted-foreground tabular-nums">
+          k. {match.homePenalties}:{match.awayPenalties}
+        </span>
       )}
-    >
-      {hasScore ? `${match.homeScore} : ${match.awayScore}` : '– : –'}
     </span>
   )
 }
@@ -165,14 +174,15 @@ export function MatchRow({
   statusDisplay = 'badge',
   className,
 }: MatchRowProps) {
-  const home = teamName(match.homeTeam)
-  const away = teamName(match.awayTeam)
+  const home = match.homeTeam ? match.homeTeam.name : (match.homeSource ?? teamName(null))
+  const away = match.awayTeam ? match.awayTeam.name : (match.awaySource ?? teamName(null))
   const label = `${home} – ${away}`
   const scorers = scorerSides(match)
 
   const content = (
     <>
       <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground @2xl/match-row:col-span-1 @2xl/match-row:block">
+        {match.positionLabel && <span className="shrink-0 font-medium text-foreground">{match.positionLabel}</span>}
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (
           <span className="flex min-w-0 items-center gap-1">
@@ -181,11 +191,11 @@ export function MatchRow({
           </span>
         )}
       </div>
-      <span data-slot="match-team" className="col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1">{home}</span>
+      <span data-slot="match-team" className={cn('col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1', !match.homeTeam && 'text-xs font-normal italic text-muted-foreground')}>{home}</span>
       <span className="col-start-2 row-start-2 flex @2xl/match-row:col-start-3 @2xl/match-row:row-start-1">
         <Score match={match} />
       </span>
-      <span data-slot="match-team" className="col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1">{away}</span>
+      <span data-slot="match-team" className={cn('col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1', !match.awayTeam && 'text-xs font-normal italic text-muted-foreground')}>{away}</span>
       <ScorerList
         lines={scorers.home}
         team={home}

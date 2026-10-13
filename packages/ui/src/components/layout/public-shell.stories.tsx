@@ -12,7 +12,7 @@ const LOGO_URL =
 
 /** Adresy zakładek, tak jak podaje je `apps/public`. */
 const navHref = (key: PublicNavKey) =>
-  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki' })[key]
+  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki', bracket: '/t/liga-osiedlowa/drabinka' })[key]
 
 const meta = {
   title: 'UI/Shell strony publicznej',

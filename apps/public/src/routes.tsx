@@ -8,6 +8,7 @@ import { StandalonePage } from './pages/standalone-page';
 import { StandingsPage } from './pages/standings';
 import { StatsPage } from './pages/stats';
 import { TournamentLayout, type TabHandle } from './pages/tournament-layout';
+import { ProtoBracketPage, ProtoFixtures, ProtoMatchPage, ProtoOverview, ProtoResults, ProtoStats } from './prototype/pages';
 
 /**
  * Drzewo tras strony publicznej, osobno od `main.tsx`: testy renderują
@@ -23,10 +24,22 @@ export const routes: RouteObject[] = [
         <a className="underline" href="/t/liga-osiedlowa-2026">
           /t/liga-osiedlowa-2026
         </a>
+        . PROTOTYP drabinki (#218):{' '}
+        <a className="underline" href="/t/puchar-demo/drabinka?variant=A">
+          /t/puchar-demo/drabinka
+        </a>
         .
       </main>
     ),
   },
+  // PROTOTYP (#218): puchar na danych w pamięci. Statyczny segment wygrywa
+  // z `:slug`, więc prawdziwe trasy turnieju zostają bez zmian.
+  { path: '/t/puchar-demo', element: <ProtoOverview /> },
+  { path: '/t/puchar-demo/drabinka', element: <ProtoBracketPage /> },
+  { path: '/t/puchar-demo/terminarz', element: <ProtoFixtures /> },
+  { path: '/t/puchar-demo/wyniki', element: <ProtoResults /> },
+  { path: '/t/puchar-demo/statystyki', element: <ProtoStats /> },
+  { path: '/t/puchar-demo/mecze/:matchId', element: <ProtoMatchPage /> },
   {
     // Trasa-rodzic wczytuje turniej raz dla wszystkich zakładek.
     path: '/t/:slug',

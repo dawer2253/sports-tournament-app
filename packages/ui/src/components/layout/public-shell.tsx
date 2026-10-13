@@ -11,16 +11,20 @@ import heroDay from '../../assets/public/hero-day.webp'
 import heroNight from '../../assets/public/hero-night.webp'
 import heroBasketball from '../../assets/public/hero-basketball.webp'
 
-/** Zakładka strony publicznej. Drabinkę dołoży S4. */
-export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'stats'
+/** Zakładka strony publicznej. */
+export type PublicNavKey = 'home' | 'standings' | 'bracket' | 'fixtures' | 'results' | 'stats'
 
-const TABS: { key: PublicNavKey; label: string }[] = [
-  { key: 'home', label: 'Przegląd' },
-  { key: 'standings', label: 'Tabela' },
-  { key: 'fixtures', label: 'Terminarz' },
-  { key: 'results', label: 'Wyniki' },
-  { key: 'stats', label: 'Statystyki' },
-]
+const LABELS: Record<PublicNavKey, string> = {
+  home: 'Przegląd',
+  standings: 'Tabela',
+  bracket: 'Drabinka',
+  fixtures: 'Terminarz',
+  results: 'Wyniki',
+  stats: 'Statystyki',
+}
+
+/** Zakładki ligi; puchar podaje własne przez `tabs` (PROTOTYP #218). */
+const LEAGUE_TABS: PublicNavKey[] = ['home', 'standings', 'fixtures', 'results', 'stats']
 
 export type { PublicShellTournament }
 
@@ -52,6 +56,8 @@ export interface PublicShellProps {
   navHref?: (key: PublicNavKey) => string | undefined
   /** Przejęcie kliknięcia w zakładkę, np. przez router. */
   onNavigate?: (key: PublicNavKey) => void
+  /** PROTOTYP (#218): zakładki i ich kolejność; bez tego zakładki ligi. */
+  tabs?: PublicNavKey[]
   children: React.ReactNode
 }
 
@@ -64,7 +70,7 @@ const tabVariants = cva('whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-c
   },
 })
 
-function Tabs({ active, navHref, onNavigate }: Pick<PublicShellProps, 'active' | 'navHref' | 'onNavigate'>) {
+function Tabs({ active, navHref, onNavigate, tabs = LEAGUE_TABS }: Pick<PublicShellProps, 'active' | 'navHref' | 'onNavigate' | 'tabs'>) {
   const activeRef = React.useRef<HTMLAnchorElement>(null)
 
   // Na telefonie pięć zakładek nie mieści się i pasek przewija się w bok.
@@ -82,7 +88,8 @@ function Tabs({ active, navHref, onNavigate }: Pick<PublicShellProps, 'active' |
 
   return (
     <nav aria-label="Sekcje turnieju" className="relative mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 text-sm sm:px-6">
-      {TABS.map(({ key, label }) => {
+      {tabs.map((key) => {
+        const label = LABELS[key]
         const isActive = key === active
         return (
           <a
@@ -147,7 +154,7 @@ function HeroLayers({ hero }: { hero: Hero }) {
  * Obie zmienne stoją na korzeniu shella, więc trzymają się też ekranów pod
  * nim (`PhotoPanel`, domyślne logo).
  */
-export function PublicShell({ tournament, active, navHref, onNavigate, children }: PublicShellProps) {
+export function PublicShell({ tournament, active, navHref, onNavigate, tabs, children }: PublicShellProps) {
   const { primaryColor, logoUrl } = tournament.branding
   const hero = HERO_BY_SPORT[tournament.sport.code]
   const brand = {
@@ -180,7 +187,7 @@ export function PublicShell({ tournament, active, navHref, onNavigate, children 
             </MetaList>
           </div>
         </div>
-        <Tabs active={active} navHref={navHref} onNavigate={onNavigate} />
+        <Tabs active={active} navHref={navHref} onNavigate={onNavigate} tabs={tabs} />
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">{children}</main>

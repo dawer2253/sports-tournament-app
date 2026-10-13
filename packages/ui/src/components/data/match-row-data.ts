@@ -28,6 +28,14 @@ export type MatchRowData = {
    * samo: pod wynikiem nic nie stoi.
    */
   scorers?: MatchScorer[]
+  /** PROTOTYP (#218): karne meczu pucharowego rozstrzygniętego remisem. */
+  homePenalties?: number | null
+  awayPenalties?: number | null
+  /** PROTOTYP (#218): etykieta pozycji w drabince, np. „Półfinał 1”, „Mecz o 3. miejsce”. */
+  positionLabel?: string
+  /** PROTOTYP (#218): skąd przyjdzie drużyna do pustego slotu, np. „Zwycięzca: Półfinał 1”. */
+  homeSource?: string
+  awaySource?: string
 }
 
 /**
