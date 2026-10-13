@@ -10,6 +10,7 @@ import { TournamentSettingsPage } from './pages/tournament-settings';
 import { TournamentStandingsPage } from './pages/tournament-standings';
 import { TournamentVenuesPage } from './pages/tournament-venues';
 import { TournamentsPage } from './pages/tournaments';
+import { BracketPrototypePage, CupSchedulePrototypePage } from './prototype/pages';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   return getToken() ? children : <Navigate to="/login" replace />;
@@ -62,7 +63,12 @@ export const routes: RouteObject[] = [
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
       { path: 'standings', element: <TournamentStandingsPage /> },
-      { path: 'schedule', element: <TournamentSchedulePage /> },
+      // PROTOTYP (#217): ekran drabinki w czterech wariantach (`?variant=`).
+      // Na tej gałęzi każdy turniej udaje puchar, więc Terminarz to terminarz
+      // pucharu; ligowy zostaje pod `schedule-league`.
+      { path: 'schedule', element: <CupSchedulePrototypePage /> },
+      { path: 'schedule-league', element: <TournamentSchedulePage /> },
+      { path: 'bracket', element: <BracketPrototypePage /> },
     ],
   },
 ];

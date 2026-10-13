@@ -4,6 +4,7 @@ import { AdminShell, type AdminNavKey, type AdminSectionKey } from '@tournament/
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
+import { currentVariant, replacesSchedule } from '../prototype/variant';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
 import { useCurrentTournaments } from '../lib/use-current-tournaments';
@@ -31,8 +32,13 @@ function navRoute(key: AdminNavKey, tournament: Tournament | undefined): string 
   if (key === 'dashboard') return '/';
   if (key === 'create') return '/tournaments/new';
   if (!tournament) return undefined;
+  // PROTOTYP (#217): Drabinka ma trasę, wariant jedzie z kartą, a w B i D
+  // Terminarz jest nieczynny (Drabinka go zastępuje).
+  const variant = currentVariant();
+  if (key === 'bracket') return `${tournamentRoute(tournament.id)}/bracket?variant=${variant}`;
+  if (key === 'schedule') return replacesSchedule(variant) ? undefined : `${tournamentRoute(tournament.id)}/schedule?variant=${variant}`;
   const section = SECTION_ROUTES[key];
-  return section && `${tournamentRoute(tournament.id)}/${section}`;
+  return section && `${tournamentRoute(tournament.id)}/${section}?variant=${variant}`;
 }
 
 interface CommonProps {
