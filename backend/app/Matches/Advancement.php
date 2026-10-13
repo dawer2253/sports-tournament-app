@@ -20,9 +20,9 @@ use Illuminate\Validation\ValidationException;
  * żadna krawędź.
  *
  * **Blokada**: gdy którykolwiek mecz zależny do ruszenia jest rozpoczęty,
- * cała zmiana daje `422` i nic się nie zapisuje. Kaskady dalej niż jeden
- * poziom nie ma, bo rozpoczęty mecz zależny blokuje, a zaplanowany nie ma
- * zwycięzcy, który mógłby awansować.
+ * cała zmiana daje `422` i nic się nie zapisuje. Zmiana nie sięga dalej niż
+ * do meczów zależnych, bo rozpoczęty mecz zależny blokuje, a zaplanowany nie
+ * ma zwycięzcy, który mógłby awansować.
  */
 final class Advancement
 {
@@ -45,11 +45,11 @@ final class Advancement
 
             /** @var list<array{GameMatch, ?int}> $moves */
             $moves = [];
-            foreach (['winner' => $match->winner_to_match_id, 'loser' => $match->loser_to_match_id] as $role => $targetId) {
+            foreach (['winner' => $match->winner_to_match_id, 'loser' => $match->loser_to_match_id] as $role => $dependentId) {
                 $team = $match->teamIdOf($role);
 
-                if ($targetId !== null && $team !== $before[$role]) {
-                    $moves[] = [GameMatch::query()->lockForUpdate()->findOrFail($targetId), $team];
+                if ($dependentId !== null && $team !== $before[$role]) {
+                    $moves[] = [GameMatch::query()->lockForUpdate()->findOrFail($dependentId), $team];
                 }
             }
 
@@ -61,8 +61,8 @@ final class Advancement
 
             $match->save();
 
-            foreach ($moves as [$target, $team]) {
-                $target->update(["{$match->advances_to_slot}_team_id" => $team]);
+            foreach ($moves as [$dependent, $team]) {
+                $dependent->update(["{$match->advances_to_slot}_team_id" => $team]);
             }
 
             return $match;

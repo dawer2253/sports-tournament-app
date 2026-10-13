@@ -145,7 +145,11 @@ class GameMatch extends Model
         return $this->home_penalties > $this->away_penalties ? 'home' : 'away';
     }
 
-    /** Drużyna zwycięzcy albo przegranego meczu zakończonego, jeśli już jest. */
+    /**
+     * Drużyna zwycięzcy albo przegranego meczu zakończonego, jeśli już jest.
+     *
+     * @param  'winner'|'loser'  $role
+     */
     public function teamIdOf(string $role): ?int
     {
         $winner = $this->winnerSide();

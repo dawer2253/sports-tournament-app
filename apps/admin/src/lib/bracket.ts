@@ -197,18 +197,21 @@ export function advanceNote(original: AdminMatch, draft: BracketScore, matches: 
       ['winner', original.winnerToMatchId],
       ['loser', original.loserToMatchId],
     ] as const
-  ).flatMap(([role, targetId]) => {
-    const target = matches.find((candidate) => candidate.id === targetId);
+  ).flatMap(([role, dependentId]) => {
+    const dependent = matches.find((candidate) => candidate.id === dependentId);
     const from = teamOf(original, original, role);
     const to = teamOf(original, draft, role);
-    return target && from?.id !== to?.id ? [{ target, label: matchLabel(target, matches), from, to }] : [];
+    return dependent && from?.id !== to?.id ? [{ dependent, label: matchLabel(dependent, matches), from, to }] : [];
   });
   if (moves.length === 0) return null;
 
-  const started = moves.filter(({ target }) => target.status !== 'scheduled');
+  const started = moves.filter(({ dependent }) => dependent.status !== 'scheduled');
   if (started.length > 0) {
     const listed = started
-      .map(({ target, label }) => `${label} (${target.homeTeam?.name ?? 'Do ustalenia'} – ${target.awayTeam?.name ?? 'Do ustalenia'})`)
+      .map(({ dependent, label }) => {
+        const pair = `${dependent.homeTeam?.name ?? 'Do ustalenia'} – ${dependent.awayTeam?.name ?? 'Do ustalenia'}`;
+        return `${label} (${pair})`;
+      })
       .join(', ');
     return {
       tone: 'block',
