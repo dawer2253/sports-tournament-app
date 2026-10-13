@@ -87,43 +87,59 @@ export function MatchLink({
 
 export const TILE_H = 52;
 
-function TeamLine({ team, source, outcome }: { team: ProtoTeam | null; source?: string; outcome: 'won' | 'lost' | null }) {
+/**
+ * Linia drużyny: nazwa i, po karnych, ich wynik w nawiasie tuż przed szarym
+ * polem. Wysokość linii `leading-normal` mieści dolne wydłużenia („y”, „ę”),
+ * które `truncate` przy `leading-none` obcinał.
+ */
+function TeamLine({
+  team,
+  source,
+  outcome,
+  penalties,
+}: {
+  team: ProtoTeam | null;
+  source?: string;
+  outcome: 'won' | 'lost' | null;
+  penalties: number | null;
+}) {
   return (
     <span
       className={cn(
-        'flex h-[22px] min-w-0 items-center truncate',
+        'flex h-[22px] min-w-0 items-center gap-1.5 leading-normal',
         !team && 'text-[11px] italic text-muted-foreground',
         outcome === 'won' && 'font-semibold',
         outcome === 'lost' && 'text-muted-foreground',
       )}
     >
-      <span className="truncate">{team?.name ?? source ?? 'Do ustalenia'}</span>
+      <span className="min-w-0 flex-1 truncate">{team?.name ?? source ?? 'Do ustalenia'}</span>
+      {penalties !== null && (
+        <span className="shrink-0 text-[11px] font-normal text-muted-foreground tabular-nums">({penalties})</span>
+      )}
     </span>
   );
 }
 
-function ScoreLine({ score, penalties, outcome, live }: { score: number | null; penalties: number | null; outcome: 'won' | 'lost' | null; live: boolean }) {
+function ScoreLine({ score, outcome, live }: { score: number | null; outcome: 'won' | 'lost' | null; live: boolean }) {
   return (
-    <span className="flex h-[22px] items-center justify-end gap-1">
-      {penalties !== null && <span className="text-[10px] font-normal text-muted-foreground">({penalties})</span>}
-      <span
-        className={cn(
-          'min-w-[1.25rem] text-right',
-          outcome === 'won' && 'font-semibold',
-          outcome === 'lost' && 'text-muted-foreground',
-          live && 'font-semibold text-destructive',
-        )}
-      >
-        {score ?? '–'}
-      </span>
+    <span
+      className={cn(
+        'flex h-[22px] items-center justify-end leading-normal',
+        outcome === 'won' && 'font-semibold',
+        outcome === 'lost' && 'text-muted-foreground',
+        live && 'font-semibold text-destructive',
+      )}
+    >
+      {score ?? '–'}
     </span>
   );
 }
 
 /**
- * Kafel meczu w dwóch liniach: drużyna na linię, wynik w stałej kolumnie po
- * prawej. Zaplanowany mecz ma tam termin, jak SofaScore. Karne stoją przed
- * wynikiem w nawiasie, żeby sam wynik nie zmieniał miejsca.
+ * Kafel meczu w dwóch liniach: drużyna na linię, wynik w szarym polu stałej
+ * szerokości po prawej. Zaplanowany mecz ma tam termin, jak SofaScore. Karne
+ * stoją w nawiasie przy nazwie, poza szarym polem, więc pole ma tę samą
+ * szerokość w każdym kaflu, z karnymi i bez.
  */
 export function MatchTile({
   match,
@@ -153,10 +169,10 @@ export function MatchTile({
     >
       {live && <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-destructive" />}
       <span className="flex min-w-0 flex-col justify-center py-1 pr-1 pl-2.5">
-        <TeamLine team={match.homeTeam} source={sources ? match.homeSource : undefined} outcome={outcome('home')} />
-        <TeamLine team={match.awayTeam} source={sources ? match.awaySource : undefined} outcome={outcome('away')} />
+        <TeamLine team={match.homeTeam} source={sources ? match.homeSource : undefined} outcome={outcome('home')} penalties={match.homePenalties} />
+        <TeamLine team={match.awayTeam} source={sources ? match.awaySource : undefined} outcome={outcome('away')} penalties={match.awayPenalties} />
       </span>
-      <span className="flex min-w-[2.75rem] flex-col justify-center border-l bg-muted/30 px-2 tabular-nums">
+      <span className="flex w-12 shrink-0 flex-col justify-center border-l bg-muted/30 px-2 tabular-nums">
         {match.status === 'scheduled' ? (
           <span className="flex flex-col items-end gap-1 text-[11px] leading-none text-muted-foreground">
             <span>{when.day}</span>
@@ -164,8 +180,8 @@ export function MatchTile({
           </span>
         ) : (
           <>
-            <ScoreLine score={match.homeScore} penalties={match.homePenalties} outcome={outcome('home')} live={live} />
-            <ScoreLine score={match.awayScore} penalties={match.awayPenalties} outcome={outcome('away')} live={live} />
+            <ScoreLine score={match.homeScore} outcome={outcome('home')} live={live} />
+            <ScoreLine score={match.awayScore} outcome={outcome('away')} live={live} />
           </>
         )}
       </span>
@@ -179,8 +195,8 @@ export function ByeTile({ team, className, style }: { team: ProtoTeam; className
       className={cn('flex flex-col justify-center rounded-lg border border-dashed px-2.5 text-[13px] leading-none text-muted-foreground', className)}
       style={{ height: TILE_H, ...style }}
     >
-      <span className="truncate">{team.name}</span>
-      <span className="mt-1.5 text-[11px] italic">wolny los</span>
+      <span className="truncate leading-normal">{team.name}</span>
+      <span className="text-[11px] leading-normal italic">wolny los</span>
     </div>
   );
 }
