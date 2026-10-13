@@ -56,8 +56,9 @@ npm run storybook     # design system na :6006
 Mecze mają w kontrakcie trzy przykłady: ligowy (domyślny), pucharowy i
 koszykarski. Żeby mock oddał drabinkę, dołóż do żądania nagłówek
 `Prefer: example=puchar`. Osobny przełącznik, `Prefer: example=koszykowka`,
-oddaje turniej koszykarski — obsługują go publiczne tabele **i**
-`/public/t/{slug}`, a w panelu turniej, terminarz, tabela i zdarzenia meczu
+oddaje turniej koszykarski — obsługują go publiczne tabele,
+`/public/t/{slug}` **i** publiczne `/fixtures` i `/results` (strzelcy
+z sumami rzutów), a w panelu turniej, terminarz, tabela i zdarzenia meczu
 (`GET /matches/{match}/events`, rzuty za 1, 2 i 3), więc oba widoki
 mówią o tym samym sporcie, a zdobycze nazywają się w nim „Punkty", a nie
 „Bramki". Ten turniej ma odpowiednik w seedzie demo (`liga-koszykowki-2026`).
