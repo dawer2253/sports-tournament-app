@@ -241,6 +241,7 @@ paths:
                       allowsDraw: true
                       defaultPoints: { win: 3, draw: 1, loss: 0 }
                       defaultMatchDuration: 60
+                      defaultPeriods: { count: 2, minutes: 45 }
                       eventTypes:
                         - { code: goal, label: Bramka, hasPlayer: true, value: 1, stat: goals }
                         - { code: own_goal, label: Bramka samobójcza, hasPlayer: true, value: 1, stat: null }
@@ -266,6 +267,7 @@ paths:
                       allowsDraw: false
                       defaultPoints: { win: 2, draw: 0, loss: 1 }
                       defaultMatchDuration: 40
+                      defaultPeriods: { count: 4, minutes: 10 }
                       eventTypes:
                         - { code: free_throw, label: Rzut wolny, hasPlayer: true, value: 1, stat: points }
                         - { code: two_pointer, label: Rzut za 2, hasPlayer: true, value: 2, stat: points }
@@ -341,6 +343,7 @@ paths:
                     points: { win: 2, draw: 0, loss: 1 }
                     tiebreakers: [points, head_to_head, score_diff]
                     matchDuration: 40
+                    periods: { count: 4, minutes: 10 }
                     teamsCount: 8
                     createdAt: '2026-09-10T07:00:00+00:00'
                     updatedAt: '2026-09-10T07:00:00+00:00'
@@ -353,6 +356,7 @@ paths:
                     points: { win: 3, draw: 1, loss: 0 }
                     tiebreakers: [points, head_to_head, score_diff, score_for]
                     matchDuration: 60
+                    periods: { count: 2, minutes: 45 }
                     teamsCount: 3
                     createdAt: '2026-09-01T08:00:00+00:00'
                     updatedAt: '2026-09-14T16:30:00+00:00'
@@ -398,6 +402,7 @@ paths:
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   matchDuration: 60
+                  periods: { count: 2, minutes: 45 }
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -440,6 +445,7 @@ paths:
                       points: { win: 3, draw: 1, loss: 0 }
                       tiebreakers: [points, head_to_head, score_diff, score_for]
                       matchDuration: 60
+                      periods: { count: 2, minutes: 45 }
                       teamsCount: 3
                       createdAt: '2026-09-01T08:00:00+00:00'
                       updatedAt: '2026-09-14T16:30:00+00:00'
@@ -456,6 +462,7 @@ paths:
                       points: { win: 2, draw: 0, loss: 1 }
                       tiebreakers: [points, head_to_head, score_diff]
                       matchDuration: 40
+                      periods: { count: 4, minutes: 10 }
                       teamsCount: 2
                       createdAt: '2026-09-01T08:00:00+00:00'
                       updatedAt: '2026-09-14T16:30:00+00:00'
@@ -567,6 +574,7 @@ paths:
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   matchDuration: 60
+                  periods: { count: 2, minutes: 45 }
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -601,6 +609,7 @@ paths:
                   points: { win: 3, draw: 1, loss: 0 }
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   matchDuration: 60
+                  periods: { count: 2, minutes: 45 }
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -2748,6 +2757,174 @@ paths:
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
+  /public/t/{slug}/matches/{match}:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/MatchId' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
+    get:
+      tags: [Public]
+      summary: Strona meczu
+      description: |
+        Jeden mecz z relacją (#210): strzelcy, zdarzenia z częścią meczu
+        i bieżącym wynikiem oraz wyniki części (`PublicMatchDetail`). Mecz
+        innego turnieju, mecz nieistniejący i mecz turnieju w `draft` dają
+        ten sam `404` co nieznany slug.
+
+        Przykłady są trzy: `pilka` (domyślny; zakończony, z samobójem,
+        kartką i zdarzeniem bez minuty), `koszykowka` (rzuty za 1, 2 i 3,
+        faule, cztery kwarty) i `na-zywo` (mecz trwający). Mock zwraca
+        wybrany po nagłówku `Prefer: example=…`, dla każdego `match` ten sam.
+      security: []
+      responses:
+        '200':
+          description: Mecz z relacją
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/PublicMatchDetail' }
+              examples:
+                pilka:
+                  summary: Orły Bielany – Wilki Bemowo 0:3, z samobójem
+                  description: |
+                    Mecz 2 z przykładu `pilka` w `/results`, z tymi samymi
+                    strzelcami. Samobój Mazura należy do Orłów, a wynik
+                    podnosi Wilkom. Żółta kartka Wrony nie ma minuty, więc
+                    stoi na końcu, bez części, a turniej gra 2 × 45 minut.
+                  value:
+                    data:
+                      id: 2
+                      stageId: 1
+                      groupId: null
+                      round: { id: 2, name: Kolejka 2, order: 2 }
+                      matchNumber: 1
+                      homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                      awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                      homeScore: 0
+                      awayScore: 3
+                      homePenalties: null
+                      awayPenalties: null
+                      status: finished
+                      kickoffAt: '2026-09-13T10:00:00+00:00'
+                      venue: { id: 1, name: Boisko Bemowo }
+                      winnerToMatchId: null
+                      loserToMatchId: null
+                      advancesToSlot: null
+                      scorers:
+                        - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [12, 58], ownGoal: false }
+                        - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [81], ownGoal: true }
+                      events:
+                        - { id: 11, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, type: goal, typeLabel: Bramka, minute: 12, period: 1, scoreAfter: { home: 0, away: 1 } }
+                        - { id: 12, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, type: yellow_card, typeLabel: Żółta kartka, minute: 40, period: 1, scoreAfter: null }
+                        - { id: 13, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, type: goal, typeLabel: Bramka, minute: 58, period: 2, scoreAfter: { home: 0, away: 2 } }
+                        - { id: 14, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, type: own_goal, typeLabel: Bramka samobójcza, minute: 81, period: 2, scoreAfter: { home: 0, away: 3 } }
+                        - { id: 15, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, type: yellow_card, typeLabel: Żółta kartka, minute: null, period: null, scoreAfter: null }
+                      periods:
+                        - { number: 1, label: 1. połowa, homeScore: 0, awayScore: 1 }
+                        - { number: 2, label: 2. połowa, homeScore: 0, awayScore: 2 }
+                koszykowka:
+                  summary: Żubry Wola – Rysie Mokotów 21:22, cztery kwarty
+                  description: |
+                    Mecz skrócony do 24 zdarzeń, żeby ich `value` sumowało się
+                    do wyniku. Turniej gra 4 × 10 minut. Faule nie zmieniają
+                    wyniku, więc mają `scoreAfter: null`.
+                  value:
+                    data:
+                      id: 3
+                      stageId: 1
+                      groupId: null
+                      round: { id: 3, name: Kolejka 3, order: 3 }
+                      matchNumber: 1
+                      homeTeam: { id: 4, name: Żubry Wola, logoUrl: null }
+                      awayTeam: { id: 5, name: Rysie Mokotów, logoUrl: null }
+                      homeScore: 21
+                      awayScore: 22
+                      homePenalties: null
+                      awayPenalties: null
+                      status: finished
+                      kickoffAt: '2026-09-20T16:00:00+00:00'
+                      venue: { id: 1, name: Hala Bemowo }
+                      winnerToMatchId: null
+                      loserToMatchId: null
+                      advancesToSlot: null
+                      scorers:
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 7, minutes: [2, 13, 24], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 7, minutes: [3, 22, 35], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, value: 7, minutes: [5, 18, 29, 38], ownGoal: false }
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, value: 8, minutes: [8, 19, 31, 39], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 8, minutes: [12, 33, 40], ownGoal: false }
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 6, minutes: [16, 27, 37], ownGoal: false }
+                      events:
+                          - { id: 101, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: two_pointer, typeLabel: Rzut za 2, minute: 2, period: 1, scoreAfter: { home: 2, away: 0 } }
+                          - { id: 102, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: three_pointer, typeLabel: Rzut za 3, minute: 3, period: 1, scoreAfter: { home: 2, away: 3 } }
+                          - { id: 103, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: foul, typeLabel: Faul, minute: 5, period: 1, scoreAfter: null }
+                          - { id: 104, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: free_throw, typeLabel: Rzut wolny, minute: 5, period: 1, scoreAfter: { home: 2, away: 4 } }
+                          - { id: 105, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: three_pointer, typeLabel: Rzut za 3, minute: 8, period: 1, scoreAfter: { home: 5, away: 4 } }
+                          - { id: 106, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: two_pointer, typeLabel: Rzut za 2, minute: 12, period: 2, scoreAfter: { home: 5, away: 6 } }
+                          - { id: 107, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: two_pointer, typeLabel: Rzut za 2, minute: 13, period: 2, scoreAfter: { home: 7, away: 6 } }
+                          - { id: 108, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: foul, typeLabel: Faul, minute: 15, period: 2, scoreAfter: null }
+                          - { id: 109, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: free_throw, typeLabel: Rzut wolny, minute: 16, period: 2, scoreAfter: { home: 8, away: 6 } }
+                          - { id: 110, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: three_pointer, typeLabel: Rzut za 3, minute: 18, period: 2, scoreAfter: { home: 8, away: 9 } }
+                          - { id: 111, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: two_pointer, typeLabel: Rzut za 2, minute: 19, period: 2, scoreAfter: { home: 10, away: 9 } }
+                          - { id: 112, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: two_pointer, typeLabel: Rzut za 2, minute: 22, period: 3, scoreAfter: { home: 10, away: 11 } }
+                          - { id: 113, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: three_pointer, typeLabel: Rzut za 3, minute: 24, period: 3, scoreAfter: { home: 13, away: 11 } }
+                          - { id: 114, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: foul, typeLabel: Faul, minute: 25, period: 3, scoreAfter: null }
+                          - { id: 115, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: two_pointer, typeLabel: Rzut za 2, minute: 27, period: 3, scoreAfter: { home: 15, away: 11 } }
+                          - { id: 116, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: two_pointer, typeLabel: Rzut za 2, minute: 29, period: 3, scoreAfter: { home: 15, away: 13 } }
+                          - { id: 117, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: free_throw, typeLabel: Rzut wolny, minute: 31, period: 4, scoreAfter: { home: 16, away: 13 } }
+                          - { id: 118, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: three_pointer, typeLabel: Rzut za 3, minute: 33, period: 4, scoreAfter: { home: 16, away: 16 } }
+                          - { id: 119, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: foul, typeLabel: Faul, minute: 34, period: 4, scoreAfter: null }
+                          - { id: 120, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: two_pointer, typeLabel: Rzut za 2, minute: 35, period: 4, scoreAfter: { home: 16, away: 18 } }
+                          - { id: 121, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: three_pointer, typeLabel: Rzut za 3, minute: 37, period: 4, scoreAfter: { home: 19, away: 18 } }
+                          - { id: 122, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: free_throw, typeLabel: Rzut wolny, minute: 38, period: 4, scoreAfter: { home: 19, away: 19 } }
+                          - { id: 123, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: two_pointer, typeLabel: Rzut za 2, minute: 39, period: 4, scoreAfter: { home: 21, away: 19 } }
+                          - { id: 124, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: three_pointer, typeLabel: Rzut za 3, minute: 40, period: 4, scoreAfter: { home: 21, away: 22 } }
+                      periods:
+                          - { number: 1, label: 1. kwarta, homeScore: 5, awayScore: 4 }
+                          - { number: 2, label: 2. kwarta, homeScore: 5, awayScore: 5 }
+                          - { number: 3, label: 3. kwarta, homeScore: 5, awayScore: 4 }
+                          - { number: 4, label: 4. kwarta, homeScore: 6, awayScore: 9 }
+                na-zywo:
+                  summary: Wilki Bemowo – Orły Bielany 1:1, mecz trwa
+                  description: Mecz trwający, w 2. połowie. Strzelcy i relacja dochodzą w trakcie.
+                  value:
+                    data:
+                      id: 4
+                      stageId: 1
+                      groupId: null
+                      round: { id: 3, name: Kolejka 3, order: 3 }
+                      matchNumber: 2
+                      homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                      awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                      homeScore: 1
+                      awayScore: 1
+                      homePenalties: null
+                      awayPenalties: null
+                      status: live
+                      kickoffAt: '2026-09-20T12:00:00+00:00'
+                      venue: { id: 1, name: Boisko Bemowo }
+                      winnerToMatchId: null
+                      loserToMatchId: null
+                      advancesToSlot: null
+                      scorers:
+                        - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, value: 1, minutes: [15], ownGoal: false }
+                        - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, value: 1, minutes: [52], ownGoal: false }
+                      events:
+                        - { id: 21, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, type: goal, typeLabel: Bramka, minute: 15, period: 1, scoreAfter: { home: 1, away: 0 } }
+                        - { id: 22, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, type: yellow_card, typeLabel: Żółta kartka, minute: 33, period: 1, scoreAfter: null }
+                        - { id: 23, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, type: goal, typeLabel: Bramka, minute: 52, period: 2, scoreAfter: { home: 1, away: 1 } }
+                      periods:
+                        - { number: 1, label: 1. połowa, homeScore: 1, awayScore: 0 }
+                        - { number: 2, label: 2. połowa, homeScore: 0, awayScore: 1 }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
   /public/t/{slug}/leaderboard:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
@@ -3153,7 +3330,7 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, defaultMatchDuration, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
+      required: [allowsDraw, defaultPoints, defaultMatchDuration, defaultPeriods, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
       properties:
         allowsDraw:
           type: boolean
@@ -3167,6 +3344,15 @@ components:
             Domyślna długość meczu w minutach, razem z przerwą po nim,
             kopiowana do turnieju przy zakładaniu (`Tournament.matchDuration`).
             Wartości amatorskie: piłka nożna 60, koszykówka 40.
+        defaultPeriods:
+          allOf:
+            - $ref: '#/components/schemas/MatchPeriods'
+          description: |
+            Domyślny podział meczu na części, kopiowany do turnieju przy
+            zakładaniu (`Tournament.periods`), wzorem `defaultMatchDuration`.
+            Piłka nożna `{ count: 2, minutes: 45 }`, koszykówka
+            `{ count: 4, minutes: 10 }`. Z `defaultMatchDuration` się go nie
+            wylicza: tamta długość jest amatorska i zawiera przerwę.
         eventTypes:
           type: array
           items: { $ref: '#/components/schemas/SportEventType' }
@@ -3273,9 +3459,36 @@ components:
           type: string
           pattern: '^#[0-9A-Fa-f]{6}$'
 
+    MatchPeriods:
+      type: object
+      required: [count, minutes]
+      description: |
+        Podział meczu na części (połowy, tercje, kwarty). Etykieta części
+        wynika z ich liczby, a nie ze sportu: 2 → „połowa”, 3 → „tercja”,
+        4 → „kwarta”, inna liczba → „część”. Serwer składa ją z numerem,
+        np. „1. połowa” (`PublicMatchPeriod.label`).
+
+        Przy zapisie (`TournamentUpdate.periods`) `count` spoza 1–10 daje
+        `422` pod `periods.count`, a `minutes` niezgodne z `count` — liczba
+        przy jednej części albo brak liczby (lub liczba spoza 1–150) przy
+        kilku — `422` pod `periods.minutes`.
+      properties:
+        count:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Liczba części. `1` znaczy „bez podziału”.
+        minutes:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 150
+          description: |
+            Długość jednej części w minutach. `null` wtedy i tylko wtedy, gdy
+            `count` wynosi 1.
+
     Tournament:
       type: object
-      required: [id, name, slug, status, sport, branding, points, tiebreakers, matchDuration, teamsCount, createdAt, updatedAt]
+      required: [id, name, slug, status, sport, branding, points, tiebreakers, matchDuration, periods, teamsCount, createdAt, updatedAt]
       properties:
         id: { type: integer, format: int64 }
         name: { type: string }
@@ -3302,6 +3515,15 @@ components:
             kopię `SportConfig.defaultMatchDuration`, a potem organizer zmienia
             ją u siebie. Zmiana nie przesuwa żadnego `kickoffAt` — zmienia tylko
             to, co liczy się jako kolizja.
+        periods:
+          allOf:
+            - $ref: '#/components/schemas/MatchPeriods'
+          description: |
+            Podział meczu turnieju. Turniej dostaje go przy zakładaniu jako
+            kopię `SportConfig.defaultPeriods`, a potem organizer zmienia go
+            u siebie. Zmiana działa wstecz na wszystkie mecze turnieju: część
+            zdarzenia liczy się przy odczycie z jego minuty
+            (`PublicMatchEvent.period`), a w zdarzeniach nic się nie zapisuje.
         teamsCount: { type: integer, minimum: 0 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -3328,6 +3550,13 @@ components:
             Długość meczu w minutach (10–600), razem z przerwą po nim.
             Zmiana nie przesuwa terminów meczów: zmienia tylko to, co liczy się
             jako kolizja.
+        periods:
+          allOf:
+            - $ref: '#/components/schemas/MatchPeriods'
+          description: |
+            Podział meczu (`Tournament.periods`). Przychodzi w komplecie albo
+            wcale; reguły i klucze błędów opisuje `MatchPeriods`. Zmiana
+            przelicza relacje wszystkich meczów turnieju na stronie publicznej.
         branding:
           type: object
           additionalProperties: false
@@ -3791,6 +4020,97 @@ components:
           description: |
             Samobój. Tworzy osobny wiersz, nawet gdy ten sam zawodnik strzelił
             w meczu też do bramki przeciwnika.
+
+    PublicMatchDetail:
+      description: |
+        Strona meczu (`GET /public/t/{slug}/matches/{match}`, #210): kształt
+        `PublicMatch` ze strzelcami, plus relacja — zdarzenia z częścią meczu
+        i bieżącym wynikiem — i wyniki części. Wszystko, co wymaga
+        konfiguracji sportu i ustawień turnieju, liczy serwer: strona
+        publiczna ich nie zna.
+
+        **Zgodność z wynikiem.** API nie pilnuje zgodności zdarzeń z wynikiem
+        meczu (#188, reguła 11). Gdy suma zdobyczy ze zdarzeń (jak
+        w `PublicMatchEvent.scoreAfter`) nie równa się `homeScore:awayScore`,
+        **wszystkie** `events[].scoreAfter` oraz `periods[].homeScore`
+        i `awayScore` są `null`: strona nie może pokazać bieżącego wyniku,
+        który kończy się na innym niż wynik w nagłówku.
+      allOf:
+        - $ref: '#/components/schemas/PublicMatch'
+        - type: object
+          required: [events, periods]
+          properties:
+            events:
+              type: array
+              description: |
+                Wszystkie zdarzenia meczu, w kolejności jak
+                w `GET /matches/{match}/events`: `minute` rosnąco, zdarzenia
+                bez minuty na końcu, a przy tej samej minucie (albo jej braku)
+                `id` rosnąco. Mecz `scheduled` ma `events: []`.
+              items: { $ref: '#/components/schemas/PublicMatchEvent' }
+            periods:
+              type: array
+              description: |
+                Części meczu według `Tournament.periods`, w których jest co
+                najmniej jedno zdarzenie, rosnąco po `number`. Turniej bez
+                podziału (`count: 1`) i mecz `scheduled` mają `periods: []`.
+              items: { $ref: '#/components/schemas/PublicMatchPeriod' }
+
+    PublicMatchEvent:
+      description: Zdarzenie na stronie meczu — `MatchEvent` plus część meczu i wynik po zdarzeniu.
+      allOf:
+        - $ref: '#/components/schemas/MatchEvent'
+        - type: object
+          required: [period, scoreAfter]
+          properties:
+            period:
+              type: [integer, 'null']
+              minimum: 1
+              description: |
+                Numer części meczu według `Tournament.periods`:
+                `min(count, ceil(minute / minutes))`, więc doliczony czas
+                i dogrywka trafiają do ostatniej części. `null` przy zdarzeniu
+                bez minuty i przy każdym zdarzeniu turnieju bez podziału
+                (`count: 1`).
+            scoreAfter:
+              oneOf:
+                - $ref: '#/components/schemas/ScoreSnapshot'
+                - { type: 'null' }
+              description: |
+                Wynik meczu po tym zdarzeniu. Niepusty tylko przy zdarzeniu,
+                które zmienia wynik: typie, którego `stat` to pierwszy wpis
+                `availableStats` sportu (piłka `goals`, kosz `points`), oraz
+                samobóju, który podnosi wynik **przeciwnika** drużyny
+                `team`. Zdobycz to `SportEventType.value`, a zdarzenia liczą
+                się w kolejności listy, także te bez minuty. `null` przy
+                kartce, faulu i przy niezgodności z wynikiem meczu (opis
+                `PublicMatchDetail`).
+
+    PublicMatchPeriod:
+      type: object
+      required: [number, label, homeScore, awayScore]
+      description: Część meczu z co najmniej jednym zdarzeniem i jej wynik.
+      properties:
+        number: { type: integer, minimum: 1, maximum: 10 }
+        label:
+          type: string
+          description: Etykieta z numerem według liczby części (`MatchPeriods`), np. „1. połowa”, „3. kwarta”.
+        homeScore:
+          type: [integer, 'null']
+          minimum: 0
+          description: Zdobycze gospodarza w tej części. `null` przy niezgodności z wynikiem meczu.
+        awayScore:
+          type: [integer, 'null']
+          minimum: 0
+          description: Zdobycze gościa w tej części. `null` przy niezgodności z wynikiem meczu.
+
+    ScoreSnapshot:
+      type: object
+      required: [home, away]
+      description: Wynik meczu w danej chwili.
+      properties:
+        home: { type: integer, minimum: 0 }
+        away: { type: integer, minimum: 0 }
 
     StandingRow:
       type: object

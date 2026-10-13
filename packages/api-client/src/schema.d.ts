@@ -270,6 +270,10 @@ export interface paths {
                          *               "loss": 0
                          *             },
                          *             "defaultMatchDuration": 60,
+                         *             "defaultPeriods": {
+                         *               "count": 2,
+                         *               "minutes": 45
+                         *             },
                          *             "eventTypes": [
                          *               {
                          *                 "code": "goal",
@@ -344,6 +348,10 @@ export interface paths {
                          *               "loss": 1
                          *             },
                          *             "defaultMatchDuration": 40,
+                         *             "defaultPeriods": {
+                         *               "count": 4,
+                         *               "minutes": 10
+                         *             },
                          *             "eventTypes": [
                          *               {
                          *                 "code": "free_throw",
@@ -497,6 +505,10 @@ export interface paths {
                          *             "score_diff"
                          *           ],
                          *           "matchDuration": 40,
+                         *           "periods": {
+                         *             "count": 4,
+                         *             "minutes": 10
+                         *           },
                          *           "teamsCount": 8,
                          *           "createdAt": "2026-09-10T07:00:00+00:00",
                          *           "updatedAt": "2026-09-10T07:00:00+00:00"
@@ -527,6 +539,10 @@ export interface paths {
                          *             "score_for"
                          *           ],
                          *           "matchDuration": 60,
+                         *           "periods": {
+                         *             "count": 2,
+                         *             "minutes": 45
+                         *           },
                          *           "teamsCount": 3,
                          *           "createdAt": "2026-09-01T08:00:00+00:00",
                          *           "updatedAt": "2026-09-14T16:30:00+00:00"
@@ -613,6 +629,10 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "matchDuration": 60,
+                         *         "periods": {
+                         *           "count": 2,
+                         *           "minutes": 45
+                         *         },
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -854,6 +874,10 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "matchDuration": 60,
+                         *         "periods": {
+                         *           "count": 2,
+                         *           "minutes": 45
+                         *         },
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -921,6 +945,10 @@ export interface paths {
                          *           "score_for"
                          *         ],
                          *         "matchDuration": 60,
+                         *         "periods": {
+                         *           "count": 2,
+                         *           "minutes": 45
+                         *         },
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -3080,6 +3108,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/t/{slug}/matches/{match}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
+                slug: components["parameters"]["Slug"];
+                match: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Strona meczu
+         * @description Jeden mecz z relacją (#210): strzelcy, zdarzenia z częścią meczu
+         *     i bieżącym wynikiem oraz wyniki części (`PublicMatchDetail`). Mecz
+         *     innego turnieju, mecz nieistniejący i mecz turnieju w `draft` dają
+         *     ten sam `404` co nieznany slug.
+         *
+         *     Przykłady są trzy: `pilka` (domyślny; zakończony, z samobójem,
+         *     kartką i zdarzeniem bez minuty), `koszykowka` (rzuty za 1, 2 i 3,
+         *     faule, cztery kwarty) i `na-zywo` (mecz trwający). Mock zwraca
+         *     wybrany po nagłówku `Prefer: example=…`, dla każdego `match` ten sam.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
+                path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
+                    slug: components["parameters"]["Slug"];
+                    match: components["parameters"]["MatchId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Mecz z relacją */
+                200: {
+                    headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["PublicMatchDetail"];
+                        };
+                    };
+                };
+                304: components["responses"]["NotModified"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/t/{slug}/leaderboard": {
         parameters: {
             query?: never;
@@ -3288,6 +3407,14 @@ export interface components {
              *     Wartości amatorskie: piłka nożna 60, koszykówka 40.
              */
             defaultMatchDuration: number;
+            /**
+             * @description Domyślny podział meczu na części, kopiowany do turnieju przy
+             *     zakładaniu (`Tournament.periods`), wzorem `defaultMatchDuration`.
+             *     Piłka nożna `{ count: 2, minutes: 45 }`, koszykówka
+             *     `{ count: 4, minutes: 10 }`. Z `defaultMatchDuration` się go nie
+             *     wylicza: tamta długość jest amatorska i zawiera przerwę.
+             */
+            defaultPeriods: components["schemas"]["MatchPeriods"];
             eventTypes: components["schemas"]["SportEventType"][];
             /**
              * @description Kolejność tiebreaków, którą turniej dostaje przy zakładaniu.
@@ -3378,6 +3505,26 @@ export interface components {
             logoUrl: string | null;
             primaryColor: string;
         };
+        /**
+         * @description Podział meczu na części (połowy, tercje, kwarty). Etykieta części
+         *     wynika z ich liczby, a nie ze sportu: 2 → „połowa”, 3 → „tercja”,
+         *     4 → „kwarta”, inna liczba → „część”. Serwer składa ją z numerem,
+         *     np. „1. połowa” (`PublicMatchPeriod.label`).
+         *
+         *     Przy zapisie (`TournamentUpdate.periods`) `count` spoza 1–10 daje
+         *     `422` pod `periods.count`, a `minutes` niezgodne z `count` — liczba
+         *     przy jednej części albo brak liczby (lub liczba spoza 1–150) przy
+         *     kilku — `422` pod `periods.minutes`.
+         */
+        MatchPeriods: {
+            /** @description Liczba części. `1` znaczy „bez podziału”. */
+            count: number;
+            /**
+             * @description Długość jednej części w minutach. `null` wtedy i tylko wtedy, gdy
+             *     `count` wynosi 1.
+             */
+            minutes: number | null;
+        };
         Tournament: {
             /** Format: int64 */
             id: number;
@@ -3399,6 +3546,14 @@ export interface components {
              *     to, co liczy się jako kolizja.
              */
             matchDuration: number;
+            /**
+             * @description Podział meczu turnieju. Turniej dostaje go przy zakładaniu jako
+             *     kopię `SportConfig.defaultPeriods`, a potem organizer zmienia go
+             *     u siebie. Zmiana działa wstecz na wszystkie mecze turnieju: część
+             *     zdarzenia liczy się przy odczycie z jego minuty
+             *     (`PublicMatchEvent.period`), a w zdarzeniach nic się nie zapisuje.
+             */
+            periods: components["schemas"]["MatchPeriods"];
             teamsCount: number;
             /** Format: date-time */
             createdAt: string;
@@ -3421,6 +3576,12 @@ export interface components {
              *     jako kolizja.
              */
             matchDuration?: number;
+            /**
+             * @description Podział meczu (`Tournament.periods`). Przychodzi w komplecie albo
+             *     wcale; reguły i klucze błędów opisuje `MatchPeriods`. Zmiana
+             *     przelicza relacje wszystkich meczów turnieju na stronie publicznej.
+             */
+            periods?: components["schemas"]["MatchPeriods"];
             /**
              * @description Branding jest zagnieżdżony tak samo jak w odczycie
              *     (`Tournament.branding`), żeby formularz panelu nie musiał go
@@ -3824,6 +3985,72 @@ export interface components {
              *     w meczu też do bramki przeciwnika.
              */
             ownGoal: boolean;
+        };
+        /**
+         * @description Strona meczu (`GET /public/t/{slug}/matches/{match}`, #210): kształt
+         *     `PublicMatch` ze strzelcami, plus relacja — zdarzenia z częścią meczu
+         *     i bieżącym wynikiem — i wyniki części. Wszystko, co wymaga
+         *     konfiguracji sportu i ustawień turnieju, liczy serwer: strona
+         *     publiczna ich nie zna.
+         *
+         *     **Zgodność z wynikiem.** API nie pilnuje zgodności zdarzeń z wynikiem
+         *     meczu (#188, reguła 11). Gdy suma zdobyczy ze zdarzeń (jak
+         *     w `PublicMatchEvent.scoreAfter`) nie równa się `homeScore:awayScore`,
+         *     **wszystkie** `events[].scoreAfter` oraz `periods[].homeScore`
+         *     i `awayScore` są `null`: strona nie może pokazać bieżącego wyniku,
+         *     który kończy się na innym niż wynik w nagłówku.
+         */
+        PublicMatchDetail: components["schemas"]["PublicMatch"] & {
+            /**
+             * @description Wszystkie zdarzenia meczu, w kolejności jak
+             *     w `GET /matches/{match}/events`: `minute` rosnąco, zdarzenia
+             *     bez minuty na końcu, a przy tej samej minucie (albo jej braku)
+             *     `id` rosnąco. Mecz `scheduled` ma `events: []`.
+             */
+            events: components["schemas"]["PublicMatchEvent"][];
+            /**
+             * @description Części meczu według `Tournament.periods`, w których jest co
+             *     najmniej jedno zdarzenie, rosnąco po `number`. Turniej bez
+             *     podziału (`count: 1`) i mecz `scheduled` mają `periods: []`.
+             */
+            periods: components["schemas"]["PublicMatchPeriod"][];
+        };
+        /** @description Zdarzenie na stronie meczu — `MatchEvent` plus część meczu i wynik po zdarzeniu. */
+        PublicMatchEvent: components["schemas"]["MatchEvent"] & {
+            /**
+             * @description Numer części meczu według `Tournament.periods`:
+             *     `min(count, ceil(minute / minutes))`, więc doliczony czas
+             *     i dogrywka trafiają do ostatniej części. `null` przy zdarzeniu
+             *     bez minuty i przy każdym zdarzeniu turnieju bez podziału
+             *     (`count: 1`).
+             */
+            period: number | null;
+            /**
+             * @description Wynik meczu po tym zdarzeniu. Niepusty tylko przy zdarzeniu,
+             *     które zmienia wynik: typie, którego `stat` to pierwszy wpis
+             *     `availableStats` sportu (piłka `goals`, kosz `points`), oraz
+             *     samobóju, który podnosi wynik **przeciwnika** drużyny
+             *     `team`. Zdobycz to `SportEventType.value`, a zdarzenia liczą
+             *     się w kolejności listy, także te bez minuty. `null` przy
+             *     kartce, faulu i przy niezgodności z wynikiem meczu (opis
+             *     `PublicMatchDetail`).
+             */
+            scoreAfter: components["schemas"]["ScoreSnapshot"] | null;
+        };
+        /** @description Część meczu z co najmniej jednym zdarzeniem i jej wynik. */
+        PublicMatchPeriod: {
+            number: number;
+            /** @description Etykieta z numerem według liczby części (`MatchPeriods`), np. „1. połowa”, „3. kwarta”. */
+            label: string;
+            /** @description Zdobycze gospodarza w tej części. `null` przy niezgodności z wynikiem meczu. */
+            homeScore: number | null;
+            /** @description Zdobycze gościa w tej części. `null` przy niezgodności z wynikiem meczu. */
+            awayScore: number | null;
+        };
+        /** @description Wynik meczu w danej chwili. */
+        ScoreSnapshot: {
+            home: number;
+            away: number;
         };
         StandingRow: {
             /**

@@ -29,6 +29,7 @@ const SPORTS: Sport[] = [
     config: {
       allowsDraw: true,
       defaultMatchDuration: 60,
+      defaultPeriods: { count: 2, minutes: 45 },
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for'],
@@ -51,6 +52,7 @@ const SPORTS: Sport[] = [
     config: {
       allowsDraw: false,
       defaultMatchDuration: 40,
+      defaultPeriods: { count: 4, minutes: 10 },
       defaultPoints: { win: 2, draw: 0, loss: 1 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff'],
@@ -79,6 +81,7 @@ const FOOTBALL: Tournament = {
   points: { win: 2, draw: 1, loss: 0 },
   tiebreakers: ['points', 'score_diff', 'head_to_head'],
   matchDuration: 60,
+  periods: { count: 2, minutes: 45 },
   teamsCount: 8,
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
