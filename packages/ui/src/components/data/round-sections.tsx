@@ -29,21 +29,27 @@ export interface RoundSectionsProps {
  *
  * Na start widać `ROUNDS_PER_PAGE` pierwszych kolejek, a gdy mecz trwa
  * w dalszej (wcześniejsza ma jeszcze mecz przełożony), pierwsza porcja sięga
- * do niej włącznie — „Śledź na żywo” z Przeglądu trafia więc na mecz.
- * „Pokaż więcej” dokłada kolejne porcje.
+ * do ostatniej kolejki z meczem trwającym włącznie — „Śledź na żywo”
+ * z Przeglądu trafia więc na mecz. „Pokaż więcej” dokłada kolejne porcje.
  *
- * Komponent pamięta `id` ostatniej pokazanej kolejki, nie liczbę porcji:
- * nowa kolejka na górze Wyników wchodzi przy odpytywaniu ponad to, co widać,
- * i nic nie spada pod „Pokaż więcej”. Gdy zapamiętana kolejka zniknie
- * z danych (Terminarz: jej ostatni mecz się zakończył), lista wraca do
- * domyślnej porcji.
+ * Komponent pamięta `id` ostatniej pokazanej kolejki, nie liczbę porcji,
+ * także przed pierwszym kliknięciem: nowa kolejka na górze Wyników wchodzi
+ * przy odpytywaniu ponad to, co widać, a koniec meczu trwającego nie skraca
+ * porcji, więc nic nie spada pod „Pokaż więcej”. Gdy zapamiętana kolejka
+ * zniknie z danych (Terminarz: jej ostatni mecz się zakończył), lista wraca
+ * do domyślnej porcji i od niej liczy dalej.
  */
 export function RoundSections({ rounds, timeZone, statusDisplay, matchHref, onMatchNavigate }: RoundSectionsProps) {
   const [lastShown, setLastShown] = useState<number | null>(null)
-  const live = rounds.findIndex((round) => round.matches.some((match) => match.status === 'live'))
-  const initial = Math.max(ROUNDS_PER_PAGE, live + 1)
-  const remembered = rounds.findIndex((round) => round.summary.id === lastShown)
-  const shown = Math.max(initial, remembered + 1)
+  const liveIndex = rounds.findLastIndex((round) => round.matches.some((match) => match.status === 'live'))
+  const initial = Math.max(ROUNDS_PER_PAGE, liveIndex + 1)
+  const lastShownIndex = rounds.findIndex((round) => round.summary.id === lastShown)
+  const shown = Math.min(Math.max(initial, lastShownIndex + 1), rounds.length)
+
+  // Zapamiętanie porcji pokazanej bez kliknięcia: stan poprawiany w trakcie
+  // renderu, nie w efekcie, żeby odpytywanie nie mignęło krótszą listą.
+  const shownLast = rounds[shown - 1]?.summary.id ?? null
+  if (shownLast !== lastShown) setLastShown(shownLast)
 
   function showMore() {
     setLastShown(rounds[Math.min(shown + ROUNDS_PER_PAGE, rounds.length) - 1]!.summary.id)

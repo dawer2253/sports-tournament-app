@@ -6,16 +6,13 @@ import { POLL_INTERVAL_MS } from '../lib/api';
 import { API_URL as API, server } from '../test/server';
 import { SLUG, finished, match, publicApi, renderAt } from '../test/public-api';
 
-/** Nazwy pokazanych kolejek, w kolejności z DOM-u (sekcja kolejki to region nazwany nagłówkiem). */
+/** Nazwy pokazanych kolejek, w kolejności z DOM-u (nagłówek sekcji kolejki to h2). */
 function shownRounds() {
-  return screen
-    .getAllByRole('region')
-    .map((region) => document.getElementById(region.getAttribute('aria-labelledby') ?? '')?.textContent)
-    .filter((name) => name?.startsWith('Kolejka'));
+  return screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
 }
 
 /** Po jednym meczu w kolejkach `from`..`to` (włącznie), mecz o id równym numerowi kolejki. */
-function rounds(from: number, to: number, make: typeof match = match) {
+function matchPerRound(from: number, to: number, make: typeof match = match) {
   return Array.from({ length: to - from + 1 }, (_, index) => make(from + index, from + index));
 }
 
@@ -44,7 +41,7 @@ describe('Terminarz', () => {
   });
 
   it('nie ma listy kolejek ani strzałek między kolejkami', async () => {
-    publicApi({ fixtures: rounds(1, 5) });
+    publicApi({ fixtures: matchPerRound(1, 5) });
     renderAt(`/t/${SLUG}/terminarz`);
 
     await screen.findByRole('region', { name: 'Kolejka 1' });
@@ -55,7 +52,7 @@ describe('Terminarz', () => {
 
   it('mecz trwający w kolejce dalszej niż trzecia widać bez klikania, ze znacznikiem „Na żywo”', async () => {
     // Kolejki 1–4 mają jeszcze mecze zaplanowane (np. przełożone), a mecz trwa w kolejce 5.
-    publicApi({ fixtures: [...rounds(1, 4), match(5, 5, { status: 'live', homeScore: 1, awayScore: 0 }), ...rounds(6, 9)] });
+    publicApi({ fixtures: [...matchPerRound(1, 4), match(5, 5, { status: 'live', homeScore: 1, awayScore: 0 }), ...matchPerRound(6, 9)] });
     renderAt(`/t/${SLUG}/terminarz`);
 
     const live = within(await screen.findByRole('region', { name: 'Kolejka 5' }));
@@ -67,8 +64,36 @@ describe('Terminarz', () => {
     expect(screen.queryByText(/Kolizja/)).not.toBeInTheDocument();
   });
 
+  it('mecz trwający w kolejce dalszej niż trzecia stoi w pierwszej porcji także obok wcześniejszego meczu trwającego', async () => {
+    // Przełożony mecz kolejki 2 trwa równolegle z meczem kolejki 5.
+    publicApi({
+      fixtures: [match(1, 1), match(2, 2, { status: 'live' }), ...matchPerRound(3, 4), match(5, 5, { status: 'live' }), ...matchPerRound(6, 9)],
+    });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    const live = within(await screen.findByRole('region', { name: 'Kolejka 5' }));
+    expect(within(live.getByRole('link', { name: 'Gospodarz 5 – Gość 5' })).getByText('Na żywo')).toBeInTheDocument();
+    expect(screen.getAllByText('Na żywo')).toHaveLength(2);
+  });
+
+  it('pierwsza porcja nie kurczy się, gdy mecz trwający w dalszej kolejce się zakończy', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Kolejka 5 ma mecz trwający i zaplanowany: po końcu meczu zostaje w terminarzu.
+    publicApi({ fixtures: [...matchPerRound(1, 4), match(5, 5, { status: 'live' }), match(15, 5), ...matchPerRound(6, 9)] });
+    renderAt(`/t/${SLUG}/terminarz`);
+    await screen.findByRole('region', { name: 'Kolejka 5' });
+
+    server.use(
+      http.get(`${API}/public/t/:slug/fixtures`, () => HttpResponse.json({ data: [...matchPerRound(1, 4), match(15, 5), ...matchPerRound(6, 9)] })),
+    );
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+
+    await vi.waitFor(() => expect(screen.queryByText('Na żywo')).not.toBeInTheDocument());
+    expect(shownRounds()).toEqual(['Kolejka 1', 'Kolejka 2', 'Kolejka 3', 'Kolejka 4', 'Kolejka 5']);
+  });
+
   it('kolejka z meczem trwającym zostaje widoczna po „Pokaż więcej”', async () => {
-    publicApi({ fixtures: [...rounds(1, 4), match(5, 5, { status: 'live' }), ...rounds(6, 9)] });
+    publicApi({ fixtures: [...matchPerRound(1, 4), match(5, 5, { status: 'live' }), ...matchPerRound(6, 9)] });
     const user = userEvent.setup();
     renderAt(`/t/${SLUG}/terminarz`);
 
@@ -80,14 +105,14 @@ describe('Terminarz', () => {
   it('gdy kolejka, do której kibic doczytał, zniknie z danych, widać domyślne trzy', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    publicApi({ fixtures: rounds(1, 7) });
+    publicApi({ fixtures: matchPerRound(1, 7) });
     renderAt(`/t/${SLUG}/terminarz`);
     await screen.findByRole('region', { name: 'Kolejka 1' });
     await user.click(screen.getByRole('button', { name: 'Pokaż więcej' }));
     expect(screen.getByRole('region', { name: 'Kolejka 6' })).toBeInTheDocument();
 
     // Ostatni mecz kolejki 6 się zakończył i wypadł z terminarza.
-    server.use(http.get(`${API}/public/t/:slug/fixtures`, () => HttpResponse.json({ data: [...rounds(1, 5), match(7, 7)] })));
+    server.use(http.get(`${API}/public/t/:slug/fixtures`, () => HttpResponse.json({ data: [...matchPerRound(1, 5), match(7, 7)] })));
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
     await vi.waitFor(() => expect(screen.queryByRole('region', { name: 'Kolejka 6' })).not.toBeInTheDocument());
@@ -105,12 +130,15 @@ describe('Terminarz', () => {
 
 describe('Wyniki', () => {
   it('kolejki idą od najnowszej, na start trzy, a „Pokaż więcej” dokłada po trzy aż do kompletu', async () => {
-    publicApi({ results: rounds(1, 7, finished).reverse() });
+    publicApi({ results: matchPerRound(1, 7, finished).reverse() });
     const user = userEvent.setup();
     renderAt(`/t/${SLUG}/wyniki`);
 
-    const newest = within(await screen.findByRole('region', { name: 'Kolejka 7' }));
-    expect(newest.getByRole('link', { name: 'Gospodarz 7 – Gość 7' })).toBeInTheDocument();
+    await screen.findByRole('region', { name: 'Kolejka 7' });
+    for (const round of [7, 6, 5]) {
+      const section = within(screen.getByRole('region', { name: `Kolejka ${round}` }));
+      expect(section.getByRole('link', { name: `Gospodarz ${round} – Gość ${round}` })).toBeInTheDocument();
+    }
     expect(shownRounds()).toEqual(['Kolejka 7', 'Kolejka 6', 'Kolejka 5']);
     expect(screen.queryByRole('region', { name: 'Kolejka 4' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Gospodarz 4/ })).not.toBeInTheDocument();
@@ -127,13 +155,13 @@ describe('Wyniki', () => {
   it('po odświeżeniu z nową kolejką rozwinięte kolejki dalej są widoczne, a nowa stoi na górze', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-    publicApi({ results: rounds(1, 7, finished).reverse() });
+    publicApi({ results: matchPerRound(1, 7, finished).reverse() });
     renderAt(`/t/${SLUG}/wyniki`);
     await screen.findByRole('region', { name: 'Kolejka 7' });
     await user.click(screen.getByRole('button', { name: 'Pokaż więcej' }));
     expect(screen.getByRole('region', { name: 'Kolejka 2' })).toBeInTheDocument();
 
-    server.use(http.get(`${API}/public/t/:slug/results`, () => HttpResponse.json({ data: rounds(1, 8, finished).reverse() })));
+    server.use(http.get(`${API}/public/t/:slug/results`, () => HttpResponse.json({ data: matchPerRound(1, 8, finished).reverse() })));
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
     expect(await screen.findByRole('region', { name: 'Kolejka 8' })).toBeInTheDocument();
@@ -141,6 +169,19 @@ describe('Wyniki', () => {
     expect(screen.getByRole('region', { name: 'Kolejka 2' })).toBeInTheDocument();
     expect(shownRounds()[0]).toBe('Kolejka 8');
     expect(screen.queryByRole('region', { name: 'Kolejka 1' })).not.toBeInTheDocument();
+  });
+
+  it('po odświeżeniu z nową kolejką domyślne trzy zostają na ekranie, a nowa staje nad nimi', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    publicApi({ results: matchPerRound(1, 7, finished).reverse() });
+    renderAt(`/t/${SLUG}/wyniki`);
+    await screen.findByRole('region', { name: 'Kolejka 7' });
+
+    server.use(http.get(`${API}/public/t/:slug/results`, () => HttpResponse.json({ data: matchPerRound(1, 8, finished).reverse() })));
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+
+    await screen.findByRole('region', { name: 'Kolejka 8' });
+    expect(shownRounds()).toEqual(['Kolejka 8', 'Kolejka 7', 'Kolejka 6', 'Kolejka 5']);
   });
 
   it('bez rozegranych meczów mówi o tym wprost', async () => {

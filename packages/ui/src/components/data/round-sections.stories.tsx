@@ -18,11 +18,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Nazwy pokazanych kolejek w kolejności z DOM-u. */
+/** Nazwy pokazanych kolejek w kolejności z DOM-u (nagłówek sekcji kolejki to h2). */
 function shownRounds(canvasElement: HTMLElement) {
   return within(canvasElement)
-    .getAllByRole('region')
-    .map((region) => canvasElement.querySelector(`#${region.getAttribute('aria-labelledby')}`)?.textContent)
+    .getAllByRole('heading', { level: 2 })
+    .map((heading) => heading.textContent)
 }
 
 /**
