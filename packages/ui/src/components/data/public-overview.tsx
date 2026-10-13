@@ -126,7 +126,10 @@ export function PublicOverview({
   }
 
   return (
-    <div className="grid gap-6">
+    // `minmax(0,1fr)`: bez jawnej kolumny siatka rośnie do najdłuższej
+    // niełamliwej treści sekcji (długa nazwa drużyny w skrócie tabeli) i
+    // rozpycha stronę na telefonie (#209).
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       {status.fixtures}
       {live.length > 0 && (
         <PublicSection title="Na żywo" icon={<Radio />}>
