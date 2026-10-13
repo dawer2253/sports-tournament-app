@@ -3,7 +3,6 @@ import { EmptyState, Skeleton } from '@tournament/ui';
 import { PublicShell, type PublicNavKey } from '@tournament/ui/components/layout/public-shell.tsx';
 import { useEffect } from 'react';
 import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
-import { isNotFound } from '../lib/api-error';
 import { usePublicTournament } from '../lib/queries';
 import { StandalonePage } from './standalone-page';
 
@@ -44,8 +43,8 @@ export function TournamentLayout() {
   const navigate = useNavigate();
   const active = useActiveTab();
   const tournament = usePublicTournament(slug);
-  const notFound = !tournament.data && isNotFound(tournament.error);
-  const failed = !tournament.data && tournament.isError;
+  const notFound = tournament.data === null;
+  const failed = tournament.data === undefined && tournament.isError;
   const title = tournament.data?.name ?? (notFound ? NOT_FOUND : failed ? FAILED : undefined);
 
   // Tytuł karty idzie za tym, co widać: nazwa turnieju, a bez niego stan

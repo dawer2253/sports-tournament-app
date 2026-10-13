@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { HttpResponse, http } from 'msw';
+import { HttpResponse, delay, http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from './lib/api';
 import { API_URL as API, server } from './test/server';
@@ -75,6 +75,26 @@ describe('trasa turnieju', () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
     expect(await screen.findByRole('navigation', { name: 'Sekcje turnieju' })).toBeInTheDocument();
+  });
+
+  it('odpytanie po 404 nie zdejmuje ekranu 404 na czas pytania', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let requests = 0;
+    server.use(
+      http.get(`${API}/public/t/:slug`, async () => {
+        requests++;
+        if (requests > 1) await delay(200);
+        return HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 });
+      }),
+    );
+    renderAt('/t/nie-ma-takiego');
+    await screen.findByText('Nie ma takiego turnieju');
+
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+
+    expect(requests).toBe(2);
+    expect(screen.queryByLabelText('Wczytywanie turnieju')).not.toBeInTheDocument();
+    expect(screen.getByText('Nie ma takiego turnieju')).toBeInTheDocument();
   });
 
   it('inny błąd turnieju pokazuje komunikat z odpowiedzi', async () => {

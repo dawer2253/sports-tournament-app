@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { POLL_INTERVAL_MS, api } from './api';
-import { ApiError } from './api-error';
+import { ApiError, isNotFound } from './api-error';
 
 /**
  * Zapytania strony publicznej. Każde odpytuje co `POLL_INTERVAL_MS` (#192),
@@ -22,20 +22,32 @@ async function unwrap<T>(request: Promise<Envelope<T>>): Promise<T> {
   return data.data;
 }
 
-function usePublicQuery<T>(queryKey: readonly unknown[], request: () => Promise<Envelope<T>>) {
-  return useQuery({ queryKey, queryFn: () => unwrap(request()), refetchInterval: POLL_INTERVAL_MS });
+function usePublicQuery<T>(queryKey: readonly unknown[], queryFn: () => Promise<T>) {
+  return useQuery({ queryKey, queryFn, refetchInterval: POLL_INTERVAL_MS });
 }
 
 const path = (slug: string) => ({ params: { path: { slug } } });
 
+/**
+ * Turniej albo `null`, gdy go nie ma (`404`: nieznany slug albo szkic, #82).
+ * „Nie ma” to odpowiedź, nie błąd: zapytanie z błędem i bez danych TanStack
+ * Query przy każdym odpytaniu cofa do `pending`, więc ekran 404 mrugałby
+ * szkieletem co `POLL_INTERVAL_MS`. Odpytywanie trwa, a opublikowany szkic
+ * pojawia się sam.
+ */
 export const usePublicTournament = (slug: string) =>
-  usePublicQuery(['public', slug], () => api.GET('/public/t/{slug}', path(slug)));
+  usePublicQuery(['public', slug], () =>
+    unwrap(api.GET('/public/t/{slug}', path(slug))).catch((error: unknown) => {
+      if (isNotFound(error)) return null;
+      throw error;
+    }),
+  );
 
 export const useStandings = (slug: string) =>
-  usePublicQuery(['public', slug, 'standings'], () => api.GET('/public/t/{slug}/standings', path(slug)));
+  usePublicQuery(['public', slug, 'standings'], () => unwrap(api.GET('/public/t/{slug}/standings', path(slug))));
 
 export const useFixtures = (slug: string) =>
-  usePublicQuery(['public', slug, 'fixtures'], () => api.GET('/public/t/{slug}/fixtures', path(slug)));
+  usePublicQuery(['public', slug, 'fixtures'], () => unwrap(api.GET('/public/t/{slug}/fixtures', path(slug))));
 
 export const useResults = (slug: string) =>
-  usePublicQuery(['public', slug, 'results'], () => api.GET('/public/t/{slug}/results', path(slug)));
+  usePublicQuery(['public', slug, 'results'], () => unwrap(api.GET('/public/t/{slug}/results', path(slug))));
