@@ -78,7 +78,7 @@ class DemoTournamentSeeder extends Seeder
      * się do wyniku meczu — inaczej klasyfikacja strzelców i tabela mówiłyby
      * o tym samym meczu co innego. Samobój należy do drużyny strzelca, a bramkę
      * daje przeciwnikowi (#188, reguła 9). Najwięcej ma Marek Nowak, tak jak
-     * w przykładzie `GET /public/t/{slug}/top-scorers`.
+     * w przykładzie `GET /public/t/{slug}/leaderboard`.
      *
      * Kolejka 1 to przykład `pilka` w `GET /matches/{match}/events`: kolejność
      * wierszy wyznacza id z tamtego przykładu.
@@ -153,7 +153,7 @@ class DemoTournamentSeeder extends Seeder
     /**
      * Składy: drużyna => [nazwisko, numer, pozycja]. Kolejność ma znaczenie —
      * wyznacza id, a te padają w przykładach `GET /teams/{team}/players`
-     * i `GET /public/t/{slug}/top-scorers`.
+     * i `GET /public/t/{slug}/leaderboard`.
      */
     private const SQUADS = [
         'Wilki Bemowo' => [
@@ -349,6 +349,10 @@ class DemoTournamentSeeder extends Seeder
      * jej wynik — inaczej klasyfikacja „Punkty” rozjechałaby się z tabelą,
      * choć API zgodności nie wymaga. Rzuty idą po kolei przez skład, a ostatni
      * dostaje taką wartość, żeby suma wyszła równo.
+     *
+     * Z tego rozpisania wynika przykład `koszykowka`
+     * w `GET /public/t/{slug}/leaderboard`, więc zmiana wzoru rzutów albo
+     * kolejności składu zmienia także jego — pilnuje tego `DemoSeedTest`.
      *
      * Minuty rozkładamy po czterdziestu minutach meczu, a wiersze wstawiamy
      * w kolejności minut, żeby lista z API i kolejność id mówiły to samo.

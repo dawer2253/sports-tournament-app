@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Public\ShowLeaderboardRequest;
 use App\Http\Resources\MatchResource;
 use App\Http\Resources\PublicTournamentResource;
 use App\Http\Resources\StandingTableResource;
+use App\Http\Resources\StatLeaderboardResource;
+use App\Leaderboards\StatLeaderboard;
 use App\Models\GameMatch;
 use App\Models\Tournament;
 use App\Standings\TournamentStandings;
@@ -49,6 +52,17 @@ class PublicTournamentController extends Controller
     public function results(string $slug): JsonResponse
     {
         return $this->matchList($slug, GameMatch::RESULT_STATUSES, 'desc');
+    }
+
+    /**
+     * Klasyfikacja według `?stat=`, domyślnie pierwszej statystyki sportu.
+     * Turniej wczytuje i sprawdza żądanie.
+     */
+    public function leaderboard(ShowLeaderboardRequest $request): JsonResponse
+    {
+        return response()->json([
+            'data' => new StatLeaderboardResource(StatLeaderboard::of($request->tournament(), $request->stat())),
+        ]);
     }
 
     /**
