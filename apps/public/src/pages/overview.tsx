@@ -1,15 +1,16 @@
 import { PublicOverview } from '@tournament/ui';
 import { useNavigate } from 'react-router';
-import { useFixtures, useResults, useStandings } from '../lib/queries';
+import { useFixtures, useLeaderboard, useResults, useStandings } from '../lib/queries';
 import { useRounds } from './match-rounds';
 import { QueryState } from './query-state';
 import { tabHref, useTournament } from './tournament-layout';
 
 /**
- * Przegląd (#206) na `PublicOverview` z DS. Turniej `finished` niczego nie
- * dokłada — kafel „Zwycięzca” jest w future work.
+ * Przegląd (#206) na `PublicOverview` z DS, z kartą lidera domyślnej
+ * statystyki (#207). Turniej `finished` niczego nie dokłada — kafel
+ * „Zwycięzca” jest w future work.
  *
- * Trzy zapytania stoją niezależnie: sekcje z jednego źródła pokazują się,
+ * Zapytania stoją niezależnie: sekcje z jednego źródła pokazują się,
  * gdy ono dotrze, a jego błąd nie zdejmuje pozostałych.
  */
 export function OverviewPage() {
@@ -18,12 +19,14 @@ export function OverviewPage() {
   const fixtures = useFixtures(slug);
   const results = useResults(slug);
   const standings = useStandings(slug);
+  const leaderboard = useLeaderboard(slug);
 
   return (
     <PublicOverview
       fixtures={useRounds(fixtures.data, 'asc')}
       results={useRounds(results.data, 'desc')}
       standings={standings.data?.[0]?.rows}
+      leaderboard={leaderboard.data}
       linkHref={(key) => tabHref(slug, key)}
       onNavigate={(key) => void navigate(tabHref(slug, key))}
       status={{
@@ -35,6 +38,9 @@ export function OverviewPage() {
         ),
         standings: !standings.data && (
           <QueryState error={standings.error} label="tabeli" onRetry={() => void standings.refetch()} />
+        ),
+        leaderboard: !leaderboard.data && (
+          <QueryState error={leaderboard.error} label="klasyfikacji" onRetry={() => void leaderboard.refetch()} />
         ),
       }}
     />

@@ -50,3 +50,14 @@ it('oddaje value przy każdym typie zdarzenia, a kosz nie ma już typu points', 
     expect(array_column($sports['basketball']['config']['eventTypes'], 'value', 'code'))
         ->toBe(['free_throw' => 1, 'two_pointer' => 2, 'three_pointer' => 3, 'foul' => 1]);
 });
+
+// #190, niezmiennik 9: etykieta dla każdej statystyki sportu i żadnej ponad
+// nie — klasyfikacja i `PublicTournament.stats` biorą etykietę po kodzie.
+it('oddaje statLabels z kluczami dokładnie z availableStats każdego sportu', function () {
+    $sports = actingAsOrganizer()->getJson('/api/v1/sports')->assertValidResponse(200)->json('data');
+
+    expect($sports)->not->toBeEmpty();
+    foreach ($sports as $sport) {
+        expect(array_keys($sport['config']['statLabels']))->toEqualCanonicalizing($sport['config']['availableStats']);
+    }
+});

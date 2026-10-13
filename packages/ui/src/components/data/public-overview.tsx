@@ -1,7 +1,9 @@
 import type * as React from 'react'
-import { CalendarClock, ChevronRight, History, ListOrdered, Radio } from 'lucide-react'
+import { CalendarClock, ChevronRight, History, ListOrdered, Radio, Trophy } from 'lucide-react'
 import { PublicSection } from '../layout/public-section'
 import { Button } from '../ui/button'
+import { LeaderboardLeaders } from './leaderboard-leaders'
+import type { Leaderboard } from './leaderboard-data'
 import { LiveMatchTile } from './live-match-tile'
 import { MatchRow } from './match-row'
 import { latestRoundMatches, nextRoundMatches, type MatchInRound, type RoundWithMatches } from './round-groups'
@@ -9,7 +11,7 @@ import { StandingsSnippet } from './standings-snippet'
 import type { StandingsTableRow } from './standings-table-row'
 
 /** Pełny widok, do którego prowadzi odnośnik sekcji Przeglądu. */
-export type PublicOverviewLink = 'standings' | 'fixtures' | 'results'
+export type PublicOverviewLink = 'standings' | 'fixtures' | 'results' | 'stats'
 
 export interface PublicOverviewProps {
   /** `/fixtures` po kolejce, rosnąco (`groupByRound`) — jak Terminarz. */
@@ -18,6 +20,11 @@ export interface PublicOverviewProps {
   results?: RoundWithMatches<MatchInRound>[]
   /** Wiersze pierwszej tabeli turnieju; bez nich zamiast skrótu stoi `status.standings`. */
   standings?: StandingsTableRow[]
+  /**
+   * Klasyfikacja domyślnej statystyki (`/leaderboard` bez `stat`); bez niej
+   * zamiast karty lidera stoi `status.leaderboard`.
+   */
+  leaderboard?: Leaderboard
   /** Strefa terminów; bez niej strefa przeglądarki (ADR-0008). */
   timeZone?: string
   /** Adres pełnego widoku. Bez niego odnośniki są dekoracją (Storybook). */
@@ -26,9 +33,10 @@ export interface PublicOverviewProps {
   onNavigate?: (key: PublicOverviewLink) => void
   /**
    * Stan zapytania w miejscu jego sekcji, np. błąd z ponowieniem: meczów na
-   * górze, wyników pod „Ostatnimi wynikami”, tabeli zamiast skrótu.
+   * górze, wyników pod „Ostatnimi wynikami”, tabeli zamiast skrótu,
+   * klasyfikacji zamiast karty lidera.
    */
-  status?: Partial<Record<'fixtures' | 'results' | 'standings', React.ReactNode>>
+  status?: Partial<Record<'fixtures' | 'results' | 'standings' | 'leaderboard', React.ReactNode>>
 }
 
 /** Atrybuty odnośnika: adres i przejęcie kliknięcia. */
@@ -48,11 +56,13 @@ function SectionLink({ link, children }: { link: LinkProps; children: string }) 
 
 /**
  * Przegląd strony publicznej (#206), od góry: Na żywo, Najbliższe mecze,
- * Ostatnie wyniki, Tabela (skrót). Sekcja bez meczów znika. Kolejki
+ * Ostatnie wyniki, Tabela (skrót) i lider klasyfikacji (#207) pod tytułem
+ * z etykiety statystyki. Sekcja bez meczów znika, a klasyfikacja przed
+ * pierwszym meczem zakończonym ma pusty stan. Kolejki
  * „najbliższa” i „ostatnia” to te, na których otwierają się Terminarz
  * i Wyniki (`nextRoundMatches`, `latestRoundMatches`).
  */
-export function PublicOverview({ fixtures = [], results = [], standings, timeZone, linkHref, onNavigate, status = {} }: PublicOverviewProps) {
+export function PublicOverview({ fixtures = [], results = [], standings, leaderboard, timeZone, linkHref, onNavigate, status = {} }: PublicOverviewProps) {
   const live = fixtures.flatMap((round) => round.matches).filter((match) => match.status === 'live')
   const upcoming = nextRoundMatches(fixtures)
   const latest = latestRoundMatches(results)
@@ -110,6 +120,13 @@ export function PublicOverview({ fixtures = [], results = [], standings, timeZon
         </PublicSection>
       ) : (
         status.standings
+      )}
+      {leaderboard ? (
+        <PublicSection title={leaderboard.label} icon={<Trophy />} action={<SectionLink link={link('stats')}>Wszystkie statystyki</SectionLink>}>
+          <LeaderboardLeaders label={leaderboard.label} rows={leaderboard.rows} />
+        </PublicSection>
+      ) : (
+        status.leaderboard
       )}
     </div>
   )

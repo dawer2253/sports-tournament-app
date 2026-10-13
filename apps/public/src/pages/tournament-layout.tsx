@@ -12,6 +12,7 @@ const TAB_PATHS: Record<PublicNavKey, string> = {
   standings: 'tabela',
   fixtures: 'terminarz',
   results: 'wyniki',
+  stats: 'statystyki',
 };
 
 /** Adres zakładki turnieju. */

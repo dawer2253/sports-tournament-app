@@ -124,6 +124,7 @@ const SPORTS: Sport[] = [
       availableTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for', 'wins'],
       tiebreakerLabels: {},
       availableStats: ['goals', 'yellowCards', 'redCards'],
+      statLabels: { goals: 'Bramki', yellowCards: 'Żółte kartki', redCards: 'Czerwone kartki' },
     },
   },
 ];
@@ -792,6 +793,24 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     await user.clear(homeScore);
     await user.type(homeScore, '2');
     expect(within(dialog).queryByText(/ze zdarzeń/)).not.toBeInTheDocument();
+  });
+
+  it('linia zgodności nazywa zdobycz etykietą statystyki ze sportu, a nie stałą w panelu', async () => {
+    // Etykieta inna niż „Bramki” celowo: przejdzie tylko widok, który czyta
+    // `statLabels` z `GET /sports`.
+    const [football] = SPORTS;
+    server.use(
+      http.get(`${API}/sports`, () =>
+        HttpResponse.json({ data: [{ ...football!, config: { ...football!.config, statLabels: { ...football!.config.statLabels, goals: 'Gole' } } }] }),
+      ),
+    );
+    // Wynik 1:0, a zdarzenia dają 2:0 — linia stoi.
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    serveEvents([event(1, 1), event(2, 1, { minute: 30 })]);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(await within(dialog).findByText('Gole ze zdarzeń: 2:0')).toBeInTheDocument();
   });
 
   it('Enter w polu minuty nie wysyła PATCH meczu', async () => {

@@ -51,3 +51,16 @@ export const useFixtures = (slug: string) =>
 
 export const useResults = (slug: string) =>
   usePublicQuery(['public', slug, 'results'], () => unwrap(api.GET('/public/t/{slug}/results', path(slug))));
+
+/**
+ * Klasyfikacja według `stat`, a bez niego według pierwszej statystyki sportu
+ * — wtedy żądanie idzie bez parametru i domyślną wybiera serwer (#190).
+ */
+export const useLeaderboard = (slug: string, stat?: string) =>
+  usePublicQuery(['public', slug, 'leaderboard', stat ?? null], () =>
+    unwrap(
+      api.GET('/public/t/{slug}/leaderboard', {
+        params: { path: { slug }, query: stat ? { stat } : {} },
+      }),
+    ),
+  );

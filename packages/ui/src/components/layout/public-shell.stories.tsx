@@ -12,7 +12,7 @@ const LOGO_URL =
 
 /** Adresy zakładek, tak jak podaje je `apps/public`. */
 const navHref = (key: PublicNavKey) =>
-  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki' })[key]
+  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki' })[key]
 
 const meta = {
   title: 'UI/Shell strony publicznej',
@@ -65,6 +65,7 @@ export const Domyslny: Story = {
       'Tabela',
       'Terminarz',
       'Wyniki',
+      'Statystyki',
     ])
 
     await expect(getComputedStyle(heading(canvasElement)).color).toBe(tokenColor('--brand-text-light'))
@@ -144,6 +145,25 @@ export const Nawigacja: Story = {
 
     await userEvent.click(tabs.getByRole('link', { name: 'Terminarz' }))
     await expect(args.onNavigate).toHaveBeenCalledWith('fixtures')
+  },
+}
+
+/**
+ * Telefon: pięć zakładek się nie mieści, więc pasek przewija się w bok,
+ * a aktywna „Statystyki” na końcu stoi w widocznej części paska.
+ */
+export const TelefonOstatniaZakladka: Story = {
+  args: { active: 'stats' },
+  decorators: [(Story) => <div className="w-[375px]">{Story()}</div>],
+  play: async ({ canvasElement }) => {
+    const nav = within(canvasElement).getByRole('navigation', { name: 'Sekcje turnieju' })
+    const tab = within(nav).getByRole('link', { name: 'Statystyki' })
+    await expect(nav.scrollWidth).toBeGreaterThan(nav.clientWidth)
+
+    const visible = nav.getBoundingClientRect()
+    const box = tab.getBoundingClientRect()
+    await expect(box.left).toBeGreaterThanOrEqual(visible.left)
+    await expect(box.right).toBeLessThanOrEqual(visible.right)
   },
 }
 

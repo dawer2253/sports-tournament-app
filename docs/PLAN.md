@@ -214,7 +214,7 @@ CRUD  /matches/{m}/events
 PATCH /tournaments/{t}/tiebreakers   (kolejność drag&drop)
 # public (bez auth, po slug)
 GET /public/t/{slug}
-GET /public/t/{slug}/standings | /fixtures | /results | /top-scorers
+GET /public/t/{slug}/standings | /fixtures | /results | /leaderboard?stat=
 GET /public/t/{slug}/matches?stageId=   (komplet meczów fazy, dla drabinki)
 ```
 
@@ -312,6 +312,8 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 - Kolumna „Forma” (wyniki ostatnich meczów) i strefy awansu/spadku w tabeli
   strony publicznej. W S3 tabela publiczna to ta sama `StandingsTable` co
   w panelu (#192, #206).
+- Liczba rozegranych meczów i średnia na mecz w klasyfikacji zawodników.
+  W S3 wiersz klasyfikacji to pozycja, zawodnik, drużyna i wartość (#190, #207).
 
 ---
 

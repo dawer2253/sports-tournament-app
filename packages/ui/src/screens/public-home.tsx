@@ -2,6 +2,7 @@ import { PublicShell } from '../components/layout/public-shell'
 import { PublicOverview } from '../components/data/public-overview'
 import { groupByRound } from '../components/data/round-groups'
 import {
+  leaderboardsBySport,
   publicFixtures,
   publicResults,
   publicTournament,
@@ -10,7 +11,10 @@ import {
 } from '../lib/demo-data'
 
 export interface PublicHomeProps {
-  /** `przed-startem`: brak meczów trwających i rozegranych, tabela z zerami. */
+  /**
+   * `przed-startem`: brak meczów trwających i rozegranych, tabela z zerami,
+   * a klasyfikacja bez wierszy.
+   */
   state?: 'w-trakcie' | 'przed-startem'
 }
 
@@ -22,6 +26,7 @@ export function PublicHome({ state = 'w-trakcie' }: PublicHomeProps) {
   const started = state === 'w-trakcie'
   const fixtures = started ? publicFixtures : publicFixtures.map((match) => ({ ...match, status: 'scheduled' as const, homeScore: null, awayScore: null }))
   const results = started ? publicResults : []
+  const goals = leaderboardsBySport.football.goals!
   const rows = started
     ? standingsTableRows
     : standingsTableRows
@@ -35,6 +40,7 @@ export function PublicHome({ state = 'w-trakcie' }: PublicHomeProps) {
         fixtures={groupByRound(fixtures, { timeZone: scheduleTimeZone })}
         results={groupByRound(results, { direction: 'desc', timeZone: scheduleTimeZone })}
         standings={rows}
+        leaderboard={started ? goals : { ...goals, rows: [] }}
         timeZone={scheduleTimeZone}
       />
     </PublicShell>

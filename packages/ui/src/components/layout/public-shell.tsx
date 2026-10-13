@@ -11,14 +11,15 @@ import heroDay from '../../assets/public/hero-day.webp'
 import heroNight from '../../assets/public/hero-night.webp'
 import heroBasketball from '../../assets/public/hero-basketball.webp'
 
-/** Zakładka strony publicznej. Drabinkę dołoży S4, „Statystyki” — #207. */
-export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results'
+/** Zakładka strony publicznej. Drabinkę dołoży S4. */
+export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'stats'
 
 const TABS: { key: PublicNavKey; label: string }[] = [
   { key: 'home', label: 'Przegląd' },
   { key: 'standings', label: 'Tabela' },
   { key: 'fixtures', label: 'Terminarz' },
   { key: 'results', label: 'Wyniki' },
+  { key: 'stats', label: 'Statystyki' },
 ]
 
 export type { PublicShellTournament }
@@ -64,13 +65,29 @@ const tabVariants = cva('whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-c
 })
 
 function Tabs({ active, navHref, onNavigate }: Pick<PublicShellProps, 'active' | 'navHref' | 'onNavigate'>) {
+  const activeRef = React.useRef<HTMLAnchorElement>(null)
+
+  // Na telefonie pięć zakładek nie mieści się i pasek przewija się w bok.
+  // Aktywna zakładka ma być widoczna, także „Statystyki” na końcu. Przewijamy
+  // sam pasek, a nie stronę, więc bez `scrollIntoView`.
+  React.useLayoutEffect(() => {
+    const tab = activeRef.current
+    const nav = tab?.parentElement
+    if (!tab || !nav) return
+    const padding = parseFloat(getComputedStyle(nav).paddingRight)
+    if (tab.offsetLeft + tab.offsetWidth > nav.scrollLeft + nav.clientWidth || tab.offsetLeft < nav.scrollLeft) {
+      nav.scrollLeft = tab.offsetLeft + tab.offsetWidth + padding - nav.clientWidth
+    }
+  }, [active])
+
   return (
-    <nav aria-label="Sekcje turnieju" className="mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 text-sm sm:px-6">
+    <nav aria-label="Sekcje turnieju" className="relative mx-auto flex max-w-5xl gap-1 overflow-x-auto px-4 text-sm sm:px-6">
       {TABS.map(({ key, label }) => {
         const isActive = key === active
         return (
           <a
             key={key}
+            ref={isActive ? activeRef : undefined}
             href={navHref?.(key)}
             aria-current={isActive ? 'page' : undefined}
             onClick={(event) => {

@@ -8,7 +8,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Turniej strony publicznej (`PublicTournament`): bez `id`, punktacji
- * i kryteriów, za to z fazami. Wymaga wczytanych `sport` i `stages.groups`.
+ * i kryteriów, za to z fazami i statystykami klasyfikacji. Te ostatnie
+ * w bazie nie istnieją, składa je `availableStats` i `statLabels` sportu.
+ * Wymaga wczytanych `sport` i `stages.groups`.
  *
  * @mixin Tournament
  */
@@ -33,6 +35,10 @@ class PublicTournamentResource extends JsonResource
                 'primaryColor' => $this->primary_color,
             ],
             'stages' => StageResource::collection($this->stages->sortBy('order')->values()),
+            'stats' => array_map(fn (string $stat): array => [
+                'code' => $stat,
+                'label' => $this->sport->statLabel($stat),
+            ], $this->sport->availableStats()),
         ];
     }
 }

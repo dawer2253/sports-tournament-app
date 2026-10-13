@@ -41,6 +41,7 @@ describe('trasa turnieju', () => {
       `/t/${SLUG}/tabela`,
       `/t/${SLUG}/terminarz`,
       `/t/${SLUG}/wyniki`,
+      `/t/${SLUG}/statystyki`,
     ]);
     expect(router.state.location.pathname).toBe(`/t/${SLUG}/tabela`);
   });
@@ -165,14 +166,18 @@ describe('odpytywanie', () => {
     async (status) => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
       const requests = publicApi({ data: tournament({ status }) });
-      // Przegląd pyta o wszystkie cztery zasoby naraz.
+      // Przegląd pyta o wszystkie pięć zasobów naraz.
       renderAt(`/t/${SLUG}`);
       await screen.findByRole('region', { name: 'Tabela (skrót)' });
-      await waitFor(() => expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1 }));
+      await waitFor(() =>
+        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null] }),
+      );
 
       await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
-      await waitFor(() => expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2 }));
+      await waitFor(() =>
+        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null] }),
+      );
     },
   );
 });

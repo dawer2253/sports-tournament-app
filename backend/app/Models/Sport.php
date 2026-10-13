@@ -110,4 +110,43 @@ class Sport extends Model
     {
         return $this->config['tiebreakerLabels'][$code];
     }
+
+    /**
+     * Kody statystyk klasyfikacji (#190). Pierwszy wpis to klasyfikacja
+     * domyślna: piłka `goals`, kosz `points`.
+     *
+     * @return list<string>
+     */
+    public function availableStats(): array
+    {
+        return $this->config['availableStats'];
+    }
+
+    /**
+     * Etykieta statystyki z `config.statLabels`. Klucze etykiet to dokładnie
+     * `availableStats`, więc brak etykiety to błąd danych.
+     */
+    public function statLabel(string $stat): string
+    {
+        return $this->config['statLabels'][$stat];
+    }
+
+    /**
+     * Typy zdarzeń wliczane do statystyki, jako `kod => value`. Typ ze
+     * `stat: null` (samobój) nie wlicza się do żadnej.
+     *
+     * @return array<string, int>
+     */
+    public function statEventValues(string $stat): array
+    {
+        $values = [];
+
+        foreach ($this->config['eventTypes'] as $type) {
+            if ($type['stat'] === $stat) {
+                $values[$type['code']] = $type['value'];
+            }
+        }
+
+        return $values;
+    }
 }

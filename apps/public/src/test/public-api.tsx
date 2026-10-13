@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { Match, PublicTournament, StandingRow, StandingTable } from '@tournament/api-client';
+import type { Match, PublicTournament, StandingRow, StandingTable, StatLeaderboard, StatLeaderboardRow } from '@tournament/api-client';
 import { render } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -17,6 +17,11 @@ export function tournament(overrides: Partial<PublicTournament> = {}): PublicTou
     sport: { id: 1, code: 'football', name: 'Piłka nożna' },
     branding: { logoUrl: null, primaryColor: '#1F7A45' },
     stages: [{ id: 1, type: 'league', name: 'Faza zasadnicza', order: 1, groups: [] }],
+    stats: [
+      { code: 'goals', label: 'Bramki' },
+      { code: 'yellowCards', label: 'Żółte kartki' },
+      { code: 'redCards', label: 'Czerwone kartki' },
+    ],
     ...overrides,
   };
 }
@@ -84,21 +89,45 @@ export function finished(id: number, round: number, overrides: Partial<Match> = 
 }
 
 /**
- * Strona publiczna po stronie „serwera”: cztery endpointy z licznikami
- * żądań. Domyślnie turniej bez meczów i z jedną tabelą.
+ * Wiersz klasyfikacji: zawodnik o podanym id, drużyna rozróżnialna po nim.
+ */
+export function leaderRow(playerId: number, overrides: Partial<StatLeaderboardRow> = {}): StatLeaderboardRow {
+  return {
+    position: 1,
+    player: { id: playerId, name: `Zawodnik ${playerId}` },
+    team: { id: 100 + playerId, name: `Drużyna ${playerId}`, logoUrl: null },
+    value: 1,
+    ...overrides,
+  };
+}
+
+/** Klasyfikacja w kształcie kontraktu; domyślnie pusta, jak przed pierwszym meczem. */
+export function leaderboard(overrides: Partial<StatLeaderboard> = {}): StatLeaderboard {
+  return { stat: 'goals', label: 'Bramki', rows: [], ...overrides };
+}
+
+/**
+ * Strona publiczna po stronie „serwera”: pięć endpointów z licznikami
+ * żądań. Domyślnie turniej bez meczów, z jedną tabelą i pustą klasyfikacją.
+ *
+ * `leaderboards` dostaje `stat` z adresu (`null` bez parametru), a
+ * `requests.leaderboard` zapisuje go przy każdym żądaniu — test sprawdza
+ * nim, o co ekran zapytał.
  */
 export function publicApi({
   data = tournament(),
   standings = [table()],
   fixtures = [],
   results = [],
+  leaderboards = (stat) => leaderboard({ stat: stat ?? 'goals' }),
 }: {
   data?: PublicTournament;
   standings?: StandingTable[];
   fixtures?: Match[];
   results?: Match[];
+  leaderboards?: (stat: string | null) => StatLeaderboard;
 } = {}) {
-  const requests = { tournament: 0, standings: 0, fixtures: 0, results: 0 };
+  const requests = { tournament: 0, standings: 0, fixtures: 0, results: 0, leaderboard: [] as (string | null)[] };
   server.use(
     http.get(`${API}/public/t/:slug`, () => {
       requests.tournament++;
@@ -115,6 +144,11 @@ export function publicApi({
     http.get(`${API}/public/t/:slug/results`, () => {
       requests.results++;
       return HttpResponse.json({ data: results });
+    }),
+    http.get(`${API}/public/t/:slug/leaderboard`, ({ request }) => {
+      const stat = new URL(request.url).searchParams.get('stat');
+      requests.leaderboard.push(stat);
+      return HttpResponse.json({ data: leaderboards(stat) });
     }),
   );
   return requests;

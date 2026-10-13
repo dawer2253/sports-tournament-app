@@ -255,6 +255,10 @@ paths:
                         score_for: Bramki zdobyte
                         wins: Zwycięstwa
                       availableStats: [goals, yellowCards, redCards]
+                      statLabels:
+                        goals: Bramki
+                        yellowCards: Żółte kartki
+                        redCards: Czerwone kartki
                   - id: 2
                     code: basketball
                     name: Koszykówka
@@ -276,6 +280,9 @@ paths:
                         score_for: Zdobyte punkty
                         wins: Zwycięstwa
                       availableStats: [points, fouls]
+                      statLabels:
+                        points: Punkty
+                        fouls: Faule
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
   /tournaments:
@@ -2038,8 +2045,8 @@ paths:
       description: |
         Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
         Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
-        ten sam przełącznik obsługuje tabele, więc oba widoki mocka mówią o tym
-        samym sporcie.
+        ten sam przełącznik obsługuje tabele i klasyfikację, więc wszystkie
+        widoki mocka mówią o tym samym sporcie.
       security: []
       responses:
         '200':
@@ -2066,6 +2073,10 @@ paths:
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
+                      stats:
+                        - { code: goals, label: Bramki }
+                        - { code: yellowCards, label: Żółte kartki }
+                        - { code: redCards, label: Czerwone kartki }
                 koszykowka:
                   summary: Turniej koszykarski
                   value:
@@ -2077,6 +2088,9 @@ paths:
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
+                      stats:
+                        - { code: points, label: Punkty }
+                        - { code: fouls, label: Faule }
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -2609,7 +2623,7 @@ paths:
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  /public/t/{slug}/top-scorers:
+  /public/t/{slug}/leaderboard:
     parameters:
       - { $ref: '#/components/parameters/Slug' }
       - { $ref: '#/components/parameters/IfNoneMatch' }
@@ -2617,10 +2631,44 @@ paths:
       tags: [Public]
       summary: Klasyfikacja indywidualna
       description: |
-        Statystyka, według której budowana jest klasyfikacja, zależy od sportu
-        (bramki w piłce, punkty w koszykówce), dlatego odpowiedź niesie jej kod
-        i etykietę zamiast zakładać, że chodzi o bramki.
+        Ranking zawodników według jednej statystyki sportu turnieju (bramki,
+        kartki, punkty, faule). Statystyka zależy od sportu, dlatego odpowiedź
+        niesie jej kod i etykietę zamiast zakładać, że chodzi o bramki
+        (ADR-0006). Listę statystyk turnieju z etykietami daje
+        `PublicTournament.stats`.
+
+        Klasyfikacja nie jest bytem zapisywanym: liczy się przy każdym
+        odczycie, jedna na turniej.
+
+        - **Tylko mecze `finished`, ze wszystkich faz turnieju.** Mecz `live`
+          niczego nie dokłada, tak samo jak w tabeli.
+        - **Wartość** to suma `SportEventType.value` zdarzeń zawodnika, których
+          typ ma `stat` równy wybranej statystyce: kartka i faul liczą się
+          sztuką, rzuty sumują się po 1, 2 i 3. Typ ze `stat: null` (samobój)
+          nie wchodzi do żadnej klasyfikacji.
+        - **Lista** to wszyscy zawodnicy z `value > 0`, bez limitu i bez
+          stronicowania. Przed pierwszym meczem zakończonym `rows` jest puste.
+        - **Zdarzenie bez zawodnika** do klasyfikacji nie wchodzi. Zawodnik
+          usunięty zostaje w niej z nazwiskiem.
+        - `team` w wierszu to drużyna zdarzenia.
+
+        Przykłady są dwa, po jednym na sport, zgodne z seedem demo: `pilka`
+        (domyślny) i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+        `Prefer: example=koszykowka`. Mock nie liczy klasyfikacji, więc
+        parametr `stat` niczego w nim nie zmienia.
       security: []
+      parameters:
+        - name: stat
+          in: query
+          required: false
+          description: |
+            Kod statystyki z `availableStats` sportu turnieju (tak samo
+            `PublicTournament.stats`). Bez parametru odpowiedź liczy pierwszą
+            statystykę sportu: piłka `goals`, kosz `points`. Kod spoza
+            `availableStats` sportu turnieju daje `422` pod `stat`, także kod
+            innego sportu (`goals` w turnieju koszykarskim).
+          schema: { type: string }
+          example: yellowCards
       responses:
         '200':
           description: Klasyfikacja zawodników
@@ -2634,18 +2682,39 @@ paths:
                 required: [data]
                 properties:
                   data: { $ref: '#/components/schemas/StatLeaderboard' }
-              example:
-                data:
-                  stat: goals
-                  label: Bramki
-                  rows:
-                    - { position: 1, player: { id: 1, name: Marek Nowak }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 3 }
-                    - { position: 2, player: { id: 5, name: Adam Zieliński }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 2 }
-                    - { position: 3, player: { id: 3, name: Jakub Wrona }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 1 }
-                    - { position: 3, player: { id: 4, name: Tomasz Lis }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 1 }
-                    - { position: 3, player: { id: 7, name: Rafał Duda }, team: { id: 3, name: Orły Bielany, logoUrl: null }, value: 1 }
+              examples:
+                pilka:
+                  summary: Turniej piłkarski — domyślna klasyfikacja to bramki
+                  value:
+                    data:
+                      stat: goals
+                      label: Bramki
+                      rows:
+                        - { position: 1, player: { id: 1, name: Marek Nowak }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 3 }
+                        - { position: 2, player: { id: 5, name: Adam Zieliński }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 2 }
+                        - { position: 3, player: { id: 3, name: Jakub Wrona }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 1 }
+                        - { position: 3, player: { id: 4, name: Tomasz Lis }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 1 }
+                        - { position: 3, player: { id: 7, name: Rafał Duda }, team: { id: 3, name: Orły Bielany, logoUrl: null }, value: 1 }
+                koszykowka:
+                  summary: Turniej koszykarski — domyślna klasyfikacja to punkty
+                  description: |
+                    Liga koszykówki z seedu demo (`liga-koszykowki-2026`).
+                    Punkty zawodników sumują się do wyników meczów (168:141
+                    w tabeli), bo seed rozpisuje każdy wynik na rzuty.
+                  value:
+                    data:
+                      stat: points
+                      label: Punkty
+                      rows:
+                        - { position: 1, player: { id: 11, name: Oskar Dąb }, team: { id: 4, name: Żubry Wola, logoUrl: null }, value: 57 }
+                        - { position: 1, player: { id: 12, name: Bruno Klon }, team: { id: 4, name: Żubry Wola, logoUrl: null }, value: 57 }
+                        - { position: 3, player: { id: 10, name: Kacper Lipa }, team: { id: 4, name: Żubry Wola, logoUrl: null }, value: 54 }
+                        - { position: 4, player: { id: 15, name: Wiktor Bóbr }, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, value: 48 }
+                        - { position: 5, player: { id: 14, name: Hubert Łoś }, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, value: 47 }
+                        - { position: 6, player: { id: 13, name: Filip Sarna }, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, value: 46 }
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
 
 components:
   securitySchemes:
@@ -2959,7 +3028,7 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, defaultMatchDuration, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats]
+      required: [allowsDraw, defaultPoints, defaultMatchDuration, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
       properties:
         allowsDraw:
           type: boolean
@@ -2997,7 +3066,19 @@ components:
           additionalProperties: { type: string, minLength: 1 }
         availableStats:
           type: array
+          description: |
+            Kody statystyk, według których liczy się klasyfikacja
+            (`StatLeaderboard`). Pierwszy wpis to klasyfikacja domyślna:
+            piłka `goals`, kosz `points`.
           items: { type: string }
+        statLabels:
+          type: object
+          description: |
+            Polska etykieta każdej statystyki z `availableStats` tego sportu;
+            klucze to dokładnie `availableStats`, bez braków i bez nadmiaru,
+            wzorem `tiebreakerLabels`. Ta sama etykieta przychodzi
+            w `StatLeaderboard.label` i `PublicTournament.stats`.
+          additionalProperties: { type: string, minLength: 1 }
 
     Sport:
       type: object
@@ -3628,14 +3709,28 @@ components:
         stat:
           type: string
           description: Kod statystyki, zgodny z `availableStats` sportu.
-        label: { type: string }
+        label:
+          type: string
+          description: Etykieta statystyki z `SportConfig.statLabels` sportu turnieju, np. „Bramki” albo „Punkty”.
         rows:
           type: array
           items: { $ref: '#/components/schemas/StatLeaderboardRow' }
 
+    PublicStat:
+      type: object
+      required: [code, label]
+      properties:
+        code:
+          type: string
+          description: Kod statystyki z `availableStats` sportu turnieju, do parametru `stat` w `/public/t/{slug}/leaderboard`.
+        label:
+          type: string
+          minLength: 1
+          description: Etykieta statystyki z `SportConfig.statLabels` sportu turnieju.
+
     PublicTournament:
       type: object
-      required: [name, slug, status, sport, branding, stages]
+      required: [name, slug, status, sport, branding, stages, stats]
       properties:
         name: { type: string }
         slug: { type: string }
@@ -3650,3 +3745,13 @@ components:
         stages:
           type: array
           items: { $ref: '#/components/schemas/Stage' }
+        stats:
+          type: array
+          description: |
+            Statystyki, według których liczy się klasyfikacja, w kolejności
+            `SportConfig.availableStats`; pierwszy wpis to klasyfikacja
+            domyślna. W bazie tego pola nie ma: serwer składa je
+            z `availableStats` i `statLabels` sportu. Jedzie z turniejem, bo
+            strona publiczna nie widzi `GET /sports` (wymaga logowania),
+            a nawigacja potrzebuje nazw statystyk, zanim pobierze klasyfikację.
+          items: { $ref: '#/components/schemas/PublicStat' }

@@ -156,38 +156,37 @@ it('sieje rzuty koszykarskie, których value sumuje się do wyniku meczu', funct
     expect(MatchEvent::query()->whereIn('match_id', $matches->pluck('id'))->where('type', 'foul')->count())->toBeGreaterThan(0);
 });
 
-it('sieje klasyfikację strzelców zgodną z przykładem kontraktu', function () {
-    // Kalkulator klasyfikacji wchodzi w S1 — tu liczy się tylko to, że dane
-    // wejściowe dają dokładnie tę klasyfikację, co przykład
-    // `GET /public/t/{slug}/top-scorers`. Endpoint nie ma parametru `limit`,
-    // więc porównujemy komplet strzelców, nie czołówkę: obcięcie do dwóch
-    // przepuściłoby bramkę dorzuconą komukolwiek dalej w stawce.
-    // Porządek jest ten z kontraktu (`StatLeaderboardRow.position`): malejąco
-    // po bramkach, a przy remisie rosnąco po `player.id`. Sortujemy tu sami,
-    // bo kolejność wierszy z bazy jest nieokreślona, a to właśnie ona odróżnia
-    // klasyfikację od worka liczb.
-    $goals = MatchEvent::query()
-        ->where('type', 'goal')
-        ->with('player')
-        ->get()
-        ->groupBy(fn (MatchEvent $event) => $event->player_id)
-        ->map(fn ($events, $playerId) => [
-            'name' => $events->first()->player->name,
-            'goals' => $events->count(),
-            'playerId' => $playerId,
-        ])
-        ->sortBy([['goals', 'desc'], ['playerId', 'asc']])
-        ->map(fn (array $row) => "{$row['name']} {$row['goals']}")
-        ->values()
-        ->all();
+it('sieje klasyfikację zgodną z przykładem kontraktu', function (string $slug, string $example) {
+    // Porównujemy komplet wierszy, nie czołówkę: obcięcie przepuściłoby
+    // zdarzenie dorzucone komukolwiek dalej w stawce. Bez `id`, bo
+    // autoinkrement w bazie testowej nie zeruje się między testami — kolejność
+    // ex aequo po `player.id` i tak widać w kolejności nazwisk.
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $promised = $spec['paths']['/public/t/{slug}/leaderboard']['get']['responses']['200']['content']['application/json']['examples'][$example]['value']['data'];
 
-    expect($goals)->toBe([
-        'Marek Nowak 3',
-        'Adam Zieliński 2',
-        'Jakub Wrona 1',
-        'Tomasz Lis 1',
-        'Rafał Duda 1',
-    ]);
+    $withoutIds = fn (array $leaderboard): array => [
+        'stat' => $leaderboard['stat'],
+        'label' => $leaderboard['label'],
+        'rows' => array_map(fn (array $row): string => "{$row['position']}. {$row['player']['name']} ({$row['team']['name']}) {$row['value']}", $leaderboard['rows']),
+    ];
+
+    $actual = $this->getJson("/api/v1/public/t/{$slug}/leaderboard")->assertOk()->json('data');
+
+    expect($withoutIds($actual))->toBe($withoutIds($promised));
+})->with([
+    'piłka' => ['liga-osiedlowa-2026', 'pilka'],
+    'koszykówka' => ['liga-koszykowki-2026', 'koszykowka'],
+]);
+
+it('liga koszykówki daje w klasyfikacji punktów sumę równą sumie wyników meczów', function () {
+    $tournament = Tournament::firstWhere('slug', 'liga-koszykowki-2026');
+    $scored = $tournament->matches()->where('matches.status', 'finished')->get()
+        ->sum(fn (GameMatch $match): int => $match->home_score + $match->away_score);
+
+    $rows = $this->getJson('/api/v1/public/t/liga-koszykowki-2026/leaderboard?stat=points')->assertOk()->json('data.rows');
+
+    expect($scored)->toBeGreaterThan(0)
+        ->and(array_sum(array_column($rows, 'value')))->toBe($scored);
 });
 
 it('sieje mecze o terminach zgodnych z kontraktem', function () {

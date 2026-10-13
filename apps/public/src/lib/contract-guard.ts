@@ -1,5 +1,12 @@
-import type { Match, PublicTournament, StandingRow } from '@tournament/api-client';
-import type { MatchInRound, PublicShellTournament, SportCode, StandingsTableRow } from '@tournament/ui';
+import type { Match, PublicStat, PublicTournament, StandingRow, StatLeaderboard } from '@tournament/api-client';
+import type {
+  Leaderboard,
+  MatchInRound,
+  PublicShellTournament,
+  SportCode,
+  StandingsTableRow,
+  StatOption,
+} from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów z design systemu z kontraktem, jak
@@ -9,7 +16,7 @@ import type { MatchInRound, PublicShellTournament, SportCode, StandingsTableRow 
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni typ
  * w `packages/ui` (`public-shell-tournament.ts`, `round-groups.ts`,
- * `standings-table-row.ts`).
+ * `standings-table-row.ts`, `leaderboard-data.ts`).
  */
 
 /** Turniej z kontraktu daje się pokazać w nagłówku `PublicShell`. */
@@ -26,6 +33,16 @@ export const contractFitsMatch: ContractFitsMatch = true;
 type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;
 
 export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
+
+/** Klasyfikacja z kontraktu daje się pokazać w `LeaderboardTable` i `LeaderboardLeaders`. */
+type ContractFitsLeaderboard = StatLeaderboard extends Leaderboard ? true : never;
+
+export const contractFitsLeaderboard: ContractFitsLeaderboard = true;
+
+/** Statystyka turnieju z kontraktu daje się podać do `StatSwitcher`. */
+type ContractFitsStatOption = PublicStat extends StatOption ? true : never;
+
+export const contractFitsStatOption: ContractFitsStatOption = true;
 
 /** Kody sportu w DS to dokładnie kody z kontraktu: nowy sport w kontrakcie czerwieni tu, aż DS go pozna. */
 type ContractSportCode = PublicTournament['sport']['code'];

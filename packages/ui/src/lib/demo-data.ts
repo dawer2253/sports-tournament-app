@@ -1,5 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
+import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchCollision, MatchRowData } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
@@ -160,6 +161,101 @@ export const scorers: Scorer[] = [
   { pos: 5, player: 'Kamil Duda', team: teams[2], goals: 4 },
   { pos: 6, player: 'Rafał Sikora', team: teams[5], goals: 3 },
 ]
+
+// --- Klasyfikacja (#207) ------------------------------------------------------
+
+/** `PublicTournament.stats` sportów, dosłownie z przykładów w kontrakcie. */
+export const statOptionsBySport: Record<'football' | 'basketball', StatOption[]> = {
+  football: [
+    { code: 'goals', label: 'Bramki' },
+    { code: 'yellowCards', label: 'Żółte kartki' },
+    { code: 'redCards', label: 'Czerwone kartki' },
+  ],
+  basketball: [
+    { code: 'points', label: 'Punkty' },
+    { code: 'fouls', label: 'Faule' },
+  ],
+}
+
+/**
+ * Wiersze klasyfikacji z par `[zawodnik, drużyna, wartość]` podanych malejąco:
+ * pozycja dzielona przy remisie, jak w `StatLeaderboardRow` z kontraktu. Id
+ * zawodnika rośnie z kolejnością, więc ex aequo stoją po `player.id`.
+ */
+function leaderboardRows(entries: [string, { id: number; name: string }, number][]): LeaderboardRow[] {
+  return entries.map(([name, team, value], index) => ({
+    position: entries.findIndex(([, , other]) => other === value) + 1,
+    player: { id: 100 + index, name },
+    team: { id: team.id, name: team.name, logoUrl: null },
+    value,
+  }))
+}
+
+const [gorka, sparta, orly, dragons, wilki, tygrysy] = teams as [Team, Team, Team, Team, Team, Team]
+const [zubry, rysie, kosze, orleta] = basketballStandingsTableRows.map((row) => row.team) as [
+  StandingsTableRow['team'],
+  StandingsTableRow['team'],
+  StandingsTableRow['team'],
+  StandingsTableRow['team'],
+]
+
+/** Klasyfikacje turnieju demo: sport → kod statystyki → odpowiedź `/leaderboard`. */
+export const leaderboardsBySport: Record<'football' | 'basketball', Record<string, Leaderboard>> = {
+  football: {
+    goals: {
+      stat: 'goals',
+      label: 'Bramki',
+      rows: leaderboardRows([
+        ['Jan Kowalski', gorka, 8],
+        ['Adam Wójcik', dragons, 6],
+        ['Piotr Zieliński', gorka, 5],
+        ['Tomasz Mazur', sparta, 4],
+        ['Kamil Duda', orly, 4],
+        ['Rafał Sikora', tygrysy, 3],
+        ['Michał Woźniak', wilki, 1],
+        ['Łukasz Nowak', sparta, 1],
+      ]),
+    },
+    yellowCards: {
+      stat: 'yellowCards',
+      label: 'Żółte kartki',
+      rows: leaderboardRows([
+        ['Bartosz Mazur', wilki, 3],
+        ['Szymon Lewandowski', tygrysy, 2],
+        ['Tomasz Mazur', sparta, 2],
+        ['Paweł Kamiński', orly, 1],
+      ]),
+    },
+    redCards: {
+      stat: 'redCards',
+      label: 'Czerwone kartki',
+      rows: leaderboardRows([['Szymon Lewandowski', tygrysy, 1]]),
+    },
+  },
+  basketball: {
+    points: {
+      stat: 'points',
+      label: 'Punkty',
+      rows: leaderboardRows([
+        ['Oskar Dąb', zubry, 64],
+        ['Bruno Klon', zubry, 64],
+        ['Filip Sarna', rysie, 58],
+        ['Hubert Łoś', kosze, 51],
+        ['Kacper Lipa', zubry, 47],
+        ['Wiktor Bóbr', orleta, 45],
+      ]),
+    },
+    fouls: {
+      stat: 'fouls',
+      label: 'Faule',
+      rows: leaderboardRows([
+        ['Wiktor Bóbr', orleta, 7],
+        ['Hubert Łoś', kosze, 5],
+        ['Oskar Dąb', zubry, 4],
+      ]),
+    },
+  },
+}
 
 export type BracketMatch = { home: Team | null; away: Team | null; homeScore: number | null; awayScore: number | null; winner?: 'home' | 'away' }
 export type BracketRound = { name: string; matches: BracketMatch[] }
