@@ -182,7 +182,8 @@ export function MatchRow({
   const content = (
     <>
       <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground @2xl/match-row:col-span-1 @2xl/match-row:block">
-        {match.positionLabel && <span className="shrink-0 font-medium text-foreground">{match.positionLabel}</span>}
+        {/* PROTOTYP (#218): w szerokim wierszu komórka jest blokiem, więc odstęp od godziny daje margines, nie `gap`. */}
+        {match.positionLabel && <span className="shrink-0 font-medium text-foreground @2xl/match-row:me-1.5">{match.positionLabel}</span>}
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (
           <span className="flex min-w-0 items-center gap-1">
@@ -191,7 +192,7 @@ export function MatchRow({
           </span>
         )}
       </div>
-      <span data-slot="match-team" className={cn('col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1', !match.homeTeam && 'text-xs font-normal italic text-muted-foreground')}>{home}</span>
+      <span data-slot="match-team" className={cn('col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1', !match.homeTeam && 'pe-1 text-xs font-normal italic text-muted-foreground')}>{home}</span>
       <span className="col-start-2 row-start-2 flex @2xl/match-row:col-start-3 @2xl/match-row:row-start-1">
         <Score match={match} />
       </span>
