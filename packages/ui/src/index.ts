@@ -36,6 +36,9 @@ export * from './components/ui/tooltip';
 export * from './components/ui/typography';
 
 export * from './components/data/data-table';
+export * from './components/data/leaderboard-leaders';
+export * from './components/data/leaderboard-row';
+export * from './components/data/leaderboard-table';
 export * from './components/data/live-match-tile';
 export * from './components/data/match-row';
 export * from './components/data/match-row-data';
@@ -54,6 +57,7 @@ export * from './components/data/round-summary';
 export * from './components/data/score-inputs';
 export * from './components/data/standings-table';
 export * from './components/data/standings-snippet';
+export * from './components/data/stat-switcher';
 export * from './components/data/standings-table-row';
 export * from './components/data/team-row';
 export * from './components/data/teams-table';

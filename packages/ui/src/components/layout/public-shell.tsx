@@ -11,14 +11,15 @@ import heroDay from '../../assets/public/hero-day.webp'
 import heroNight from '../../assets/public/hero-night.webp'
 import heroBasketball from '../../assets/public/hero-basketball.webp'
 
-/** Zakładka strony publicznej. Drabinkę dołoży S4, „Statystyki” — #207. */
-export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results'
+/** Zakładka strony publicznej. Drabinkę dołoży S4. */
+export type PublicNavKey = 'home' | 'standings' | 'fixtures' | 'results' | 'stats'
 
 const TABS: { key: PublicNavKey; label: string }[] = [
   { key: 'home', label: 'Przegląd' },
   { key: 'standings', label: 'Tabela' },
   { key: 'fixtures', label: 'Terminarz' },
   { key: 'results', label: 'Wyniki' },
+  { key: 'stats', label: 'Statystyki' },
 ]
 
 export type { PublicShellTournament }

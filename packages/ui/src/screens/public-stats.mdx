@@ -1,0 +1,46 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './public-stats.stories'
+
+<Meta of={Stories} />
+
+# Statystyki (Public): specyfikacja
+
+Publiczny, read-only widok klasyfikacji zawodników pod `/t/{slug}/statystyki`, z wyborem statystyki w adresie: `?stat=yellowCards`.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pokazać kibicom ranking zawodników według jednej statystyki sportu (bramki, kartki, punkty, faule), bez logowania.
+
+## Dane (wejście)
+- `PublicTournament.stats`: statystyki `{ code, label }` w kolejności `availableStats` sportu; pierwsza jest domyślna.
+- `GET /public/t/{slug}/leaderboard?stat=`: `StatLeaderboard` z `label` i wierszami `{ position, player, team, value }`, liczony przy odczycie (#190).
+
+## Reguły
+- Liczą się mecze zakończone ze wszystkich faz turnieju. Mecz trwający niczego nie dokłada.
+- Wartość to suma `value` typów zdarzeń danej statystyki: kartka i faul liczą się sztuką, rzuty sumują się po 1, 2 i 3.
+- Przy równej wartości pozycja jest **dzielona** (1, 2, 3, 3, 3, a kolejna zaczyna od 6), a zawodnicy ex aequo idą po `player.id`. Widok kolejności nie poprawia.
+- Nagłówek ekranu i kolumny wartości to `label` odpowiedzi, nie nazwa wyprowadzona ze sportu (ADR-0006).
+- Kod statystyki spoza `stats` w adresie traktujemy jak brak parametru.
+
+## Stany
+- **Piłka**: bramki, żółte i czerwone kartki (powyżej).
+- **Koszykówka**: punkty i faule, dwóch liderów ex aequo.
+
+<Canvas of={Stories.Koszykowka} />
+
+- **Przed startem**: żaden mecz nie jest zakończony.
+
+<Canvas of={Stories.PrzedStartem} />
+
+## Zachowanie
+- Odpytywanie co `VITE_POLL_INTERVAL_MS` (ADR-0007).
+- Wybór statystyki zmienia adres, więc link do „kartek” da się wysłać.
+- Na Przeglądzie stoi karta lidera domyślnej statystyki (`LeaderboardLeaders`): wszyscy z `position: 1` zawsze, kolejne pozycje dopełniają do pięciu wierszy.
+
+## Otwarte pytania
+Rozstrzygnięte w #190 i #192:
+- *Czy pokazywać liczbę rozegranych meczów i średnią?* Nie na MVP — future work (`docs/PLAN.md` §14).
+- *Czy uwzględniać samobóje?* Nie. Samobój (`stat: null`) nie wchodzi do żadnej klasyfikacji.
+- *Ilu zawodników na liście?* Wszyscy z wartością większą od zera, bez limitu i stronicowania. Czołówkę na Przeglądzie wycina front.
+- *Remis?* Pozycja dzielona, ex aequo po `player.id`. Mniejsza liczba meczów nie rozstrzyga.

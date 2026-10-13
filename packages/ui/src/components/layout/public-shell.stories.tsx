@@ -12,7 +12,7 @@ const LOGO_URL =
 
 /** Adresy zakładek, tak jak podaje je `apps/public`. */
 const navHref = (key: PublicNavKey) =>
-  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki' })[key]
+  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki' })[key]
 
 const meta = {
   title: 'UI/Shell strony publicznej',
@@ -65,6 +65,7 @@ export const Domyslny: Story = {
       'Tabela',
       'Terminarz',
       'Wyniki',
+      'Statystyki',
     ])
 
     await expect(getComputedStyle(heading(canvasElement)).color).toBe(tokenColor('--brand-text-light'))
