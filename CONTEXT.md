@@ -121,6 +121,12 @@ drużyny się nie powtarza.
 Usunięcie drużyny usuwa też jej mecze zaplanowane. Reszta terminarza zostaje
 bez zmian, nawet jeśli kolejka opustoszeje.
 
+W pucharze jest inaczej, bo drabinki nie da się załatać jak kolejki. Usunięcie
+drużyny, która stoi w drabince, przed pierwszym meczem rozpoczętym fazy kasuje
+całą drabinkę, a organizer generuje ją od nowa. Po starcie usunięcie jest
+zablokowane, także dla drużyny, która jeszcze nie grała; wycofanie drużyny
+wpisuje się wtedy jako walkower.
+
 ## Logo (logo, herb)
 
 Obraz, który organizer wgrywa dla turnieju albo dla drużyny. W kodzie i w API
@@ -175,8 +181,9 @@ to mecz zakończony, i tak liczy go tabela.
 
 Mecz ma pozycję własną: numer w obrębie swojej kolejki (`matchNumber`). W lidze
 porządkuje kolejkę, w drabince razem z numerem rundy wyznacza miejsce meczu
-w choince i pozwala widokowi wyliczyć jego etykietę ("1/2 finału", "Finał").
-Etykiety nie przechowujemy, bo zależy od rozmiaru drabinki. Pozycja własna to
+w choince i pozwala widokowi wyliczyć jego etykietę („Półfinał 1”, „Finał”).
+Etykiety pozycji meczu (SF1) nie przechowujemy, a nazwa rundy („Półfinał”) jest
+zapisana, bo powstaje razem z drabinką i znika z nią. Pozycja własna to
 co innego niż to, dokąd awansują uczestnicy meczu — te dwie rzeczy nie mieszczą
 się w jednym pojęciu.
 
@@ -201,7 +208,18 @@ w terminarzu.
 
 W lidze nie zostawia po sobie śladu — kolejka ma po prostu o jeden mecz mniej.
 W drabince widać ją w jej kształcie: drużyna stoi w rundzie, do której nie
-prowadzi żaden mecz.
+prowadzi żaden mecz. Tam pauzę (w UI „wolny los”) dostają najwyżej rozstawieni,
+więc stoją od razu w drugiej rundzie.
+
+## Seeding (rozstawienie)
+
+Kolejność drużyn podana przy generowaniu drabinki, od najwyżej rozstawionej.
+Wyznacza, kto z kim gra w pierwszej rundzie i komu przypada wolny los, tak że
+najwyżej rozstawieni spotykają się jak najpóźniej.
+
+Rozstawienie nie jest przechowywane: zostaje po nim tylko kształt drabinki.
+Losowanie to wymieszanie tej kolejności, w całości albo poniżej zablokowanej
+góry listy.
 
 ## Match duration (długość meczu)
 
