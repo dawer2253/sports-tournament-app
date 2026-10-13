@@ -3,7 +3,7 @@ import type { MatchRowData, MatchStatus } from './match-row-data'
 import type { RoundSummary } from './round-summary'
 
 // Grupowanie meczów strony publicznej po kolejce i wybór kolejek Przeglądu.
-// Osobno od `round-matches.tsx`, bo to funkcje, a nie komponent: korzystają
+// Osobno od `round-sections.tsx`, bo to funkcje, a nie komponent: korzystają
 // z nich makiety i `apps/public`.
 
 /** Kolejka z jej meczami w kolejności wyświetlania. */
