@@ -1,5 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
+import type { BracketMatchRowData } from '../components/data/bracket-match-row-data'
 import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchCollision, MatchRowData, MatchScorer } from '../components/data/match-row-data'
@@ -758,3 +759,146 @@ export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
   .filter((match) => match.status === 'finished')
   .map(asPublicMatch)
   .toSorted((a, b) => byKickoff(b, a))
+
+// --- Drabinka pucharu (#227) -------------------------------------------------
+
+// Puchar sześciu drużyn z `teams` (seedy 1–6) z meczem o 3. miejsce, w kształcie
+// z generatora (#215): drabinka na osiem, więc w ćwierćfinale grają pozycje
+// 2 i 4, a seedy 1 i 2 stoją od razu w półfinałach. Stan jak w przykładzie
+// `puchar` z kontraktu: ćwierćfinały rozegrane (jeden po karnych), pierwszy
+// półfinał też. Etykiety i krawędzie są gotowymi napisami, bo tak dostaje je
+// `BracketMatchRow` od ekranu.
+const seed = (n: number) => {
+  const { id, name } = teams[n - 1]!
+  return { id, name }
+}
+
+const cupMatch = (match: Omit<BracketMatchRowData, 'homePenalties' | 'awayPenalties'> & Partial<BracketMatchRowData>): BracketMatchRowData => ({
+  homePenalties: null,
+  awayPenalties: null,
+  ...match,
+})
+
+const cupQuarterFinals: BracketMatchRowData[] = [
+  cupMatch({
+    id: 102,
+    label: 'Ćwierćfinał 2',
+    kickoffAt: '2026-10-03T10:00:00+00:00',
+    status: 'finished',
+    home: { team: seed(4) },
+    away: { team: seed(5) },
+    homeScore: 2,
+    awayScore: 2,
+    homePenalties: 4,
+    awayPenalties: 3,
+    winnerTo: 'Półfinał 1',
+  }),
+  cupMatch({
+    id: 104,
+    label: 'Ćwierćfinał 4',
+    kickoffAt: '2026-10-03T12:00:00+00:00',
+    status: 'finished',
+    home: { team: seed(3) },
+    away: { team: seed(6) },
+    homeScore: 1,
+    awayScore: 0,
+    winnerTo: 'Półfinał 2',
+  }),
+]
+
+const cupSemiFinals: BracketMatchRowData[] = [
+  cupMatch({
+    id: 201,
+    label: 'Półfinał 1',
+    kickoffAt: '2026-10-10T10:00:00+00:00',
+    status: 'finished',
+    home: { team: seed(1) },
+    away: { team: seed(4) },
+    homeScore: 3,
+    awayScore: 1,
+    winnerTo: 'Finał',
+    loserTo: 'o 3. miejsce',
+  }),
+  cupMatch({
+    id: 202,
+    label: 'Półfinał 2',
+    kickoffAt: '2026-10-10T12:00:00+00:00',
+    status: 'scheduled',
+    home: { team: seed(2) },
+    away: { team: seed(3) },
+    homeScore: null,
+    awayScore: null,
+    winnerTo: 'Finał',
+    loserTo: 'o 3. miejsce',
+  }),
+]
+
+// Mecz o 3. miejsce gra przed finałem, więc stoi nad nim (#227).
+const cupFinalRound: BracketMatchRowData[] = [
+  cupMatch({
+    id: 302,
+    label: 'Mecz o 3. miejsce',
+    kickoffAt: '2026-10-17T10:00:00+00:00',
+    status: 'scheduled',
+    home: { team: seed(4) },
+    away: { team: null, source: 'Przegrany: Półfinał 2' },
+    homeScore: null,
+    awayScore: null,
+  }),
+  cupMatch({
+    id: 301,
+    label: 'Finał',
+    kickoffAt: '2026-10-17T12:00:00+00:00',
+    status: 'scheduled',
+    home: { team: seed(1) },
+    away: { team: null, source: 'Zwycięzca: Półfinał 2' },
+    homeScore: null,
+    awayScore: null,
+  }),
+]
+
+function cupRound(id: number, name: string, matches: BracketMatchRowData[]): { summary: RoundSummary; matches: BracketMatchRowData[] } {
+  return {
+    summary: {
+      id,
+      name,
+      dates: formatRoundDates(matches.map((match) => match.kickoffAt), scheduleTimeZone),
+      finished: matches.filter((match) => match.status === 'finished').length,
+      total: matches.length,
+    },
+    matches,
+  }
+}
+
+/** Rundy drabinki sześciu drużyn w trakcie, po `order`. */
+export const cupRounds = [
+  cupRound(10, 'Ćwierćfinał', cupQuarterFinals),
+  cupRound(11, 'Półfinał', cupSemiFinals),
+  cupRound(12, 'Finał', cupFinalRound),
+]
+
+/** Wolne losy tej drabinki: notka pod 1. i 2. rundą. */
+export const cupByes = [
+  { team: seed(1).name, target: 'Półfinał 1' },
+  { team: seed(2).name, target: 'Półfinał 2' },
+]
+
+/** Ta sama drabinka rozegrana do końca: finał po karnych, mistrzem seed 1. */
+export const cupFinishedRounds = [
+  cupRounds[0]!,
+  cupRound(11, 'Półfinał', [cupSemiFinals[0]!, { ...cupSemiFinals[1]!, status: 'finished', homeScore: 2, awayScore: 0 }]),
+  cupRound(12, 'Finał', [
+    { ...cupFinalRound[0]!, status: 'finished', away: { team: seed(3) }, homeScore: 0, awayScore: 2 },
+    {
+      ...cupFinalRound[1]!,
+      status: 'finished',
+      away: { team: seed(2) },
+      homeScore: 1,
+      awayScore: 1,
+      homePenalties: 5,
+      awayPenalties: 4,
+    },
+  ]),
+]
+
+export const cupChampion = seed(1)
