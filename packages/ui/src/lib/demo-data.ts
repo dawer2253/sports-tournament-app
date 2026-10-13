@@ -2,7 +2,7 @@
 
 import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
-import type { MatchCollision, MatchRowData } from '../components/data/match-row-data'
+import type { MatchCollision, MatchRowData, MatchScorer } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
 import type { RoundSummary } from '../components/data/round-summary'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
@@ -590,45 +590,6 @@ export function scheduleRounds(matches: ScheduleDemoMatch[]): RoundSummary[] {
   }))
 }
 
-// --- Strona publiczna (#206) -------------------------------------------------
-
-/** Turniej strony publicznej, w kształcie `PublicTournament` z przykładu `pilka` w kontrakcie. */
-export const publicTournament: PublicShellTournament = {
-  name: tournament.name,
-  slug: tournament.slug,
-  status: 'active',
-  sport: { code: 'football', name: 'Piłka nożna' },
-  branding: { logoUrl: null, primaryColor: '#1F7A45' },
-}
-
-/** Mecz strony publicznej: `Match` z kontraktu, czyli bez kolizji panelu. */
-function withoutCollisions({ collisions: _collisions, ...match }: ScheduleDemoMatch): ScheduleDemoMatch {
-  return match
-}
-
-/** Termin rosnąco, mecz bez terminu na końcu, remis po kolejce — tak sortuje API. */
-function byKickoff(a: ScheduleDemoMatch, b: ScheduleDemoMatch): number {
-  if (a.kickoffAt === b.kickoffAt) return a.round.order - b.round.order
-  if (a.kickoffAt === null) return 1
-  if (b.kickoffAt === null) return -1
-  return a.kickoffAt.localeCompare(b.kickoffAt)
-}
-
-/**
- * `GET /public/t/{slug}/fixtures` sezonu w trakcie: mecze zaplanowane
- * i trwające, rosnąco po terminie, bez terminu na końcu.
- */
-export const publicFixtures: ScheduleDemoMatch[] = scheduleInProgress
-  .filter((match) => match.status !== 'finished')
-  .map(withoutCollisions)
-  .toSorted(byKickoff)
-
-/** `GET /public/t/{slug}/results` sezonu w trakcie: mecze zakończone, malejąco po terminie. */
-export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
-  .filter((match) => match.status === 'finished')
-  .map(withoutCollisions)
-  .toSorted((a, b) => byKickoff(b, a))
-
 // --- Zdarzenia meczu (#200) --------------------------------------------------
 
 /** Typy zdarzeń sportów, dosłownie z przykładu `GET /sports` w kontrakcie. */
@@ -694,3 +655,106 @@ export const matchInProgressEvents: MatchEventRow[] = (() => {
     player: { id: event.player.id, name: event.player.name },
   }))
 })()
+
+// --- Strzelcy przy wyniku (#208) ---------------------------------------------
+
+/** Zdarzenie liczone do strzelców: bramka albo samobój, z minutą lub bez. */
+type ScoringEvent = { team: { id: number; name: string }; player: { id: number; name: string }; minute: number | null; ownGoal: boolean }
+
+/**
+ * Wiersze strzelców tak, jak składa je serwer: jeden na zawodnika, samobój
+ * osobno, minuty rosnąco, wiersze po pierwszej minucie, bez minut na końcu,
+ * remis po id zawodnika.
+ */
+function scorersFromEvents(events: ScoringEvent[]): MatchScorer[] {
+  const rows = new Map<string, MatchScorer>()
+  for (const event of events) {
+    const key = `${event.player.id}-${event.ownGoal}`
+    const row = rows.get(key) ?? { team: event.team, player: event.player, value: 0, minutes: [], ownGoal: event.ownGoal }
+    row.value += 1
+    if (event.minute !== null) row.minutes = [...row.minutes, event.minute].toSorted((a, b) => a - b)
+    rows.set(key, row)
+  }
+  const firstMinute = (row: MatchScorer) => row.minutes[0] ?? Number.POSITIVE_INFINITY
+  return [...rows.values()].toSorted((a, b) => firstMinute(a) - firstMinute(b) || a.player.id - b.player.id)
+}
+
+/**
+ * Strzelcy meczu demo, zgodni z jego wynikiem. Mecz w trakcie bierze bramki
+ * z `matchInProgressEvents`. W zakończonych bramki rozdziela deterministyczny
+ * przepis, a co czwarty mecz ma samobój, co piąty bramkę bez minuty — żeby
+ * makieta Wyników pokazała oba przypadki.
+ */
+function demoScorers(match: ScheduleDemoMatch): MatchScorer[] {
+  if (match.id === matchInProgress.id) {
+    return scorersFromEvents(
+      matchInProgressEvents
+        .filter((event) => event.type === 'goal' && event.player)
+        .map((event) => ({ team: event.team, player: event.player!, minute: event.minute, ownGoal: false })),
+    )
+  }
+  if (match.status !== 'finished' || !match.homeTeam || !match.awayTeam) return []
+
+  const goals = (team: { id: number; name: string }, count: number, offset: number): ScoringEvent[] =>
+    Array.from({ length: count }, (_, index) => {
+      const player = demoRoster(team.id)[6 + ((match.id + index + offset) % 5)]!
+      return {
+        team: { id: team.id, name: team.name },
+        player: { id: player.id, name: player.name },
+        minute: 3 + ((match.id * 13 + index * 29 + offset * 7) % 87),
+        ownGoal: false,
+      }
+    })
+
+  const home = goals(match.homeTeam, match.homeScore ?? 0, 0)
+  const away = goals(match.awayTeam, match.awayScore ?? 0, 2)
+  if (match.id % 4 === 0 && home.length > 0) {
+    const unlucky = demoRoster(match.awayTeam.id)[3]!
+    home[0] = { ...home[0]!, team: { id: match.awayTeam.id, name: match.awayTeam.name }, player: { id: unlucky.id, name: unlucky.name }, ownGoal: true }
+  }
+  if (match.id % 5 === 0 && away.length > 0) away[0] = { ...away[0]!, minute: null }
+
+  return scorersFromEvents([...home, ...away])
+}
+
+// --- Strona publiczna (#206) -------------------------------------------------
+
+/** Turniej strony publicznej, w kształcie `PublicTournament` z przykładu `pilka` w kontrakcie. */
+export const publicTournament: PublicShellTournament = {
+  name: tournament.name,
+  slug: tournament.slug,
+  status: 'active',
+  sport: { code: 'football', name: 'Piłka nożna' },
+  branding: { logoUrl: null, primaryColor: '#1F7A45' },
+}
+
+/**
+ * Mecz strony publicznej: `PublicMatch` z kontraktu, czyli bez kolizji panelu,
+ * za to ze strzelcami (#208).
+ */
+function asPublicMatch({ collisions: _collisions, ...match }: ScheduleDemoMatch): ScheduleDemoMatch {
+  return { ...match, scorers: demoScorers(match) }
+}
+
+/** Termin rosnąco, mecz bez terminu na końcu, remis po kolejce — tak sortuje API. */
+function byKickoff(a: ScheduleDemoMatch, b: ScheduleDemoMatch): number {
+  if (a.kickoffAt === b.kickoffAt) return a.round.order - b.round.order
+  if (a.kickoffAt === null) return 1
+  if (b.kickoffAt === null) return -1
+  return a.kickoffAt.localeCompare(b.kickoffAt)
+}
+
+/**
+ * `GET /public/t/{slug}/fixtures` sezonu w trakcie: mecze zaplanowane
+ * i trwające, rosnąco po terminie, bez terminu na końcu.
+ */
+export const publicFixtures: ScheduleDemoMatch[] = scheduleInProgress
+  .filter((match) => match.status !== 'finished')
+  .map(asPublicMatch)
+  .toSorted(byKickoff)
+
+/** `GET /public/t/{slug}/results` sezonu w trakcie: mecze zakończone, malejąco po terminie. */
+export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
+  .filter((match) => match.status === 'finished')
+  .map(asPublicMatch)
+  .toSorted((a, b) => byKickoff(b, a))

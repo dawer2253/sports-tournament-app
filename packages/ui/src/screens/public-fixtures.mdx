@@ -13,12 +13,13 @@ Publiczny, read-only terminarz turnieju pod `/t/{slug}/terminarz`.
 Pokazać kibicom i zawodnikom, kto, kiedy i gdzie gra, bez logowania.
 
 ## Dane (wejście)
-`GET /public/t/{slug}/fixtures`: mecze `scheduled` i `live`, rosnąco po terminie, mecz bez terminu na końcu.
+`GET /public/t/{slug}/fixtures`: mecze `scheduled` i `live`, rosnąco po terminie, mecz bez terminu na końcu, każdy z `scorers` (`PublicMatch`).
 
 ## Reguły
 - Mecze po kolejce, kolejki rosnąco (`groupByRound`). Na starcie kolejka z meczem trwającym, a bez niego pierwsza kolejka listy — „Śledź na żywo” z Przeglądu trafia więc na mecz, nawet gdy wcześniejsza kolejka ma jeszcze mecz przełożony.
 - Lista kolejek i wiersze to `RoundList` i `MatchRow` z terminarza panelu, bez plakietki kolizji i bez ułamka „zakończone/wszystkie” (`progress={false}`).
 - Mecz `live` stoi tutaj, aż organizator go zakończy, i ma `LiveMarker`. Zaplanowane nie mają plakietki stanu (`statusDisplay="live"`).
+- Mecz `live` ma pod wynikiem strzelców, którzy dochodzą w trakcie, na tych samych regułach co Wyniki (#208). Zaplanowany ma pustą listę, więc pod nim nic nie stoi.
 - Godziny w strefie przeglądarki (`Tournament.timezone` odłożone).
 
 ## Stany
@@ -32,4 +33,4 @@ Pokazać kibicom i zawodnikom, kto, kiedy i gdzie gra, bez logowania.
 ## Otwarte pytania
 Rozstrzygnięte w #192:
 - *Grupować po boisku albo godzinie?* Nie — po kolejce, jak w panelu.
-- *Wskaźnik kolizji w widoku publicznym?* Nie: kolizja to narzędzie organizatora, a kontrakt oddaje stronie publicznej samo `Match`.
+- *Wskaźnik kolizji w widoku publicznym?* Nie: kolizja to narzędzie organizatora, a kontrakt oddaje stronie publicznej `PublicMatch`, bez kolizji.

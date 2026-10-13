@@ -22,6 +22,26 @@ export type MatchRowData = {
    * przy odczycie (#158). Brak pola i pusta lista znaczą to samo: brak kolizji.
    */
   collisions?: MatchCollision[]
+  /**
+   * Strzelcy meczu (`PublicMatch.scorers` z kontraktu, #208), w kolejności
+   * z API. Ma je tylko strona publiczna; brak pola i pusta lista znaczą to
+   * samo: pod wynikiem nic nie stoi.
+   */
+  scorers?: MatchScorer[]
+}
+
+/**
+ * Jeden zawodnik w jednym meczu (`PublicMatchScorer` z kontraktu). `team` to
+ * drużyna strzelca, także przy samobóju; stronę wiersza wyznacza `ownGoal`.
+ */
+export type MatchScorer = {
+  team: { id: number; name: string }
+  player: { id: number; name: string }
+  /** Suma wartości zdarzeń zawodnika w meczu, także tych bez minuty. */
+  value: number
+  /** Minuty zdarzeń rosnąco; zdarzenia bez minuty tu nie ma. */
+  minutes: number[]
+  ownGoal: boolean
 }
 
 /** Stany meczu z kontraktu (`MatchStatus`). */
