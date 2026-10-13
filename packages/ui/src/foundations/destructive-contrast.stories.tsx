@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { LiveMarker } from '../components/layout/live-marker'
 import { MatchRow, MatchStatusBadge } from '../components/data/match-row'
 import type { MatchRowData } from '../components/data/match-row-data'
-import { Button } from '../components/ui/button'
+import { Button, buttonVariants } from '../components/ui/button'
 import { Card, CardContent } from '../components/ui/card'
 import { textContrast } from '../test/theme'
 
@@ -22,7 +22,8 @@ const LIVE_MATCH: MatchRowData = {
 /**
  * Każde miejsce, w którym `destructive` niesie tekst: jako kolor tekstu na
  * karcie i na własnym półprzezroczystym tle (przycisk, plakietka) oraz jako
- * tło pod `destructive-foreground` (wynik meczu na żywo).
+ * tło pod `destructive-foreground` (wynik meczu na żywo, przycisk usuwania
+ * po najechaniu).
  */
 function DestructiveSamples() {
   return (
@@ -34,6 +35,11 @@ function DestructiveSamples() {
         </p>
         <MatchStatusBadge status="live" />
         <Button variant="destructive">Usuń turniej</Button>
+        {/* Przycisk usuwania po najechaniu: `:hover` nie da się włączyć z `play`,
+            więc stan stoi tu klasami, a `play` pilnuje, że wariant używa tych samych. */}
+        <span data-testid="hover-usuwania" className="inline-flex rounded-lg bg-destructive px-2.5 py-1.5 text-sm font-medium text-destructive-foreground">
+          Usuń turniej
+        </span>
         <MatchRow match={LIVE_MATCH} timeZone="Europe/Warsaw" />
       </CardContent>
     </Card>
@@ -52,7 +58,17 @@ type Story = StoryObj<typeof meta>
 /** Próg WCAG AA dla zwykłego tekstu; wszystkie próbki to tekst do 14 px. */
 const AA = 4.5
 
+/** Klasy stanu `hover` wariantu `destructive` przycisku, bez prefiksów `hover:` i `dark:hover:`. */
+function destructiveHoverClasses(): string[] {
+  const hover = buttonVariants({ variant: 'destructive' })
+    .split(' ')
+    .filter((name) => /^(dark:)?hover:/.test(name))
+    .map((name) => name.replace(/^(dark:)?hover:/, ''))
+  return [...new Set(hover)].toSorted()
+}
+
 const play: Story['play'] = async ({ canvasElement }) => {
+  await expect(destructiveHoverClasses()).toEqual(['bg-destructive', 'text-destructive-foreground'])
   const canvas = within(canvasElement)
   // Przycisk ma `transition-all`; po zmianie motywu odczyt łapałby stan pośredni.
   for (const element of canvasElement.querySelectorAll<HTMLElement>('*')) element.style.transition = 'none'
@@ -63,6 +79,7 @@ const play: Story['play'] = async ({ canvasElement }) => {
     'plakietka „Trwa”': canvas.getAllByText('Trwa')[0]!,
     'przycisk usuwania': canvas.getByRole('button', { name: 'Usuń turniej' }),
     'wynik meczu na żywo': canvasElement.querySelector<HTMLElement>('[data-slot="match-score"]')!,
+    'przycisk usuwania po najechaniu': canvas.getByTestId('hover-usuwania'),
   }
   for (const [name, element] of Object.entries(samples)) {
     await expect(textContrast(element), `kontrast: ${name}`).toBeGreaterThanOrEqual(AA)
