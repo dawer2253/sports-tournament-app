@@ -82,7 +82,7 @@ class ScheduleGenerator
             throw ValidationException::withMessages(['stage' => 'Generowanie terminarza działa na razie tylko dla fazy ligowej.']);
         }
 
-        if ($stage->matches()->whereIn('status', GameMatch::STARTED_STATUSES)->exists()) {
+        if ($stage->hasStartedMatches()) {
             throw ValidationException::withMessages(['stage' => 'Faza ma rozegrane mecze, więc nie można wygenerować terminarza ponownie.']);
         }
     }

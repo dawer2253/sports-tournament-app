@@ -65,7 +65,7 @@ class Team extends Model
     protected static function booted(): void
     {
         static::deleting(function (self $team): void {
-            if ($team->bracketStages()->contains(fn (Stage $stage): bool => $stage->matches()->whereIn('status', GameMatch::STARTED_STATUSES)->exists())) {
+            if ($team->bracketStages()->contains(fn (Stage $stage): bool => $stage->hasStartedMatches())) {
                 throw StartedMatchGuardException::forBracket($team->name);
             }
         });

@@ -36,4 +36,14 @@ class Stage extends Model
     {
         return $this->hasMany(GameMatch::class);
     }
+
+    /**
+     * Czy faza ma mecz rozpoczęty (`live` albo `finished`). Wtedy jej
+     * terminarza ani drabinki nie wolno już wygenerować ponownie (#157, #215),
+     * a drużyny z drabinki nie wolno usunąć.
+     */
+    public function hasStartedMatches(): bool
+    {
+        return $this->matches()->whereIn('status', GameMatch::STARTED_STATUSES)->exists();
+    }
 }

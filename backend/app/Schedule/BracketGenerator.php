@@ -44,13 +44,13 @@ class BracketGenerator
             $stage = Stage::query()->lockForUpdate()->findOrFail($stage->id);
             $this->ensureCanGenerate($stage);
 
-            $teams = $stage->tournament->teams()->pluck('id')->all();
+            $tournamentTeamIds = $stage->tournament->teams()->pluck('id')->all();
 
-            if (count($teams) < 2) {
+            if (count($tournamentTeamIds) < 2) {
                 throw ValidationException::withMessages(['teams' => 'Puchar potrzebuje co najmniej dwóch drużyn.']);
             }
 
-            if (! $this->isEveryTeamOnce($teamIds, $teams)) {
+            if (! $this->isEveryTeamOnce($teamIds, $tournamentTeamIds)) {
                 throw ValidationException::withMessages(['teamIds' => self::TEAM_IDS_MESSAGE]);
             }
 
@@ -72,22 +72,21 @@ class BracketGenerator
             throw ValidationException::withMessages(['stage' => 'Drabinkę generuje się tylko w fazie pucharowej.']);
         }
 
-        if ($stage->matches()->whereIn('status', GameMatch::STARTED_STATUSES)->exists()) {
+        if ($stage->hasStartedMatches()) {
             throw ValidationException::withMessages(['stage' => 'Faza ma rozegrane mecze, więc nie można wygenerować drabinki ponownie.']);
         }
     }
 
     /**
-     * @param  list<int>  $teamIds
-     * @param  list<int>  $teams  żywe drużyny turnieju
+     * @param  list<int>  $teamIds  lista z żądania
+     * @param  list<int>  $tournamentTeamIds  żywe drużyny turnieju
      */
-    private function isEveryTeamOnce(array $teamIds, array $teams): bool
+    private function isEveryTeamOnce(array $teamIds, array $tournamentTeamIds): bool
     {
-        $sortedRequest = $teamIds;
-        sort($sortedRequest);
-        sort($teams);
+        sort($teamIds);
+        sort($tournamentTeamIds);
 
-        return $sortedRequest === $teams;
+        return $teamIds === $tournamentTeamIds;
     }
 
     /**
