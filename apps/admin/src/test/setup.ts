@@ -35,12 +35,19 @@ window.matchMedia = (query: string): MediaQueryList => ({
 });
 
 // `Select` z Radixa otwiera listę na zdarzeniach wskaźnika i przewija ją do
-// wybranej opcji. jsdom nie ma przechwytywania wskaźnika ani `scrollIntoView`,
-// więc bez zaślepek klik w pole wyboru wywraca test (podział meczu, #210).
+// wybranej opcji, a `Switch` mierzy się przez `ResizeObserver`. jsdom nie ma
+// przechwytywania wskaźnika, `scrollIntoView` ani `ResizeObserver` (layoutu
+// i tak nie liczy), więc bez zaślepek klik w pole wyboru albo przełącznik
+// wywraca test (podział meczu, #210; okno drabinki, #227).
 Element.prototype.hasPointerCapture ??= () => false;
 Element.prototype.setPointerCapture ??= () => {};
 Element.prototype.releasePointerCapture ??= () => {};
 Element.prototype.scrollIntoView ??= () => {};
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 afterEach(() => {
   server.resetHandlers();

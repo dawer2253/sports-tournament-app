@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Exceptions\StartedMatchGuardException;
 use App\Models\Concerns\GuardsStartedMatches;
 use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,21 +55,49 @@ class Team extends Model
      * i `finished`. Reszty terminarza kasowanie nie rusza — kolejki zostają,
      * także puste, a pozostałe mecze zachowują `match_number`, więc w kolejce
      * mogą powstać dziury (opis `DELETE /teams/{team}` w kontrakcie).
+     *
+     * Drabinki (faza `knockout`) nie da się tak załatać (#215): drużyna
+     * stojąca w drabince zabiera ze sobą całą drabinkę fazy, rundy i mecze,
+     * a po pierwszym meczu rozpoczętym fazy usunięcie jest zablokowane, także
+     * dla drużyny, która jeszcze nie grała. Odmowa idzie w `deleting`, obok
+     * guarda, więc tak samo nie dochodzi do kaskady.
      */
     protected static function booted(): void
     {
+        static::deleting(function (self $team): void {
+            if ($team->bracketStages()->contains(fn (Stage $stage): bool => $stage->hasStartedMatches())) {
+                throw StartedMatchGuardException::forBracket($team->name);
+            }
+        });
+
         static::deleted(function (self $team): void {
             if (! $team->isForceDeleting()) {
                 $team->players()->get()->each->delete();
+                // Mecze drabinki znikają kaskadą z rundami.
+                Round::query()->whereIn('stage_id', $team->bracketStages()->modelKeys())->delete();
                 $team->matchesQuery()->where('status', 'scheduled')->delete();
             }
         });
     }
 
     /**
-     * Drużyna, jej zawodnicy i jej mecze `scheduled` znikają razem albo
-     * wcale: odmowa guarda zawodnika w kaskadzie cofa też usunięcie drużyny
-     * i jej meczów.
+     * Fazy `knockout`, w których drużyna stoi w którymś meczu. Drużyna dodana
+     * po wygenerowaniu drabinki w niej nie stoi, więc usuwa się jak w lidze.
+     *
+     * @return Collection<int, Stage>
+     */
+    private function bracketStages(): Collection
+    {
+        return Stage::query()
+            ->where('type', 'knockout')
+            ->whereIn('id', $this->matchesQuery()->select('stage_id'))
+            ->get();
+    }
+
+    /**
+     * Drużyna, jej zawodnicy i jej mecze `scheduled` (w pucharze cała
+     * drabinka) znikają razem albo wcale: odmowa guarda zawodnika w kaskadzie
+     * cofa też usunięcie drużyny i jej meczów.
      */
     public function delete(): ?bool
     {

@@ -85,7 +85,7 @@ export function scheduleRounds(matches: readonly ScheduleMatch[], timeZone?: str
  * czyli ta, nad którą organizer właśnie pracuje (#162, pkt 1). Po sezonie
  * zostaje ostatnia.
  */
-export function defaultRound(rounds: readonly ScheduleRound[]): ScheduleRound | undefined {
+export function defaultRound<R extends { matches: readonly { status: string }[] }>(rounds: readonly R[]): R | undefined {
   return rounds.find((round) => round.matches.some((match) => match.status !== 'finished')) ?? rounds.at(-1);
 }
 

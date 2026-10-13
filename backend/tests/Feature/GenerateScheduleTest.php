@@ -223,17 +223,22 @@ it('odmawia z 422 pod teams, gdy turniej ma mniej niż dwie drużyny', function 
     expect($stage->rounds()->exists())->toBeFalse();
 })->with(['bez drużyn' => 0, 'jedna drużyna' => 1]);
 
-it('odmawia z 422 dla fazy innej niż league', function (string $state) {
+// Faza pucharowa ma własny generator (`POST /stages/{stage}/bracket`, #215),
+// więc odmowa odsyła do drabinki. Grupy dowiezie S5.
+it('odmawia z 422 dla fazy innej niż league', function (string $state, string $message) {
     $tournament = Tournament::factory()->create();
     Team::factory()->count(4)->for($tournament)->create();
     $stage = Stage::factory()->for($tournament)->{$state}()->create();
 
     generateSchedule($stage, 1)
         ->assertValidResponse(422)
-        ->assertJsonPath('errors', ['stage' => ['Generowanie terminarza działa na razie tylko dla fazy ligowej.']]);
+        ->assertJsonPath('errors', ['stage' => [$message]]);
 
     expect($stage->rounds()->exists())->toBeFalse();
-})->with(['group', 'knockout']);
+})->with([
+    'group' => ['group', 'Generowanie terminarza działa na razie tylko dla fazy ligowej.'],
+    'knockout' => ['knockout', 'Faza pucharowa nie ma terminarza „każdy z każdym”. Wygeneruj dla niej drabinkę.'],
+]);
 
 // Status turnieju nie gra roli (#157, „Status turnieju”).
 it('generuje w turnieju w każdym statusie', function (string $status) {

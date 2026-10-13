@@ -338,12 +338,18 @@ describe('Terminarz — generowanie', () => {
     expect(await screen.findByRole('menuitem', { name: 'Wygeneruj ponownie' })).not.toHaveAttribute('aria-disabled');
   });
 
-  it('turniej bez fazy league nie ma żadnej akcji generowania', async () => {
+  // W pucharze Terminarz zastępuje Drabinka (#227): karta jest nieczynna,
+  // a wejście z adresu odsyła na Drabinkę.
+  it('puchar nie ma akcji generowania i odsyła do drabinki', async () => {
     const knockout: Stage = { id: 12, type: 'knockout', name: 'Faza pucharowa', order: 1, groups: [] };
     server.use(http.get(`${API}/tournaments/${TOURNAMENT.id}/stages`, () => HttpResponse.json({ data: [knockout] })));
     renderSchedule();
 
-    expect(await screen.findByText('Terminarz pucharu pojawi się razem z drabinką')).toBeInTheDocument();
+    expect(await screen.findByText('W pucharze terminarzem jest drabinka')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Przejdź do drabinki' })).toHaveAttribute(
+      'href',
+      `/tournaments/${TOURNAMENT.id}/bracket`,
+    );
     expect(screen.queryByRole('button', { name: /Wygeneruj/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Więcej akcji terminarza' })).not.toBeInTheDocument();
   });

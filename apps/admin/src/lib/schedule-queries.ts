@@ -21,12 +21,14 @@ export const scheduleKeys = {
 /** Największa strona listy meczów w kontrakcie. */
 const PER_PAGE = 200;
 
-export function useStages(tournamentId: number) {
+/** Bez `tournamentId` (ekran poza turniejem) zapytanie nie idzie. */
+export function useStages(tournamentId: number | undefined) {
   return useQuery({
-    queryKey: scheduleKeys.stages(tournamentId),
+    queryKey: scheduleKeys.stages(tournamentId ?? 0),
+    enabled: tournamentId !== undefined,
     queryFn: async () => {
       const { data, error, response } = await api.GET('/tournaments/{tournament}/stages', {
-        params: { path: { tournament: tournamentId } },
+        params: { path: { tournament: tournamentId! } },
       });
       if (error) throw new ApiError(error.message, response.status);
       return data.data;

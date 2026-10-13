@@ -18,6 +18,21 @@ interface Fixtures {
   api: ApiClient;
   /** Świeży turniej ligowy w piłce nożnej, założony przez API. */
   tournament: Tournament;
+  /** Świeży puchar (`format: 'knockout'`) w piłce nożnej, założony przez API. */
+  cup: Tournament;
+}
+
+/** Nowy turniej piłkarski w danym formacie, przez API. */
+async function createTournament(api: ApiClient, format: 'league' | 'knockout', prefix: string): Promise<Tournament> {
+  const sports = await api.GET('/sports');
+  const football = sports.data?.data.find((sport) => sport.code === 'football');
+  expect(football, 'piłka nożna w GET /sports').toBeDefined();
+
+  const { data, error } = await api.POST('/tournaments', {
+    body: { name: uniqueName(prefix), sportId: football!.id, format },
+  });
+  expect(error, 'POST /tournaments').toBeUndefined();
+  return data!.data;
 }
 
 /**
@@ -38,15 +53,11 @@ export const test = base.extend<Fixtures>({
   },
 
   tournament: async ({ api }, use) => {
-    const sports = await api.GET('/sports');
-    const football = sports.data?.data.find((sport) => sport.code === 'football');
-    expect(football, 'piłka nożna w GET /sports').toBeDefined();
+    await use(await createTournament(api, 'league', 'E2E'));
+  },
 
-    const { data, error } = await api.POST('/tournaments', {
-      body: { name: uniqueName('E2E'), sportId: football!.id, format: 'league' },
-    });
-    expect(error, 'POST /tournaments').toBeUndefined();
-    await use(data!.data);
+  cup: async ({ api }, use) => {
+    await use(await createTournament(api, 'knockout', 'Puchar E2E'));
   },
 });
 

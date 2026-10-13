@@ -145,8 +145,9 @@ przeczytaj go, zanim któreś z nich „naprawisz":
   (`GuardsStartedMatches`),
   zwracający **422** (tak stanowi kontrakt), nie Policy i nie klucz obcy.
   Obejmuje byty kasowane ręcznie, nie strukturę spod generatora: kolejki
-  i mecze fazy kasuje wyłącznie `ScheduleGenerator`, który sam odmawia (422),
-  gdy faza ma mecz rozpoczęty.
+  i mecze fazy kasują wyłącznie `ScheduleGenerator` i `BracketGenerator`,
+  które same odmawiają (422), gdy faza ma mecz rozpoczęty. Usunięcie drużyny
+  w pucharze kasuje drabinkę z tą samą odmową (`Team::booted()`).
 - **Przynależność grupy do turnieju sprawdzi Form Request**, nie klucz obcy —
   predykat `Team::groupBelongsToSameTournament()` czeka na przypisywanie
   drużyn do grup. CRUD drużyn w v0.1 go nie potrzebuje, bo `groupId` jest
@@ -160,7 +161,8 @@ Poza tym:
 - Modele konfigurujemy **atrybutami** (`#[Fillable]`, `#[Table]`), tak jak
   robi to szkielet Laravela 13, a nie właściwościami `protected $fillable`.
 - **`Team::delete()` jest nadpisane i owija w transakcję usunięcie drużyny
-  razem z kaskadą na zawodników i na jej mecze `scheduled`** — powody
+  razem z kaskadą na zawodników i na jej mecze `scheduled`** (w pucharze na
+  całą drabinkę fazy) — powody
   w docblockach `Team::booted()` i `Team::delete()`. Tak samo
   `Venue::delete()` owija usunięcie obiektu razem z odpięciem go od meczów
   `scheduled`. Nie `deleteOrFail()`, bo transakcję dostaje wtedy tylko

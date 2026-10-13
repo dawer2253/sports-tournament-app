@@ -16,10 +16,11 @@ use App\Exceptions\StartedMatchGuardException;
  *
  * **Zakres: byty, które organizer kasuje ręcznie** — `Tournament`, `Team`,
  * `Player`, `Venue`. Struktura rozgrywek (`Stage`, `Round`, `Group`, `GameMatch`)
- * guarda nie ma świadomie: zarządza nią generator terminarza
- * (`App\Schedule\ScheduleGenerator`), a regułę dla regeneracji trzyma on sam —
- * faza z meczem rozpoczętym daje 422 (decyzja #157). Drabinka (S4) dołoży
- * swoją regułę w tym samym miejscu.
+ * guarda nie ma świadomie: zarządzają nią generatory terminarza
+ * (`App\Schedule\ScheduleGenerator`) i drabinki (`App\Schedule\BracketGenerator`),
+ * a regułę dla regeneracji trzymają same — faza z meczem rozpoczętym daje 422
+ * (decyzje #157 i #215). Jedyny wyjątek to usunięcie drużyny w pucharze, które
+ * kasuje drabinkę z tą samą odmową po starcie (`Team::booted()`).
  *
  * Kasowanie kaskadowe w bazie guarda nie uruchamia — dlatego `tournaments.user_id`
  * jest `RESTRICT`, żeby usunięcie konta nie obeszło go od góry (ADR-0005).

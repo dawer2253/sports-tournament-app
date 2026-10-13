@@ -78,6 +78,10 @@ class DateDistributor
         $venues = array_values($plan->venueIds);
         $venueCount = count($venues);
 
+        // Mecz o 3. miejsce (zasilany krawędziami przegranego) gra w rundzie
+        // finału przed finałem, choć ma wyższy numer (#215).
+        $loserFed = $stage->matches()->whereNotNull('loser_to_match_id')->pluck('loser_to_match_id')->flip();
+
         $updates = [];
         $cursor = null;
         // Indeks liczy kolejki od pierwszej rozkładanej, więc `startAt` dotyczy
@@ -101,8 +105,9 @@ class DateDistributor
             };
 
             $slotStart = $roundStart;
+            [$beforeFinal, $rest] = $round->matches->partition(fn (GameMatch $match): bool => $loserFed->has($match->id));
 
-            foreach ($round->matches as $position => $match) {
+            foreach ($beforeFinal->concat($rest)->values() as $position => $match) {
                 // Nowy slot co `venueCount` meczów; bez obiektów cała kolejka
                 // gra o jednej godzinie.
                 if ($position > 0 && $venueCount > 0 && $position % $venueCount === 0) {

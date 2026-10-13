@@ -1,5 +1,5 @@
 import type { AdminMatch, Match, MatchEvent, Player, SportEventType, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
-import type { EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, SeedingTeam, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -16,7 +16,7 @@ import type { EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPla
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni wiersz
  * w `packages/ui/src/components/data/` (`tournament-row.ts`, `team-row.ts`,
  * `player-row.ts`, `venue-row.ts`, `standings-table-row.ts`,
- * `match-row-data.ts`).
+ * `match-row-data.ts`, `seeding-list.tsx`) albo w `lib/bracket.ts`.
  */
 
 /**
@@ -87,3 +87,16 @@ export const contractFitsEventTypeOption: ContractFitsEventTypeOption = true;
 type ContractFitsRosterPlayer = Player extends RosterPlayer ? true : never;
 
 export const contractFitsRosterPlayer: ContractFitsRosterPlayer = true;
+
+/** Drużyna z kontraktu daje się postawić na liście rozstawienia (#227). */
+type ContractFitsSeedingTeam = Team extends SeedingTeam ? true : never;
+
+export const contractFitsSeedingTeam: ContractFitsSeedingTeam = true;
+
+/**
+ * Mecz z kontraktu niesie wynik z karnymi w kształcie, z którego
+ * `bracketWinnerSide` i `bracketScoreText` liczą zwycięzcę i napis (#227).
+ */
+type ContractFitsBracketScore = AdminMatch extends BracketScore ? true : never;
+
+export const contractFitsBracketScore: ContractFitsBracketScore = true;

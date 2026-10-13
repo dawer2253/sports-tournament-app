@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Pola drabinkowe (`winner_to_match_id`, `loser_to_match_id`,
  * `advances_to_slot`) opisuje ADR-0004. Ich niezmienniki — niepuste wyłącznie
  * w fazie `knockout`, `advances_to_slot` niepuste dokładnie wtedy, gdy istnieje
- * choć jedna krawędź — pilnuje generator drabinki i jego testy w S4. Schemat
- * ich nie wyrazi.
+ * choć jedna krawędź — pilnuje `App\Schedule\BracketGenerator` i jego testy
+ * (`GenerateBracketTest`). Schemat ich nie wyrazi.
  */
 #[Fillable([
     'round_id', 'stage_id', 'group_id', 'match_number',

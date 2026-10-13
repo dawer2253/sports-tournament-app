@@ -10,6 +10,7 @@ import { setToken } from '../lib/session';
 import { routes } from '../routes';
 import { API_URL as API, server } from './server';
 import { currentTournaments } from './current-tournaments';
+import { tournamentStages } from './tournament-stages';
 
 export const TOURNAMENT: Tournament = {
   id: 7,
@@ -116,6 +117,7 @@ export function serveTeams({
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
     currentTournaments(),
+    tournamentStages(),
     route('get', '/tournaments/:id', () =>
       HttpResponse.json({ data: { ...TOURNAMENT, teamsCount: state.teams.length } }),
     ),

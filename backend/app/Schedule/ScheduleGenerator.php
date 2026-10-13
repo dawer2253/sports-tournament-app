@@ -73,11 +73,16 @@ class ScheduleGenerator
      */
     private function ensureCanGenerate(Stage $stage): void
     {
+        // Fazę pucharową układa `BracketGenerator`, więc odmowa odsyła tam.
+        if ($stage->type === 'knockout') {
+            throw ValidationException::withMessages(['stage' => 'Faza pucharowa nie ma terminarza „każdy z każdym”. Wygeneruj dla niej drabinkę.']);
+        }
+
         if ($stage->type !== 'league') {
             throw ValidationException::withMessages(['stage' => 'Generowanie terminarza działa na razie tylko dla fazy ligowej.']);
         }
 
-        if ($stage->matches()->whereIn('status', GameMatch::STARTED_STATUSES)->exists()) {
+        if ($stage->hasStartedMatches()) {
             throw ValidationException::withMessages(['stage' => 'Faza ma rozegrane mecze, więc nie można wygenerować terminarza ponownie.']);
         }
     }

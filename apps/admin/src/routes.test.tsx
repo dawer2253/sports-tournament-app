@@ -8,6 +8,7 @@ import { setToken } from './lib/session';
 import { routes } from './routes';
 import { API_URL as API, server } from './test/server';
 import { allTournaments, currentTournaments } from './test/current-tournaments';
+import { tournamentStages } from './test/tournament-stages';
 
 const ME = {
   data: {
@@ -40,6 +41,7 @@ beforeEach(() => {
   server.use(
     http.get(`${API}/me`, () => HttpResponse.json(ME)),
     currentTournaments(),
+    tournamentStages(),
     // Drużyny są ekranem domyślnym turnieju; ich treść sprawdza `pages/teams.test.tsx`.
     http.get(`${API}/tournaments/:id/teams`, () => HttpResponse.json({ data: [] })),
     // Obiekty służą tu za zwykłą sekcję; ich treść sprawdza `pages/tournament-venues.test.tsx`.
@@ -134,13 +136,13 @@ describe('trasy turnieju', () => {
     ).toHaveLength(1);
   });
 
-  it('Drabinka i Statystyki są nieczynne', async () => {
+  it('Statystyki są nieczynne', async () => {
     tournamentEndpoint(() => HttpResponse.json({ data: TOURNAMENT }));
 
     const { router, user } = renderAt('/tournaments/7/teams');
     await screen.findByRole('heading', { name: 'Puchar Zimowy' });
 
-    for (const label of ['Drabinka', 'Statystyki']) {
+    for (const label of ['Statystyki']) {
       // Bez `href` element `<a>` nie ma roli `link`, więc szukamy po tekście.
       const tab = sectionTabs().getByText(label).closest('a')!;
       expect(tab).not.toHaveAttribute('href');
@@ -155,6 +157,7 @@ describe('trasy turnieju', () => {
       'Ustawienia',
       'Terminarz',
       'Tabela',
+      'Drabinka',
     ]);
     expect(sectionTabs().getByRole('link', { name: 'Tabela' })).toHaveAttribute('href', '/tournaments/7/standings');
     expect(sectionTabs().getByRole('link', { name: 'Terminarz' })).toHaveAttribute('href', '/tournaments/7/schedule');

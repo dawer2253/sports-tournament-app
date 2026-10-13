@@ -361,3 +361,27 @@ it('rozkłada od kolejki z fromRound, licząc startAt od pierwszej rozkładanej'
             '2027-05-09T08:00:00+00:00',
         ]);
 });
+
+// Niezmiennik 10 z #215: mecz o 3. miejsce gra przed finałem, choć ma wyższy
+// `match_number`. Jeden obiekt, więc mecze rundy idą slot po slocie.
+it('w rundzie finału daje meczowi o 3. miejsce termin przed finałem', function () {
+    $tournament = Tournament::factory()->create(['match_duration' => 60]);
+    $teams = Team::factory()->count(4)->for($tournament)->create();
+    $stage = Stage::factory()->knockout()->for($tournament)->create();
+    $venue = Venue::factory()->for($tournament)->create();
+    actingAsOrganizer($tournament->user)
+        ->postJson("/api/v1/stages/{$stage->id}/bracket", ['teamIds' => $teams->pluck('id')->all(), 'thirdPlaceMatch' => true])
+        ->assertStatus(201);
+
+    postDates($stage, [
+        'mode' => 'interval',
+        'startAt' => '2026-10-04T10:00:00+00:00',
+        'timeZone' => 'UTC',
+        'intervalDays' => 7,
+        'venueIds' => [$venue->id],
+    ])->assertValidResponse(200);
+
+    $final = $stage->rounds()->where('order', 2)->firstOrFail()->matches()->get()->keyBy('match_number');
+    expect($final[2]->kickoff_at->toIso8601String())->toBe('2026-10-11T10:00:00+00:00')
+        ->and($final[1]->kickoff_at->toIso8601String())->toBe('2026-10-11T11:00:00+00:00');
+});

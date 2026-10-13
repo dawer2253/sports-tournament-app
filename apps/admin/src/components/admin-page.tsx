@@ -4,6 +4,8 @@ import { AdminShell, type AdminNavKey, type AdminSectionKey } from '@tournament/
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
+import { isKnockoutOnly } from '../lib/bracket';
+import { useStages } from '../lib/schedule-queries';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
 import { useCurrentTournaments } from '../lib/use-current-tournaments';
@@ -19,6 +21,7 @@ const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   settings: 'settings',
   standings: 'standings',
   schedule: 'schedule',
+  bracket: 'bracket',
 };
 
 /** Adres turnieju, czyli jego domyślnej sekcji (indeks trasy przekierowuje). */
@@ -26,11 +29,16 @@ function tournamentRoute(id: number): string {
   return `/tournaments/${id}`;
 }
 
-/** Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran. */
-function navRoute(key: AdminNavKey, tournament: Tournament | undefined): string | undefined {
+/**
+ * Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran.
+ * W pucharze Terminarz nie ma adresu, bo zastępuje go Drabinka (#227),
+ * więc `AdminShell` wyszarza kartę. Dopóki faz nie ma, karta zostaje czynna.
+ */
+function navRoute(key: AdminNavKey, tournament: Tournament | undefined, knockoutOnly: boolean): string | undefined {
   if (key === 'dashboard') return '/';
   if (key === 'create') return '/tournaments/new';
   if (!tournament) return undefined;
+  if (key === 'schedule' && knockoutOnly) return undefined;
   const section = SECTION_ROUTES[key];
   return section && `${tournamentRoute(tournament.id)}/${section}`;
 }
@@ -79,6 +87,8 @@ export function AdminPage(props: AdminPageProps) {
   const navigate = useNavigate();
   const account = useAccount();
   const tournaments = useCurrentTournaments();
+  const stages = useStages(tournament?.id);
+  const knockoutOnly = isKnockoutOnly(stages.data ?? []);
 
   /**
    * Wylogowanie unieważnia token po stronie API, a nie tylko zapomina go
@@ -112,9 +122,10 @@ export function AdminPage(props: AdminPageProps) {
       actions={actions}
       user={account}
       tournaments={tournaments}
-      navHref={(key) => navRoute(key, tournament)}
+      navHref={(key) => navRoute(key, tournament, knockoutOnly)}
+      navDisabledReason={(key) => (key === 'schedule' && knockoutOnly ? 'W pucharze terminarzem jest Drabinka' : undefined)}
       onNavigate={(key) => {
-        const route = navRoute(key, tournament);
+        const route = navRoute(key, tournament, knockoutOnly);
         if (route) void navigate(route);
       }}
       tournamentHref={tournamentRoute}

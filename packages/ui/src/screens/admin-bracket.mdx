@@ -5,40 +5,62 @@ import * as Stories from './admin-bracket.stories'
 
 # Drabinka (Admin): specyfikacja
 
-Widok i zarządzanie drabinką pucharową turnieju (faza pucharowa, single-elimination).
+Generowanie i podgląd drabinki pucharowej turnieju (faza `knockout`, single
+elimination). Układ to wariant B z prototypu
+[#217](https://github.com/dawer2253/sports-tournament-app/issues/217): runda po
+rundzie, a nie kolumny drzewa.
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Umożliwić organizatorowi podgląd drabinki pucharowej oraz zarządzanie nią: ustawienie rozstawienia, wygenerowanie par i edycję wyników poszczególnych meczów.
+Organizator ustala rozstawienie, generuje drabinkę, rozkłada jej daty i widzi,
+kto z kim gra w każdej rundzie. W pucharze Drabinka zastępuje Terminarz.
 
 ## Dane (wejście)
-- `bracket`: lista rund (`Półfinały`, `Finał`), każda z listą meczów (`BracketMatch`: `home`, `away`, `homeScore`, `awayScore`, `winner`).
-- `bracketWinner`: drużyna, która wygrała finał (mistrz turnieju).
-- Monogram drużyny (`abbr`), nazwa (`name`) i wynik pojedynku.
+- Mecze fazy z `GET /tournaments/{tournament}/matches?stageId=`: rundy, pozycje
+  (`matchNumber`), krawędzie `winnerToMatchId` / `loserToMatchId` i
+  `advancesToSlot` (ADR-0004).
+- Drużyny turnieju, w kolejności z listy drużyn, jako punkt wyjścia rozstawienia.
+- Etykiety pozycji („Półfinał 1”, „Mecz o 3. miejsce”), podpisy pustych slotów
+  i krawędzie liczy ekran z kompletu meczów; `BracketMatchRow` dostaje gotowe
+  napisy (`BracketMatchRowData`).
 
 ## Reguły
-- Format: single-elimination. Zwycięzca meczu awansuje do następnej rundy.
-- Zwycięzca meczu wyróżniony pogrubieniem; przegrany wyszarzony (`text-muted-foreground`).
-- Finał wyróżniony ramką `ring-2 ring-primary`.
-- Kolumna `Zwycięzca` prezentuje mistrza na akcencie strony publicznej (`bg-brand`).
+- Rozmiar drabinki to najbliższa potęga dwójki, a wolne losy dostają najwyżej
+  rozstawieni (#215). Pozycje i pary liczy `firstRoundPairs` z `lib/bracket.ts`,
+  to samo źródło dla podglądu i zdania o rozmiarze.
+- Rundy nazywają się według rozmiaru: „1/16 finału” … „Ćwierćfinał”,
+  „Półfinał”, „Finał”. Nazwa jest zapisana w danych, etykieta pozycji nie.
+- W rundzie finału mecz o 3. miejsce stoi przed finałem, bo gra wcześniej.
+  Dalej mecze idą po `matchNumber`.
+- Zwycięzca pogrubiony, przegrany przyciszony, karne w nawiasie: „2:2 (k. 4:3)”.
+- Pusty slot ma podpis źródła: „Zwycięzca: Półfinał 1”, „Przegrany: Półfinał 2”.
+- Karta Terminarz jest w pucharze nieczynna.
 
 ## Stany
-- **Rozegrana drabinka** (domyślny, powyżej): komplet wyników, wyłoniony mistrz.
-- **Puste sloty**: mecze bez wyłonionych drużyn pokazują `Do wyłonienia` i `–` zamiast wyniku (TODO: osobny wariant story).
-- **Drabinka niewygenerowana**: brak par, widoczny tylko przycisk `Generuj drabinkę` (TODO).
+- **W trakcie** (domyślny, powyżej): otwiera się runda z pierwszym meczem
+  niezakończonym; „Wygeneruj ponownie” jest wyłączone, bo faza ma mecz
+  rozpoczęty.
+- **Rozegrana**: pod listą stoi mistrz na akcencie marki (`bg-brand`).
+- **Pusta**: zdanie o rozmiarze („6 drużyn: drabinka na 8, 2 wolne losy dla
+  najwyżej rozstawionych.”) i „Rozstaw i wygeneruj”. Przy mniej niż dwóch
+  drużynach przycisk jest wyłączony, a obok stoi „Przejdź do drużyn”.
+- **Rozstawienie**: okno generowania otwarte.
+
+<Canvas of={Stories.Rozstawienie} />
 
 ## Zachowanie
-- `Ustaw rozstawienie`: otwiera konfigurację rozstawienia drużyn przed losowaniem par.
-- `Generuj drabinkę`: tworzy pary na podstawie rozstawienia (nadpisuje istniejącą drabinkę po potwierdzeniu).
-- Kliknięcie karty meczu otwiera edycję wyniku pojedynku.
-- Kontener przewijany poziomo (`overflow-x-auto`) dla wąskich ekranów.
-
-## Kaskada
-- Zmiana wyniku meczu, która zmienia zwycięzcę, unieważnia wszystkie kolejne rundy zależne od tego pojedynku i czyści ich wyniki.
-- Taka operacja wymaga dodatkowego potwierdzenia, sygnalizowana kartą-alertem pod drabinką.
-
-## Otwarte pytania
-- Czy rozstawienie jest edytowalne po wygenerowaniu drabinki?
-- Czy przy kaskadzie pokazywać dokładną listę meczów, które zostaną wyczyszczone?
-- Obsługa dogrywek / rzutów karnych przy remisie w fazie pucharowej?
+- **Rozstaw i wygeneruj** otwiera jedno okno: lista rozstawienia z ↑/↓,
+  blokadą 1, 2, 4 albo 8 pierwszych pozycji i losowaniem reszty; obok podgląd
+  par 1. rundy i przełącznik meczu o 3. miejsce (nieaktywny przy mniej niż
+  czterech drużynach). Na telefonie kolumny stoją jedna pod drugą.
+- Przy istniejącej drabince okno ma tytuł „Rozstaw i wygeneruj ponownie”,
+  czerwone ostrzeżenie o zastąpieniu razem z terminami i przycisk „Zastąp
+  drabinkę”, bez osobnego kroku potwierdzenia.
+- Rozstawienie nie jest przechowywane, więc okno zawsze startuje od kolejności
+  drużyn z listy.
+- Wybrana runda siedzi w adresie (`?round=`, po `order`); po generowaniu
+  parametr znika i otwiera się runda 1.
+- Nad kartami rund stoją podpowiedzi: brak dat z „Rozłóż daty” i drużyna
+  spoza drabinki z „Wygeneruj ponownie”.
+- Kliknięcie meczu otworzy okno wyniku (#228).

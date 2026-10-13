@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Sports Tournament API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Kontrakt REST API aplikacji do prowadzenia turniejów sportowych.
 
@@ -677,8 +677,9 @@ paths:
 
         Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
         faza nie jest `league` albo ma mecz `live` lub `finished`, i pod
-        `teams`, gdy turniej ma mniej niż dwie drużyny. Mecze dociąga się potem
-        przez `GET /tournaments/{tournament}/matches?stageId=`.
+        `teams`, gdy turniej ma mniej niż dwie drużyny. Faza `knockout` dostaje
+        osobny komunikat, który odsyła do `POST /stages/{stage}/bracket`. Mecze
+        dociąga się potem przez `GET /tournaments/{tournament}/matches?stageId=`.
       requestBody:
         required: true
         content:
@@ -739,6 +740,12 @@ paths:
                     message: Generowanie terminarza działa na razie tylko dla fazy ligowej.
                     errors:
                       stage: [Generowanie terminarza działa na razie tylko dla fazy ligowej.]
+                fazaPucharowa:
+                  summary: Faza `knockout` — tę układa drabinka
+                  value:
+                    message: Faza pucharowa nie ma terminarza „każdy z każdym”. Wygeneruj dla niej drabinkę.
+                    errors:
+                      stage: [Faza pucharowa nie ma terminarza „każdy z każdym”. Wygeneruj dla niej drabinkę.]
 
   /stages/{stage}/schedule/dates:
     parameters:
@@ -748,10 +755,14 @@ paths:
       summary: Rozłóż daty i obiekty terminarza
       description: |
         Nadaje terminy i obiekty meczom fazy, która ma już terminarz
-        (`POST /stages/{stage}/schedule`). To osobny krok po wygenerowaniu par,
+        (`POST /stages/{stage}/schedule`) albo drabinkę
+        (`POST /stages/{stage}/bracket`). To osobny krok po wygenerowaniu par,
         więc przestawienie dat nie losuje ich od nowa. Faza może trwale zostać
         bez dat, a pojedynczy mecz bez terminu i obiektu („termin do
         ustalenia”).
+
+        „Kolejka” znaczy niżej kolejkę lub rundę: kolejkę ligi albo rundę
+        drabinki, bo w API to jeden byt (`Round`).
 
         - `mode: interval` — liga sezonowa: kolejka `k` (licząc od pierwszej
           rozkładanej) zaczyna się `startAt + (k − 1) × intervalDays` dni,
@@ -763,7 +774,10 @@ paths:
         - Mecz `j` w kolejce (licząc od zera) dostaje obiekt
           `venueIds[j mod V]` i godzinę startu kolejki plus
           `⌊j / V⌋ × matchDuration`. Bez obiektów cała kolejka gra o jednej
-          godzinie i bez obiektu.
+          godzinie i bez obiektu. Mecze kolejki idą po `matchNumber`, z jednym
+          wyjątkiem: w rundzie z meczem o 3. miejsce (oba jego wejścia to
+          `loserToMatchId`) ten mecz idzie przed finałem, więc dostaje termin
+          przed nim.
         - `dayEndTime` (tylko `continuous`): slot, który **kończyłby się** po tej
           godzinie, przechodzi na następny dzień kalendarzowy o godzinie
           `startAt`. Kolejka może przez to rozciągnąć się na dwa dni. Wyjątkiem
@@ -885,6 +899,120 @@ paths:
                     message: Faza nie ma jeszcze terminarza, więc nie ma czego rozkładać.
                     errors:
                       stage: [Faza nie ma jeszcze terminarza, więc nie ma czego rozkładać.]
+
+  /stages/{stage}/bracket:
+    parameters:
+      - { $ref: '#/components/parameters/StageId' }
+    post:
+      tags: [Schedule]
+      summary: Wygeneruj drabinkę fazy pucharowej
+      description: |
+        Układa fazę `knockout` w drabinkę single elimination i zastępuje całą
+        dotychczasową drabinkę fazy, także terminy i obiekty poprawione ręcznie.
+        Wszystko dzieje się w jednej transakcji.
+
+        - `teamIds` to wszystkie drużyny turnieju, każda dokładnie raz,
+          w kolejności rozstawienia: pierwsza jest najwyżej rozstawiona.
+          Losowanie to wymieszanie tej listy po stronie klienta. Kolejność
+          nie jest przechowywana, zostaje po niej tylko kształt drabinki.
+        - Rozmiar drabinki to najbliższa potęga dwójki ≥ liczby drużyn.
+          Seed trafia na pozycję według standardowej reguły (1–16, 8–9, 4–13…),
+          więc seedy 1…2^k nie spotkają się, zanim zostanie 2^k drużyn.
+        - Wolne losy (2^k − n) dostają najwyżej rozstawieni. Wolny los nie
+          tworzy meczu: drużyna stoi od razu w meczu drugiej rundy.
+        - `matchNumber` to pozycja w pełnej drabince, więc w pierwszej rundzie
+          ma dziury w miejscach wolnych losów. Mecz o nieparzystym numerze
+          zasila gospodarza meczu następnego (ADR 0004).
+        - Rundy nazywają się według rozmiaru: „1/64 finału” … „1/8 finału”,
+          „Ćwierćfinał”, „Półfinał”, „Finał”.
+        - `thirdPlaceMatch: true` dokłada mecz o 3. miejsce w rundzie finału
+          (`matchNumber: 2`), do którego półfinały prowadzą `loserToMatchId`.
+        - Mecze są `scheduled`, bez `kickoffAt` i bez obiektu. Daty rozkłada
+          `POST /stages/{stage}/schedule/dates`.
+
+        Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
+        faza nie jest `knockout` albo ma mecz `live` lub `finished`; pod
+        `teams`, gdy turniej ma mniej niż dwie drużyny; pod `teamIds`, gdy
+        lista nie jest dokładnie zbiorem drużyn turnieju; pod
+        `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono przy mniej niż
+        czterech drużynach. Odmowa niczego nie zmienia. Mecze dociąga się potem
+        przez `GET /tournaments/{tournament}/matches?stageId=`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [teamIds, thirdPlaceMatch]
+              properties:
+                teamIds:
+                  type: array
+                  minItems: 2
+                  uniqueItems: true
+                  items: { type: integer, format: int64 }
+                  description: Drużyny turnieju w kolejności rozstawienia, od najwyżej rozstawionej.
+                thirdPlaceMatch:
+                  type: boolean
+                  description: Czy dołożyć mecz o 3. miejsce. Bez wartości domyślnej.
+            example:
+              teamIds: [12, 7, 3, 9, 15, 4]
+              thirdPlaceMatch: true
+      responses:
+        '201':
+          description: Drabinka wygenerowana
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [roundsCount, matchesCount]
+                    properties:
+                      roundsCount: { type: integer, minimum: 1 }
+                      matchesCount: { type: integer, minimum: 1 }
+              example:
+                data: { roundsCount: 3, matchesCount: 6 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Fazy nie da się wygenerować albo ciało jest niepoprawne
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              examples:
+                nieTaFaza:
+                  summary: Faza inna niż `knockout`
+                  value:
+                    message: Drabinkę generuje się tylko w fazie pucharowej.
+                    errors:
+                      stage: [Drabinkę generuje się tylko w fazie pucharowej.]
+                rozegraneMecze:
+                  summary: Faza ma mecz trwający albo zakończony
+                  value:
+                    message: Faza ma rozegrane mecze, więc nie można wygenerować drabinki ponownie.
+                    errors:
+                      stage: [Faza ma rozegrane mecze, więc nie można wygenerować drabinki ponownie.]
+                zaMaloDruzyn:
+                  summary: Mniej niż dwie drużyny
+                  value:
+                    message: Puchar potrzebuje co najmniej dwóch drużyn.
+                    errors:
+                      teams: [Puchar potrzebuje co najmniej dwóch drużyn.]
+                niepelnaLista:
+                  summary: Lista z brakującą, obcą albo powtórzoną drużyną
+                  value:
+                    message: Lista musi zawierać każdą drużynę turnieju dokładnie raz.
+                    errors:
+                      teamIds: [Lista musi zawierać każdą drużynę turnieju dokładnie raz.]
+                meczO3Miejsce:
+                  summary: Mecz o 3. miejsce przy mniej niż czterech drużynach
+                  value:
+                    message: Mecz o 3. miejsce wymaga co najmniej czterech drużyn.
+                    errors:
+                      thirdPlaceMatch: [Mecz o 3. miejsce wymaga co najmniej czterech drużyn.]
 
   /tournaments/{tournament}/teams:
     parameters:
@@ -1023,6 +1151,19 @@ paths:
         Daje `422` z błędem pod `id`, jeżeli drużyna ma mecz rozegrany albo
         trwający (`finished` albo `live`): usunięcie zmieniłoby tabelę wstecz.
         Odmowa niczego nie zmienia — drużyna, jej zawodnicy i mecze zostają.
+
+        Drużyna w drabince (faza `knockout`, w której drużyna stoi w którymś
+        meczu) idzie inaczej, bo drabinki nie da się załatać jak kolejki:
+
+        - dopóki żaden mecz fazy nie jest rozpoczęty, usunięcie kasuje całą
+          drabinkę fazy, czyli jej rundy i mecze, a nie same mecze drużyny.
+          Drabinkę generuje się potem od nowa (`POST /stages/{stage}/bracket`);
+        - po pierwszym meczu rozpoczętym fazy daje `422` pod `id`
+          (`DeleteBlocked`), także dla drużyny, która jeszcze nie grała.
+          Wycofanie drużyny wpisuje się wtedy jako walkower.
+
+        Drużyna dodana po wygenerowaniu drabinki w niej nie stoi, więc usuwa
+        się jak w lidze.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -1347,9 +1488,10 @@ paths:
         a kształt `Match` jest zamrożony.
 
         Kolejność: faza (`order`), w niej kolejka (`round.order`), w kolejce
-        `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (po
-        usunięciu drużyny razem z jej meczami `scheduled`), więc pozycji meczu
-        nie wyliczaj z numeru. Faza albo kolejka spoza turnieju w `stageId`
+        `matchNumber`, wszystko rosnąco. `matchNumber` może mieć dziury (w lidze
+        po usunięciu drużyny razem z jej meczami `scheduled`, w pierwszej
+        rundzie drabinki po wolnych losach), więc miejsca meczu na liście nie
+        wyliczaj z numeru. Faza albo kolejka spoza turnieju w `stageId`
         i `roundId` daje puste `data`, nie `404`: `404` jest tu odpowiedzią
         o turnieju. `perPage` ponad limit jest dociągane do 200, a nieczytelne
         daje rozmiar domyślny. Filtr o złym typie albo nieznanym `status` daje
@@ -1494,27 +1636,31 @@ paths:
                         collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
                 puchar:
-                  summary: Faza pucharowa — komplet meczów drabinki sześciodrużynowej
+                  summary: Faza pucharowa — drabinka sześciodrużynowa w trakcie
                   description: |
                     Odpowiedź zawężona przez `stageId=2`, czyli tyle, ile widok
                     drabinki potrzebuje do zbudowania odwrotnego indeksu
-                    krawędzi. Drabinka ma sześć drużyn, więc dwie wchodzą do
-                    półfinału z pauzy: sloty `202.homeTeam` i `201.awayTeam` są
-                    obsadzone, ale żaden mecz nie wskazuje ich przez
-                    `winnerToMatchId` ani `loserToMatchId`. Mecz `302` jest
-                    meczem o 3. miejsce — poznaje się go po tym, że oba jego
-                    wejścia są krawędziami przegranego. Obie rzeczy wyprowadza
-                    się z danych, bo pól na nie nie ma; tak przewiduje
+                    krawędzi. Kształt daje `POST /stages/{stage}/bracket` dla
+                    sześciu drużyn (seedy 1–6 to id 1–6) bez meczu o 3. miejsce:
+                    drabinka na osiem, więc w ćwierćfinale grają tylko mecze
+                    2 (4–5) i 4 (3–6), a numery 1 i 3 to dziury po wolnych
+                    losach. Seedy 1 i 2 stoją od razu w półfinałach: sloty
+                    `201.homeTeam` i `202.homeTeam` są obsadzone, ale żaden
+                    mecz nie wskazuje ich przez `winnerToMatchId`. Ćwierćfinał 2
+                    rozstrzygnęły karne. Mecz o 3. miejsce, gdyby był, stałby
+                    w rundzie finału z `matchNumber: 2`, a oba jego wejścia
+                    byłyby krawędziami `loserToMatchId` z półfinałów. Wszystko
+                    wyprowadza się z danych, bo pól na to nie ma; tak przewiduje
                     [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
                   value:
                     data:
-                      - id: 101
+                      - id: 102
                         stageId: 2
                         groupId: null
-                        round: { id: 10, name: Ćwierćfinały, order: 1 }
-                        matchNumber: 1
-                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
-                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        round: { id: 10, name: Ćwierćfinał, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        awayTeam: { id: 5, name: Żubry Praga, logoUrl: null }
                         homeScore: 2
                         awayScore: 2
                         homePenalties: 4
@@ -1524,15 +1670,15 @@ paths:
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 201
                         loserToMatchId: null
-                        advancesToSlot: home
+                        advancesToSlot: away
                         collisions: []
-                      - id: 102
+                      - id: 104
                         stageId: 2
                         groupId: null
-                        round: { id: 10, name: Ćwierćfinały, order: 1 }
-                        matchNumber: 2
+                        round: { id: 10, name: Ćwierćfinał, order: 1 }
+                        matchNumber: 4
                         homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
-                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        awayTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
                         homeScore: 1
                         awayScore: 0
                         homePenalties: null
@@ -1547,10 +1693,10 @@ paths:
                       - id: 201
                         stageId: 2
                         groupId: null
-                        round: { id: 11, name: Półfinały, order: 2 }
+                        round: { id: 11, name: Półfinał, order: 2 }
                         matchNumber: 1
                         homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
-                        awayTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
                         homeScore: 3
                         awayScore: 1
                         homePenalties: null
@@ -1559,15 +1705,15 @@ paths:
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
-                        loserToMatchId: 302
+                        loserToMatchId: null
                         advancesToSlot: home
                         collisions: []
                       - id: 202
                         stageId: 2
                         groupId: null
-                        round: { id: 11, name: Półfinały, order: 2 }
+                        round: { id: 11, name: Półfinał, order: 2 }
                         matchNumber: 2
-                        homeTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
                         awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
                         homeScore: null
                         awayScore: null
@@ -1577,13 +1723,13 @@ paths:
                         kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
-                        loserToMatchId: 302
+                        loserToMatchId: null
                         advancesToSlot: away
                         collisions: []
                       - id: 301
                         stageId: 2
                         groupId: null
-                        round: { id: 12, name: Runda finałowa, order: 3 }
+                        round: { id: 12, name: Finał, order: 3 }
                         matchNumber: 1
                         homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                         awayTeam: null
@@ -1598,25 +1744,7 @@ paths:
                         loserToMatchId: null
                         advancesToSlot: null
                         collisions: []
-                      - id: 302
-                        stageId: 2
-                        groupId: null
-                        round: { id: 12, name: Runda finałowa, order: 3 }
-                        matchNumber: 2
-                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
-                        awayTeam: null
-                        homeScore: null
-                        awayScore: null
-                        homePenalties: null
-                        awayPenalties: null
-                        status: scheduled
-                        kickoffAt: '2026-10-18T10:00:00+00:00'
-                        venue: { id: 1, name: Boisko Bemowo }
-                        winnerToMatchId: null
-                        loserToMatchId: null
-                        advancesToSlot: null
-                        collisions: []
-                    meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
+                    meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 5 }
                 koszykowka:
                   summary: Liga koszykówki — zgodna z tabelą i turniejem
                   description: |
@@ -2336,27 +2464,31 @@ paths:
                         loserToMatchId: null
                         advancesToSlot: null
                 puchar:
-                  summary: Faza pucharowa — komplet meczów drabinki sześciodrużynowej
+                  summary: Faza pucharowa — drabinka sześciodrużynowa w trakcie
                   description: |
                     Odpowiedź zawężona przez `stageId=2`, czyli tyle, ile widok
                     drabinki potrzebuje do zbudowania odwrotnego indeksu
-                    krawędzi. Drabinka ma sześć drużyn, więc dwie wchodzą do
-                    półfinału z pauzy: sloty `202.homeTeam` i `201.awayTeam` są
-                    obsadzone, ale żaden mecz nie wskazuje ich przez
-                    `winnerToMatchId` ani `loserToMatchId`. Mecz `302` jest
-                    meczem o 3. miejsce — poznaje się go po tym, że oba jego
-                    wejścia są krawędziami przegranego. Obie rzeczy wyprowadza
-                    się z danych, bo pól na nie nie ma; tak przewiduje
+                    krawędzi. Kształt daje `POST /stages/{stage}/bracket` dla
+                    sześciu drużyn (seedy 1–6 to id 1–6) bez meczu o 3. miejsce:
+                    drabinka na osiem, więc w ćwierćfinale grają tylko mecze
+                    2 (4–5) i 4 (3–6), a numery 1 i 3 to dziury po wolnych
+                    losach. Seedy 1 i 2 stoją od razu w półfinałach: sloty
+                    `201.homeTeam` i `202.homeTeam` są obsadzone, ale żaden
+                    mecz nie wskazuje ich przez `winnerToMatchId`. Ćwierćfinał 2
+                    rozstrzygnęły karne. Mecz o 3. miejsce, gdyby był, stałby
+                    w rundzie finału z `matchNumber: 2`, a oba jego wejścia
+                    byłyby krawędziami `loserToMatchId` z półfinałów. Wszystko
+                    wyprowadza się z danych, bo pól na to nie ma; tak przewiduje
                     [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
                   value:
                     data:
-                      - id: 101
+                      - id: 102
                         stageId: 2
                         groupId: null
-                        round: { id: 10, name: Ćwierćfinały, order: 1 }
-                        matchNumber: 1
-                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
-                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        round: { id: 10, name: Ćwierćfinał, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        awayTeam: { id: 5, name: Żubry Praga, logoUrl: null }
                         homeScore: 2
                         awayScore: 2
                         homePenalties: 4
@@ -2366,14 +2498,14 @@ paths:
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 201
                         loserToMatchId: null
-                        advancesToSlot: home
-                      - id: 102
+                        advancesToSlot: away
+                      - id: 104
                         stageId: 2
                         groupId: null
-                        round: { id: 10, name: Ćwierćfinały, order: 1 }
-                        matchNumber: 2
+                        round: { id: 10, name: Ćwierćfinał, order: 1 }
+                        matchNumber: 4
                         homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
-                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        awayTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
                         homeScore: 1
                         awayScore: 0
                         homePenalties: null
@@ -2387,10 +2519,10 @@ paths:
                       - id: 201
                         stageId: 2
                         groupId: null
-                        round: { id: 11, name: Półfinały, order: 2 }
+                        round: { id: 11, name: Półfinał, order: 2 }
                         matchNumber: 1
                         homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
-                        awayTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
                         homeScore: 3
                         awayScore: 1
                         homePenalties: null
@@ -2399,14 +2531,14 @@ paths:
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
-                        loserToMatchId: 302
+                        loserToMatchId: null
                         advancesToSlot: home
                       - id: 202
                         stageId: 2
                         groupId: null
-                        round: { id: 11, name: Półfinały, order: 2 }
+                        round: { id: 11, name: Półfinał, order: 2 }
                         matchNumber: 2
-                        homeTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
                         awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
                         homeScore: null
                         awayScore: null
@@ -2416,29 +2548,12 @@ paths:
                         kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
                         winnerToMatchId: 301
-                        loserToMatchId: 302
-                        advancesToSlot: away
-                      - id: 302
-                        stageId: 2
-                        groupId: null
-                        round: { id: 12, name: Runda finałowa, order: 3 }
-                        matchNumber: 2
-                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
-                        awayTeam: null
-                        homeScore: null
-                        awayScore: null
-                        homePenalties: null
-                        awayPenalties: null
-                        status: scheduled
-                        kickoffAt: '2026-10-18T10:00:00+00:00'
-                        venue: { id: 1, name: Boisko Bemowo }
-                        winnerToMatchId: null
                         loserToMatchId: null
-                        advancesToSlot: null
+                        advancesToSlot: away
                       - id: 301
                         stageId: 2
                         groupId: null
-                        round: { id: 12, name: Runda finałowa, order: 3 }
+                        round: { id: 12, name: Finał, order: 3 }
                         matchNumber: 1
                         homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
                         awayTeam: null
@@ -3792,8 +3907,10 @@ components:
           description: |
             Numer meczu w obrębie rundy, liczony od jedynki. W drabince razem
             z `round.order` tworzy pozycję własną meczu, z której widok wylicza
-            etykietę ("1/2 finału", "Finał") — etykiety nie ma w danych, bo
-            zależy od rozmiaru drabinki. W lidze daje stabilną kolejność meczów
+            etykietę pozycji („Półfinał 1”, „Finał”) — tej etykiety nie ma
+            w danych, a nazwa rundy jest w `round.name`. Numer to pozycja
+            w pełnej drabince, więc w pierwszej rundzie ma dziury w miejscach
+            wolnych losów. W lidze daje stabilną kolejność meczów
             w kolejce i niczego więcej nie znaczy, więc może mieć dziury (np.
             po usunięciu drużyny razem z jej meczami `scheduled`).
         homeTeam:

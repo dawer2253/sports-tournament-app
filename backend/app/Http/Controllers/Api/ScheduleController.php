@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Stages\GenerateBracketRequest;
 use App\Http\Requests\Stages\GenerateScheduleRequest;
 use App\Http\Requests\Stages\ScheduleDatesRequest;
 use App\Models\Stage;
+use App\Schedule\BracketGenerator;
 use App\Schedule\DateDistributor;
 use App\Schedule\ScheduleGenerator;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +22,18 @@ class ScheduleController extends Controller
     public function store(GenerateScheduleRequest $request, Stage $stage, ScheduleGenerator $generator): JsonResponse
     {
         $result = $generator->generate($stage, $request->meetings());
+
+        return response()->json(['data' => $result], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Drabinka fazy pucharowej (#215). Odmowy ze stanu fazy i listy drużyn
+     * (`422`) rzuca generator w transakcji. Odpowiedź niesie same liczniki,
+     * jak przy terminarzu ligi.
+     */
+    public function bracket(GenerateBracketRequest $request, Stage $stage, BracketGenerator $generator): JsonResponse
+    {
+        $result = $generator->generate($stage, $request->teamIds(), $request->thirdPlaceMatch());
 
         return response()->json(['data' => $result], Response::HTTP_CREATED);
     }
