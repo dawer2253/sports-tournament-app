@@ -27,6 +27,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { DatesDialog } from '../components/dates-dialog';
+import { MatchDialog } from '../components/match-dialog';
 import { api } from '../lib/api';
 import {
   bracketByes,
@@ -53,8 +54,10 @@ const GENERATE_FAILED = 'Nie udało się wygenerować drabinki. Spróbuj ponowni
  * z kompletu meczów fazy (`lib/bracket.ts`), bo kontrakt nie ma listy rund.
  *
  * Generowanie z rozstawieniem i rozkład dat idą w oknach, otwieranych
- * z pustego stanu, z akcji nagłówka albo z podpowiedzi nad kartami. Wiersze
- * są tylko do odczytu; okno meczu z wynikiem i karnymi dokłada #228.
+ * z pustego stanu, z akcji nagłówka albo z podpowiedzi nad kartami. Wiersz
+ * meczu otwiera to samo okno meczu co Terminarz ligi, z karnymi i notką przed
+ * zapisem (#228). Po zapisie okno odświeża mecze turnieju, więc drużyna
+ * podmieniona w meczu zależnym pojawia się na karcie rund.
  */
 export function TournamentBracketPage() {
   const tournament = useTournament();
@@ -64,12 +67,30 @@ export function TournamentBracketPage() {
   const teams = useTeams(tournament.id);
   const [generating, setGenerating] = useState(false);
   const [distributing, setDistributing] = useState(false);
+  const [openMatchId, setOpenMatchId] = useState<number | null>(null);
   const [, setParams] = useSearchParams();
 
   const started = hasStartedMatches(matches.data ?? []);
+  const selectedMatch = matches.data?.find((match) => match.id === openMatchId);
   const hasBracket = (matches.data?.length ?? 0) > 0;
   const openGenerate = () => setGenerating(true);
   const openDates = () => setDistributing(true);
+
+  /**
+   * Otwiera okno meczu i przełącza karty na jego rundę — przy kliknięciu
+   * wiersza i przy kliknięciu kolizji, która prowadzi do meczu innej rundy.
+   */
+  function openMatch(match: AdminMatch) {
+    setOpenMatchId(match.id);
+    setParams(
+      (current) => {
+        const next = new URLSearchParams(current);
+        next.set(ROUND_PARAM, String(match.round.order));
+        return next;
+      },
+      { replace: true },
+    );
+  }
 
   /** Nowa drabinka zaczyna od rundy 1, a nie od rundy zapamiętanej w adresie. */
   function forgetRound() {
@@ -129,7 +150,7 @@ export function TournamentBracketPage() {
           onGenerate={openGenerate}
         />
         <WithoutDatesNotice matches={matches.data} onDistribute={openDates} />
-        <RoundsView rounds={rounds} matches={matches.data} />
+        <RoundsView rounds={rounds} matches={matches.data} onSelectMatch={openMatch} />
         {champion && <BracketChampion team={champion} className="mt-4 max-w-sm" />}
       </>
     );
@@ -186,6 +207,18 @@ export function TournamentBracketPage() {
           rounds={bracketRounds(matches.data)}
           unit="runda"
           onClose={() => setDistributing(false)}
+        />
+      )}
+      {selectedMatch && matches.data && (
+        <MatchDialog
+          key={selectedMatch.id}
+          match={selectedMatch}
+          tournamentId={tournament.id}
+          matches={matches.data}
+          onOpenMatch={openMatch}
+          onClose={() => setOpenMatchId(null)}
+          sportCode={tournament.sport.code}
+          knockout
         />
       )}
     </AdminPage>
@@ -287,7 +320,15 @@ function WithoutDatesNotice({ matches, onDistribute }: { matches: AdminMatch[]; 
  * meczem niezakończonym. Wolne losy opisuje notka pod 1. i 2. rundą: w 1.
  * brakuje po nich meczu, w 2. drużyna już stoi.
  */
-function RoundsView({ rounds, matches }: { rounds: BracketRound[]; matches: AdminMatch[] }) {
+function RoundsView({
+  rounds,
+  matches,
+  onSelectMatch,
+}: {
+  rounds: BracketRound[];
+  matches: AdminMatch[];
+  onSelectMatch: (match: AdminMatch) => void;
+}) {
   const [params, setParams] = useSearchParams();
   const requested = Number(params.get(ROUND_PARAM));
   const round = rounds.find((candidate) => candidate.order === requested) ?? defaultRound(rounds);
@@ -319,8 +360,7 @@ function RoundsView({ rounds, matches }: { rounds: BracketRound[]; matches: Admi
         <ul className="space-y-2">
           {round.matches.map((match) => (
             <li key={match.id}>
-              {/* Tylko do odczytu: okno meczu z wynikiem i karnymi dokłada #228. */}
-              <BracketMatchRow match={bracketRow(match, matches)} />
+              <BracketMatchRow match={bracketRow(match, matches)} onSelect={() => onSelectMatch(match)} />
             </li>
           ))}
         </ul>

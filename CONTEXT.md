@@ -190,8 +190,28 @@ się w jednym pojęciu.
 W drabince mecz wskazuje, dokąd trafiają jego uczestnicy po rozstrzygnięciu:
 osobno zwycięzca, osobno przegrany (ten drugi tylko wtedy, gdy turniej ma mecz
 o 3. miejsce). Strona, na którą wchodzą, jest wspólna dla obu, bo wynika
-z pozycji meczu źródłowego, a nie z tego, kto awansuje. Zmiana wyniku meczu,
-który już wypełnił dalszą część drabinki, unieważnia mecze zależne.
+z pozycji meczu źródłowego, a nie z tego, kto awansuje. Zmiana zwycięzcy
+meczu, który już wypełnił dalszą część drabinki, podmienia drużynę w meczach
+zależnych, dopóki są zaplanowane. Gdy któryś z nich jest już rozpoczęty, zmiana
+jest zablokowana: organizator cofa najpierw mecze od końca. Okna potwierdzenia
+nie ma, a nic nie sięga dalej niż jeden poziom.
+
+Mecz drabinki bez obu drużyn czeka na rywali: może mieć termin i obiekt, ale
+nie wynik ani stan inny niż zaplanowany.
+
+**Awans** to wejście zwycięzcy, a w meczu o 3. miejsce także przegranego, do
+slotu meczu zależnego w chwili, gdy mecz zostaje zakończony. Mecz trwający
+nikogo nie wpuszcza. Powrót meczu z zakończonego zeruje ten slot, a zmiana
+zwycięzcy go podmienia; termin, obiekt i druga drużyna meczu zależnego
+zostają. Slotu po wolnym losie awans nie dotyka, bo nie prowadzi do niego
+żaden mecz.
+
+**Mecz zależny** to mecz, do którego prowadzi krawędź zwycięzcy albo
+przegranego danego meczu (`winnerToMatchId`, `loserToMatchId`). Półfinał ma
+ich dwa, gdy turniej ma mecz o 3. miejsce.
+
+_Unikaj_: „kaskada” — zmiana nie przechodzi przez drabinkę dalej niż do meczów
+zależnych.
 
 Mecz w drabince musi mieć zwycięzcę, a w sportach dopuszczających remis sam
 wynik go nie wyłania. Rozstrzyga wtedy seria rzutów karnych

@@ -15,13 +15,15 @@ import {
   formatKickoff,
   toast,
 } from '@tournament/ui';
-import { ChevronDown, TriangleAlert } from 'lucide-react';
+import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { MatchEventsSection } from '../components/match-events-section';
 import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
+import { advanceNote, bracketRow, type AdvanceNote } from '../lib/bracket';
 import { applyApiError } from '../lib/form-errors';
 import { scheduleKeys, useVenues } from '../lib/schedule-queries';
+import { useSports } from '../lib/use-sports';
 
 const SAVE_FAILED = 'Nie udało się zapisać meczu. Spróbuj ponownie.';
 
@@ -33,10 +35,15 @@ const NO_VENUE = 'none';
 /**
  * Pola, których `422` umiemy posadzić przy polu (#159): cała para wyników pod
  * blokiem `__ : __` (kontrakt sadza błędy pary pod `homeScore`, a błąd zakresu
- * pod swoim polem), termin i obiekt przy swoich polach. Reszta idzie nad
- * przyciskami.
+ * pod swoim polem), tak samo para karnych pod swoim blokiem (#216), termin
+ * i obiekt przy swoich polach. Reszta idzie nad przyciskami.
  */
-const FIELDS = ['homeScore', 'awayScore', 'kickoffAt', 'venueId'] as const;
+const FIELDS = ['homeScore', 'awayScore', 'homePenalties', 'awayPenalties', 'kickoffAt', 'venueId'] as const;
+
+/** Pole liczby jako wartość dla API: pusty napis to `null`. */
+function toNumber(value: string): number | null {
+  return value === '' ? null : Number(value);
+}
 
 /**
  * `datetime-local` trzyma czas lokalny bez offsetu, a API wymaga momentu
@@ -65,6 +72,12 @@ export interface MatchDialogProps {
   onClose: () => void;
   /** Sport turnieju: z niego idą typy zdarzeń i ich etykiety (`GET /sports`). */
   sportCode: Sport['code'];
+  /**
+   * Mecz drabinki (#228): nagłówek z etykietą pozycji, karne i notka przed
+   * zapisem. `matches` to wtedy komplet meczów fazy, z którego liczą się
+   * etykiety i krawędzie.
+   */
+  knockout?: boolean;
 }
 
 /**
@@ -80,13 +93,29 @@ export interface MatchDialogProps {
  * formularzem (`aside`): zapisują się od razu, osobnym zasobem. Termin i obiekt
  * są przy meczu rozpoczętym zwinięte, bo przy stoliku liczą się wynik
  * i zdarzenia; przy zaplanowanym — rozwinięte, bo to wtedy się je ustawia.
+ *
+ * W drabince (`knockout`, #228, wariant B z #217) to samo okno dokłada:
+ * - nagłówek z etykietą pozycji i terminem, a pusty slot z podpisem źródła —
+ *   tą samą funkcją co wiersz drabinki (`bracketRow`);
+ * - pola karnych pod wynikiem, tylko w sporcie z remisem, przy remisie i stanie
+ *   „Zakończony”; gdy znikają, idzie jawne `null` w obu (#216);
+ * - notkę przed zapisem z krawędzi (`advanceNote`), a przy rozpoczętym meczu
+ *   zależnym ostrzeżenie z treścią blokady. Zapis nie jest wyłączony: `422`
+ *   z serwera i tak przychodzi.
+ *
+ * Mecz bez obu drużyn czeka na rywali: wynik, stan i zdarzenia są niedostępne,
+ * a termin i obiekt zostają.
  */
-export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose, sportCode }: MatchDialogProps) {
+export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose, sportCode, knockout = false }: MatchDialogProps) {
   const queryClient = useQueryClient();
   const venues = useVenues(tournamentId);
+  const sports = useSports();
+  const allowsDraw = sports.data?.find((sport) => sport.code === sportCode)?.config.allowsDraw ?? false;
   const [status, setStatus] = useState<MatchStatus>(match.status);
   const [homeScore, setHomeScore] = useState(match.homeScore?.toString() ?? '');
   const [awayScore, setAwayScore] = useState(match.awayScore?.toString() ?? '');
+  const [homePenalties, setHomePenalties] = useState(match.homePenalties?.toString() ?? '');
+  const [awayPenalties, setAwayPenalties] = useState(match.awayPenalties?.toString() ?? '');
   const [kickoffAt, setKickoffAt] = useState(toLocalInputValue(match.kickoffAt));
   const [venueId, setVenueId] = useState(match.venue ? String(match.venue.id) : NO_VENUE);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
@@ -97,8 +126,18 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   const [startedHere, setStartedHere] = useState(false);
   const started = match.status !== 'scheduled' || startedHere;
 
-  const home = match.homeTeam?.name ?? 'Do ustalenia';
-  const away = match.awayTeam?.name ?? 'Do ustalenia';
+  const waiting = !match.homeTeam || !match.awayTeam;
+  const row = knockout ? bracketRow(match, matches) : null;
+  const home = match.homeTeam?.name ?? row?.home.source ?? 'Do ustalenia';
+  const away = match.awayTeam?.name ?? row?.away.source ?? 'Do ustalenia';
+  const showsPenalties = knockout && allowsDraw && status === 'finished' && homeScore !== '' && homeScore === awayScore;
+  const penalties = {
+    homePenalties: showsPenalties ? toNumber(homePenalties) : null,
+    awayPenalties: showsPenalties ? toNumber(awayPenalties) : null,
+  };
+  const note = knockout
+    ? advanceNote(match, { status, homeScore: toNumber(homeScore), awayScore: toNumber(awayScore), ...penalties }, matches)
+    : null;
 
   /**
    * „Rozpocznij mecz” z sekcji zdarzeń: od razu `PATCH` ze stanem `live`
@@ -141,7 +180,11 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
         if (field === 'root') setFormError(message);
         // Para wyników dzieli jeden komunikat pod blokiem `__ : __`.
         else if (field === 'homeScore' || field === 'awayScore') setFieldErrors((current) => ({ ...current, homeScore: message }));
-        else {
+        // Tak samo para karnych; przy ukrytych polach komunikat idzie nad przyciski.
+        else if (field === 'homePenalties' || field === 'awayPenalties') {
+          if (showsPenalties) setFieldErrors((current) => ({ ...current, homePenalties: message }));
+          else setFormError(message);
+        } else {
           // Błąd przy zwiniętym polu nie może zniknąć z widoku.
           if (field === 'kickoffAt' || field === 'venueId') setScheduleOpen(true);
           setFieldErrors((current) => ({ ...current, [field]: message }));
@@ -157,8 +200,10 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
         params: { path: { match: match.id } },
         body: {
           status,
-          homeScore: homeScore === '' ? null : Number(homeScore),
-          awayScore: awayScore === '' ? null : Number(awayScore),
+          homeScore: toNumber(homeScore),
+          awayScore: toNumber(awayScore),
+          // Liga wysyła ciało jak dotąd; karne należą tylko do drabinki.
+          ...(knockout && penalties),
           kickoffAt: kickoffAt === '' ? null : toOffsetIso(kickoffAt),
           venueId: venueId === NO_VENUE ? null : Number(venueId),
         },
@@ -205,7 +250,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       }}
       onSubmit={submit}
       title={`${home} – ${away}`}
-      description={`${match.round.name} · mecz ${match.matchNumber}`}
+      description={row ? `${row.label} · ${formatKickoff(match.kickoffAt)}` : `${match.round.name} · mecz ${match.matchNumber}`}
       submitLabel="Zapisz"
       pending={save.isPending}
       error={formError}
@@ -223,18 +268,42 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       }
     >
       <div className="grid gap-4">
+        {waiting && (
+          <p className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+            Mecz czeka na rywali z poprzedniej rundy. Do tego czasu ustawisz mu tylko termin i obiekt.
+          </p>
+        )}
         <div className="flex flex-wrap items-start gap-3">
-          <ScoreInputs
-            homeValue={homeScore}
-            awayValue={awayScore}
-            onHomeChange={setHomeScore}
-            onAwayChange={setAwayScore}
-            homeLabel={`Wynik ${home}`}
-            awayLabel={`Wynik ${away}`}
-            error={fieldErrors.homeScore}
-            disabled={save.isPending}
-          />
-          <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending} />
+          {/* Karne stoją w tej samej kolumnie co wynik, więc ich pola leżą
+              dokładnie pod polami wyniku. */}
+          <div className="grid content-start gap-3">
+            <ScoreInputs
+              homeValue={homeScore}
+              awayValue={awayScore}
+              onHomeChange={setHomeScore}
+              onAwayChange={setAwayScore}
+              homeLabel={`Wynik ${home}`}
+              awayLabel={`Wynik ${away}`}
+              error={fieldErrors.homeScore}
+              disabled={save.isPending || waiting}
+            />
+            {showsPenalties && (
+              <div className="grid content-start gap-1">
+                <p className="text-xs font-medium text-muted-foreground">Rzuty karne</p>
+                <ScoreInputs
+                  homeValue={homePenalties}
+                  awayValue={awayPenalties}
+                  onHomeChange={setHomePenalties}
+                  onAwayChange={setAwayPenalties}
+                  homeLabel={`Karne ${home}`}
+                  awayLabel={`Karne ${away}`}
+                  error={fieldErrors.homePenalties}
+                  disabled={save.isPending}
+                />
+              </div>
+            )}
+          </div>
+          <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
         </div>
 
         <button
@@ -278,8 +347,31 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
         </div>
 
         <CollisionList match={match} matches={matches} onOpenMatch={onOpenMatch} />
+        {note && <AdvanceNoteBox note={note} />}
       </div>
     </FormDialog>
+  );
+}
+
+/**
+ * Notka przed zapisem meczu drabinki, nad przyciskami. Ostrzeżenie o blokadzie
+ * jest alertem, bo zapowiada odmowę serwera; zwykła notka to tylko status.
+ */
+function AdvanceNoteBox({ note }: { note: AdvanceNote }) {
+  const block = note.tone === 'block';
+  const Icon = block ? TriangleAlert : Info;
+  return (
+    <div
+      role={block ? 'alert' : 'status'}
+      className={cn('flex items-start gap-2 rounded-md p-3 text-sm', block ? 'bg-destructive/10 text-destructive' : 'bg-muted/50')}
+    >
+      <Icon aria-hidden className={cn('mt-0.5 size-4 shrink-0', !block && 'text-muted-foreground')} />
+      <ul className="space-y-0.5">
+        {note.lines.map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

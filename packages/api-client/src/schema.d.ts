@@ -2411,10 +2411,23 @@ export interface paths {
         head?: never;
         /**
          * Wpisz wynik, zmień stan, termin albo obiekt meczu
-         * @description Częściowa zmiana meczu: wynik i stan (reguły z #159), a także korekta
-         *     terminu i obiektu (#158). Pole nieobecne zostaje bez zmian. Reguły
-         *     spójności, klucz `homeScore` oraz to, że termin i obiekt wolno zmieniać
-         *     przy każdym stanie, opisuje `MatchUpdate`.
+         * @description Częściowa zmiana meczu: wynik i stan (reguły z #159), karne meczu
+         *     pucharowego (#216), a także korekta terminu i obiektu (#158). Pole
+         *     nieobecne zostaje bez zmian. Reguły spójności, klucze `homeScore`
+         *     i `homePenalties` oraz to, że termin i obiekt wolno zmieniać przy
+         *     każdym stanie, opisuje `MatchUpdate`.
+         *
+         *     **Awans** w drabince (szczegóły w `MatchUpdate`): mecz `finished`
+         *     wpuszcza zwycięzcę do `winnerToMatchId`, a przegranego do
+         *     `loserToMatchId`, na stronę `advancesToSlot`. Zmiana zwycięzcy albo
+         *     powrót z `finished` podmienia lub zeruje ten slot w obu meczach
+         *     zależnych w tej samej transakcji, a gdy któryś z nich jest `live` albo
+         *     `finished`, cała zmiana daje `422` i nic się nie zapisuje. Poprawka bez
+         *     zmiany zwycięzcy niczego dalej nie rusza. Mecz bez obu drużyn może być
+         *     tylko `scheduled`.
+         *
+         *     Odpowiedź niesie tylko zmieniony mecz; mecze zależne klient odświeża
+         *     listą meczów fazy.
          *
          *     Odpowiedź to ten sam `AdminMatch`, co na liście meczów, więc okno meczu
          *     dostaje po zapisie świeże kolizje bez osobnego odczytu.
@@ -2448,7 +2461,7 @@ export interface paths {
                 401: components["responses"]["Unauthenticated"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                /** @description Wynik niespójny ze stanem, mecz ze zdarzeniami cofany do `scheduled`, obcy obiekt albo niepoprawne ciało */
+                /** @description Wynik albo karne niespójne ze stanem, mecz ze zdarzeniami cofany do `scheduled`, mecz bez obu drużyn rozpoczynany, zmiana zwycięzcy przy rozpoczętym meczu zależnym, obcy obiekt albo niepoprawne ciało */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -4019,12 +4032,51 @@ export interface components {
          *
          *     Termin i obiekt wolno korygować przy każdym stanie meczu, także
          *     `finished` (#158). `kickoffAt` wymaga offsetu (ADR-0008), a `venueId`
-         *     musi należeć do tego turnieju i nie być usunięty. Karne nie wchodzą do
-         *     ciała żądania: należą do fazy pucharowej (S4).
+         *     musi należeć do tego turnieju i nie być usunięty.
+         *
+         *     **Karne** (#216), sprawdzane po scaleniu tak samo jak wynik:
+         *
+         *     | warunek po scaleniu | `homePenalties` i `awayPenalties` |
+         *     |---|---|
+         *     | faza `knockout`, `finished`, `homeScore = awayScore` | oba wymagane, różne |
+         *     | każdy inny | oba `null` |
+         *
+         *     Błędy karnych wracają pod klucz `homePenalties`, wzorem `homeScore`.
+         *     Karne nie czyszczą się same: zmiana 1:1 (k. 4:3) na 2:1 bez jawnego
+         *     `homePenalties: null` i `awayPenalties: null` daje `422`, tak jak
+         *     powrót do `scheduled` z wynikiem. W sporcie bez remisów remis przy
+         *     `finished` jest błędem wyniku, więc karne nie mają tam kiedy wejść.
+         *
+         *     Mecz bez obu drużyn (pusty slot drabinki) może być tylko `scheduled`:
+         *     `live` albo `finished` daje `422` pod `status`. Termin i obiekt wolno
+         *     mu ustawić.
+         *
+         *     **Awans** (#216), tylko w drabince:
+         *
+         *     - Zwycięzca wchodzi do meczu `winnerToMatchId`, a przegrany do
+         *       `loserToMatchId`, na stronę `advancesToSlot`, w chwili, gdy mecz
+         *       zostaje `finished`. Zwycięzcę wyłania wynik, a przy remisie karne.
+         *       Stan `live` nikogo nie wpuszcza.
+         *     - Gdy zmienia się zwycięzca (inny wynik albo inne karne) albo mecz
+         *       wraca z `finished` do `live` czy `scheduled`, serwer w tej samej
+         *       transakcji podmienia albo zeruje drużynę w obu meczach zależnych.
+         *       Termin, obiekt i druga drużyna meczu zależnego zostają.
+         *     - **Blokada**: jeśli którykolwiek mecz zależny, w którym zmieniłaby się
+         *       drużyna, jest `live` albo `finished`, cała zmiana daje `422` i nic
+         *       się nie zapisuje. Klucz to `homeScore`, a `status`, gdy ciało nie
+         *       niesie wyniku ani karnych, tylko stan. Organizator cofa mecze od
+         *       końca.
+         *     - Zmiana wyniku albo karnych bez zmiany zwycięzcy zawsze przechodzi
+         *       i niczego dalej nie rusza. Slotu po wolnym losie nic nie dotyka, bo
+         *       nie prowadzi do niego żadna krawędź.
          */
         MatchUpdate: {
             homeScore?: number | null;
             awayScore?: number | null;
+            /** @description Rzuty karne gospodarza. Reguły w opisie `MatchUpdate`. */
+            homePenalties?: number | null;
+            /** @description Rzuty karne gościa. Reguły w opisie `MatchUpdate`. */
+            awayPenalties?: number | null;
             status?: components["schemas"]["MatchStatus"];
             /**
              * Format: date-time

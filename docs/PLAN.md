@@ -23,7 +23,7 @@
 | 12 | Standings (tabela) | **Liczona on-read** z meczów (brak materializacji) | Zawsze spójna; materializacja = future work |
 | 13 | Terminarz | **Auto-harmonogram** (data startu + interwał) + ręczne korekty | patrz §6 |
 | 14 | Generator | Circle method + bye (nieparzyste) + równe odstępy dat + **ostrzeżenia o kolizjach** (bez solvera) | |
-| 15 | Edycja wyniku | **Cykl życia meczu + kaskada w drabince** (zmiana zwycięzcy czyści dalsze rundy z ostrzeżeniem) | patrz §7 |
+| 15 | Edycja wyniku | **Cykl życia meczu + awans w drabince** (zmiana zwycięzcy podmienia drużynę w zaplanowanym meczu zależnym, a przy rozpoczętym jest zablokowana) | patrz §7 |
 | 16 | Branding public | **Podstawowy**: logo + kolor wiodący + nazwa; publiczny link `/t/{slug}` | |
 | 17 | Live | **Polling** (auto-odświeżanie co X s) na stronie publicznej | Realtime = future work |
 | 18 | Auth API | **Token Bearer** (Sanctum, token w nagłówku Authorization); public bez auth | Prościej przy osobnych originach |
@@ -193,8 +193,8 @@ Tabela zawiera komplet drużyn fazy, także bez meczów (z zerami); przed pierws
 
 - Status: `scheduled → (live) → finished`.
 - Wpisanie/edycja wyniku przelicza tabelę on-read (liga) automatycznie.
-- **Drabinka**: jeśli edycja zmienia zwycięzcę, kolejne rundy zależne zostają **wyczyszczone/zresetowane** z wyraźnym ostrzeżeniem dla admina (propagacja przez
-  `winner_to_match_id` / `loser_to_match_id`).
+- **Drabinka**: jeśli edycja zmienia zwycięzcę, serwer **podmienia** drużynę w meczach zależnych, dopóki są zaplanowane, a przy **rozpoczętym** meczu zależnym zmianę **blokuje** (`422`, nic się nie zapisuje). Bez okna potwierdzenia; panel uprzedza notką przed zapisem (#216, #228). Propagacja idzie przez
+  `winner_to_match_id` / `loser_to_match_id`, na jeden poziom.
 
 ---
 
