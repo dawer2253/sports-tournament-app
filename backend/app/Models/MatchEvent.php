@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +33,18 @@ class MatchEvent extends Model
             'minute' => 'integer',
             'meta' => 'array',
         ];
+    }
+
+    /**
+     * Kolejność osi meczu ze stanu kontraktu (#188, reguła 10): minuta
+     * rosnąco, zdarzenia bez minuty na końcu (MySQL stawia `NULL` na
+     * początku rosnącego porządku, stąd osobny klucz), potem `id`. Tę samą
+     * kolejność mają panel i strona meczu.
+     */
+    #[Scope]
+    protected function inTimelineOrder(Builder $query): void
+    {
+        $query->orderByRaw('`minute` IS NULL')->orderBy('minute')->orderBy('id');
     }
 
     public function match(): BelongsTo

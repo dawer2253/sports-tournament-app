@@ -29,6 +29,7 @@ const SPORTS: Sport[] = [
     config: {
       allowsDraw: true,
       defaultMatchDuration: 60,
+      defaultPeriods: { count: 2, minutes: 45 },
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for'],
@@ -51,6 +52,7 @@ const SPORTS: Sport[] = [
     config: {
       allowsDraw: false,
       defaultMatchDuration: 40,
+      defaultPeriods: { count: 4, minutes: 10 },
       defaultPoints: { win: 2, draw: 0, loss: 1 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff'],
@@ -79,6 +81,7 @@ const FOOTBALL: Tournament = {
   points: { win: 2, draw: 1, loss: 0 },
   tiebreakers: ['points', 'score_diff', 'head_to_head'],
   matchDuration: 60,
+  periods: { count: 2, minutes: 45 },
   teamsCount: 8,
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
@@ -303,6 +306,69 @@ describe('ustawienia turnieju: formularz', () => {
     await user.click(saveButton());
 
     expect(await screen.findByText('Porażka musi dawać mniej niż wygrana.')).toBeInTheDocument();
+  });
+});
+
+describe('ustawienia turnieju: podział meczu (#210)', () => {
+  const periodsSelect = () => screen.getByRole('combobox', { name: 'Podział meczu' });
+  const minutesField = () => screen.queryByLabelText('Minuty na część');
+
+  it('pokazuje zapisany podział i podpis o przeliczeniu relacji na stronie publicznej', async () => {
+    tournamentApi(FOOTBALL);
+    await renderSettings();
+
+    expect(periodsSelect()).toHaveTextContent('2 połowy');
+    expect(minutesField()).toHaveValue(45);
+    expect(periodsSelect()).toHaveAccessibleDescription(/przeliczy relacje wszystkich meczów na stronie publicznej/);
+  });
+
+  it('„Bez podziału” ukrywa minuty i wysyła { count: 1, minutes: null }', async () => {
+    const bodies = tournamentApi(FOOTBALL);
+    const { user } = await renderSettings();
+
+    await user.click(periodsSelect());
+    await user.click(await screen.findByRole('option', { name: 'Bez podziału' }));
+
+    expect(minutesField()).not.toBeInTheDocument();
+    await user.click(saveButton());
+
+    await waitFor(() => expect(bodies).toEqual([{ periods: { count: 1, minutes: null } }]));
+  });
+
+  it('przejście z „Bez podziału” na kwarty podpowiada minuty sportu i wysyła je', async () => {
+    const bodies = tournamentApi({ ...FOOTBALL, periods: { count: 1, minutes: null } });
+    const { user } = await renderSettings();
+
+    expect(minutesField()).not.toBeInTheDocument();
+    await user.click(periodsSelect());
+    await user.click(await screen.findByRole('option', { name: '4 kwarty' }));
+    // Minuty z `defaultPeriods` sportu turnieju (piłka: 45), do poprawienia.
+    expect(minutesField()).toHaveValue(45);
+    await retype(user, minutesField()!, '12');
+    await user.click(saveButton());
+
+    await waitFor(() => expect(bodies).toEqual([{ periods: { count: 4, minutes: 12 } }]));
+  });
+
+  it('zmiana innego pola nie wysyła periods', async () => {
+    const bodies = tournamentApi(FOOTBALL);
+    const { user } = await renderSettings();
+
+    await retype(user, nameField(), 'Liga Jesienna');
+    await user.click(saveButton());
+
+    await waitFor(() => expect(bodies).toEqual([{ name: 'Liga Jesienna' }]));
+  });
+
+  it('422 pod periods.minutes siada przy polu minut', async () => {
+    tournamentApi(FOOTBALL, () => validationError({ 'periods.minutes': ['Część trwa od 1 do 150 minut.'] }));
+    const { user } = await renderSettings();
+
+    await retype(user, minutesField()!, '40');
+    await user.click(saveButton());
+
+    expect(await screen.findByText('Część trwa od 1 do 150 minut.')).toBeInTheDocument();
+    expect(minutesField()).toHaveAttribute('aria-invalid', 'true');
   });
 });
 

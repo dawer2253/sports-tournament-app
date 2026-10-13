@@ -43,7 +43,7 @@ describe('Terminarz', () => {
     renderAt(`/t/${SLUG}/terminarz`);
 
     const round = within(await screen.findByRole('region', { name: 'Kolejka 1' }));
-    expect(within(round.getByRole('group', { name: 'Gospodarz 1 – Gość 1' })).getByText('Na żywo')).toBeInTheDocument();
+    expect(within(round.getByRole('link', { name: 'Gospodarz 1 – Gość 1' })).getByText('Na żywo')).toBeInTheDocument();
     expect(round.queryByText('Zaplanowany')).not.toBeInTheDocument();
     expect(round.queryByText(/Kolizja/)).not.toBeInTheDocument();
   });
@@ -57,7 +57,7 @@ describe('Terminarz', () => {
     await user.click(roundList().getByRole('button', { name: /Kolejka 2/ }));
 
     const round = within(screen.getByRole('region', { name: 'Kolejka 2' }));
-    expect(round.getByRole('group', { name: 'Gospodarz 2 – Gość 2' })).toBeInTheDocument();
+    expect(round.getByRole('link', { name: 'Gospodarz 2 – Gość 2' })).toBeInTheDocument();
   });
 });
 

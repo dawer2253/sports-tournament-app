@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { matchDays } from '../../lib/kickoff'
 import { Heading } from '../ui/typography'
 import { MatchRow, type MatchRowProps } from './match-row'
+import type { MatchRowData } from './match-row-data'
 import { RoundList } from './round-list'
 import type { RoundWithMatches } from './round-groups'
 
@@ -14,6 +15,10 @@ export interface RoundMatchesProps {
   progress?: boolean
   /** Patrz `MatchRow.statusDisplay`. */
   statusDisplay?: MatchRowProps['statusDisplay']
+  /** Adres strony meczu (#210); bez niego wiersze są tylko do odczytu. */
+  matchHref?: (match: MatchRowData) => string
+  /** Przejęcie kliknięcia w wiersz, np. przez router (`MatchRow.onNavigate`). */
+  onMatchNavigate?: (match: MatchRowData) => void
 }
 
 /**
@@ -29,7 +34,7 @@ export interface RoundMatchesProps {
  * zniknie z danych (np. jej ostatni mecz się zakończył i wypadł
  * z terminarza); wtedy wybór wraca do domyślnej, zamiast zostawić pusty ekran.
  */
-export function RoundMatches({ rounds, timeZone, progress, statusDisplay }: RoundMatchesProps) {
+export function RoundMatches({ rounds, timeZone, progress, statusDisplay, matchHref, onMatchNavigate }: RoundMatchesProps) {
   const [chosen, setChosen] = useState<number | null>(null)
   const round =
     rounds.find((candidate) => candidate.summary.id === chosen) ??
@@ -61,7 +66,14 @@ export function RoundMatches({ rounds, timeZone, progress, statusDisplay }: Roun
         <ul className="space-y-2">
           {round.matches.map((match) => (
             <li key={match.id}>
-              <MatchRow match={match} showDate={!oneDay} timeZone={timeZone} statusDisplay={statusDisplay} />
+              <MatchRow
+                match={match}
+                showDate={!oneDay}
+                timeZone={timeZone}
+                statusDisplay={statusDisplay}
+                href={matchHref?.(match)}
+                onNavigate={onMatchNavigate && (() => onMatchNavigate(match))}
+              />
             </li>
           ))}
         </ul>

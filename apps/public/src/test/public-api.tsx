@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type {
   PublicMatch,
+  PublicMatchDetail,
+  PublicMatchEvent,
   PublicMatchScorer,
   PublicTournament,
   StandingRow,
@@ -120,6 +122,38 @@ export function scorer(
 }
 
 /**
+ * Strona meczu (`PublicMatchDetail`) meczu z `match()`: domyślnie bez
+ * zdarzeń i bez części; test dopisuje to, co bada.
+ */
+export function detail(id: number, overrides: Partial<PublicMatchDetail> = {}): PublicMatchDetail {
+  return { ...finished(id, 1), events: [], periods: [], ...overrides };
+}
+
+/**
+ * Zdarzenie relacji meczu `matchId` z `match()`: `side` wskazuje drużynę
+ * zdarzenia (`home` to `Gospodarz {matchId}`), także przy samobóju.
+ */
+export function matchEvent(
+  matchId: number,
+  side: 'home' | 'away',
+  id: number,
+  overrides: Partial<PublicMatchEvent> = {},
+): PublicMatchEvent {
+  const { homeTeam, awayTeam } = match(matchId, 1);
+  return {
+    id,
+    team: side === 'home' ? homeTeam! : awayTeam!,
+    player: { id: 100 + id, name: `Zawodnik ${100 + id}` },
+    type: 'yellow_card',
+    typeLabel: 'Żółta kartka',
+    minute: id * 10,
+    period: null,
+    scoreAfter: null,
+    ...overrides,
+  };
+}
+
+/**
  * Wiersz klasyfikacji: zawodnik o podanym id, drużyna rozróżnialna po nim.
  */
 export function leaderRow(playerId: number, overrides: Partial<StatLeaderboardRow> = {}): StatLeaderboardRow {
@@ -138,7 +172,7 @@ export function leaderboard(overrides: Partial<StatLeaderboard> = {}): StatLeade
 }
 
 /**
- * Strona publiczna po stronie „serwera”: pięć endpointów z licznikami
+ * Strona publiczna po stronie „serwera”: sześć endpointów z licznikami
  * żądań. Domyślnie turniej bez meczów, z jedną tabelą i pustą klasyfikacją.
  *
  * `leaderboards` dostaje `stat` z adresu (`null` bez parametru), a
@@ -151,14 +185,17 @@ export function publicApi({
   fixtures = [],
   results = [],
   leaderboards = (stat) => leaderboard({ stat: stat ?? 'goals' }),
+  matches = [],
 }: {
   data?: PublicTournament;
   standings?: StandingTable[];
   fixtures?: PublicMatch[];
   results?: PublicMatch[];
   leaderboards?: (stat: string | null) => StatLeaderboard;
+  /** Strony meczów (#210); mecz spoza listy daje `404` jak w API. */
+  matches?: PublicMatchDetail[];
 } = {}) {
-  const requests = { tournament: 0, standings: 0, fixtures: 0, results: 0, leaderboard: [] as (string | null)[] };
+  const requests = { tournament: 0, standings: 0, fixtures: 0, results: 0, leaderboard: [] as (string | null)[], match: 0 };
   server.use(
     http.get(`${API}/public/t/:slug`, () => {
       requests.tournament++;
@@ -180,6 +217,13 @@ export function publicApi({
       const stat = new URL(request.url).searchParams.get('stat');
       requests.leaderboard.push(stat);
       return HttpResponse.json({ data: leaderboards(stat) });
+    }),
+    http.get(`${API}/public/t/:slug/matches/:match`, ({ params }) => {
+      requests.match++;
+      const found = matches.find((candidate) => String(candidate.id) === params.match);
+      return found
+        ? HttpResponse.json({ data: found })
+        : HttpResponse.json({ message: 'Nie znaleziono zasobu.' }, { status: 404 });
     }),
   );
   return requests;

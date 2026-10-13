@@ -29,7 +29,8 @@ final class MatchScorers
     /**
      * Kod samobója. Jedyne miejsce w backendzie, które wie, że ten typ daje
      * zdobycz przeciwnikowi: konfiguracja sportu tego nie mówi (`stat: null`),
-     * a panel trzyma osobną stałą `OWN_GOAL`. Zastąpić je ma pole typu
+     * a panel trzyma osobną stałą `OWN_GOAL`. Relacja strony meczu pyta
+     * o niego przez `isOwnGoal()`. Zastąpić je ma pole typu
      * zdarzenia mówiące, której drużynie liczy się zdobycz — future work
      * w `docs/PLAN.md` §14.
      */
@@ -46,7 +47,7 @@ final class MatchScorers
         return [
             'events' => fn (HasMany $query) => $query
                 ->whereNotNull('player_id')
-                ->whereIn('type', array_keys(self::eventValues($sport))),
+                ->whereIn('type', array_keys(self::scoringValues($sport))),
             'events.player' => fn (BelongsTo $query) => $query->withTrashed(),
             'events.team' => fn (BelongsTo $query) => $query->withTrashed(),
         ];
@@ -63,7 +64,7 @@ final class MatchScorers
             return [];
         }
 
-        $values = self::eventValues($sport);
+        $values = self::scoringValues($sport);
         $rows = [];
 
         /** @var MatchEvent $event */
@@ -72,7 +73,7 @@ final class MatchScorers
                 continue;
             }
 
-            $ownGoal = $event->type === self::OWN_GOAL;
+            $ownGoal = self::isOwnGoal($event->type);
             $key = $event->player_id.($ownGoal ? ':own' : '');
 
             $rows[$key] ??= [
@@ -101,11 +102,12 @@ final class MatchScorers
 
     /**
      * Typy zdarzeń liczone do strzelców, jako `kod => value`: typy
-     * statystyki-zdobyczy sportu i samobój, gdy sport go zna.
+     * statystyki-zdobyczy sportu i samobój, gdy sport go zna. Te same typy
+     * zmieniają wynik w relacji strony meczu (`MatchRelation`).
      *
      * @return array<string, int>
      */
-    private static function eventValues(Sport $sport): array
+    public static function scoringValues(Sport $sport): array
     {
         $values = $sport->statEventValues($sport->availableStats()[0]);
         $ownGoal = $sport->eventType(self::OWN_GOAL);
@@ -115,6 +117,12 @@ final class MatchScorers
         }
 
         return $values;
+    }
+
+    /** Czy typ to samobój, czyli zdobycz dla przeciwnika drużyny zdarzenia. */
+    public static function isOwnGoal(string $type): bool
+    {
+        return $type === self::OWN_GOAL;
     }
 
     /**

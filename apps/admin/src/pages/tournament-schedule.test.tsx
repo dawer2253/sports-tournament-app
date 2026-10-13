@@ -25,6 +25,7 @@ const TOURNAMENT: Tournament = {
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points', 'score_diff'],
   matchDuration: 60,
+  periods: { count: 2, minutes: 45 },
   teamsCount: 4,
   createdAt: '2026-09-01T10:00:00+00:00',
   updatedAt: '2026-09-01T10:00:00+00:00',
@@ -114,6 +115,7 @@ const SPORTS: Sport[] = [
       allowsDraw: true,
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       defaultMatchDuration: 60,
+      defaultPeriods: { count: 2, minutes: 45 },
       eventTypes: [
         { code: 'goal', label: 'Bramka', hasPlayer: true, value: 1, stat: 'goals' },
         { code: 'own_goal', label: 'Bramka samobójcza', hasPlayer: true, value: 1, stat: null },

@@ -2,6 +2,7 @@
 
 import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
+import type { MatchPageData, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
 import type { MatchCollision, MatchRowData, MatchScorer } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
 import type { RoundSummary } from '../components/data/round-summary'
@@ -758,3 +759,164 @@ export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
   .filter((match) => match.status === 'finished')
   .map(asPublicMatch)
   .toSorted((a, b) => byKickoff(b, a))
+
+// --- Strona meczu (#210) -----------------------------------------------------
+
+/** Typ zdarzenia demo: etykieta i zdobycz (0 — zdarzenie nie zmienia wyniku). */
+const PAGE_EVENT_TYPES: Record<string, { label: string; value: number }> = {
+  goal: { label: 'Bramka', value: 1 },
+  own_goal: { label: 'Bramka samobójcza', value: 1 },
+  yellow_card: { label: 'Żółta kartka', value: 0 },
+  red_card: { label: 'Czerwona kartka', value: 0 },
+  free_throw: { label: 'Rzut wolny', value: 1 },
+  two_pointer: { label: 'Rzut za 2', value: 2 },
+  three_pointer: { label: 'Rzut za 3', value: 3 },
+  foul: { label: 'Faul', value: 0 },
+}
+
+/** Zdarzenie demo: minuta, strona drużyny zdarzenia, zawodnik (indeks w składzie) i typ. */
+type PageEventSpec = [minute: number | null, side: 'home' | 'away', player: number, type: string]
+
+const PERIOD_NOUNS: Record<number, string> = { 2: 'połowa', 3: 'tercja', 4: 'kwarta' }
+
+/**
+ * Strona meczu tak, jak składa ją serwer (`MatchRelation`): kolejność osi,
+ * część z minuty i podziału turnieju, wynik po zdarzeniu, wyniki części
+ * i strzelcy. Wynik meczu to suma zdarzeń, więc demo jest zgodne z nagłówkiem.
+ */
+function demoMatchPage(
+  base: Omit<MatchPageData, 'events' | 'periods' | 'scorers' | 'homeScore' | 'awayScore'>,
+  specs: PageEventSpec[],
+  periods: { count: number; minutes: number | null },
+): MatchPageData {
+  const teams = { home: base.homeTeam!, away: base.awayTeam! }
+  const ordered = specs
+    .map((spec, index) => ({ spec, id: index + 1 }))
+    .toSorted((a, b) => (a.spec[0] ?? Infinity) - (b.spec[0] ?? Infinity) || a.id - b.id)
+
+  let home = 0
+  let away = 0
+  const periodScores = new Map<number, [number, number]>()
+  const scorers = new Map<string, MatchScorer>()
+  const events: MatchRelationEvent[] = ordered.map(({ spec: [minute, side, index, type], id }) => {
+    const team = { id: teams[side].id, name: teams[side].name }
+    const roster = demoRoster(team.id)
+    const player = roster[index % roster.length]!
+    const value = PAGE_EVENT_TYPES[type]!.value
+    const ownGoal = type === 'own_goal'
+    const forHome = (side === 'home') !== ownGoal
+    const period = minute === null || periods.count === 1 ? null : Math.min(periods.count, Math.ceil(minute / periods.minutes!))
+    if (period !== null) {
+      const score = periodScores.get(period) ?? [0, 0]
+      periodScores.set(period, forHome ? [score[0] + value, score[1]] : [score[0], score[1] + value])
+    }
+    let scoreAfter = null
+    if (value > 0) {
+      if (forHome) home += value
+      else away += value
+      scoreAfter = { home, away }
+      const key = `${player.id}-${ownGoal}`
+      const row = scorers.get(key) ?? { team, player: { id: player.id, name: player.name }, value: 0, minutes: [], ownGoal }
+      scorers.set(key, { ...row, value: row.value + value, minutes: minute === null ? row.minutes : [...row.minutes, minute] })
+    }
+    return { id, team, player: { id: player.id, name: player.name }, type, typeLabel: PAGE_EVENT_TYPES[type]!.label, minute, period, scoreAfter }
+  })
+
+  const relationPeriods: MatchRelationPeriod[] = [...periodScores.entries()]
+    .toSorted(([a], [b]) => a - b)
+    .map(([number, [homeScore, awayScore]]) => ({
+      number,
+      label: `${number}. ${PERIOD_NOUNS[periods.count] ?? 'część'}`,
+      homeScore,
+      awayScore,
+    }))
+  const firstMinute = (row: MatchScorer) => row.minutes[0] ?? Number.POSITIVE_INFINITY
+
+  return {
+    ...base,
+    homeScore: home,
+    awayScore: away,
+    scorers: [...scorers.values()].toSorted((a, b) => firstMinute(a) - firstMinute(b) || a.player.id - b.player.id),
+    events,
+    periods: relationPeriods,
+  }
+}
+
+/** Mecz demo jako baza strony meczu: z herbami z danych drużyn. */
+function pageBase(match: ScheduleDemoMatch, status: MatchPageData['status']) {
+  const team = (summary: { id: number; name: string }) => ({ ...summary, logoUrl: null })
+  return { ...match, status, collisions: undefined, homeTeam: team(match.homeTeam!), awayTeam: team(match.awayTeam!) }
+}
+
+/** Podział meczu demo: piłka 2 × 45, kosz 4 × 10 — domyślne sportów. */
+export const demoPeriods = {
+  football: { count: 2, minutes: 45 },
+  basketball: { count: 4, minutes: 10 },
+} as const
+
+/**
+ * Piłka po meczu: bramki obu drużyn, samobój gościa, kartki i kartka bez
+ * minuty, która stoi na końcu, w „Bez minuty”.
+ */
+export const matchPageFinished: MatchPageData = demoMatchPage(
+  pageBase(publicResults[0]!, 'finished'),
+  [
+    [9, 'home', 6, 'goal'],
+    [27, 'away', 3, 'yellow_card'],
+    [38, 'away', 7, 'goal'],
+    [44, 'home', 2, 'yellow_card'],
+    [51, 'away', 4, 'own_goal'],
+    [67, 'home', 8, 'goal'],
+    [90, 'away', 3, 'red_card'],
+    [null, 'home', 9, 'yellow_card'],
+  ],
+  demoPeriods.football,
+)
+
+/** Piłka na żywo, w 2. połowie: relacja od najnowszego zdarzenia. */
+export const matchPageLive: MatchPageData = demoMatchPage(
+  pageBase(matchInProgress, 'live'),
+  [
+    [12, 'home', 6, 'goal'],
+    [31, 'away', 3, 'yellow_card'],
+    [49, 'away', 8, 'goal'],
+    [58, 'home', 2, 'yellow_card'],
+    [63, 'home', 7, 'goal'],
+  ],
+  demoPeriods.football,
+)
+
+/** Mecz zaplanowany: „– : –”, bez strzelców i bez relacji. */
+export const matchPageScheduled: MatchPageData = {
+  ...demoMatchPage(pageBase(publicFixtures.find((match) => match.status === 'scheduled')!, 'scheduled'), [], demoPeriods.football),
+  homeScore: null,
+  awayScore: null,
+}
+
+/** Turniej koszykarski strony publicznej, ten sam co w przykładzie `koszykowka` kontraktu. */
+export const publicBasketballTournament: PublicShellTournament = {
+  ...publicTournament,
+  name: 'Liga Koszykówki 2026',
+  slug: 'liga-koszykowki-2026',
+  sport: { code: 'basketball', name: 'Koszykówka' },
+}
+
+/**
+ * Kosz po meczu: 32 zdarzenia w czterech kwartach, więc kwarty startują
+ * zwinięte (#210), a w pasie stoją wszyscy zawodnicy z punktami.
+ */
+export const matchPageBasketball: MatchPageData = demoMatchPage(
+  {
+    ...pageBase(publicResults[1]!, 'finished'),
+    homeTeam: { id: 401, name: 'Żubry Wola', logoUrl: null },
+    awayTeam: { id: 402, name: 'Rysie Mokotów', logoUrl: null },
+    venue: { id: 41, name: 'Hala Bemowo' },
+  },
+  Array.from({ length: 32 }, (_, index): PageEventSpec => {
+    const minute = 1 + Math.floor(index * 1.25)
+    const side = index % 2 === 0 ? 'home' : 'away'
+    const types = ['two_pointer', 'three_pointer', 'free_throw', 'foul', 'two_pointer']
+    return [minute, side, 6 + (index % 5), types[index % types.length]!]
+  }),
+  demoPeriods.basketball,
+)

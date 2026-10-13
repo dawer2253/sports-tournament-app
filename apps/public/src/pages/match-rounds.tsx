@@ -2,7 +2,8 @@ import type { PublicMatch } from '@tournament/api-client';
 import { EmptyState, RoundMatches, groupByRound } from '@tournament/ui';
 import { CalendarDays } from 'lucide-react';
 import { useMemo } from 'react';
-import { useTournament } from './tournament-layout';
+import { useNavigate } from 'react-router';
+import { matchHref, useTournament } from './tournament-layout';
 
 /**
  * Mecze pogrupowane po kolejce w kolejności faz z `stages` turnieju — ta sama
@@ -20,7 +21,8 @@ export function useRounds(matches: PublicMatch[] | undefined, direction: 'asc' |
 /**
  * Mecze po kolejce dla Terminarza i Wyników: `RoundList` i `MatchRow`
  * z panelu, bez kolizji i ułamka „zakończone/wszystkie”, z oznaczeniem tylko
- * meczu na żywo i ze strzelcami pod wynikiem (#208). Godziny liczy strefa przeglądarki (`Tournament.timezone`
+ * meczu na żywo i ze strzelcami pod wynikiem (#208). Cały wiersz prowadzi na
+ * stronę meczu (#210). Godziny liczy strefa przeglądarki (`Tournament.timezone`
  * odłożone, #158).
  */
 export function MatchRounds({
@@ -32,11 +34,21 @@ export function MatchRounds({
   direction: 'asc' | 'desc';
   empty: string;
 }) {
+  const { slug } = useTournament();
+  const navigate = useNavigate();
   const rounds = useRounds(matches, direction);
 
   if (rounds.length === 0) {
     return <EmptyState icon={<CalendarDays />} title={empty} />;
   }
 
-  return <RoundMatches rounds={rounds} progress={false} statusDisplay="live" />;
+  return (
+    <RoundMatches
+      rounds={rounds}
+      progress={false}
+      statusDisplay="live"
+      matchHref={(match) => matchHref(slug, match.id)}
+      onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
+    />
+  );
 }

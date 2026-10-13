@@ -12,6 +12,7 @@ const SAVED: Tournament = {
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points'],
   matchDuration: 60,
+  periods: { count: 2, minutes: 45 },
   teamsCount: 8,
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
@@ -54,6 +55,33 @@ describe('tournamentSettingsSchema', () => {
 
   it('bez remisów draw nie wchodzi do porządku', () => {
     expect(messagesAt(false, { ...valid, points: { win: 2, draw: 0, loss: 1 } }, 'points')).toEqual([]);
+  });
+  it('kilka części wymaga minut, a bez podziału minut nie ma (#210)', () => {
+    expect(messagesAt(true, { ...valid, periods: { count: 2, minutes: null } }, 'periods.minutes')).toEqual([
+      'Podaj długość części w minutach.',
+    ]);
+    expect(messagesAt(true, { ...valid, periods: { count: 4, minutes: 151 } }, 'periods.minutes')).toEqual([
+      'Część trwa od 1 do 150 minut.',
+    ]);
+    expect(messagesAt(true, { ...valid, periods: { count: 1, minutes: null } }, 'periods.minutes')).toEqual([]);
+  });
+});
+
+describe('tournamentSettingsUpdate: podział meczu (#210)', () => {
+  it('bez zmiany podziału nie wysyła periods', () => {
+    expect(tournamentSettingsUpdate(valid, SAVED, true)).toEqual({});
+  });
+
+  it('zmiana samych minut wysyła periods w komplecie', () => {
+    expect(tournamentSettingsUpdate({ ...valid, periods: { count: 2, minutes: 40 } }, SAVED, true)).toEqual({
+      periods: { count: 2, minutes: 40 },
+    });
+  });
+
+  it('„Bez podziału” wysyła minutes: null, nawet gdy w polu zostały minuty', () => {
+    expect(tournamentSettingsUpdate({ ...valid, periods: { count: 1, minutes: 45 } }, SAVED, true)).toEqual({
+      periods: { count: 1, minutes: null },
+    });
   });
 });
 

@@ -14,9 +14,9 @@ class TournamentFactory extends Factory
 {
     /**
      * Sport bierzemy z bazy, a nie z factory — sporty wstawia migracja i są
-     * predefiniowane (decyzja #10). Punktacja i kolejność tiebreaków są
-     * kopiowane z domyślnych dla sportu, dokładnie tak jak przy zakładaniu
-     * turnieju w panelu.
+     * predefiniowane (decyzja #10). Punktacja, kolejność tiebreaków, długość
+     * i podział meczu są kopiowane z domyślnych dla sportu, dokładnie tak jak
+     * przy zakładaniu turnieju w panelu.
      */
     public function definition(): array
     {
@@ -32,6 +32,8 @@ class TournamentFactory extends Factory
             'points' => $sport->defaultPoints(),
             'tiebreakers' => $sport->defaultTiebreakers(),
             'match_duration' => $sport->defaultMatchDuration(),
+            'period_count' => $sport->defaultPeriods()['count'],
+            'period_minutes' => $sport->defaultPeriods()['minutes'],
             'status' => 'draft',
         ];
     }
@@ -46,6 +48,8 @@ class TournamentFactory extends Factory
                 'points' => $sport->defaultPoints(),
                 'tiebreakers' => $sport->defaultTiebreakers(),
                 'match_duration' => $sport->defaultMatchDuration(),
+                'period_count' => $sport->defaultPeriods()['count'],
+                'period_minutes' => $sport->defaultPeriods()['minutes'],
             ];
         });
     }

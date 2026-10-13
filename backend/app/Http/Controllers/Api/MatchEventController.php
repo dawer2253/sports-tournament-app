@@ -22,16 +22,13 @@ class MatchEventController extends Controller
 {
     /**
      * Przez relację meczu, jak każda lista poddrzewa. Kolejność stanowi
-     * kontrakt: minuta rosnąco, zdarzenia bez minuty na końcu (MySQL stawia
-     * `NULL` na początku rosnącego porządku, stąd osobny klucz), potem `id`.
+     * kontrakt (`MatchEvent::inTimelineOrder()`).
      */
     public function index(GameMatch $match): JsonResponse
     {
         $events = $match->events()
             ->with(self::relations())
-            ->orderByRaw('`minute` IS NULL')
-            ->orderBy('minute')
-            ->orderBy('id')
+            ->inTimelineOrder()
             ->get();
 
         $sport = $match->stage->tournament->sport;

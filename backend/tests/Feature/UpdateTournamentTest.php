@@ -102,6 +102,7 @@ it('nie rusza pól, których nie wysłano', function (array $body, string $chang
     'punktacja' => [['points' => ['win' => 2, 'draw' => 1, 'loss' => 0]], 'points'],
     'tiebreakery' => [['tiebreakers' => ['points']], 'tiebreakers'],
     'długość meczu' => [['matchDuration' => 90], 'match_duration'],
+    'podział meczu' => [['periods' => ['count' => 3, 'minutes' => 45]], 'period_count'],
 ]);
 
 it('odrzuca pustą nazwę i nazwę ponad limit', function (string $name) {
@@ -521,4 +522,44 @@ it('przyjmuje granice 10 i 600, a odrzuca wartości spoza zakresu i zły typ', f
     'logiczna' => [true, false],
     'ułamek' => [60.5, false],
     'null' => [null, false],
+]);
+
+// --- podział meczu (#210) ----------------------------------------------------
+
+it('zmienia podział meczu, także na „bez podziału”, i oddaje go w show', function (array $periods) {
+    $tournament = Tournament::factory()->create(['period_count' => 2, 'period_minutes' => 45]);
+
+    patchTournament($tournament, ['periods' => $periods])
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.periods', $periods);
+
+    actingAsOrganizer($tournament->user)
+        ->getJson("/api/v1/tournaments/{$tournament->id}")
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.periods', $periods);
+})->with([
+    '4 kwarty po 12' => [['count' => 4, 'minutes' => 12]],
+    'bez podziału' => [['count' => 1, 'minutes' => null]],
+    'granice' => [['count' => 10, 'minutes' => 150]],
+]);
+
+it('odrzuca niespójny podział meczu z polskim komunikatem pod właściwym polem', function (array $periods, string $field, string $message) {
+    $tournament = Tournament::factory()->create(['period_count' => 2, 'period_minutes' => 45]);
+
+    patchTournament($tournament, ['periods' => $periods])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors([$field => $message])
+        ->assertJsonMissingValidationErrors(array_values(array_diff(['periods', 'periods.count', 'periods.minutes'], [$field])));
+
+    expect($tournament->fresh()->only('period_count', 'period_minutes'))->toBe(['period_count' => 2, 'period_minutes' => 45]);
+})->with([
+    'jedna część z minutami' => [['count' => 1, 'minutes' => 40], 'periods.minutes', 'Mecz bez podziału nie ma długości części.'],
+    'kilka części bez minut' => [['count' => 2, 'minutes' => null], 'periods.minutes', 'Podaj długość części w minutach.'],
+    'kilka części, brak klucza minut' => [['count' => 2], 'periods.minutes', 'Podaj długość części w minutach.'],
+    'zero części' => [['count' => 0, 'minutes' => 45], 'periods.count', 'Liczba części musi wynosić od 1 do 10.'],
+    'jedenaście części' => [['count' => 11, 'minutes' => 5], 'periods.count', 'Liczba części musi wynosić od 1 do 10.'],
+    'liczba części jako napis' => [['count' => '2', 'minutes' => 45], 'periods.count', 'Liczba części musi wynosić od 1 do 10.'],
+    'minuty ponad 150' => [['count' => 2, 'minutes' => 151], 'periods.minutes', 'Część trwa od 1 do 150 minut.'],
+    'minuty zero' => [['count' => 2, 'minutes' => 0], 'periods.minutes', 'Część trwa od 1 do 150 minut.'],
 ]);

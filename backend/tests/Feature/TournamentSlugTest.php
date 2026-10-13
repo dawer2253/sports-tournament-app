@@ -142,6 +142,8 @@ it('bierze kolejny sufiks, gdy równoległe żądanie zajmie slug między sprawd
             'points' => '{}',
             'tiebreakers' => '[]',
             'match_duration' => 60,
+            'period_count' => 2,
+            'period_minutes' => 45,
         ]);
     });
 

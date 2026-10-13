@@ -1,7 +1,7 @@
-import { AlertTriangle, Check, MapPin } from 'lucide-react'
+import { AlertTriangle, Check, ChevronRight, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { formatKickoff } from '../../lib/kickoff'
-import { cn } from '../../lib/utils'
+import { cn, isModifiedClick } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
 import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
@@ -127,6 +127,18 @@ export interface MatchRowProps {
    */
   onSelect?: () => void
   /**
+   * Adres strony meczu (#210). Gdy podany, cały wiersz jest jednym
+   * odnośnikiem ze strzałką „›”, a `onSelect` nie działa. Strona publiczna
+   * prowadzi tak z Terminarza, Wyników i Przeglądu.
+   */
+  href?: string
+  /**
+   * Przejęcie kliknięcia w odnośnik, np. przez router — wzorem
+   * `navHref`/`onNavigate` w `AdminShell`. Klik z klawiszem modyfikującym
+   * (nowa karta) zostaje przeglądarce.
+   */
+  onNavigate?: () => void
+  /**
    * `badge` (panel): stan każdego meczu jako plakietka. `live` (strona
    * publiczna): oznaczony jest tylko mecz trwający, `LiveMarker`-em —
    * „Zaplanowany” przy każdym meczu terminarza nic kibicowi nie mówi,
@@ -139,10 +151,20 @@ export interface MatchRowProps {
 
 /**
  * Wiersz meczu w terminarzu panelu: termin i obiekt | gospodarz | wynik |
- * gość | stan. Z `onSelect` cały wiersz otwiera okno meczu (#176); makieta
- * terminarza zostawia go tylko do odczytu.
+ * gość | stan. Z `onSelect` cały wiersz otwiera okno meczu (#176), a z `href`
+ * prowadzi na stronę meczu (#210); makieta terminarza zostawia go tylko do
+ * odczytu.
  */
-export function MatchRow({ match, showDate = true, timeZone, onSelect, statusDisplay = 'badge', className }: MatchRowProps) {
+export function MatchRow({
+  match,
+  showDate = true,
+  timeZone,
+  onSelect,
+  href,
+  onNavigate,
+  statusDisplay = 'badge',
+  className,
+}: MatchRowProps) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
   const label = `${home} – ${away}`
@@ -193,18 +215,35 @@ export function MatchRow({ match, showDate = true, timeZone, onSelect, statusDis
   )
 
   const grid = cn(ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm')
+  const interactive = cn(
+    'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
+    'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+  )
 
-  const row = onSelect ? (
+  const row = href !== undefined ? (
+    <a
+      href={href}
+      data-slot="match-row"
+      aria-label={label}
+      onClick={(event) => {
+        if (!onNavigate || isModifiedClick(event)) return
+        event.preventDefault()
+        onNavigate()
+      }}
+      // Strzałka stoi poza siatką, w marginesie po prawej, więc kolumny
+      // i wynik zostają tam, gdzie w wierszu bez odnośnika.
+      className={cn(grid, interactive, 'relative pr-8')}
+    >
+      {content}
+      <ChevronRight aria-hidden className="absolute top-1/2 right-2 size-4 -translate-y-1/2 text-muted-foreground" />
+    </a>
+  ) : onSelect ? (
     <button
       type="button"
       data-slot="match-row"
       aria-label={label}
       onClick={onSelect}
-      className={cn(
-        grid,
-        'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-      )}
+      className={cn(grid, interactive)}
     >
       {content}
     </button>

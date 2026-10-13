@@ -19,6 +19,12 @@ const overlayVariants = cva('absolute inset-0 -z-10', {
        * widać, że to zdjęcie, a nie płaskie tło.
        */
       texture: 'bg-brand/75',
+      /**
+       * Pas strony meczu (#210): zdjęcie sportu pod tekstem w kilku
+       * miejscach pasa. Krycie to `MATCH_BAND_OVERLAY` z `lib/match-band.ts`,
+       * z którego `play` liczy kontrast — zmieniaj oba razem.
+       */
+      band: 'bg-brand/80',
     },
   },
   defaultVariants: { overlay: 'texture' },
@@ -54,7 +60,7 @@ export function PhotoPanel({
         className="absolute inset-0 -z-20 size-full object-cover"
         style={{ objectPosition: focus }}
       />
-      <div aria-hidden className={cn(overlayVariants({ overlay }))} />
+      <div aria-hidden data-slot="photo-overlay" className={cn(overlayVariants({ overlay }))} />
       {children}
     </div>
   )

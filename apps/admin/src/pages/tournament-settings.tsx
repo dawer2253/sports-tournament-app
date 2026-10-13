@@ -9,6 +9,7 @@ import {
 } from '@tournament/api-client';
 import {
   BrandColorPicker,
+  MatchPeriodsField,
   Button,
   Card,
   CardContent,
@@ -566,6 +567,9 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     'slug',
     'branding.primaryColor',
     'matchDuration',
+    'periods',
+    'periods.count',
+    'periods.minutes',
     'points',
     ...pointFields.map(({ key }) => `points.${key}` as const),
   ] as const;
@@ -729,6 +733,22 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   </p>
                 )}
               </div>
+              {/* Podział meczu (#210): strona meczu liczy z niego części relacji. */}
+              <Controller
+                control={control}
+                name="periods"
+                render={({ field }) => (
+                  <MatchPeriodsField
+                    value={field.value}
+                    onChange={field.onChange}
+                    fallbackMinutes={sport.config.defaultPeriods.minutes}
+                    errors={{
+                      count: errors.periods?.count?.message ?? errors.periods?.message,
+                      minutes: errors.periods?.minutes?.message,
+                    }}
+                  />
+                )}
+              />
             </section>
 
             <Separator />
