@@ -39,13 +39,23 @@ export const BRAND_TEXT_LIGHT = '#FFFFFF'
 /** Próg WCAG AA dla zwykłego tekstu. Ten sam pilnuje ostrzeżenia w `BrandColorPicker`. */
 export const MIN_TEXT_CONTRAST = 4.5
 
+/** Próg WCAG AA dla dużego tekstu (np. wynik w pasie strony meczu). */
+export const MIN_LARGE_TEXT_CONTRAST = 3
+
+/**
+ * Ton tekstu na kolorze turnieju: jasny (biel), gdy biel ma z kolorem
+ * kontrast co najmniej `MIN_TEXT_CONTRAST`, inaczej ciemny. Kolor turnieju
+ * wybiera organizer, więc jasny żółty jest równie możliwy jak ciemna zieleń.
+ * Próg do oceny na żywym organizmie w kamieniu S3 (#192).
+ */
+export function brandTextTone(color: string): 'light' | 'dark' {
+  return contrastRatio(color, BRAND_TEXT_LIGHT) >= MIN_TEXT_CONTRAST ? 'light' : 'dark'
+}
+
 /**
  * Kolor tekstu na kolorze turnieju (`--brand-foreground`): token
- * `--brand-text-light` (biel), gdy biel ma z kolorem kontrast co najmniej
- * `MIN_TEXT_CONTRAST`, inaczej `--brand-text-dark`. Kolor turnieju wybiera
- * organizer, więc jasny żółty jest równie możliwy jak ciemna zieleń. Próg do
- * oceny na żywym organizmie w kamieniu S3 (#192).
+ * `--brand-text-light` albo `--brand-text-dark`, według `brandTextTone()`.
  */
 export function brandForeground(color: string): string {
-  return contrastRatio(color, BRAND_TEXT_LIGHT) >= MIN_TEXT_CONTRAST ? 'var(--brand-text-light)' : 'var(--brand-text-dark)'
+  return brandTextTone(color) === 'light' ? 'var(--brand-text-light)' : 'var(--brand-text-dark)'
 }

@@ -6,8 +6,11 @@ export interface MatchTimelineProps {
   events: MatchEventRow[]
   /** Gospodarz idzie z lewej, gość z prawej. */
   homeTeamId: number
-  /** Typy sportu — po nich oś wie, które zdarzenie nie wlicza się do klasyfikacji. */
-  types: EventTypeOption[]
+  /**
+   * Typy sportu — po nich oś wie, które zdarzenie nie wlicza się do
+   * klasyfikacji. Bez nich dopisku nie ma (#192).
+   */
+  types?: EventTypeOption[]
   /** Klik w zdarzenie; bez tego oś jest tylko do odczytu. */
   onSelect?: (event: MatchEventRow) => void
   className?: string
@@ -16,10 +19,12 @@ export interface MatchTimelineProps {
 /**
  * Oś meczu jak w relacji (#191): gospodarz z lewej, gość z prawej, minuta
  * pośrodku. Kolejność bierze z wejścia — porządek ustala API, a oś go nie
- * powtarza. Zdarzenie typu z `stat: null` (samobój) ma dopisek, że nie wlicza
- * się do klasyfikacji: należy do drużyny strzelca, a bramkę daje przeciwnikowi.
+ * powtarza. Przy podanych `types` zdarzenie typu z `stat: null` (samobój) ma
+ * dopisek, że nie wlicza się do klasyfikacji: należy do drużyny strzelca,
+ * a bramkę daje przeciwnikowi. Typ i zawodnika rozdziela odstęp, a nie
+ * kropka „·” (#192).
  */
-export function MatchTimeline({ events, homeTeamId, types, onSelect, className }: MatchTimelineProps) {
+export function MatchTimeline({ events, homeTeamId, types = [], onSelect, className }: MatchTimelineProps) {
   if (events.length === 0) {
     return <p className={cn('py-3 text-center text-sm text-muted-foreground', className)}>Brak zdarzeń.</p>
   }
@@ -35,9 +40,7 @@ export function MatchTimeline({ events, homeTeamId, types, onSelect, className }
         const note = outsideStats.has(event.type) ? ' (nie wlicza się do klasyfikacji)' : ''
         const content = (
           <>
-            <span className="font-medium">{event.typeLabel}</span>
-            <span className="text-muted-foreground"> · </span>
-            {who}
+            <span className="font-medium">{event.typeLabel}</span> {who}
             {note && <span className="text-xs text-muted-foreground">{note}</span>}
           </>
         )
