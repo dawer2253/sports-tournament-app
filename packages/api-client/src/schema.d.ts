@@ -2930,6 +2930,12 @@ export interface paths {
          *     wszystkimi meczami z terminem. Przy równym terminie (także między
          *     meczami bez terminu) rozstrzyga kolejność fazy, kolejki i
          *     `matchNumber`.
+         *
+         *     Mecz trwający niesie strzelców, którzy dochodzą w trakcie; mecz
+         *     zaplanowany ma `scorers: []` (`PublicMatch`).
+         *
+         *     Przykłady są dwa: `pilka` (domyślny) i `koszykowka`. Mock zwraca drugi
+         *     po wysłaniu nagłówka `Prefer: example=koszykowka`.
          */
         get: {
             parameters: {
@@ -2966,113 +2972,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": [
-                         *         {
-                         *           "id": 4,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 4,
-                         *             "name": "Kolejka 4",
-                         *             "order": 4
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 2,
-                         *             "name": "Sokoły Ursus",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 1,
-                         *             "name": "Wilki Bemowo",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": null,
-                         *           "awayScore": null,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "scheduled",
-                         *           "kickoffAt": "2026-09-27T10:00:00+00:00",
-                         *           "venue": {
-                         *             "id": 1,
-                         *             "name": "Boisko Bemowo"
-                         *           },
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         },
-                         *         {
-                         *           "id": 5,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 5,
-                         *             "name": "Kolejka 5",
-                         *             "order": 5
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 1,
-                         *             "name": "Wilki Bemowo",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 3,
-                         *             "name": "Orły Bielany",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": null,
-                         *           "awayScore": null,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "scheduled",
-                         *           "kickoffAt": "2026-10-04T10:00:00+00:00",
-                         *           "venue": {
-                         *             "id": 1,
-                         *             "name": "Boisko Bemowo"
-                         *           },
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         },
-                         *         {
-                         *           "id": 6,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 6,
-                         *             "name": "Kolejka 6",
-                         *             "order": 6
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 3,
-                         *             "name": "Orły Bielany",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 2,
-                         *             "name": "Sokoły Ursus",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": null,
-                         *           "awayScore": null,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "scheduled",
-                         *           "kickoffAt": "2026-10-11T10:00:00+00:00",
-                         *           "venue": null,
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         }
-                         *       ]
-                         *     }
-                         */
                         "application/json": {
-                            data: components["schemas"]["Match"][];
+                            data: components["schemas"]["PublicMatch"][];
                         };
                     };
                 };
@@ -3123,6 +3024,9 @@ export interface paths {
          *     (wynik wolno wpisać meczowi bez terminu, patrz `MatchUpdate`). Przy
          *     równym terminie (także między meczami bez terminu) rozstrzyga
          *     kolejność fazy, kolejki i `matchNumber`, malejąco — tak jak termin.
+         *
+         *     Przykłady są dwa: `pilka` (domyślny) i `koszykowka`. Mock zwraca drugi
+         *     po wysłaniu nagłówka `Prefer: example=koszykowka`.
          */
         get: {
             parameters: {
@@ -3159,116 +3063,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        /**
-                         * @example {
-                         *       "data": [
-                         *         {
-                         *           "id": 3,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 3,
-                         *             "name": "Kolejka 3",
-                         *             "order": 3
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 2,
-                         *             "name": "Sokoły Ursus",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 3,
-                         *             "name": "Orły Bielany",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": 2,
-                         *           "awayScore": 1,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "finished",
-                         *           "kickoffAt": "2026-09-20T10:00:00+00:00",
-                         *           "venue": {
-                         *             "id": 1,
-                         *             "name": "Boisko Bemowo"
-                         *           },
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         },
-                         *         {
-                         *           "id": 2,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 2,
-                         *             "name": "Kolejka 2",
-                         *             "order": 2
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 3,
-                         *             "name": "Orły Bielany",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 1,
-                         *             "name": "Wilki Bemowo",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": 0,
-                         *           "awayScore": 3,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "finished",
-                         *           "kickoffAt": "2026-09-13T10:00:00+00:00",
-                         *           "venue": {
-                         *             "id": 1,
-                         *             "name": "Boisko Bemowo"
-                         *           },
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         },
-                         *         {
-                         *           "id": 1,
-                         *           "stageId": 1,
-                         *           "groupId": null,
-                         *           "round": {
-                         *             "id": 1,
-                         *             "name": "Kolejka 1",
-                         *             "order": 1
-                         *           },
-                         *           "matchNumber": 1,
-                         *           "homeTeam": {
-                         *             "id": 1,
-                         *             "name": "Wilki Bemowo",
-                         *             "logoUrl": null
-                         *           },
-                         *           "awayTeam": {
-                         *             "id": 2,
-                         *             "name": "Sokoły Ursus",
-                         *             "logoUrl": null
-                         *           },
-                         *           "homeScore": 2,
-                         *           "awayScore": 1,
-                         *           "homePenalties": null,
-                         *           "awayPenalties": null,
-                         *           "status": "finished",
-                         *           "kickoffAt": "2026-09-06T10:00:00+00:00",
-                         *           "venue": {
-                         *             "id": 1,
-                         *             "name": "Boisko Bemowo"
-                         *           },
-                         *           "winnerToMatchId": null,
-                         *           "loserToMatchId": null,
-                         *           "advancesToSlot": null
-                         *         }
-                         *       ]
-                         *     }
-                         */
                         "application/json": {
-                            data: components["schemas"]["Match"][];
+                            data: components["schemas"]["PublicMatch"][];
                         };
                     };
                 };
@@ -3966,7 +3762,7 @@ export interface components {
         /**
          * @description Mecz widziany przez panel: kształt `Match` plus kolizje policzone przy
          *     odczycie. Kolizja to narzędzie organizatora, więc strona publiczna
-         *     oddaje dalej samo `Match`, bez tego pola.
+         *     oddaje `Match` albo `PublicMatch`, bez tego pola.
          */
         AdminMatch: components["schemas"]["Match"] & {
             /**
@@ -3975,6 +3771,59 @@ export interface components {
              *     `venue`. Liczą się też mecze `finished`.
              */
             collisions: components["schemas"]["MatchCollision"][];
+        };
+        /**
+         * @description Mecz widziany przez stronę publiczną: kształt `Match` plus strzelcy
+         *     policzeni przy odczycie (#208). Oddają go `/public/t/{slug}/fixtures`
+         *     i `/results`. Strona publiczna nie zna `SportConfig` (`GET /sports`
+         *     wymaga logowania), więc nie wie sama, które zdarzenia liczą się do
+         *     wyniku ani że samobój daje zdobycz przeciwnikowi: podsumowanie składa
+         *     serwer. `/public/t/{slug}/matches` (drabinka) zostaje przy `Match`.
+         */
+        PublicMatch: components["schemas"]["Match"] & {
+            /**
+             * @description Zawodnicy, którzy w tym meczu zdobyli coś do wyniku, po jednym
+             *     wierszu na zawodnika (samobój osobno, patrz `ownGoal`).
+             *
+             *     - Wchodzą zdarzenia typów, których `stat` to pierwszy wpis
+             *       `availableStats` sportu (piłka `goals`, kosz `points`), oraz
+             *       samobój. Kartki, faule i inne statystyki nie wchodzą.
+             *     - Zdarzenie bez zawodnika nie wchodzi.
+             *     - Liczą się mecze `live` i `finished`, więc strzelcy meczu na
+             *       żywo dochodzą w trakcie — inaczej niż w klasyfikacji
+             *       (`StatLeaderboard`), która bierze tylko mecze zakończone.
+             *       Mecz `scheduled` ma `scorers: []`.
+             *     - Kolejność: pierwsza minuta rosnąco, wiersze bez minut na
+             *       końcu, a przy równości `player.id` rosnąco.
+             */
+            scorers: components["schemas"]["PublicMatchScorer"][];
+        };
+        /** @description Jeden zawodnik w jednym meczu (`PublicMatch.scorers`). */
+        PublicMatchScorer: {
+            /**
+             * @description Drużyna strzelca, także przy samobóju — tak jak `MatchEvent.team`
+             *     (#188). Stronę, po której wiersz stoi na ekranie, wyznacza
+             *     `ownGoal`: samobój stoi po stronie przeciwnika tej drużyny.
+             */
+            team: components["schemas"]["TeamSummary"];
+            player: components["schemas"]["PlayerSummary"];
+            /**
+             * @description Suma `SportEventType.value` zdarzeń zawodnika w tym meczu, np.
+             *     5 za rzut za 2 i rzut za 3. Zdarzenie bez minuty też się wlicza.
+             */
+            value: number;
+            /**
+             * @description Minuty zdarzeń rosnąco. Zdarzenie bez minuty liczy się do
+             *     `value`, ale tu go nie ma. Gdy `minutes` ma tyle wpisów, ile
+             *     wynosi `value`, każde zdarzenie jest warte 1 i ma minutę — wtedy
+             *     ekran pokazuje minuty, w przeciwnym razie samą sumę.
+             */
+            minutes: number[];
+            /**
+             * @description Samobój. Tworzy osobny wiersz, nawet gdy ten sam zawodnik strzelił
+             *     w meczu też do bramki przeciwnika.
+             */
+            ownGoal: boolean;
         };
         StandingRow: {
             /**
