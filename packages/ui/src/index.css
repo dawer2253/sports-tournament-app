@@ -135,9 +135,12 @@
   --brand-foreground: oklch(0.9850 0.0200 156);
   --ring: oklch(0.6400 0.1400 157);
 
-  /* Semantyka */
-  --destructive: oklch(0.6200 0.1900 27);
-  --destructive-foreground: oklch(0.9850 0.0100 27);
+  /* Semantyka — czerwień niesie tu tekst na ciemnych powierzchniach („Na żywo”,
+     błędy pól, przycisk usuwania na `destructive/20`), więc jest jaśniejsza,
+     a tekst na niej ciemny, jak przy `primary`. Każda z tych par ma ≥ 4.5,
+     pilnuje tego story „Fundamenty/Kontrast stanu destructive”. */
+  --destructive: oklch(0.7400 0.1500 27);
+  --destructive-foreground: oklch(0.1700 0.0300 27);
 
   /* Herb zastępczy — rozjaśniony, żeby nie zlewał się z ciemnym tłem */
   --crest: oklch(0.5600 0.0600 55);

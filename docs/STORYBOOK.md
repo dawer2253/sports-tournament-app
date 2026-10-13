@@ -60,7 +60,8 @@ których trzymamy się przy każdej zmianie (szczegóły: „Fundamenty / Design
 3. **Wielobarwność tylko w danych** — `--chart-1…5` wyłącznie na wykresach/statystykach.
 
 Podmieniając paletę, zachowaj `@theme inline`, sekcję custom variants oraz kontrast AA
-(tekst na `--primary` / `--destructive`). Bazowy `--radius: 0.375rem` (kanciasto).
+(tekst na `--primary` / `--destructive`, a także `--destructive` jako tekst na ciemnych
+powierzchniach — pilnuje tego story „Fundamenty / Kontrast stanu destructive”). Bazowy `--radius: 0.375rem` (kanciasto).
 
 ## Uwaga: custom variants
 Komponenty `radix-nova` wymagają wariantów `data-horizontal`, `data-vertical`, `data-active`
