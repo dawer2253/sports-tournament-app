@@ -74,7 +74,7 @@ export function BracketSummary<M extends BracketMatch>({ matches, penaltySlot, t
             >
               <span className={cn('flex min-w-0 items-center gap-1.5', isCurrent && 'font-semibold text-foreground')}>
                 <span className="truncate">{round.name}</span>
-                {round.live && (
+                {isCurrent && round.live && (
                   <>
                     <span aria-hidden className="size-1.5 shrink-0 animate-pulse rounded-full bg-destructive" />
                     <span className="sr-only">, trwa mecz</span>

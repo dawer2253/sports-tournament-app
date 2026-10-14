@@ -5,6 +5,7 @@ import {
   bracketTree,
   currentRoundOrder,
   matchLabel,
+  THIRD_PLACE_LABEL,
   type BracketMatch,
   type BracketTreeRound,
 } from '../../lib/bracket'
@@ -337,7 +338,7 @@ function TreeColumns<M extends BracketMatch>({
             className="absolute inset-x-0 truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
             style={{ top: thirdTop, lineHeight: `${THIRD_LABEL_HEIGHT}px` }}
           >
-            Mecz o 3. miejsce
+            {THIRD_PLACE_LABEL}
           </p>,
         )
         children.push(<React.Fragment key="third">{tile(round.third, { top: thirdTop + THIRD_LABEL_HEIGHT })}</React.Fragment>)
