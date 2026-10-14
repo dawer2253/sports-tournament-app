@@ -1,5 +1,4 @@
-import { Button } from '@tournament/ui';
-import type { PublicNavKey } from '@tournament/ui/components/layout/public-shell.tsx';
+import { Button, type PublicNavKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { tabHref, useTournament } from './tournament-layout';

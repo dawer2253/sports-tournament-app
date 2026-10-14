@@ -234,7 +234,6 @@ export function BracketTree<M extends BracketMatch>({
       >
         <TreeColumns
           rounds={visible}
-          isLast={!hasNext}
           hasNext={hasNext}
           columns={columns}
           champion={champion}
@@ -251,7 +250,6 @@ export function BracketTree<M extends BracketMatch>({
 
 function TreeColumns<M extends BracketMatch>({
   rounds,
-  isLast,
   hasNext,
   columns,
   champion,
@@ -262,8 +260,6 @@ function TreeColumns<M extends BracketMatch>({
   onMatchNavigate,
 }: {
   rounds: BracketTreeRound<M>[]
-  /** Czy ostatnia kolumna okna to finał. */
-  isLast: boolean
   hasNext: boolean
   columns: React.CSSProperties
   champion: ReturnType<typeof bracketChampion>
@@ -271,7 +267,8 @@ function TreeColumns<M extends BracketMatch>({
   const first = rounds[0]!.slots.length
   const last = rounds.length - 1
   // Pod finałem, od góry: mistrz i mecz o 3. miejsce z podpisem.
-  const finalRound = isLast ? rounds[last]! : null
+  // Za ostatnią kolumną okna nie ma rundy, więc to finał.
+  const finalRound = hasNext ? null : rounds[last]!
   const championTop = center(last, 0) + BRACKET_TILE_HEIGHT / 2 + UNDER_FINAL_GAP
   const thirdTop = championTop + (champion ? BRACKET_TILE_HEIGHT + UNDER_FINAL_GAP : 0)
   const underFinal = !finalRound ? 0 : finalRound.third ? thirdTop + THIRD_LABEL_HEIGHT + BRACKET_TILE_HEIGHT : thirdTop

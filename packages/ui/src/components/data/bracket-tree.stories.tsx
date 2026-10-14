@@ -102,6 +102,7 @@ export const KartaPoFinale: StoryObj<typeof BracketSummary> = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('status')).toHaveTextContent('Zwycięzca pucharu')
     await expect(canvas.getByRole('group', { name: /^Finał:/ })).toBeInTheDocument()
-    await expect(canvasElement.querySelector('li[aria-current]')).toBeNull()
+    // Po finale bieżąca jest ostatnia runda, ta sama, na której kończy się okno Drabinki.
+    await expect(canvasElement.querySelector('li[aria-current="step"]')).toHaveTextContent('Finał')
   },
 }

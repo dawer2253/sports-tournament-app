@@ -104,6 +104,11 @@ krok, więc czerwona funkcja `play` robi go czerwonym
 blokuje to tylko wtedy, gdy „Frontend" jest wymaganym sprawdzeniem w ochronie
 gałęzi `main` — to ustawienie repo, nie tego pliku.
 
+Ta sama komenda puszcza też drugi projekt vitesta, `unit` (node, pliki
+`src/**/*.test.ts`), z testami czystych reguł design systemu, np. odczytu
+drabinki w `src/lib/bracket.test.ts` (#234). Sam ten projekt:
+`npx vitest run --project unit`.
+
 ### Testy E2E
 
 Cienka suita dymna w `e2e/` (osobny workspace, bo test dotyka dwóch aplikacji

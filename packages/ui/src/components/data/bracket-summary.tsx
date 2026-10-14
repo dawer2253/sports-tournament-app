@@ -61,7 +61,7 @@ export function BracketSummary<M extends BracketMatch>({ matches, penaltySlot, t
       )}
       <ol aria-label="Rundy drabinki" className="space-y-1.5">
         {bracketRoundSummaries(matches).map((round) => {
-          const isCurrent = round.order === current && !champion
+          const isCurrent = round.order === current
           const done = round.finished === round.total
           return (
             <li

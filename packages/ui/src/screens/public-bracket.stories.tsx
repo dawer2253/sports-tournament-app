@@ -156,7 +156,9 @@ export const SzescDruzyn: Story = {
     const finalColumn = within(finals)
     const final = finalColumn.getByRole('link', { name: /^Finał:/ })
     const third = finalColumn.getByRole('link', { name: /^Mecz o 3\. miejsce:/ })
-    await expect(finals.querySelectorAll('[data-slot="bracket-tile"]')).toHaveLength(2)
+    // Kolumna finału ma jeden kafel na swoim miejscu; drugi to mecz o 3. miejsce pod nim.
+    const finalColumnTiles = [...finals.querySelectorAll('[data-slot="bracket-tile"]')]
+    await expect(finalColumnTiles.filter((tile) => tile !== third)).toEqual([final])
     await expect(rect(third).top).toBeGreaterThan(rect(final).bottom)
     await expect(rect(third).left).toBeCloseTo(rect(final).left, 0)
     await expect(finalColumn.getByText('Mecz o 3. miejsce')).toBeInTheDocument()
