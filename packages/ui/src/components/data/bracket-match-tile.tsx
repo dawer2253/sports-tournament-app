@@ -226,7 +226,7 @@ export function BracketChampionTile({ team, className, style }: { team: BracketT
       className={cn('flex flex-col justify-center rounded-lg bg-brand px-2.5 text-brand-foreground', className)}
       style={{ height: BRACKET_TILE_HEIGHT, ...style }}
     >
-      <span className="line-clamp-2 text-sm leading-[18px] font-bold break-words">
+      <span data-slot="bracket-champion-name" className="line-clamp-2 text-sm leading-[18px] font-bold break-words">
         {team.name}
       </span>
       <span className="flex items-center gap-1 text-[11px] leading-[14px] text-brand-foreground/80">

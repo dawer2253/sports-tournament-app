@@ -32,6 +32,7 @@ export interface ScoreInputsProps {
  * Blok wyniku meczu: dwa pola `0–999` rozdzielone dwukropkiem, z jednym
  * komunikatem błędu pod całością. Oba pola dzielą opis błędu
  * (`aria-describedby`), więc czytnik ekranu przeczyta go przy każdym z nich.
+ * Z `errorId` komunikat rysuje rodzic, a blok tylko wiąże z nim pola.
  */
 export function ScoreInputs({
   homeValue,

@@ -205,10 +205,7 @@ export const TelefonPoFinale: Story = {
     await expect(window.innerWidth).toBe(375)
     await waitFor(() => expect(columns(canvasElement)).toHaveLength(2))
     const champion = await canvas.findByRole('status')
-    // Nazwa to jedyny liść karty poza podpisem.
-    const name = [...champion.querySelectorAll<HTMLElement>('span')].find(
-      (span) => span.children.length === 0 && span.textContent !== 'Zwycięzca pucharu',
-    )!
+    const name = champion.querySelector<HTMLElement>('[data-slot="bracket-champion-name"]')!
     await expect(name.scrollHeight).toBeLessThanOrEqual(name.clientHeight)
     await expect(name.scrollWidth).toBeLessThanOrEqual(name.clientWidth)
     await expect(champion.scrollHeight).toBeLessThanOrEqual(champion.clientHeight)
