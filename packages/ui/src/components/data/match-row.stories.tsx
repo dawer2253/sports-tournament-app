@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleTimeZone, scheduleUndated } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
-import { expectTextFits, phone375 } from '../../test/viewport'
+import { expectTextFits, phone375, textFitProblems } from '../../test/viewport'
 import { MatchRow } from './match-row'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
@@ -410,51 +410,62 @@ export const PucharNaTelefonie: Story = {
   },
 }
 
-/**
- * Najciaśniejszy wiersz strony publicznej (#239): telefon 375 px, odnośnik
- * ze strzałką i pole wyniku z miejscem na karne. Nazwy do 20 znaków
- * i podpisy pustych slotów łamią się na drugą linię zamiast dostać
- * wielokropek, a pole wyniku zostaje stałej szerokości i w jednej kolumnie.
- */
-export const PucharDlugieNazwyNaTelefonie: Story = {
-  ...phone375,
-  render: () => (
-    // Szerokość treści strony publicznej przy 375 px (`main` z `px-4`), także
-    // w Vitest, gdzie story nie dostaje marginesu układu `padded`.
-    <div className="w-[343px] max-w-full space-y-2">
-      {[
-        cupRow(921, {
-          homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów' },
-          awayTeam: { id: 32, name: 'Jastrzębie Białołęka' },
-          homeScore: 1,
-          awayScore: 1,
-          homePenalties: 4,
-          awayPenalties: 3,
-        }),
-        cupRow(922, {
-          homeTeam: { id: 33, name: 'Gepardy Śródmieście' },
-          awayTeam: { id: 34, name: 'Nosorożce Targówek' },
-          bracket: { label: 'Półfinał 2', penaltySlot: true },
-        }),
-        cupRow(923, {
-          ...scheduled,
-          id: 923,
-          homeTeam: null,
-          awayTeam: null,
-          bracket: { label: 'Mecz o 3. miejsce', homeSource: 'Przegrany: Półfinał 1', awaySource: 'Przegrany: Półfinał 2', penaltySlot: true },
-        }),
-        cupRow(924, {
-          ...scheduled,
-          id: 924,
-          homeTeam: null,
-          awayTeam: null,
-          bracket: { label: 'Finał', homeSource: 'Zwycięzca: Półfinał 1', awaySource: 'Zwycięzca: Półfinał 2', penaltySlot: true },
-        }),
-      ].map((match) => (
+/** Wiersze pucharu z nazwami do 20 znaków i podpisami pustych slotów (#239), także trwający. */
+const longCupRows: MatchRowData[] = [
+  cupRow(921, {
+    homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów' },
+    awayTeam: { id: 32, name: 'Jastrzębie Białołęka' },
+    homeScore: 1,
+    awayScore: 1,
+    homePenalties: 4,
+    awayPenalties: 3,
+  }),
+  cupRow(922, {
+    ...live,
+    id: 922,
+    homeTeam: { id: 33, name: 'Gepardy Śródmieście' },
+    awayTeam: { id: 34, name: 'Nosorożce Targówek' },
+    bracket: { label: 'Półfinał 2', penaltySlot: true },
+  }),
+  cupRow(923, {
+    ...scheduled,
+    id: 923,
+    homeTeam: null,
+    awayTeam: null,
+    bracket: { label: 'Mecz o 3. miejsce', homeSource: 'Przegrany: Półfinał 1', awaySource: 'Przegrany: Półfinał 2', penaltySlot: true },
+  }),
+  cupRow(924, {
+    ...scheduled,
+    id: 924,
+    homeTeam: null,
+    awayTeam: null,
+    bracket: { label: 'Finał', homeSource: 'Zwycięzca: Półfinał 1', awaySource: 'Zwycięzca: Półfinał 2', penaltySlot: true },
+  }),
+]
+
+/** Wiersze jak na stronie publicznej: odnośniki ze strzałką, oznaczony tylko mecz trwający. */
+function LongCupRows({ className }: { className?: string }) {
+  return (
+    <div className={cn('space-y-2', className)}>
+      {longCupRows.map((match) => (
         <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" href={`/t/puchar/mecze/${match.id}`} />
       ))}
     </div>
-  ),
+  )
+}
+
+/**
+ * Najciaśniejszy wiersz Terminarza i Wyników strony publicznej (#239):
+ * telefon 375 px, odnośnik ze strzałką i pole wyniku z miejscem na karne.
+ * Nazwy do 20 znaków i podpisy pustych slotów łamią się na drugą linię
+ * zamiast dostać wielokropek, a pole wyniku zostaje stałej szerokości
+ * i w jednej kolumnie.
+ */
+export const PucharDlugieNazwyNaTelefonie: Story = {
+  ...phone375,
+  // Szerokość treści strony publicznej przy 375 px (`main` z `px-4`), także
+  // w Vitest, gdzie story nie dostaje marginesu układu `padded`.
+  render: () => <LongCupRows className="w-[343px] max-w-full" />,
   play: async ({ canvasElement }) => {
     await expect(window.innerWidth).toBe(375)
     await expectColumns(canvasElement, 3)
@@ -464,6 +475,33 @@ export const PucharDlugieNazwyNaTelefonie: Story = {
       await expect(box.left).toBeCloseTo(boxes[0]!.left, 1)
       await expect(box.width).toBeCloseTo(boxes[0]!.width, 1)
     }
+  },
+}
+
+/**
+ * Te same wiersze w każdej szerokości od karty Przeglądu na telefonie
+ * (319 px: 375 bez marginesów strony i paddingu karty `PublicSection`) po
+ * szeroki Terminarz (#239). Nazwy mieszczą się w dwóch liniach bez łamania
+ * słów, a górna linia (etykieta, termin, „Na żywo”, strzałka) nie wystaje.
+ * „Próg układu” wyżej pilnuje tylko szerokości nazw w lidze; tu liczy się
+ * to, czy tekst się mieści, bo karne i strzałka zabierają nazwom miejsce.
+ */
+export const ProgUkladuPuchar: Story = {
+  render: () => <LongCupRows className="w-[319px]" />,
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const container = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!.parentElement!.parentElement!
+    const problems: string[] = []
+    for (let width = 319; width <= 1024; width += 8) {
+      container.style.width = `${width}px`
+      for (const name of canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-team"]')) {
+        problems.push(...textFitProblems(name).map((problem) => `${width}px: ${problem}`))
+      }
+      for (const row of canvasElement.querySelectorAll('[data-slot="match-row"]')) {
+        if (row.scrollWidth > row.clientWidth) problems.push(`${width}px: wiersz wystaje`)
+      }
+    }
+    await expect(problems).toEqual([])
   },
 }
 
