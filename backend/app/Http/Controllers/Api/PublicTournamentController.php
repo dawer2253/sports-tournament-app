@@ -70,13 +70,8 @@ class PublicTournamentController extends Controller
      */
     public function stageMatches(ShowStageMatchesRequest $request): JsonResponse
     {
-        $matches = $this->matches($request->tournament())
+        $matches = $this->matchesByKickoff($request->tournament(), 'asc')
             ->where('matches.stage_id', $request->stageId())
-            ->orderByRaw('matches.kickoff_at IS NULL')
-            ->orderBy('matches.kickoff_at')
-            ->orderBy('rounds.order')
-            ->orderBy('matches.match_number')
-            ->orderBy('matches.id')
             ->get();
 
         return response()->json([
@@ -116,10 +111,9 @@ class PublicTournamentController extends Controller
     }
 
     /**
-     * Mecze turnieju w stanach `$statuses`, po terminie w kierunku `$direction`;
-     * mecz bez terminu zawsze na końcu. Remis terminu rozstrzyga kolejność
-     * fazy, kolejki i numeru meczu, w tym samym kierunku co termin. Strzelców
-     * całej listy wczytuje jedno zapytanie o zdarzenia (#208).
+     * Mecze turnieju w stanach `$statuses`, po terminie w kierunku `$direction`
+     * (`matchesByKickoff`). Strzelców całej listy wczytuje jedno zapytanie
+     * o zdarzenia (#208).
      *
      * @param  list<string>  $statuses
      * @param  'asc'|'desc'  $direction
@@ -129,15 +123,9 @@ class PublicTournamentController extends Controller
         $tournament = Tournament::findPublishedBySlug($slug);
         $sport = $tournament->sport;
 
-        $matches = $this->matches($tournament)
+        $matches = $this->matchesByKickoff($tournament, $direction)
             ->with(MatchScorers::eagerLoad($sport))
             ->whereIn('matches.status', $statuses)
-            ->orderByRaw('matches.kickoff_at IS NULL')
-            ->orderBy('matches.kickoff_at', $direction)
-            ->orderBy('stages.order', $direction)
-            ->orderBy('rounds.order', $direction)
-            ->orderBy('matches.match_number', $direction)
-            ->orderBy('matches.id', $direction)
             ->get();
 
         return response()->json([
@@ -147,12 +135,23 @@ class PublicTournamentController extends Controller
 
     /**
      * Mecze turnieju przez jego relację (przez fazy), więc mecz innego turnieju
-     * nie ma jak tu trafić. `rounds` dochodzi złączeniem tylko do sortowania.
+     * nie ma jak tu trafić. Kolejność to kolejność list strony publicznej: po
+     * terminie w kierunku `$direction`, mecz bez terminu zawsze na końcu,
+     * a remis terminu rozstrzyga kolejność fazy, kolejki i numeru meczu,
+     * w tym samym kierunku. `rounds` dochodzi złączeniem tylko do sortowania.
+     *
+     * @param  'asc'|'desc'  $direction
      */
-    private function matches(Tournament $tournament): HasManyThrough
+    private function matchesByKickoff(Tournament $tournament, string $direction): HasManyThrough
     {
         return $tournament->matches()
             ->join('rounds', 'rounds.id', '=', 'matches.round_id')
-            ->with(['round', 'homeTeam', 'awayTeam', 'venue']);
+            ->with(['round', 'homeTeam', 'awayTeam', 'venue'])
+            ->orderByRaw('matches.kickoff_at IS NULL')
+            ->orderBy('matches.kickoff_at', $direction)
+            ->orderBy('stages.order', $direction)
+            ->orderBy('rounds.order', $direction)
+            ->orderBy('matches.match_number', $direction)
+            ->orderBy('matches.id', $direction);
     }
 }

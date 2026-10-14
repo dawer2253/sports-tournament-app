@@ -18,6 +18,11 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 class IndexMatchesRequest extends FormRequest
 {
+    /** Brak id fazy; tak samo mówi lista meczów fazy na stronie publicznej (`ShowStageMatchesRequest`). */
+    public const STAGE_ID_REQUIRED = 'Podaj id fazy.';
+
+    public const STAGE_ID_INTEGER = 'Id fazy musi być liczbą całkowitą.';
+
     /**
      * `required` przy `sometimes` łapie pusty parametr (`?status=`), który
      * globalny `ConvertEmptyStringsToNull` zamienia wcześniej na `null`.
@@ -39,8 +44,8 @@ class IndexMatchesRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stageId.required' => 'Podaj id fazy.',
-            'stageId.integer' => 'Id fazy musi być liczbą całkowitą.',
+            'stageId.required' => self::STAGE_ID_REQUIRED,
+            'stageId.integer' => self::STAGE_ID_INTEGER,
             'roundId.required' => 'Podaj id kolejki.',
             'roundId.integer' => 'Id kolejki musi być liczbą całkowitą.',
             'status.required' => 'Podaj stan meczu. Dozwolone: '.implode(', ', GameMatch::STATUSES).'.',

@@ -8,6 +8,8 @@ import {
   formatRoundDates,
   isThirdPlaceMatch,
   matchLabel,
+  otherSide,
+  teamOn,
   type BracketMatchRowData,
   type BracketScore,
   type BracketSlot,
@@ -35,7 +37,7 @@ export interface BracketRound {
 }
 
 function slot(match: AdminMatch, side: 'home' | 'away', matches: readonly AdminMatch[]): BracketSlot {
-  const team = side === 'home' ? match.homeTeam : match.awayTeam;
+  const team = teamOn(match, side);
   return { team: team && { id: team.id, name: team.name }, source: bracketSlotSource(match, side, matches) };
 }
 
@@ -134,8 +136,7 @@ export function advanceNote(original: AdminMatch, draft: BracketScore, matches: 
   const teamOf = (match: AdminMatch, score: BracketScore, role: 'winner' | 'loser') => {
     const winner = bracketWinnerSide(score);
     if (winner === null) return null;
-    const side = role === 'winner' ? winner : winner === 'home' ? 'away' : 'home';
-    return side === 'home' ? match.homeTeam : match.awayTeam;
+    return teamOn(match, role === 'winner' ? winner : otherSide(winner));
   };
 
   const moves = (

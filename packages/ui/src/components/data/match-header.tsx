@@ -150,9 +150,7 @@ export function MatchHeader({ match, sport, brandColor, timeZone, className }: M
   const score =
     scheduled || match.homeScore === null || match.awayScore === null ? '– : –' : `${match.homeScore} : ${match.awayScore}`
   const penalties = !scheduled && match.homePenalties != null && match.awayPenalties != null
-  const winner = penalties
-    ? bracketWinnerSide({ ...match, homePenalties: match.homePenalties!, awayPenalties: match.awayPenalties! })
-    : null
+  const winner = bracketWinnerSide(match)
   const scoreLabel = penalties ? `Wynik ${score}, karne ${match.homePenalties} : ${match.awayPenalties}` : `Wynik ${score}`
 
   return (

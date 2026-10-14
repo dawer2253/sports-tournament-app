@@ -71,8 +71,11 @@ export type BracketScore = {
  * Strona zwycięzcy meczu zakończonego: z wyniku, a przy remisie z karnych.
  * `null`, dopóki mecz nie jest zakończony albo nie ma rozstrzygnięcia.
  */
-export function bracketWinnerSide(match: BracketScore): 'home' | 'away' | null {
-  const { status, homeScore, awayScore, homePenalties, awayPenalties } = match
+export function bracketWinnerSide(
+  match: Omit<BracketScore, 'homePenalties' | 'awayPenalties'> & Partial<Pick<BracketScore, 'homePenalties' | 'awayPenalties'>>,
+): 'home' | 'away' | null {
+  // Karne bywają nieobecne (wiersz ligi w `MatchRowData`), co znaczy to samo co `null`.
+  const { status, homeScore, awayScore, homePenalties = null, awayPenalties = null } = match
   if (status !== 'finished' || homeScore === null || awayScore === null) return null
   if (homeScore !== awayScore) return homeScore > awayScore ? 'home' : 'away'
   if (homePenalties === null || awayPenalties === null || homePenalties === awayPenalties) return null
@@ -128,14 +131,36 @@ export function isThirdPlaceMatch(match: { id: number }, matches: readonly Brack
   return matches.some((candidate) => candidate.loserToMatchId === match.id)
 }
 
+/** Drużyna w slocie meczu po stronie `side`; bez strony (np. bez zwycięzcy) `null`. */
+export function teamOn<T>(match: { homeTeam: T | null; awayTeam: T | null }, side: BracketSide | null): T | null {
+  return side === 'home' ? match.homeTeam : side === 'away' ? match.awayTeam : null
+}
+
+/** Druga strona meczu: tam stoi przegrany, gdy po `side` stoi zwycięzca. */
+export function otherSide(side: BracketSide): BracketSide {
+  return side === 'home' ? 'away' : 'home'
+}
+
+/** Mecz, którego krawędź zwycięzcy albo przegranego prowadzi do slotu `side` meczu `match` (ADR-0004). */
+function feeder<M extends BracketMatch>(
+  match: BracketMatch,
+  side: BracketSide,
+  edge: 'winnerToMatchId' | 'loserToMatchId',
+  matches: readonly M[],
+): M | undefined {
+  return matches.find((source) => source[edge] === match.id && source.advancesToSlot === side)
+}
+
 /**
  * Etykieta pozycji meczu, której nie ma w danych: „Półfinał 1”, „Finał”,
  * „Mecz o 3. miejsce”. Numer to pozycja w pełnej drabince, więc w pierwszej
- * rundzie ma dziury po wolnych losach i tak zostaje w etykiecie.
+ * rundzie ma dziury po wolnych losach i tak zostaje w etykiecie. Finał to
+ * mecz ostatniej rundy poza meczem o 3. miejsce — z położenia, a nie
+ * z `round.name`, tak jak krótka nazwa rundy.
  */
 export function matchLabel(match: BracketMatch, matches: readonly BracketMatch[]): string {
   if (isThirdPlaceMatch(match, matches)) return THIRD_PLACE_LABEL
-  return match.round.name === 'Finał' ? 'Finał' : `${match.round.name} ${match.matchNumber}`
+  return match.round.order === roundsCount(matches) ? 'Finał' : `${match.round.name} ${match.matchNumber}`
 }
 
 /**
@@ -144,9 +169,9 @@ export function matchLabel(match: BracketMatch, matches: readonly BracketMatch[]
  * (1. runda, wolny los).
  */
 export function bracketSlotSource(match: BracketMatch, side: BracketSide, matches: readonly BracketMatch[]): string | undefined {
-  const winner = matches.find((source) => source.winnerToMatchId === match.id && source.advancesToSlot === side)
+  const winner = feeder(match, side, 'winnerToMatchId', matches)
   if (winner) return `Zwycięzca: ${matchLabel(winner, matches)}`
-  const loser = matches.find((source) => source.loserToMatchId === match.id && source.advancesToSlot === side)
+  const loser = feeder(match, side, 'loserToMatchId', matches)
   if (loser) return `Przegrany: ${matchLabel(loser, matches)}`
   return undefined
 }
@@ -207,7 +232,7 @@ export function bracketTeamsInPlay(matches: readonly BracketMatch[]): { inPlay: 
     for (const team of [match.homeTeam, match.awayTeam]) if (team) teams.add(team.id)
     if (isThirdPlaceMatch(match, matches)) continue
     const winner = bracketWinnerSide(match)
-    const loser = winner === 'home' ? match.awayTeam : winner === 'away' ? match.homeTeam : null
+    const loser = winner && teamOn(match, otherSide(winner))
     if (loser) out.add(loser.id)
   }
   return { inPlay: teams.size - out.size, total: teams.size }
@@ -233,9 +258,8 @@ export function bracketByes<M extends BracketMatch>(matches: readonly M[]): Brac
     .filter((match) => match.round.order === 2 && !isThirdPlaceMatch(match, matches))
     .flatMap((match) =>
       (['home', 'away'] as const).flatMap((side) => {
-        const team = side === 'home' ? match.homeTeam : match.awayTeam
-        const fed = matches.some((source) => source.winnerToMatchId === match.id && source.advancesToSlot === side)
-        if (!team || fed) return []
+        const team = teamOn(match, side)
+        if (!team || feeder(match, side, 'winnerToMatchId', matches)) return []
         const position = side === 'home' ? 2 * match.matchNumber - 1 : 2 * match.matchNumber
         return [{ team: { id: team.id, name: team.name }, target: match, side, position }]
       }),
@@ -253,8 +277,7 @@ export function bracketFinal<M extends BracketMatch>(matches: readonly M[]): M |
 export function bracketChampion(matches: readonly BracketMatch[]): BracketTeam | null {
   const final = bracketFinal(matches)
   if (!final) return null
-  const side = bracketWinnerSide(final)
-  const team = side === 'home' ? final.homeTeam : side === 'away' ? final.awayTeam : null
+  const team = teamOn(final, bracketWinnerSide(final))
   return team && { id: team.id, name: team.name }
 }
 

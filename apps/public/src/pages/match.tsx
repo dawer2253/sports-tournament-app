@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { usePublicMatch } from '../lib/queries';
 import { QueryState } from './query-state';
 import { tabHref, useTournament } from './tournament-layout';
-import { useBracket, withBracket } from './use-bracket';
+import { useBracket } from './use-bracket';
 
 /**
  * Strona meczu (#210): powrót, pas i relacja, w tej kolejności także na
@@ -46,7 +46,7 @@ export function MatchPage() {
         {back === 'fixtures' ? 'Terminarz' : 'Wyniki'}
       </BackLink>
       <MatchHeader
-        match={withBracket(match.data, bracket.stage?.id ?? null, bracket.matches.data, bracket.penaltySlot)}
+        match={bracket.withBracket(match.data)}
         sport={sport.code}
         brandColor={branding.primaryColor}
       />

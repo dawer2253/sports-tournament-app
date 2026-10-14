@@ -1,7 +1,7 @@
 // Publiczne wejście pakietu. Aplikacje importują stąd, a nie z głębokich ścieżek.
 // Style motywu doładowuje się osobno: import '@tournament/ui/styles.css'.
 
-export { cn } from './lib/utils';
+export { cn, isModifiedClick } from './lib/utils';
 export * from './lib/bracket';
 export * from './lib/contrast';
 export * from './lib/kickoff';

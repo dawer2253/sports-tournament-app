@@ -1,3 +1,4 @@
+import { cva } from 'class-variance-authority'
 import { Trophy } from 'lucide-react'
 import type * as React from 'react'
 import { bracketWinnerSide, type BracketMatch, type BracketTeam } from '../../lib/bracket'
@@ -7,6 +8,22 @@ import { Penalties } from './penalties'
 
 /** Wysokość kafla w drzewie; pozycje i łączniki liczą się od niej. */
 export const BRACKET_TILE_HEIGHT = 52
+
+/** Pusty slot: skąd przyjdzie drużyna, pokazują łączniki drzewa. */
+const EMPTY_SLOT = 'Do ustalenia'
+
+/**
+ * Szare pole wyniku: w sporcie z remisem zawsze z miejscem na karne, więc
+ * tej samej szerokości w każdym kaflu, a w koszu węższe.
+ */
+const scoreField = cva('flex shrink-0 flex-col justify-center border-l bg-muted/40 px-1.5 tabular-nums', {
+  variants: { penaltySlot: { true: 'w-14', false: 'w-11' } },
+})
+
+/** Linia wyniku jednej drużyny: kolumna karnych i kolumna wyniku albo sam wynik. */
+const scoreLine = cva('grid h-5 items-center justify-end gap-0.5 leading-5', {
+  variants: { penaltySlot: { true: 'grid-cols-[1.375rem_1.25rem]', false: 'grid-cols-[1.75rem]' } },
+})
 
 type Outcome = 'won' | 'lost' | null
 
@@ -26,7 +43,7 @@ function TeamLine({ team, outcome }: { team: BracketTeam | null; outcome: Outcom
         outcome === 'lost' && 'text-muted-foreground',
       )}
     >
-      {team?.name ?? 'Do ustalenia'}
+      {team?.name ?? EMPTY_SLOT}
     </span>
   )
 }
@@ -51,10 +68,7 @@ function ScoreLine({
 }) {
   return (
     <span
-      className={cn(
-        'grid h-5 items-center justify-end gap-0.5 leading-5',
-        penaltySlot ? 'grid-cols-[1.375rem_1.25rem]' : 'grid-cols-[1.75rem]',
-      )}
+      className={scoreLine({ penaltySlot })}
     >
       {penaltySlot && (
         <Penalties
@@ -112,7 +126,7 @@ export function BracketMatchTile({ match, label, penaltySlot, href, onNavigate, 
   const outcome = (side: 'home' | 'away'): Outcome => (winner === null ? null : winner === side ? 'won' : 'lost')
   const live = match.status === 'live'
   const kickoff = formatKickoffParts(match.kickoffAt, timeZone)
-  const name = `${label}: ${match.homeTeam?.name ?? 'Do ustalenia'} – ${match.awayTeam?.name ?? 'Do ustalenia'}`
+  const name = `${label}: ${match.homeTeam?.name ?? EMPTY_SLOT} – ${match.awayTeam?.name ?? EMPTY_SLOT}`
 
   const content = (
     <>
@@ -123,10 +137,7 @@ export function BracketMatchTile({ match, label, penaltySlot, href, onNavigate, 
       </span>
       <span
         data-slot="bracket-tile-score"
-        className={cn(
-          'flex shrink-0 flex-col justify-center border-l bg-muted/40 px-1.5 tabular-nums',
-          penaltySlot ? 'w-14' : 'w-11',
-        )}
+        className={scoreField({ penaltySlot })}
       >
         {match.status === 'scheduled' ? (
           <span className="flex flex-col items-end text-[11px] leading-4 text-muted-foreground">

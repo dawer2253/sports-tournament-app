@@ -1,11 +1,11 @@
 import { AlertTriangle, Check, ChevronRight, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { bracketWinnerSide } from '../../lib/bracket'
+import { cva } from 'class-variance-authority'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn, isModifiedClick } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
-import { Penalties } from './penalties'
+import { PenaltyScore } from './penalties'
 import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
 import { scorerSides } from './scorer-lines'
 import { ScorerList } from './scorer-list'
@@ -40,11 +40,33 @@ import { ScorerList } from './scorer-list'
  * pole zawsze trzyma miejsce na karne (#234). Szerokość zależy od sportu
  * i fazy, a nie od meczu, więc w jednej rundzie wynik stoi wszędzie tak samo.
  */
-const ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
+const rowGrid = cva('grid items-center gap-x-3 gap-y-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm', {
+  variants: {
+    penaltySlot: {
+      false:
+        'grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+      true: 'grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+    },
+  },
+})
 
-const PENALTY_ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
+/**
+ * Pole wyniku: puste „– : –” z ramką, a z wynikiem pełne, w kolorze stanu
+ * „na żywo” przy meczu trwającym. Z miejscem na karne ma trzy kolumny.
+ */
+const scoreField = cva('w-full rounded-md px-1 py-1 text-center text-sm tabular-nums', {
+  variants: {
+    state: {
+      empty: 'border text-muted-foreground',
+      live: 'bg-destructive font-semibold text-destructive-foreground',
+      done: 'bg-foreground font-semibold text-background',
+    },
+    penaltySlot: {
+      false: '',
+      true: 'grid grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] items-baseline gap-x-0.5',
+    },
+  },
+})
 
 const STATUS_BADGE: Record<
   MatchRowData['status'],
@@ -106,28 +128,14 @@ export function CollisionBadge({ collisions, className }: { collisions: MatchCol
 function Score({ match }: { match: MatchRowData }) {
   const hasScore = match.homeScore !== null && match.awayScore !== null
   const penaltySlot = match.bracket?.penaltySlot ?? false
-  const winner = bracketWinnerSide({
-    ...match,
-    homePenalties: match.homePenalties ?? null,
-    awayPenalties: match.awayPenalties ?? null,
-  })
   const score = hasScore ? `${match.homeScore} : ${match.awayScore}` : '– : –'
   return (
     <span
       data-slot="match-score"
-      className={cn(
-        'w-full rounded-md px-1 py-1 text-center text-sm tabular-nums',
-        penaltySlot && 'grid grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] items-baseline gap-x-0.5',
-        hasScore ? 'font-semibold' : 'border text-muted-foreground',
-        hasScore && (match.status === 'live' ? 'bg-destructive text-destructive-foreground' : 'bg-foreground text-background'),
-      )}
+      className={scoreField({ state: !hasScore ? 'empty' : match.status === 'live' ? 'live' : 'done', penaltySlot })}
     >
       {penaltySlot ? (
-        <>
-          <Penalties value={match.homePenalties} won={winner === 'home'} className="text-right text-[11px]" />
-          <span>{score}</span>
-          <Penalties value={match.awayPenalties} won={winner === 'away'} className="text-left text-[11px]" />
-        </>
+        <PenaltyScore match={match} score={score} penaltyClassName="text-[11px]" />
       ) : (
         score
       )}
@@ -266,7 +274,7 @@ export function MatchRow({
     </>
   )
 
-  const grid = cn(match.bracket?.penaltySlot ? PENALTY_ROW_GRID : ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm')
+  const grid = rowGrid({ penaltySlot: match.bracket?.penaltySlot ?? false })
   const interactive = cn(
     'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',

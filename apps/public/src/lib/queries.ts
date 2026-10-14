@@ -56,7 +56,10 @@ export const useStandings = (slug: string, enabled = true) =>
 export const useStageMatches = (slug: string, stageId: number | null) =>
   usePublicQuery(
     ['public', slug, 'matches', stageId],
-    () => unwrap(api.GET('/public/t/{slug}/matches', { params: { path: { slug }, query: { stageId: stageId ?? 0 } } })),
+    () =>
+      stageId === null
+        ? Promise.resolve([])
+        : unwrap(api.GET('/public/t/{slug}/matches', { params: { path: { slug }, query: { stageId } } })),
     stageId !== null,
   );
 

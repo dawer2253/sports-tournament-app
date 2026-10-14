@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Public;
 
+use App\Http\Requests\Matches\IndexMatchesRequest;
 use App\Models\Tournament;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -40,8 +41,8 @@ class ShowStageMatchesRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'stageId.required' => 'Podaj id fazy.',
-            'stageId.integer' => 'Id fazy musi być liczbą całkowitą.',
+            'stageId.required' => IndexMatchesRequest::STAGE_ID_REQUIRED,
+            'stageId.integer' => IndexMatchesRequest::STAGE_ID_INTEGER,
         ];
     }
 

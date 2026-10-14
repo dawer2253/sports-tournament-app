@@ -1,10 +1,19 @@
+import { cva } from 'class-variance-authority'
 import { Trophy } from 'lucide-react'
 import { bracketWinnerSide } from '../../lib/bracket'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
 import type { BracketMatchRowData, BracketSlot } from './bracket-match-row-data'
 import { MatchStatusBadge } from './match-row'
-import { Penalties } from './penalties'
+import { PenaltyScore } from './penalties'
+
+/** Pole wyniku: puste z ramką albo wypełnione; w sporcie z remisem o stałej szerokości, z kolumnami na karne. */
+const scoreField = cva('rounded-md px-2 py-0.5 text-center tabular-nums', {
+  variants: {
+    empty: { true: 'border text-muted-foreground', false: 'bg-muted font-semibold' },
+    penaltySlot: { true: 'grid w-28 grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] items-baseline gap-x-1', false: '' },
+  },
+})
 
 function SlotName({ slot, outcome, align }: { slot: BracketSlot; outcome: 'won' | 'lost' | null; align: 'start' | 'end' }) {
   return (
@@ -68,18 +77,10 @@ export function BracketMatchRow({ match, timeZone, onSelect, penaltySlot = false
       <SlotName slot={match.home} outcome={outcome('home')} align="end" />
       <span
         data-slot="bracket-score"
-        className={cn(
-          'rounded-md px-2 py-0.5 text-center tabular-nums',
-          penaltySlot && 'grid w-28 grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] items-baseline gap-x-1',
-          match.homeScore === null ? 'border text-muted-foreground' : 'bg-muted font-semibold',
-        )}
+        className={scoreField({ empty: match.homeScore === null, penaltySlot })}
       >
         {penaltySlot ? (
-          <>
-            <Penalties value={match.homePenalties} won={winner === 'home'} className="text-right text-xs" />
-            <span>{score}</span>
-            <Penalties value={match.awayPenalties} won={winner === 'away'} className="text-left text-xs" />
-          </>
+          <PenaltyScore match={match} score={score} penaltyClassName="text-xs" />
         ) : (
           score
         )}

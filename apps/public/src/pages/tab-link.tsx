@@ -1,4 +1,4 @@
-import { Button, type PublicNavKey } from '@tournament/ui';
+import { Button, isModifiedClick, type PublicNavKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { tabHref, useTournament } from './tournament-layout';
@@ -17,7 +17,7 @@ export function TabLink({ tab, children }: { tab: PublicNavKey; children: ReactN
       <a
         href={href}
         onClick={(event) => {
-          if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          if (isModifiedClick(event)) return;
           event.preventDefault();
           void navigate(href);
         }}
