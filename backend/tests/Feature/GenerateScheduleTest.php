@@ -195,6 +195,23 @@ it('przy pierwszym generowaniu nie blokuje kolejek innych faz', function () {
     expect(anotherConnectionCanAppendRound())->toBeTrue();
 });
 
+// Deadlock przy regeneracji zostaje i ponawia go transakcja. Cztery nieudane
+// próby z pięciu — liczba z docblocku `ScheduleGenerator::generate()`.
+it('po deadlocku przy regeneracji ponawia transakcję i układa jeden terminarz', function () {
+    outsideTestTransaction(function () {
+        $stage = leagueWithTeams(4);
+        generateSchedule($stage, 2)->assertValidResponse(201);
+        failWithDeadlock('insert into `matches`', 4);
+
+        generateSchedule($stage, 1)
+            ->assertValidResponse(201)
+            ->assertJsonPath('data', ['roundsCount' => 3, 'matchesCount' => 6]);
+
+        expect($stage->rounds()->count())->toBe(3)
+            ->and($stage->matches()->count())->toBe(6);
+    });
+});
+
 it('nie rusza terminarza innej fazy', function () {
     $stage = leagueWithTeams(4);
     $other = GameMatch::factory()->create();
