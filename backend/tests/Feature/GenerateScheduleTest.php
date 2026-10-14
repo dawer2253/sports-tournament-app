@@ -187,6 +187,14 @@ it('zastępuje cały poprzedni terminarz fazy, razem z terminami i obiektami', f
         ->and($stage->matches()->where(fn ($query) => $query->whereNotNull('kickoff_at')->orWhereNotNull('venue_id'))->exists())->toBeFalse();
 });
 
+// Kasowanie pustego terminarza zakładało blokadę szczeliny na końcu `rounds`
+// i dwa pierwsze generowania w różnych turniejach kończyły się deadlockiem.
+it('przy pierwszym generowaniu nie blokuje kolejek innych faz', function () {
+    generateSchedule(leagueWithTeams(4), 1)->assertValidResponse(201);
+
+    expect(anotherConnectionCanAppendRound())->toBeTrue();
+});
+
 it('nie rusza terminarza innej fazy', function () {
     $stage = leagueWithTeams(4);
     $other = GameMatch::factory()->create();

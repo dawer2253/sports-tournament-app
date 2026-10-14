@@ -3,8 +3,10 @@
 use App\Models\Sport;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
@@ -123,4 +125,38 @@ function softDeleteTeamLeavingPlayers(Team $team): void
     Team::withoutEvents(fn () => $team->delete());
 
     expect($team->players()->withTrashed()->whereNull('deleted_at')->exists())->toBeTrue();
+}
+
+/**
+ * Czy drugie połączenie wstawi kolejkę na samym końcu indeksu `rounds`, póki
+ * transakcja testu trzyma blokady tego, co test zrobił przed chwilą. Koniec
+ * indeksu to miejsce, w które trafiają kolejki każdej nowej fazy, więc
+ * blokada szczeliny w tym miejscu zderza ze sobą generowania w niezależnych
+ * turniejach (deadlock z E2E przy trzech workerach). Faza o tym id nie
+ * istnieje, dlatego sonda wyłącza u siebie klucze obce; czeka najwyżej
+ * sekundę i niczego nie zostawia.
+ */
+function anotherConnectionCanAppendRound(): bool
+{
+    config(['database.connections.probe' => config('database.connections.'.DB::getDefaultConnection())]);
+    $probe = DB::connection('probe');
+    $probe->statement('SET SESSION innodb_lock_wait_timeout = 1');
+    $probe->statement('SET SESSION foreign_key_checks = 0');
+    $probe->beginTransaction();
+
+    try {
+        $probe->table('rounds')->insert(['stage_id' => 4_294_967_295, 'name' => 'Sonda', 'order' => 1]);
+
+        return true;
+    } catch (QueryException $e) {
+        // 1205: „Lock wait timeout exceeded”.
+        if (($e->errorInfo[1] ?? null) !== 1205) {
+            throw $e;
+        }
+
+        return false;
+    } finally {
+        $probe->rollBack();
+        DB::purge('probe');
+    }
 }
