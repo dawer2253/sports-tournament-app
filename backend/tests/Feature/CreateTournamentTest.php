@@ -38,7 +38,7 @@ it('zakłada turniej jako szkic zalogowanego organizera', function () {
         ->assertJsonPath('data.name', 'Liga Osiedlowa 2026')
         ->assertJsonPath('data.slug', 'liga-osiedlowa-2026')
         ->assertJsonPath('data.status', 'draft')
-        ->assertJsonPath('data.sport', ['id' => sport('football')->id, 'code' => 'football', 'name' => 'Piłka nożna'])
+        ->assertJsonPath('data.sport', ['id' => sport('football')->id, 'code' => 'football', 'name' => 'Piłka nożna', 'allowsDraw' => true])
         ->assertJsonPath('data.teamsCount', 0)
         // Kolor marki z przykładu w kontrakcie — ten sam, który stoi w demo.
         ->assertJsonPath('data.branding', ['logoUrl' => null, 'primaryColor' => '#1F7A45']);

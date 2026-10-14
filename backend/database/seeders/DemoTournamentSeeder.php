@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Matches\Advancement;
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use App\Models\Player;
@@ -11,11 +12,14 @@ use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\User;
 use App\Models\Venue;
+use App\Schedule\BracketGenerator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 
 /**
  * Turniej demo: „Liga Osiedlowa 2026" pod `/t/liga-osiedlowa-2026`, a obok
- * niego, od #176, „Liga Koszykówki 2026" pod `/t/liga-koszykowki-2026`.
+ * niego, od #176, „Liga Koszykówki 2026" pod `/t/liga-koszykowki-2026` i, od
+ * #234, „Puchar Osiedlowy 2026" pod `/t/puchar-osiedlowy-2026`.
  *
  * To te same turnieje, które serwuje mock kontraktu — dane są przepisane
  * z przykładów w `packages/api-contract/openapi.yaml`, żeby `apps/public`
@@ -151,6 +155,37 @@ class DemoTournamentSeeder extends Seeder
     private const BASKETBALL_FOULS_PER_TEAM = 3;
 
     /**
+     * Drużyny pucharu w kolejności rozstawienia, jak w przykładzie `puchar`
+     * (seedy 1–6 to tam id 1–6). Sześć drużyn daje drabinkę na osiem, więc
+     * Wilki i Sokoły mają wolny los i stoją od razu w półfinałach.
+     */
+    private const CUP_SEEDING = ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Rysie Wola', 'Żubry Praga', 'Niedźwiedzie Mokotów'];
+
+    /**
+     * Terminy meczów pucharu (UTC): [runda, numer meczu w rundzie, termin].
+     * Mecz o 3. miejsce (finał, numer 2) gra przed finałem.
+     */
+    private const CUP_KICKOFFS = [
+        [1, 2, '2026-10-04 10:00:00'],
+        [1, 4, '2026-10-04 12:00:00'],
+        [2, 1, '2026-10-11 10:00:00'],
+        [2, 2, '2026-10-11 12:00:00'],
+        [3, 1, '2026-10-18 12:00:00'],
+        [3, 2, '2026-10-18 10:00:00'],
+    ];
+
+    /**
+     * Rozegrane mecze pucharu w kolejności gry: [runda, numer, bramki
+     * gospodarza, bramki gościa, karne gospodarza, karne gościa]. Półfinał 2,
+     * finał i mecz o 3. miejsce czekają w terminarzu.
+     */
+    private const CUP_RESULTS = [
+        [1, 2, 2, 2, 4, 3],
+        [1, 4, 1, 0, null, null],
+        [2, 1, 3, 1, null, null],
+    ];
+
+    /**
      * Składy: drużyna => [nazwisko, numer, pozycja]. Kolejność ma znaczenie —
      * wyznacza id, a te padają w przykładach `GET /teams/{team}/players`
      * i `GET /public/t/{slug}/leaderboard`.
@@ -276,6 +311,79 @@ class DemoTournamentSeeder extends Seeder
         }
 
         $this->seedBasketball($organizer);
+        $this->seedCup($organizer);
+    }
+
+    /**
+     * Trzeci turniej demo: puchar piłkarski tego samego organizera (#234),
+     * przepisany z przykładu `puchar` w `GET /public/t/{slug}/matches`.
+     * Drabinkę układa `BracketGenerator` z meczem o 3. miejsce, a wyniki idą
+     * przez `Advancement`, więc sloty półfinałów, finału i meczu o 3. miejsce
+     * wypełnia awans, a nie seed. Składów i zdarzeń puchar nie ma.
+     */
+    private function seedCup(User $organizer): void
+    {
+        $football = Sport::firstWhere('code', 'football');
+
+        $tournament = Tournament::updateOrCreate(
+            ['slug' => 'puchar-osiedlowy-2026'],
+            [
+                'user_id' => $organizer->id,
+                'sport_id' => $football->id,
+                'name' => 'Puchar Osiedlowy 2026',
+                'logo_path' => null,
+                'primary_color' => '#1F7A45',
+                'points' => $football->defaultPoints(),
+                'tiebreakers' => $football->defaultTiebreakers(),
+                'match_duration' => $football->defaultMatchDuration(),
+                'period_count' => $football->defaultPeriods()['count'],
+                'period_minutes' => $football->defaultPeriods()['minutes'],
+                'status' => 'active',
+            ],
+        );
+
+        $tournament->stages()->delete();
+
+        $stage = $tournament->stages()->create([
+            'type' => 'knockout',
+            'name' => 'Faza pucharowa',
+            'order' => 1,
+        ]);
+
+        $venue = Venue::updateOrCreate(
+            ['tournament_id' => $tournament->id, 'name' => 'Boisko Bemowo'],
+            ['address' => 'ul. Powstańców Śląskich 1, Warszawa'],
+        );
+
+        $teamIds = array_map(
+            fn (string $name): int => Team::updateOrCreate(
+                ['tournament_id' => $tournament->id, 'name' => $name],
+                ['group_id' => null, 'logo_path' => null],
+            )->id,
+            self::CUP_SEEDING,
+        );
+
+        app(BracketGenerator::class)->generate($stage, $teamIds, thirdPlaceMatch: true);
+
+        $match = fn (int $order, int $number): GameMatch => GameMatch::query()
+            ->where('stage_id', $stage->id)
+            ->where('match_number', $number)
+            ->whereHas('round', fn (Builder $round): Builder => $round->where('order', $order))
+            ->firstOrFail();
+
+        foreach (self::CUP_KICKOFFS as [$order, $number, $kickoff]) {
+            $match($order, $number)->update(['kickoff_at' => $kickoff, 'venue_id' => $venue->id]);
+        }
+
+        foreach (self::CUP_RESULTS as [$order, $number, $homeScore, $awayScore, $homePenalties, $awayPenalties]) {
+            app(Advancement::class)->save($match($order, $number), [
+                'status' => 'finished',
+                'home_score' => $homeScore,
+                'away_score' => $awayScore,
+                'home_penalties' => $homePenalties,
+                'away_penalties' => $awayPenalties,
+            ], 'homeScore');
+        }
     }
 
     /**

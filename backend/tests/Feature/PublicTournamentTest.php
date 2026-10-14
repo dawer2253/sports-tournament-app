@@ -129,7 +129,7 @@ it('oddaje turniej opublikowany w kształcie PublicTournament', function (string
         ->assertJsonPath('data.name', 'Liga Osiedlowa 2026')
         ->assertJsonPath('data.slug', $tournament->slug)
         ->assertJsonPath('data.status', $status)
-        ->assertJsonPath('data.sport', ['id' => sport('football')->id, 'code' => 'football', 'name' => 'Piłka nożna'])
+        ->assertJsonPath('data.sport', ['id' => sport('football')->id, 'code' => 'football', 'name' => 'Piłka nożna', 'allowsDraw' => true])
         ->assertJsonPath('data.branding', ['logoUrl' => null, 'primaryColor' => '#1F7A45'])
         ->assertJsonPath('data.stages.*.name', ['Faza zasadnicza'])
         ->assertJsonPath('data.stats', [

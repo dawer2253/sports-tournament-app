@@ -31,6 +31,7 @@ Route::prefix('/public/t/{slug}')->middleware(AddHttpValidators::class)->group(f
     Route::get('/standings', [PublicTournamentController::class, 'standings']);
     Route::get('/fixtures', [PublicTournamentController::class, 'fixtures']);
     Route::get('/results', [PublicTournamentController::class, 'results']);
+    Route::get('/matches', [PublicTournamentController::class, 'stageMatches']);
     Route::get('/matches/{match}', [PublicTournamentController::class, 'match']);
     Route::get('/leaderboard', [PublicTournamentController::class, 'leaderboard']);
 });

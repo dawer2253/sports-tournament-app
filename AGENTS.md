@@ -55,7 +55,10 @@ npm run storybook     # design system na :6006
 
 Mecze mają w kontrakcie trzy przykłady: ligowy (domyślny), pucharowy i
 koszykarski. Żeby mock oddał drabinkę, dołóż do żądania nagłówek
-`Prefer: example=puchar`. Osobny przełącznik, `Prefer: example=koszykowka`,
+`Prefer: example=puchar` — obsługują go listy meczów panelu i strony
+publicznej oraz publiczne `/public/t/{slug}`, `/fixtures` i `/results`, więc
+strona publiczna pokazuje wtedy puchar z Drabinką. Ten puchar ma odpowiednik
+w seedzie demo (`puchar-osiedlowy-2026`). Osobny przełącznik, `Prefer: example=koszykowka`,
 oddaje turniej koszykarski — obsługują go publiczne tabele,
 `/public/t/{slug}` **i** publiczne `/fixtures` i `/results` (strzelcy
 z sumami rzutów), a w panelu turniej, terminarz, tabela i zdarzenia meczu

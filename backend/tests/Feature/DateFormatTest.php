@@ -142,6 +142,18 @@ it('oddaje terminy meczów z terminarza i wyników strony publicznej w +00:00', 
     'wyniki' => ['/results', 'finished'],
 ]);
 
+it('oddaje terminy meczów fazy strony publicznej w +00:00', function () {
+    $tournament = Tournament::factory()->create(['status' => 'active']);
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    GameMatch::factory()->for($round)->create(['kickoff_at' => '2026-10-25 09:00:00']);
+
+    $response = $this->getJson("/api/v1/public/t/{$tournament->slug}/matches?stageId={$round->stage_id}")
+        ->assertOk()
+        ->assertJsonPath('data.0.kickoffAt', '2026-10-25T09:00:00+00:00');
+
+    expectEveryDateInUtc($response, ['data.0.kickoffAt']);
+});
+
 it('oddaje termin meczu ze strony meczu w +00:00', function () {
     $tournament = Tournament::factory()->create(['status' => 'active']);
     $round = Round::factory()->for(Stage::factory()->for($tournament))->create();

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Public\ShowLeaderboardRequest;
+use App\Http\Requests\Public\ShowStageMatchesRequest;
+use App\Http\Resources\MatchResource;
 use App\Http\Resources\PublicMatchDetailResource;
 use App\Http\Resources\PublicMatchResource;
 use App\Http\Resources\PublicTournamentResource;
@@ -56,6 +58,30 @@ class PublicTournamentController extends Controller
     public function results(string $slug): JsonResponse
     {
         return $this->matchList($slug, GameMatch::RESULT_STATUSES, 'desc');
+    }
+
+    /**
+     * Komplet meczów jednej fazy w każdym stanie, także bez obu drużyn (#234):
+     * widok drabinki buduje z niego odwrotny indeks krawędzi (ADR-0004).
+     * Kształt `Match`, a nie `PublicMatch`, bo drabinka nie pokazuje
+     * strzelców. Mecze idą przez relację turnieju, więc faza innego turnieju
+     * daje puste `data`, a nie cudze mecze. Kolejność jak w terminarzu:
+     * rosnąco po terminie, mecz bez terminu na końcu.
+     */
+    public function stageMatches(ShowStageMatchesRequest $request): JsonResponse
+    {
+        $matches = $this->matches($request->tournament())
+            ->where('matches.stage_id', $request->stageId())
+            ->orderByRaw('matches.kickoff_at IS NULL')
+            ->orderBy('matches.kickoff_at')
+            ->orderBy('rounds.order')
+            ->orderBy('matches.match_number')
+            ->orderBy('matches.id')
+            ->get();
+
+        return response()->json([
+            'data' => $matches->map(fn (GameMatch $match): array => (new MatchResource($match))->resolve())->all(),
+        ]);
     }
 
     /**

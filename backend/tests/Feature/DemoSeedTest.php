@@ -216,9 +216,9 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
     // seedera), więc pilnujemy, że stare nie zostało obok: po jednej fazie
     // i po dwa rozegrane mecze na turniej.
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
-        ->and(Stage::query()->count())->toBe(2)
-        ->and(Round::query()->count())->toBe(8)
-        ->and(GameMatch::query()->count())->toBe(8)
+        ->and(Stage::query()->count())->toBe(3)
+        ->and(Round::query()->count())->toBe(11)
+        ->and(GameMatch::query()->count())->toBe(14)
         ->and($demo->matches()->count())->toBe(6);
 });
 
@@ -298,4 +298,61 @@ it('sieje demo obok turnieju organizera, który zajął najniższe id', function
         ->and($demo->stages()->count())->toBe(1)
         ->and($other->stages()->pluck('id')->all())->toBe([1])
         ->and($other->matches()->pluck('matches.id')->all())->toBe([1]);
+});
+
+/**
+ * Mecze fazy jako napisy bez id: krawędź wskazuje mecz docelowy jego
+ * pozycją (`runda.numer`), bo id w bazie testowej nie wracają do jedynki.
+ *
+ * @param  list<array<string, mixed>>  $matches  `Match` z kontraktu
+ * @return list<string>
+ */
+function demoSeedCupMatches(array $matches): array
+{
+    $position = fn (?int $id): string => $id === null ? '–' : (function () use ($matches, $id): string {
+        $target = collect($matches)->firstWhere('id', $id);
+
+        return "{$target['round']['order']}.{$target['matchNumber']}";
+    })();
+
+    return collect($matches)
+        ->sortBy(fn (array $match): string => sprintf('%02d.%02d', $match['round']['order'], $match['matchNumber']))
+        ->map(fn (array $match): string => implode(' | ', [
+            "{$match['round']['name']} ({$match['round']['order']}) {$match['matchNumber']}",
+            ($match['homeTeam']['name'] ?? '–').' – '.($match['awayTeam']['name'] ?? '–'),
+            "{$match['status']} ".json_encode([$match['homeScore'], $match['awayScore'], $match['homePenalties'], $match['awayPenalties']]),
+            (string) $match['kickoffAt'],
+            "zwycięzca → {$position($match['winnerToMatchId'])}, przegrany → {$position($match['loserToMatchId'])}, {$match['advancesToSlot']}",
+        ]))
+        ->values()
+        ->all();
+}
+
+it('sieje puchar zgodny z przykładem puchar meczów fazy', function () {
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $promised = $spec['paths']['/public/t/{slug}/matches']['get']['responses']['200']['content']['application/json']['examples']['puchar']['value']['data'];
+
+    $tournament = Tournament::firstWhere('slug', 'puchar-osiedlowy-2026');
+    $stage = $tournament->stages()->sole();
+
+    $actual = $this->getJson("/api/v1/public/t/puchar-osiedlowy-2026/matches?stageId={$stage->id}")->assertOk()->json('data');
+
+    expect($tournament->name)->toBe('Puchar Osiedlowy 2026')
+        ->and($tournament->status)->toBe('active')
+        ->and($tournament->sport->code)->toBe('football')
+        ->and($stage->type)->toBe('knockout')
+        ->and($tournament->teams()->count())->toBe(6)
+        ->and(demoSeedCupMatches($actual))->toBe(demoSeedCupMatches($promised))
+        ->and(MatchEvent::query()->whereIn('match_id', array_column($actual, 'id'))->count())->toBe(0);
+});
+
+it('nie dubluje pucharu przy powtórnym seedowaniu', function () {
+    $this->seed();
+
+    $tournament = Tournament::firstWhere('slug', 'puchar-osiedlowy-2026');
+
+    expect(Tournament::query()->where('slug', 'puchar-osiedlowy-2026')->count())->toBe(1)
+        ->and($tournament->stages()->count())->toBe(1)
+        ->and($tournament->teams()->count())->toBe(6)
+        ->and($tournament->matches()->count())->toBe(6);
 });
