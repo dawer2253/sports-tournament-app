@@ -211,21 +211,27 @@ export function BracketByeTile({ team, className, style }: { team: BracketTeam; 
   )
 }
 
-/** Mistrz pod finałem w drzewie: karta na akcencie marki, wysoka jak kafel. */
+/**
+ * Mistrz pod finałem w drzewie: karta na akcencie marki, wysoka jak kafel.
+ * Puchar stoi małą ikoną przy podpisie, a nie w osobnym kwadracie, bo przy
+ * dwóch kolumnach na telefonie kwadrat zjadał jedną trzecią szerokości i ucinał
+ * nazwę mistrza już przy 15 znakach. Nazwa łamie się na dwie linie, zanim
+ * dostanie wielokropek: 2 × 18 px nazwy i 14 px podpisu mieszczą się w 52 px.
+ */
 export function BracketChampionTile({ team, className, style }: { team: BracketTeam; className?: string; style?: React.CSSProperties }) {
   return (
     <div
       role="status"
       data-slot="bracket-champion"
-      className={cn('flex items-center gap-2.5 rounded-lg bg-brand px-2.5 text-brand-foreground', className)}
+      className={cn('flex flex-col justify-center rounded-lg bg-brand px-2.5 text-brand-foreground', className)}
       style={{ height: BRACKET_TILE_HEIGHT, ...style }}
     >
-      <span className="grid size-8 shrink-0 place-items-center rounded-md bg-brand-foreground/15">
-        <Trophy aria-hidden className="size-4" />
+      <span className="line-clamp-2 text-sm leading-[18px] font-bold break-words">
+        {team.name}
       </span>
-      <span className="min-w-0">
-        <span className="block h-5 truncate text-sm leading-5 font-bold">{team.name}</span>
-        <span className="block text-[11px] leading-4 text-brand-foreground/80">Zwycięzca pucharu</span>
+      <span className="flex items-center gap-1 text-[11px] leading-[14px] text-brand-foreground/80">
+        <Trophy aria-hidden className="size-3 shrink-0" />
+        Zwycięzca pucharu
       </span>
     </div>
   )
