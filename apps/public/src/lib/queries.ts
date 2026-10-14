@@ -22,8 +22,9 @@ async function unwrap<T>(request: Promise<Envelope<T>>): Promise<T> {
   return data.data;
 }
 
-function usePublicQuery<T>(queryKey: readonly unknown[], queryFn: () => Promise<T>) {
-  return useQuery({ queryKey, queryFn, refetchInterval: POLL_INTERVAL_MS });
+/** `enabled: false` wstrzymuje i pierwsze żądanie, i odpytywanie. */
+function usePublicQuery<T>(queryKey: readonly unknown[], queryFn: () => Promise<T>, enabled = true) {
+  return useQuery({ queryKey, queryFn, refetchInterval: POLL_INTERVAL_MS, enabled });
 }
 
 const path = (slug: string) => ({ params: { path: { slug } } });
@@ -43,8 +44,21 @@ export const usePublicTournament = (slug: string) =>
     }),
   );
 
-export const useStandings = (slug: string) =>
-  usePublicQuery(['public', slug, 'standings'], () => unwrap(api.GET('/public/t/{slug}/standings', path(slug))));
+/** Tabele; puchar ich nie ma, więc nie pyta (`enabled: false`). */
+export const useStandings = (slug: string, enabled = true) =>
+  usePublicQuery(['public', slug, 'standings'], () => unwrap(api.GET('/public/t/{slug}/standings', path(slug))), enabled);
+
+/**
+ * Komplet meczów fazy w każdym stanie (#234), z którego Drabinka buduje
+ * drzewo, a Terminarz, Wyniki, Przegląd i strona meczu liczą etykiety
+ * pozycji. Bez fazy (`null`) zapytanie nie idzie.
+ */
+export const useStageMatches = (slug: string, stageId: number | null) =>
+  usePublicQuery(
+    ['public', slug, 'matches', stageId],
+    () => unwrap(api.GET('/public/t/{slug}/matches', { params: { path: { slug }, query: { stageId: stageId ?? 0 } } })),
+    stageId !== null,
+  );
 
 export const useFixtures = (slug: string) =>
   usePublicQuery(['public', slug, 'fixtures'], () => unwrap(api.GET('/public/t/{slug}/fixtures', path(slug))));

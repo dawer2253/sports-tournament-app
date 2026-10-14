@@ -4,6 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from '../lib/api';
 import {
   SLUG,
+  asPublic,
+  cup,
+  cupMatches,
   detail,
   finished,
   match,
@@ -265,5 +268,52 @@ describe('brak meczu i odpytywanie', () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
     await waitFor(() => expect(requests.match).toBe(2));
+  });
+});
+
+describe('mecz pucharowy (#234)', () => {
+  /** Puchar czterech drużyn: półfinał 1 rozstrzygnięty karnymi, półfinał 2 bez nich, mecz o 3. miejsce przed nami. */
+  const matches = cupMatches(
+    { teams: 4, progress: { round: 1, finished: 2 } },
+    { 1001: { homeScore: 2, awayScore: 2, homePenalties: 4, awayPenalties: 3 }, 1002: { homeScore: 1, awayScore: 0 } },
+  );
+  const page = (id: number) => ({ ...asPublic(matches.find((match) => match.id === id)!), events: [], periods: [] });
+
+  it('rozstrzygnięty karnymi ma je w pasie przy wyniku, pogrubione u zwycięzcy', async () => {
+    publicApi({ data: cup(), stageMatches: matches, matches: [page(1001)] });
+    renderAt(`/t/${SLUG}/mecze/1001`);
+
+    const band = within(await screen.findByRole('region', { name: /^Mecz: / }));
+    expect(await band.findByText('Półfinał 1')).toBeInTheDocument();
+    expect(band.getByLabelText('Wynik 2 : 2, karne 4 : 3')).toBeInTheDocument();
+    expect(band.getByText('(4)')).toHaveClass('font-bold');
+    expect(band.getByText('(3)')).not.toHaveClass('font-bold');
+  });
+
+  it('bez karnych nie ma nawiasów', async () => {
+    publicApi({ data: cup(), stageMatches: matches, matches: [page(1002)] });
+    renderAt(`/t/${SLUG}/mecze/1002`);
+
+    const region = await screen.findByRole('region', { name: /^Mecz: / });
+    expect(await within(region).findByText('Półfinał 2')).toBeInTheDocument();
+    expect(region).not.toHaveTextContent('(');
+  });
+
+  it('mecz o 3. miejsce ma w pasie „Mecz o 3. miejsce”, a nie „Finał”', async () => {
+    publicApi({ data: cup(), stageMatches: matches, matches: [page(2002)] });
+    renderAt(`/t/${SLUG}/mecze/2002`);
+
+    const band = within(await screen.findByRole('region', { name: /^Mecz: / }));
+    expect(await band.findByText('Mecz o 3. miejsce')).toBeInTheDocument();
+    expect(band.queryByText('Finał')).not.toBeInTheDocument();
+  });
+
+  it('mecz ligi zostaje przy nazwie kolejki i nie pyta o mecze fazy', async () => {
+    const requests = publicApi({ matches: [detail(1)] });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(band(1).getByText('Kolejka 1')).toBeInTheDocument();
+    expect(requests.stageMatches).toEqual([]);
   });
 });

@@ -4,6 +4,7 @@ import { CalendarDays } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { matchHref, useTournament } from './tournament-layout';
+import { useBracketRows } from './use-bracket';
 
 /**
  * Mecze pogrupowane po kolejce w kolejności faz z `stages` turnieju — ta sama
@@ -12,10 +13,12 @@ import { matchHref, useTournament } from './tournament-layout';
  */
 export function useRounds(matches: PublicMatch[] | undefined, direction: 'asc' | 'desc') {
   const { stages } = useTournament();
+  // W pucharze wiersze niosą etykietę pozycji, karne i podpisy pustych slotów (#234).
+  const rows = useBracketRows(matches);
   return useMemo(() => {
     const stageOrder = new Map(stages.map((stage) => [stage.id, stage.order]));
-    return groupByRound(matches ?? [], { direction, stageOrder: (id) => stageOrder.get(id) ?? id });
-  }, [matches, direction, stages]);
+    return groupByRound(rows ?? [], { direction, stageOrder: (id) => stageOrder.get(id) ?? id });
+  }, [rows, direction, stages]);
 }
 
 /**

@@ -110,7 +110,7 @@ describe('trasa turnieju', () => {
 
   it('nieznana podtrasa daje stronę 404 pod nagłówkiem turnieju', async () => {
     publicApi();
-    renderAt(`/t/${SLUG}/drabinka`);
+    renderAt(`/t/${SLUG}/kalendarz`);
 
     expect(await screen.findByText('Nie ma takiej strony')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1, name: 'Liga Osiedlowa 2026' })).toBeInTheDocument();
@@ -170,13 +170,13 @@ describe('odpytywanie', () => {
       renderAt(`/t/${SLUG}`);
       await screen.findByRole('region', { name: 'Tabela (skrót)' });
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0 }),
+        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0, stageMatches: [] }),
       );
 
       await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0 }),
+        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0, stageMatches: [] }),
       );
     },
   );

@@ -8,6 +8,7 @@ import type {
   StatLeaderboard,
 } from '@tournament/api-client';
 import type {
+  BracketMatch,
   Leaderboard,
   MatchInRound,
   MatchPageData,
@@ -38,6 +39,11 @@ export const contractFitsShell: ContractFitsShell = true;
 type ContractFitsMatch = Match extends MatchInRound ? true : never;
 
 export const contractFitsMatch: ContractFitsMatch = true;
+
+/** Mecz fazy z kontraktu daje się podać regułom i drzewu drabinki (`BracketTree`, #234). */
+type ContractFitsBracketMatch = Match extends BracketMatch ? true : never;
+
+export const contractFitsBracketMatch: ContractFitsBracketMatch = true;
 
 /** Mecz strony publicznej ze strzelcami daje się pokazać w `MatchRow` i `LiveMatchTile` (#208). */
 type ContractFitsPublicMatch = PublicMatch extends MatchInRound ? true : never;

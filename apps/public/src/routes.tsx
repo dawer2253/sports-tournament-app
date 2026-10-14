@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import { BracketPage } from './pages/bracket';
 import { FixturesPage } from './pages/fixtures';
 import { MatchPage } from './pages/match';
 import { NotFoundPage } from './pages/not-found';
@@ -12,7 +13,6 @@ import { TournamentLayout, type TabHandle } from './pages/tournament-layout';
 /**
  * Drzewo tras strony publicznej, osobno od `main.tsx`: testy renderują
  * dokładnie to drzewo w routerze pamięciowym. Trasy po polsku (#192).
- * Drabinka (S4) dołoży tu swoje.
  */
 export const routes: RouteObject[] = [
   {
@@ -34,6 +34,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <OverviewPage />, handle: { tab: 'home' } satisfies TabHandle },
       { path: 'tabela', element: <StandingsPage />, handle: { tab: 'standings' } satisfies TabHandle },
+      { path: 'drabinka', element: <BracketPage />, handle: { tab: 'bracket' } satisfies TabHandle },
       { path: 'terminarz', element: <FixturesPage />, handle: { tab: 'fixtures' } satisfies TabHandle },
       { path: 'wyniki', element: <ResultsPage />, handle: { tab: 'results' } satisfies TabHandle },
       { path: 'statystyki', element: <StatsPage />, handle: { tab: 'stats' } satisfies TabHandle },
