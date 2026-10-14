@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleTimeZone, scheduleUndated } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
 import { expectTextFits, phone375, textFitProblems } from '../../test/viewport'
+import { PublicSection } from '../layout/public-section'
 import { MatchRow } from './match-row'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
@@ -475,6 +476,30 @@ export const PucharDlugieNazwyNaTelefonie: Story = {
       await expect(box.left).toBeCloseTo(boxes[0]!.left, 1)
       await expect(box.width).toBeCloseTo(boxes[0]!.width, 1)
     }
+  },
+}
+
+/**
+ * Przegląd na telefonie 375 px (#239): te same wiersze w prawdziwej karcie
+ * sekcji, której padding zjada nazwom miejsce. Zmiana paddingu karty albo
+ * wiersza, przez którą nazwy z DoD znów się nie mieszczą, wywraca to story.
+ */
+export const PucharWKarciePrzegladuNaTelefonie: Story = {
+  ...phone375,
+  // Szerokość treści strony publicznej przy 375 px, także w Vitest bez marginesu `padded`.
+  render: () => (
+    <div className="w-[343px] max-w-full">
+      <PublicSection title="Najbliższe mecze">
+        {longCupRows.map((match) => (
+          <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" href={`/t/puchar/mecze/${match.id}`} />
+        ))}
+      </PublicSection>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(window.innerWidth).toBe(375)
+    await expectColumns(canvasElement, 3)
+    await expectTextFits([...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-team"]')])
   },
 }
 
