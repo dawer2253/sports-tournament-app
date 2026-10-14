@@ -61,8 +61,11 @@ kto z kim gra w każdej rundzie. W pucharze Drabinka zastępuje Terminarz.
 - Przy istniejącej drabince okno ma tytuł „Rozstaw i wygeneruj ponownie”,
   czerwone ostrzeżenie o zastąpieniu razem z terminami i przycisk „Zastąp
   drabinkę”, bez osobnego kroku potwierdzenia.
-- Rozstawienie nie jest przechowywane, więc okno zawsze startuje od kolejności
-  drużyn z listy.
+- Rozstawienie nie jest przechowywane. Pierwsze generowanie startuje od
+  kolejności drużyn z listy, a ponowne od rozstawienia odczytanego z obecnej
+  drabinki (pozycje 1. rundy i wolne losy), z drużynami dodanymi po
+  generowaniu na końcu. Przełącznik meczu o 3. miejsce startuje od tego, czy
+  obecna drabinka go ma (#239).
 - Wybrana runda siedzi w adresie (`?round=`, po `order`); po generowaniu
   parametr znika i otwiera się runda 1.
 - Nad kartami rund stoją podpowiedzi: brak dat z „Rozłóż daty” i drużyna
