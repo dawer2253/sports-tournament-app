@@ -17,7 +17,7 @@ import {
   toast,
 } from '@tournament/ui';
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { MatchEventsSection } from '../components/match-events-section';
 import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
@@ -121,6 +121,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   const [venueId, setVenueId] = useState(match.venue ? String(match.venue.id) : NO_VENUE);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
   const [formError, setFormError] = useState<string>();
+  const scoreErrorId = useId();
+  const penaltiesErrorId = useId();
   const [scheduleOpen, setScheduleOpen] = useState(match.status === 'scheduled');
   // Po „Rozpocznij mecz” sekcja zdarzeń otwiera się od razu, nie dopiero po
   // odświeżeniu listy meczów.
@@ -160,6 +162,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       throw result.response.status === 422 && isValidationError(result.error) ? result.error : new Error(START_FAILED);
     },
     onSuccess: async (saved) => {
+      // Wynik i stan przychodzą z serwera z pominięciem pól, więc stare błędy par znikają tu.
+      clearPairErrors();
       setStartedHere(true);
       setStatus(saved.status);
       setHomeScore(saved.homeScore?.toString() ?? '');
@@ -223,7 +227,28 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     onError: (error) => showErrors(error, SAVE_FAILED),
   });
 
+  /**
+   * Błędy par z `422` dotyczą wartości, które organizer właśnie poprawia, więc
+   * znikają przy pierwszej zmianie wyniku, karnych albo stanu, a nie dopiero
+   * przy kolejnym zapisie. Czyścimy obie pary naraz: blokada zmiany zwycięzcy
+   * siada pod wynikiem także wtedy, gdy zwycięzcę zmieniły same karne, a błąd
+   * karnych schowanych razem z polami nie może wrócić nieaktualny. Ostrzeżenie
+   * o blokadzie przed zapisem liczy się z pól na bieżąco, więc zostaje, dopóki
+   * blokada trwa.
+   */
+  function clearPairErrors() {
+    setFieldErrors((current) =>
+      current.homeScore || current.homePenalties ? { ...current, homeScore: undefined, homePenalties: undefined } : current,
+    );
+  }
+
+  function changePair(setValue: (value: string) => void, value: string) {
+    setValue(value);
+    clearPairErrors();
+  }
+
   function changeStatus(next: MatchStatus) {
+    clearPairErrors();
     setStatus(next);
     if (next === 'scheduled') {
       setHomeScore('');
@@ -274,37 +299,55 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
             Mecz czeka na rywali z poprzedniej rundy. Do tego czasu ustawisz mu tylko termin i obiekt.
           </p>
         )}
-        <div className="flex flex-wrap items-start gap-3">
-          {/* Karne stoją w tej samej kolumnie co wynik, więc ich pola leżą
-              dokładnie pod polami wyniku. */}
-          <div className="grid content-start gap-3">
-            <ScoreInputs
-              homeValue={homeScore}
-              awayValue={awayScore}
-              onHomeChange={setHomeScore}
-              onAwayChange={setAwayScore}
-              homeLabel={`Wynik ${home}`}
-              awayLabel={`Wynik ${away}`}
-              error={fieldErrors.homeScore}
-              disabled={save.isPending || waiting}
-            />
-            {showsPenalties && (
-              <div className="grid content-start gap-1">
-                <p className="text-xs font-medium text-muted-foreground">Rzuty karne</p>
+        {/* Komunikaty par stoją pod polami na całą szerokość okna, poza rzędem
+            z przełącznikiem: wewnątrz bloku wyniku długi tekst rozpychał go,
+            przesuwał pola i spychał przełącznik do nowej linii. Karne mają
+            własny rząd, więc ich pola leżą dokładnie pod polami wyniku. */}
+        <div className="grid content-start gap-3">
+          <div className="grid content-start gap-2">
+            <div className="flex flex-wrap items-start gap-3">
+              <ScoreInputs
+                homeValue={homeScore}
+                awayValue={awayScore}
+                onHomeChange={(value) => changePair(setHomeScore, value)}
+                onAwayChange={(value) => changePair(setAwayScore, value)}
+                homeLabel={`Wynik ${home}`}
+                awayLabel={`Wynik ${away}`}
+                error={fieldErrors.homeScore}
+                errorId={scoreErrorId}
+                disabled={save.isPending || waiting}
+              />
+              <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
+            </div>
+            {fieldErrors.homeScore && (
+              <p id={scoreErrorId} className="text-sm text-destructive">
+                {fieldErrors.homeScore}
+              </p>
+            )}
+          </div>
+          {showsPenalties && (
+            <div className="grid content-start justify-items-start gap-1">
+              <p className="text-xs font-medium text-muted-foreground">Rzuty karne</p>
+              <div className="grid content-start gap-2">
                 <ScoreInputs
                   homeValue={homePenalties}
                   awayValue={awayPenalties}
-                  onHomeChange={setHomePenalties}
-                  onAwayChange={setAwayPenalties}
+                  onHomeChange={(value) => changePair(setHomePenalties, value)}
+                  onAwayChange={(value) => changePair(setAwayPenalties, value)}
                   homeLabel={`Karne ${home}`}
                   awayLabel={`Karne ${away}`}
                   error={fieldErrors.homePenalties}
+                  errorId={penaltiesErrorId}
                   disabled={save.isPending}
                 />
+                {fieldErrors.homePenalties && (
+                  <p id={penaltiesErrorId} className="text-sm text-destructive">
+                    {fieldErrors.homePenalties}
+                  </p>
+                )}
               </div>
-            )}
-          </div>
-          <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
+            </div>
+          )}
         </div>
 
         <button

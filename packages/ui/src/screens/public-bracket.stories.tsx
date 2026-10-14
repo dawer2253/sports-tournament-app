@@ -176,6 +176,43 @@ export const PoFinale: Story = {
   },
 }
 
+/**
+ * Telefon po finale z nazwami po 15–20 znaków, jak w prawdziwych turniejach
+ * osiedlowych: nazwa mistrza mieści się w karcie bez wielokropka i bez uciętych
+ * liter, a cała karta trzyma wysokość kafla. W #235 karta ucinała już „Bobry
+ * Białołęka”.
+ */
+export const TelefonPoFinale: Story = {
+  ...phone375,
+  args: {
+    matches: demoBracket({
+      teams: 8,
+      progress: 'done',
+      names: [
+        'Jastrzębie Białołęka',
+        'Niedźwiedzie Mokotów',
+        'Gepardy Śródmieście',
+        'Kondory Rembertów',
+        'Nosorożce Targówek',
+        'Bobry Białołęka',
+        'Mustangi Ursynów',
+        'Tygrysy Targówek',
+      ],
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(window.innerWidth).toBe(375)
+    await waitFor(() => expect(columns(canvasElement)).toHaveLength(2))
+    const champion = await canvas.findByRole('status')
+    const name = champion.querySelector<HTMLElement>('[data-slot="bracket-champion-name"]')!
+    await expect(name.scrollHeight).toBeLessThanOrEqual(name.clientHeight)
+    await expect(name.scrollWidth).toBeLessThanOrEqual(name.clientWidth)
+    await expect(champion.scrollHeight).toBeLessThanOrEqual(champion.clientHeight)
+    await expect(champion).toHaveTextContent('Zwycięzca pucharu')
+  },
+}
+
 /** 128 drużyn po finale na komputerze: okno czterech ostatnich rund. */
 export const Druzyn128PoFinale: Story = {
   ...desktop,
