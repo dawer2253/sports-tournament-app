@@ -17,7 +17,7 @@ import {
   toast,
 } from '@tournament/ui';
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { MatchEventsSection } from '../components/match-events-section';
 import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
@@ -121,6 +121,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   const [venueId, setVenueId] = useState(match.venue ? String(match.venue.id) : NO_VENUE);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
   const [formError, setFormError] = useState<string>();
+  const scoreErrorId = useId();
+  const penaltiesErrorId = useId();
   const [scheduleOpen, setScheduleOpen] = useState(match.status === 'scheduled');
   // Po „Rozpocznij mecz” sekcja zdarzeń otwiera się od razu, nie dopiero po
   // odświeżeniu listy meczów.
@@ -223,7 +225,30 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     onError: (error) => showErrors(error, SAVE_FAILED),
   });
 
+  /**
+   * Błąd pary z `422` dotyczy wartości, które organizer właśnie poprawia, więc
+   * znika przy pierwszej zmianie pola tej pary, a nie dopiero przy kolejnym
+   * zapisie. Ostrzeżenie o blokadzie przed zapisem liczy się z pól na bieżąco,
+   * więc nie znika razem z nim, dopóki blokada trwa.
+   */
+  function clearFieldError(field: 'homeScore' | 'homePenalties') {
+    setFieldErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
+  }
+
+  function changeScore(set: (value: string) => void, value: string) {
+    set(value);
+    clearFieldError('homeScore');
+  }
+
+  function changePenalties(set: (value: string) => void, value: string) {
+    set(value);
+    clearFieldError('homePenalties');
+  }
+
   function changeStatus(next: MatchStatus) {
+    // Stan decyduje o remisie i karnych, więc jego zmiana unieważnia błędy obu par.
+    clearFieldError('homeScore');
+    clearFieldError('homePenalties');
     setStatus(next);
     if (next === 'scheduled') {
       setHomeScore('');
@@ -274,37 +299,53 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
             Mecz czeka na rywali z poprzedniej rundy. Do tego czasu ustawisz mu tylko termin i obiekt.
           </p>
         )}
-        <div className="flex flex-wrap items-start gap-3">
-          {/* Karne stoją w tej samej kolumnie co wynik, więc ich pola leżą
-              dokładnie pod polami wyniku. */}
-          <div className="grid content-start gap-3">
-            <ScoreInputs
-              homeValue={homeScore}
-              awayValue={awayScore}
-              onHomeChange={setHomeScore}
-              onAwayChange={setAwayScore}
-              homeLabel={`Wynik ${home}`}
-              awayLabel={`Wynik ${away}`}
-              error={fieldErrors.homeScore}
-              disabled={save.isPending || waiting}
-            />
-            {showsPenalties && (
-              <div className="grid content-start gap-1">
-                <p className="text-xs font-medium text-muted-foreground">Rzuty karne</p>
-                <ScoreInputs
-                  homeValue={homePenalties}
-                  awayValue={awayPenalties}
-                  onHomeChange={setHomePenalties}
-                  onAwayChange={setAwayPenalties}
-                  homeLabel={`Karne ${home}`}
-                  awayLabel={`Karne ${away}`}
-                  error={fieldErrors.homePenalties}
-                  disabled={save.isPending}
-                />
-              </div>
+        {/* Komunikaty par stoją pod polami na całą szerokość okna, poza rzędem
+            z przełącznikiem: wewnątrz bloku wyniku długi tekst rozpychał go,
+            przesuwał pola i spychał przełącznik do nowej linii. Karne mają
+            własny rząd, więc ich pola leżą dokładnie pod polami wyniku. */}
+        <div className="grid content-start gap-3">
+          <div className="grid content-start gap-2">
+            <div className="flex flex-wrap items-start gap-3">
+              <ScoreInputs
+                homeValue={homeScore}
+                awayValue={awayScore}
+                onHomeChange={(value) => changeScore(setHomeScore, value)}
+                onAwayChange={(value) => changeScore(setAwayScore, value)}
+                homeLabel={`Wynik ${home}`}
+                awayLabel={`Wynik ${away}`}
+                error={fieldErrors.homeScore}
+                errorId={scoreErrorId}
+                disabled={save.isPending || waiting}
+              />
+              <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
+            </div>
+            {fieldErrors.homeScore && (
+              <p id={scoreErrorId} className="text-sm text-destructive">
+                {fieldErrors.homeScore}
+              </p>
             )}
           </div>
-          <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
+          {showsPenalties && (
+            <div className="grid content-start justify-items-start gap-1">
+              <p className="text-xs font-medium text-muted-foreground">Rzuty karne</p>
+              <ScoreInputs
+                homeValue={homePenalties}
+                awayValue={awayPenalties}
+                onHomeChange={(value) => changePenalties(setHomePenalties, value)}
+                onAwayChange={(value) => changePenalties(setAwayPenalties, value)}
+                homeLabel={`Karne ${home}`}
+                awayLabel={`Karne ${away}`}
+                error={fieldErrors.homePenalties}
+                errorId={penaltiesErrorId}
+                disabled={save.isPending}
+              />
+              {fieldErrors.homePenalties && (
+                <p id={penaltiesErrorId} className="mt-1 text-sm text-destructive">
+                  {fieldErrors.homePenalties}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <button

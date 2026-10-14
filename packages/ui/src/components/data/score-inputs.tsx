@@ -17,6 +17,13 @@ export interface ScoreInputsProps {
    * pojedynczym polu.
    */
   error?: string
+  /**
+   * Id komunikatu błędu, który rysuje rodzic poza blokiem. Blok wtedy go nie
+   * rysuje, tylko wiąże z nim pola. Długi komunikat pod blokiem rozpycha jego
+   * szerokość, więc w rzędzie z czymś obok (przełącznik stanu w oknie meczu)
+   * przesuwałby pola i spychał sąsiada do nowej linii.
+   */
+  errorId?: string
   disabled?: boolean
   className?: string
 }
@@ -34,11 +41,12 @@ export function ScoreInputs({
   homeLabel,
   awayLabel,
   error,
+  errorId: externalErrorId,
   disabled,
   className,
 }: ScoreInputsProps) {
   const id = useId()
-  const errorId = `${id}-error`
+  const errorId = externalErrorId ?? `${id}-error`
   const describedBy = error ? errorId : undefined
   const inputClassName = 'h-14 w-16 text-center text-2xl font-bold tabular-nums'
 
@@ -75,7 +83,7 @@ export function ScoreInputs({
           className={inputClassName}
         />
       </div>
-      {error && (
+      {error && !externalErrorId && (
         <p id={errorId} className="text-center text-sm text-destructive">
           {error}
         </p>

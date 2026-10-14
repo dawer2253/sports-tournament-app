@@ -616,6 +616,47 @@ describe('Drabinka — okno meczu (#228)', () => {
     expect(within(dialog).getByLabelText('Wynik Lwy Mokotów')).not.toHaveAttribute('aria-describedby');
   });
 
+  it('błąd karnych z 422 znika przy pierwszej poprawce karnych, nie przy kolejnym zapisie', async () => {
+    const state = serveMatches(semis());
+    const message = 'Remis w meczu pucharowym rozstrzygają karne. Wpisz je.';
+    serveSave(state, validationError('homePenalties', message));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await setScore(user, dialog, '1', '1');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await within(dialog).findByText(message);
+
+    await user.type(within(dialog).getByLabelText('Karne Lwy Mokotów'), '4');
+
+    expect(within(dialog).queryByText(message)).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Karne Lwy Mokotów')).not.toHaveAttribute('aria-invalid');
+    expect(within(dialog).getByLabelText('Karne Lwy Mokotów')).not.toHaveAttribute('aria-describedby');
+  });
+
+  it('błąd wyniku z 422 znika przy zmianie wyniku albo stanu', async () => {
+    const state = serveMatches(semis());
+    const message = 'Ten sport nie zna remisu, więc mecz zakończony musi mieć zwycięzcę.';
+    serveSave(state, validationError('homeScore', message));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await setScore(user, dialog, '2', '1');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await within(dialog).findByText(message);
+
+    await user.type(within(dialog).getByLabelText('Wynik Sokoły Ursus'), '0');
+    expect(within(dialog).queryByText(message)).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Wynik Lwy Mokotów')).not.toHaveAttribute('aria-describedby');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await within(dialog).findByText(message);
+    await user.click(within(dialog).getByRole('radio', { name: 'Trwa' }));
+    expect(within(dialog).queryByText(message)).not.toBeInTheDocument();
+  });
+
   it('notka przed zapisem: awans do finału i mecz o 3. miejsce', async () => {
     serveMatches(semis());
     const { user } = renderBracket('?round=2');
