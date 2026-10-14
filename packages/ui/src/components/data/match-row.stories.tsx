@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleTimeZone, scheduleUndated } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
+import { expectTextFits, phone375 } from '../../test/viewport'
 import { MatchRow } from './match-row'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
@@ -20,7 +21,7 @@ const live = scheduleInProgress.find((match) => match.status === 'live')!
 const scheduled = scheduleInProgress.find((match) => match.round.order === 6)!
 const colliding = scheduleInProgress.find((match) => (match.collisions?.length ?? 0) > 0)!
 
-/** Mecz z długimi nazwami: nazwa się obcina, a nie przesuwa wyniku. */
+/** Mecz z długimi nazwami: nazwa łamie się na dwie linie, a dłuższa dostaje wielokropek, zamiast przesuwać wynik. */
 const longNames: MatchRowData = {
   ...scheduled,
   id: 999,
@@ -406,6 +407,63 @@ export const PucharNaTelefonie: Story = {
     const boxes = scoreBoxes(canvasElement)
     for (const box of boxes) await expect(box.left).toBeCloseTo(boxes[0]!.left, 1)
     await expectColumns(canvasElement, 3)
+  },
+}
+
+/**
+ * Najciaśniejszy wiersz strony publicznej (#239): telefon 375 px, odnośnik
+ * ze strzałką i pole wyniku z miejscem na karne. Nazwy do 20 znaków
+ * i podpisy pustych slotów łamią się na drugą linię zamiast dostać
+ * wielokropek, a pole wyniku zostaje stałej szerokości i w jednej kolumnie.
+ */
+export const PucharDlugieNazwyNaTelefonie: Story = {
+  ...phone375,
+  render: () => (
+    // Szerokość treści strony publicznej przy 375 px (`main` z `px-4`), także
+    // w Vitest, gdzie story nie dostaje marginesu układu `padded`.
+    <div className="w-[343px] max-w-full space-y-2">
+      {[
+        cupRow(921, {
+          homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów' },
+          awayTeam: { id: 32, name: 'Jastrzębie Białołęka' },
+          homeScore: 1,
+          awayScore: 1,
+          homePenalties: 4,
+          awayPenalties: 3,
+        }),
+        cupRow(922, {
+          homeTeam: { id: 33, name: 'Gepardy Śródmieście' },
+          awayTeam: { id: 34, name: 'Nosorożce Targówek' },
+          bracket: { label: 'Półfinał 2', penaltySlot: true },
+        }),
+        cupRow(923, {
+          ...scheduled,
+          id: 923,
+          homeTeam: null,
+          awayTeam: null,
+          bracket: { label: 'Mecz o 3. miejsce', homeSource: 'Przegrany: Półfinał 1', awaySource: 'Przegrany: Półfinał 2', penaltySlot: true },
+        }),
+        cupRow(924, {
+          ...scheduled,
+          id: 924,
+          homeTeam: null,
+          awayTeam: null,
+          bracket: { label: 'Finał', homeSource: 'Zwycięzca: Półfinał 1', awaySource: 'Zwycięzca: Półfinał 2', penaltySlot: true },
+        }),
+      ].map((match) => (
+        <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" href={`/t/puchar/mecze/${match.id}`} />
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await expect(window.innerWidth).toBe(375)
+    await expectColumns(canvasElement, 3)
+    await expectTextFits([...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-team"]')])
+    const boxes = scoreBoxes(canvasElement)
+    for (const box of boxes) {
+      await expect(box.left).toBeCloseTo(boxes[0]!.left, 1)
+      await expect(box.width).toBeCloseTo(boxes[0]!.width, 1)
+    }
   },
 }
 

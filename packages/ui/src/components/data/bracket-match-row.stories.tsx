@@ -1,7 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { cupChampion, cupRounds, scheduleTimeZone } from '../../lib/demo-data'
+import { cn } from '../../lib/utils'
+import { expectTextFits, phone375, textFitProblems } from '../../test/viewport'
 import { BracketChampion, BracketMatchRow } from './bracket-match-row'
+import type { BracketMatchRowData } from './bracket-match-row-data'
 
 const [quarterFinals, semiFinals, finalRound] = cupRounds.map((round) => round.matches)
 
@@ -104,6 +107,91 @@ export const Klikalny: Story = {
     const canvas = within(canvasElement)
     await userEvent.click(canvas.getByRole('button', { name: 'Ćwierćfinał 2: Dragons – Wilki' }))
     await expect(args.onSelect).toHaveBeenCalled()
+  },
+}
+
+/** Wiersze z długimi nazwami (do 20 znaków) i podpisami pustych slotów (#239). */
+const longRows: BracketMatchRowData[] = [
+  {
+    ...quarterFinals![0]!,
+    id: 951,
+    home: { team: { id: 51, name: 'Niedźwiedzie Mokotów' } },
+    away: { team: { id: 52, name: 'Jastrzębie Białołęka' } },
+  },
+  {
+    ...quarterFinals![1]!,
+    id: 952,
+    home: { team: { id: 53, name: 'Tygrysy Targówek' } },
+    away: { team: { id: 54, name: 'Jastrzębie Wilanów' } },
+  },
+  {
+    ...finalRound![0]!,
+    id: 953,
+    homeScore: null,
+    awayScore: null,
+    homePenalties: null,
+    awayPenalties: null,
+    status: 'scheduled',
+    home: { team: null, source: 'Przegrany: Półfinał 1' },
+    away: { team: null, source: 'Przegrany: Półfinał 2' },
+  },
+  {
+    ...finalRound![1]!,
+    id: 954,
+    home: { team: null, source: 'Zwycięzca: Półfinał 1' },
+    away: { team: null, source: 'Zwycięzca: Półfinał 2' },
+  },
+]
+
+function LongRows({ className }: { className?: string }) {
+  return (
+    <div className={cn('space-y-2', className)}>
+      {longRows.map((match) => (
+        <BracketMatchRow key={match.id} match={match} timeZone={scheduleTimeZone} penaltySlot />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Nazwy w każdej szerokości wiersza, od telefonu po szeroki panel (#239):
+ * przy oknie ok. 800 px wiersz obok sidebaru ma ok. 510 px i układ
+ * pięciokolumnowy zostawiał nazwom 0 px. Nazwa łamie się na drugą linię
+ * zamiast dostać wielokropek, pole wyniku stoi w jednej kolumnie, a wiersz
+ * nie wystaje poza siebie.
+ */
+export const ProgUkladu: Story = {
+  render: () => <LongRows className="w-[343px]" />,
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const container = canvasElement.querySelector<HTMLElement>('[data-slot="bracket-match-row"]')!.parentElement!.parentElement!
+    // Bez `expect` w pętli, jak w „UI/Wiersz meczu”: każde trafia do panelu
+    // Interactions, a przy kilkudziesięciu szerokościach story trwa za długo.
+    const problems: string[] = []
+    // Od 343 px, czyli treści panelu na telefonie 375 px z DoD #239.
+    for (let width = 343; width <= 1024; width += 16) {
+      container.style.width = `${width}px`
+      for (const name of canvasElement.querySelectorAll<HTMLElement>('[data-slot="bracket-team"]')) {
+        problems.push(...textFitProblems(name).map((problem) => `${width}px: ${problem}`))
+      }
+      for (const row of canvasElement.querySelectorAll('[data-slot="bracket-match-row"]')) {
+        if (row.scrollWidth > row.clientWidth) problems.push(`${width}px: wiersz wystaje`)
+      }
+      const lefts = [...canvasElement.querySelectorAll('[data-slot="bracket-score"]')].map((score) => score.getBoundingClientRect().left)
+      if (Math.max(...lefts) - Math.min(...lefts) > 0.5) problems.push(`${width}px: wyniki nie stoją w jednej kolumnie`)
+    }
+    await expect(problems).toEqual([])
+  },
+}
+
+/** Telefon 375 px: długie nazwy i podpisy pustych slotów w dwóch liniach, bez wielokropka. */
+export const TelefonDlugieNazwy: Story = {
+  ...phone375,
+  // Szerokość treści panelu przy 375 px, także w Vitest bez marginesu `padded`.
+  render: () => <LongRows className="w-[343px] max-w-full" />,
+  play: async ({ canvasElement }) => {
+    await expect(window.innerWidth).toBe(375)
+    await expectTextFits([...canvasElement.querySelectorAll<HTMLElement>('[data-slot="bracket-team"]')])
   },
 }
 

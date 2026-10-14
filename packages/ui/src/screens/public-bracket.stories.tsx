@@ -8,6 +8,7 @@ import {
   scheduleTimeZone,
   type DemoBracketMatch,
 } from '../lib/demo-data'
+import { phone375 } from '../test/viewport'
 import { PublicBracket } from './public-bracket'
 
 const meta = {
@@ -18,21 +19,6 @@ const meta = {
 
 export default meta
 type Story = StoryObj<typeof meta>
-
-/**
- * Telefon o szerokości 375 px, z DoD #234. Storybook nie ma takiego widoku
- * wśród domyślnych (`mobile1` to 320, `mobile2` 414).
- */
-const phone375 = {
-  parameters: {
-    viewport: {
-      options: {
-        phone375: { name: 'Telefon 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
-      },
-    },
-  },
-  globals: { viewport: { value: 'phone375', isRotated: false } },
-} as const
 
 /** Komputer: `desktop` to 1280 px. */
 const desktop = { globals: { viewport: { value: 'desktop', isRotated: false } } } as const

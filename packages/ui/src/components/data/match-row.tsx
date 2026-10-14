@@ -39,13 +39,20 @@ import { ScorerList } from './scorer-list'
  * Wiersz fazy `knockout` w sporcie z remisem ma szerszą kolumnę wyniku, bo
  * pole zawsze trzyma miejsce na karne (#234). Szerokość zależy od sportu
  * i fazy, a nie od meczu, więc w jednej rundzie wynik stoi wszędzie tak samo.
+ *
+ * Nazwa drużyny łamie się na drugą linię, zanim dostanie wielokropek (#239):
+ * na telefonie przy polu z karnymi ma ok. 97 px, a nazwy do 20 znaków
+ * („Niedźwiedzie Mokotów”) i podpisy pustych slotów („Przegrany: Półfinał 1”)
+ * mieszczą się w dwóch liniach. Wielokropek zostaje dla nazw dłuższych.
+ * W wąskim wierszu odstęp kolumn jest mniejszy, żeby nazwom zostało więcej
+ * miejsca; pole wyniku się nie zmienia.
  */
-const rowGrid = cva('grid items-center gap-x-3 gap-y-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm', {
+const rowGrid = cva('grid items-center gap-x-2 gap-y-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm', {
   variants: {
     penaltySlot: {
       false:
-        'grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
-      true: 'grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+        'grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] @2xl/match-row:gap-x-3 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+      true: 'grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] @2xl/match-row:gap-x-3 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
     },
   },
 })
@@ -228,7 +235,7 @@ export function MatchRow({
       <span
         data-slot="match-team"
         className={cn(
-          'col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1',
+          'col-start-1 row-start-2 line-clamp-2 text-right font-medium wrap-break-word @2xl/match-row:col-start-2 @2xl/match-row:row-start-1',
           !match.homeTeam && cn(sourceName, 'pe-1'),
         )}
       >
@@ -240,7 +247,7 @@ export function MatchRow({
       <span
         data-slot="match-team"
         className={cn(
-          'col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1',
+          'col-start-3 row-start-2 line-clamp-2 font-medium wrap-break-word @2xl/match-row:col-start-4 @2xl/match-row:row-start-1',
           !match.awayTeam && sourceName,
         )}
       >

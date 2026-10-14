@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { organizer, tournamentList } from '../../lib/demo-data'
 import { isCurrentTournament } from '../data/tournament-row'
+import { phone375 } from '../../test/viewport'
 import { AdminShell, type AdminNavKey, type AdminShellTournament, type AdminShellTournamentList } from './admin-shell'
 
 /** Bieżące turnieje demo, tak jak oddaje je API: bez zakończonych. */
@@ -390,21 +391,6 @@ export const NawigacjaCzesciowa: Story = {
     await expect(args.onNavigate).toHaveBeenLastCalledWith('dashboard')
   },
 }
-
-/**
- * Telefon o szerokości 375 px (#196). Storybook nie ma takiego widoku wśród
- * domyślnych (`mobile1` to 320, `mobile2` 414), a to szerokość z DoD.
- */
-const phone375 = {
-  parameters: {
-    viewport: {
-      options: {
-        phone375: { name: 'Telefon 375', styles: { width: '375px', height: '812px' }, type: 'mobile' },
-      },
-    },
-  },
-  globals: { viewport: { value: 'phone375', isRotated: false } },
-} as const
 
 /**
  * Na telefonie sidebaru nie ma, więc te same cele daje szuflada spod
