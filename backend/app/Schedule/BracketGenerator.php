@@ -27,7 +27,9 @@ class BracketGenerator
 
     /**
      * Sprawdzenia i zapis idą w jednej transakcji, z blokadą wiersza fazy,
-     * jak w `ScheduleGenerator`. Odmowa niczego nie zmienia.
+     * jak w `ScheduleGenerator`. Odmowa niczego nie zmienia. Pominięcie
+     * kasowania pustej fazy i ponawianie po deadlocku też stamtąd — powód
+     * w docblocku `ScheduleGenerator::generate()`.
      *
      * @param  list<int>  $teamIds  drużyny turnieju w kolejności rozstawienia
      * @return array{roundsCount: int, matchesCount: int}
@@ -59,10 +61,12 @@ class BracketGenerator
             }
 
             // Mecze i ich zdarzenia znikają kaskadą z rundami.
-            $stage->rounds()->delete();
+            if ($stage->rounds()->exists()) {
+                $stage->rounds()->delete();
+            }
 
             return $this->insertBracket($stage, $teamIds, $thirdPlaceMatch);
-        });
+        }, attempts: 5);
     }
 
     /** Mecz `live` liczy się jak rozegrany, jak w `ScheduleGenerator` (#157). */

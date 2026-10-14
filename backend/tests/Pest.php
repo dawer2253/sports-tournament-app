@@ -3,8 +3,10 @@
 use App\Models\Sport;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\Yaml\Yaml;
 use Tests\TestCase;
@@ -123,4 +125,84 @@ function softDeleteTeamLeavingPlayers(Team $team): void
     Team::withoutEvents(fn () => $team->delete());
 
     expect($team->players()->withTrashed()->whereNull('deleted_at')->exists())->toBeTrue();
+}
+
+/**
+ * Czy drugie połączenie wstawi kolejkę na samym końcu indeksu `rounds`, póki
+ * transakcja testu trzyma blokady tego, co test zrobił przed chwilą. Koniec
+ * indeksu to miejsce, w które trafiają kolejki każdej nowej fazy, więc
+ * blokada szczeliny w tym miejscu zderza ze sobą generowania w niezależnych
+ * turniejach (deadlock z E2E przy trzech workerach). Faza o tym id nie
+ * istnieje, dlatego sonda wyłącza u siebie klucze obce; czeka najwyżej
+ * sekundę i niczego nie zostawia.
+ */
+function anotherConnectionCanAppendRound(): bool
+{
+    config(['database.connections.probe' => config('database.connections.'.DB::getDefaultConnection())]);
+    $probe = DB::connection('probe');
+    $probe->statement('SET SESSION innodb_lock_wait_timeout = 1');
+    $probe->statement('SET SESSION foreign_key_checks = 0');
+    $probe->beginTransaction();
+
+    try {
+        $probe->table('rounds')->insert(['stage_id' => 4_294_967_295, 'name' => 'Sonda', 'order' => 1]);
+
+        return true;
+    } catch (QueryException $e) {
+        // 1205: „Lock wait timeout exceeded”.
+        if (($e->errorInfo[1] ?? null) !== 1205) {
+            throw $e;
+        }
+
+        return false;
+    } finally {
+        $probe->rollBack();
+        DB::purge('probe');
+    }
+}
+
+/**
+ * Uruchamia `$test` poza transakcją `RefreshDatabase`. Laravel ponawia
+ * transakcję po deadlocku tylko na najwyższym poziomie, a w zagnieżdżonej
+ * rzuca `DeadlockException` — inaczej test ponowienia nie zobaczy. Wszystko,
+ * co `$test` zapisze, zostaje zatwierdzone, dlatego helper czyści potem każdą
+ * tabelę poza `migrations` i `sports` (sporty wstawia migracja) i otwiera
+ * transakcję z powrotem, żeby `RefreshDatabase` miał co wycofać.
+ */
+function outsideTestTransaction(Closure $test): void
+{
+    $connection = DB::connection();
+    $connection->rollBack();
+
+    try {
+        $test();
+    } finally {
+        $schema = $connection->getSchemaBuilder();
+        $schema->withoutForeignKeyConstraints(function () use ($schema, $connection): void {
+            foreach ($schema->getTableListing(schemaQualified: false) as $table) {
+                if (! in_array($table, ['migrations', 'sports'], true)) {
+                    $connection->table($table)->delete();
+                }
+            }
+        });
+        $connection->beginTransaction();
+    }
+}
+
+/**
+ * Udaje deadlock (1213) na pierwszych `$times` zapytaniach zaczynających się
+ * od `$sqlPrefix`, zanim trafią do bazy. Laravel rozpoznaje go po komunikacie
+ * MySQL-a, tak samo jak prawdziwy.
+ */
+function failWithDeadlock(string $sqlPrefix, int $times): void
+{
+    DB::connection()->beforeExecuting(function (string $query) use ($sqlPrefix, &$times): void {
+        if ($times > 0 && str_starts_with($query, $sqlPrefix)) {
+            $times--;
+
+            throw new QueryException(DB::getDefaultConnection(), $query, [], new PDOException(
+                'SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction'
+            ));
+        }
+    });
 }

@@ -371,6 +371,31 @@ it('zastępuje całą poprzednią drabinkę fazy, razem z terminami i obiektami'
         ->and($stage->matches()->where(fn ($query) => $query->whereNotNull('kickoff_at')->orWhereNotNull('venue_id'))->exists())->toBeFalse();
 });
 
+// Kasowanie pustej drabinki zakładało blokadę szczeliny na końcu `rounds`
+// i dwa pierwsze generowania w różnych turniejach kończyły się deadlockiem.
+it('przy pierwszym generowaniu nie blokuje kolejek innych faz', function () {
+    generateBracket(cupWithTeams(4))->assertValidResponse(201);
+
+    expect(anotherConnectionCanAppendRound())->toBeTrue();
+});
+
+// Deadlock przy regeneracji zostaje i ponawia go transakcja. Cztery nieudane
+// próby z pięciu — liczba z docblocku `ScheduleGenerator::generate()`.
+it('po deadlocku przy regeneracji ponawia transakcję i układa jedną drabinkę', function () {
+    outsideTestTransaction(function () {
+        $stage = cupWithTeams(6);
+        generateBracket($stage)->assertValidResponse(201);
+        failWithDeadlock('insert into `matches`', 4);
+
+        generateBracket($stage, thirdPlaceMatch: true)
+            ->assertValidResponse(201)
+            ->assertJsonPath('data', ['roundsCount' => 3, 'matchesCount' => 6]);
+
+        expect($stage->rounds()->count())->toBe(3)
+            ->and($stage->matches()->count())->toBe(6);
+    });
+});
+
 // Lista z jedną drużyną albo pusta łamie `minItems` w kontrakcie, więc bez
 // `assertValidRequest`; odpowiedź ma mówić o liczbie drużyn, a nie o liście.
 it('odmawia z 422 pod teams, gdy turniej ma mniej niż dwie drużyny', function (int $teams) {

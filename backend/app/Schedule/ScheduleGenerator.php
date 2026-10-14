@@ -35,6 +35,25 @@ class ScheduleGenerator
      * dwa równoległe generowania tej samej fazy ustawiają się w kolejce,
      * zamiast przeplatać kasowanie i wstawianie.
      *
+     * Generowań w różnych fazach blokada wiersza nie szereguje, a zderzają się
+     * one na blokadach szczelin. Kasowanie kolejek fazy blokuje szczelinę za
+     * nimi w indeksie `rounds`, a kaskada na mecze — przez sprawdzenie kluczy
+     * `winner_to_match_id` i `loser_to_match_id` — także w `matches`. Kolejki
+     * i mecze każdej nowej fazy wstawiają się na koniec tych indeksów, więc
+     * dwa generowania w tej samej chwili to deadlock (1213). Dlatego:
+     *
+     * - pustej fazy nie kasujemy, więc pierwsze generowanie nie bierze żadnej
+     *   blokady szczeliny;
+     * - regeneracja ponawia całą transakcję po deadlocku. Każdy deadlock
+     *   kończy co najmniej jedną transakcję, więc N równoległych regeneracji
+     *   potrzebuje do N prób; pięć naraz przy pięciu próbach przeszło
+     *   w pomiarze bez błędu, a przy trzech próbach i sześciu naraz padała
+     *   prawie połowa.
+     *
+     * Blokad szczelin nie byłoby w ogóle w READ COMMITTED (w pomiarze zero
+     * deadlocków i bez obu poprawek), ale izolacja to decyzja dla całego
+     * połączenia, nie dla jednej klasy.
+     *
      * @return array{roundsCount: int, matchesCount: int}
      *
      * @throws ValidationException faza nie jest `league`, ma mecz rozpoczęty
@@ -59,12 +78,14 @@ class ScheduleGenerator
 
             // Mecze i ich zdarzenia znikają kaskadą z kolejkami (`round_id`
             // i `match_id` są `cascadeOnDelete`).
-            $stage->rounds()->delete();
+            if ($stage->rounds()->exists()) {
+                $stage->rounds()->delete();
+            }
             $roundIds = $this->insertRounds($stage, count($rounds));
             $matchesCount = $this->insertMatches($stage, $rounds, $teams, $roundIds);
 
             return ['roundsCount' => count($rounds), 'matchesCount' => $matchesCount];
-        });
+        }, attempts: 5);
     }
 
     /**
