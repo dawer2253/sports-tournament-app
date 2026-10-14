@@ -337,3 +337,96 @@ export const StrzelcyNaTelefonie: Story = {
     await expectEntriesWhole(canvasElement)
   },
 }
+
+// --- Puchar (#234) -------------------------------------------------------------
+
+/** Wiersz fazy `knockout`: etykieta pozycji, karne i podpisy pustych slotów. */
+function cupRow(id: number, overrides: Partial<MatchRowData>, penaltySlot = true): MatchRowData {
+  return { ...finished, id, homeTeam: wilki, awayTeam: sokoly, bracket: { label: 'Półfinał 1', penaltySlot }, ...overrides }
+}
+
+const cupRows: MatchRowData[] = [
+  cupRow(901, { homeScore: 1, awayScore: 1, homePenalties: 3, awayPenalties: 4 }),
+  cupRow(902, { homeScore: 2, awayScore: 0, bracket: { label: 'Półfinał 2', penaltySlot: true } }),
+  cupRow(903, {
+    ...scheduled,
+    id: 903,
+    homeTeam: null,
+    awayTeam: null,
+    bracket: { label: 'Finał', homeSource: 'Zwycięzca: Półfinał 1', awaySource: 'Zwycięzca: Półfinał 2', penaltySlot: true },
+  }),
+]
+
+/** Pole wyniku każdego wiersza: lewa krawędź i szerokość względem wiersza. */
+function scoreBoxes(canvasElement: HTMLElement) {
+  return [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-row"]')].map((row) => {
+    const score = row.querySelector('[data-slot="match-score"]')!.getBoundingClientRect()
+    return { left: score.left - row.getBoundingClientRect().left, width: score.width }
+  })
+}
+
+/**
+ * Wiersze pucharu w piłce: karne obu drużyn w polu wyniku, pogrubione
+ * u zwycięzcy, etykieta pozycji w linii terminu, a pusty slot ma podpis
+ * źródła kursywą. Pole ma zawsze miejsce na karne, więc wynik stoi w tym samym
+ * miejscu w wierszu z karnymi i bez.
+ */
+export const Puchar: Story = {
+  render: () => (
+    <div className="max-w-3xl space-y-2">
+      {cupRows.map((match) => (
+        <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" />
+      ))}
+    </div>
+  ),
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const [decided] = canvas.getAllByRole('group', { name: 'Wilki Bemowo – Sokoły Ursus' }) as [HTMLElement]
+    await expect(within(decided).getByText('(4)')).toHaveClass('font-bold')
+    await expect(within(decided).getByText('(3)')).toHaveClass('font-normal')
+    await expect(within(decided).getByText('Półfinał 1')).toBeInTheDocument()
+    await expect(canvas.getByText('Zwycięzca: Półfinał 1')).toHaveClass('italic')
+    await expect(canvas.getByText('Finał')).toBeInTheDocument()
+
+    const boxes = scoreBoxes(canvasElement)
+    for (const box of boxes) {
+      await expect(box.left).toBeCloseTo(boxes[0]!.left, 1)
+      await expect(box.width).toBeCloseTo(boxes[0]!.width, 1)
+    }
+    await expectColumns(canvasElement, 6)
+  },
+}
+
+/** To samo na telefonie: wynik dalej w jednej kolumnie. */
+export const PucharNaTelefonie: Story = {
+  ...Puchar,
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const boxes = scoreBoxes(canvasElement)
+    for (const box of boxes) await expect(box.left).toBeCloseTo(boxes[0]!.left, 1)
+    await expectColumns(canvasElement, 3)
+  },
+}
+
+/**
+ * W koszu wiersz fazy `knockout` nie rezerwuje miejsca na karne: pole wyniku
+ * jest takie jak w lidze. W piłce rezerwuje, więc jest szersze.
+ */
+export const PucharKoszykowka: Story = {
+  render: () => (
+    <div className="max-w-3xl space-y-2">
+      <MatchRow match={cupRow(911, {}, false)} timeZone={scheduleTimeZone} />
+      <MatchRow match={{ ...finished, id: 912 }} timeZone={scheduleTimeZone} />
+      <MatchRow match={cupRow(913, {}, true)} timeZone={scheduleTimeZone} />
+    </div>
+  ),
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const [basketball, league, football] = scoreBoxes(canvasElement).map((box) => box.width)
+    await expect(football).toBeDefined()
+    await expect(basketball).toBeCloseTo(league!, 1)
+    await expect(football).toBeGreaterThan(league!)
+    await expect(canvasElement.querySelectorAll('[data-slot="match-row"]')[0]!.querySelector('[data-slot="penalties"]')).toBeNull()
+  },
+}

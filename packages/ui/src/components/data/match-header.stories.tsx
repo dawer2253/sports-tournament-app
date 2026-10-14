@@ -54,6 +54,34 @@ export const PilkaPoMeczu: Story = {
 
 export const KolorJasny: Story = { args: { brandColor: '#FFD400' } }
 
+/**
+ * Mecz o 3. miejsce rozstrzygnięty karnymi (#234): w pasie etykieta pozycji
+ * zamiast nazwy rundy „Finał”, a karne pod wynikiem, po stronie każdej
+ * drużyny, pogrubione u zwycięzcy.
+ */
+export const MeczOTrzecieMiejscePoKarnych: Story = {
+  args: {
+    match: {
+      ...matchPageFinished,
+      round: { name: 'Finał' },
+      homeScore: 1,
+      awayScore: 1,
+      homePenalties: 3,
+      awayPenalties: 4,
+      bracket: { label: 'Mecz o 3. miejsce', penaltySlot: true },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Mecz o 3. miejsce')).toBeInTheDocument()
+    await expect(canvas.queryByText('Finał')).not.toBeInTheDocument()
+    await expect(canvas.getByLabelText('Wynik 1 : 1, karne 3 : 4')).toBeInTheDocument()
+    const penalties = canvasElement.querySelector('[data-slot="match-band-penalties"]')!
+    await expect(within(penalties as HTMLElement).getByText('(3)')).toHaveClass('font-normal')
+    await expect(within(penalties as HTMLElement).getByText('(4)')).toHaveClass('font-bold')
+  },
+}
+
 export const NaZywo: Story = {
   args: { match: matchPageLive },
   play: async ({ canvasElement }) => {

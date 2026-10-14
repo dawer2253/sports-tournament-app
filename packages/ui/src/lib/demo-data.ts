@@ -13,6 +13,7 @@ import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
 import type { PublicShellTournament } from '../components/layout/public-shell-tournament'
+import { bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch } from './bracket'
 import { formatRoundDates } from './kickoff'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
@@ -258,70 +259,6 @@ export const leaderboardsBySport: Record<'football' | 'basketball', Record<strin
     },
   },
 }
-
-export type BracketMatch = { home: Team | null; away: Team | null; homeScore: number | null; awayScore: number | null; winner?: 'home' | 'away' }
-export type BracketRound = { name: string; matches: BracketMatch[] }
-
-export const bracket: BracketRound[] = [
-  {
-    name: 'Półfinały',
-    matches: [
-      { home: teams[0], away: teams[4], homeScore: 3, awayScore: 1, winner: 'home' },
-      { home: teams[2], away: teams[1], homeScore: 0, awayScore: 2, winner: 'away' },
-    ],
-  },
-  {
-    name: 'Finał',
-    matches: [{ home: teams[0], away: teams[1], homeScore: 2, awayScore: 1, winner: 'home' }],
-  },
-]
-
-export const bracketWinner = teams[0]
-
-// Duży turniej pucharowy — 32 drużyny, 5 rund. Trzymamy go w danych demo,
-// bo drabinka na 4 drużyny nie udowadnia niczego o układzie: dopiero tutaj
-// widać selektor rund i to, że drzewo nie rozjeżdża ekranu.
-const cupTeams: Team[] = Array.from({ length: 32 }, (_, i) => ({
-  id: 1000 + i,
-  name: `${['FC', 'KS', 'LKS', 'MKS'][i % 4]} ${
-    ['Górka', 'Sparta', 'Orły', 'Dragons', 'Wilki', 'Tygrysy', 'Huragan', 'Burza'][i % 8]
-  } ${Math.floor(i / 8) + 1}`,
-  abbr: `${['FG', 'SP', 'OR', 'DR', 'WI', 'TY', 'HU', 'BU'][i % 8]}${Math.floor(i / 8) + 1}`,
-  players: 11,
-}))
-
-function buildCupBracket(entrants: Team[]): BracketRound[] {
-  const names: Record<number, string> = { 16: '1/16 finału', 8: '1/8 finału', 4: 'Ćwierćfinały', 2: 'Półfinały', 1: 'Finał' }
-  const rounds: BracketRound[] = []
-  let alive = entrants
-  while (alive.length > 1) {
-    const matches: BracketMatch[] = []
-    const winners: Team[] = []
-    for (let i = 0; i < alive.length; i += 2) {
-      const home = alive[i]
-      const away = alive[i + 1]
-      // Deterministyczny wynik — snapshoty Chromatica muszą być powtarzalne.
-      const homeWins = (home.id + away.id) % 3 !== 0
-      matches.push({
-        home,
-        away,
-        homeScore: homeWins ? 2 : 1,
-        awayScore: homeWins ? 1 : 3,
-        winner: homeWins ? 'home' : 'away',
-      })
-      winners.push(homeWins ? home : away)
-    }
-    rounds.push({ name: names[matches.length] ?? `Runda ${rounds.length + 1}`, matches })
-    alive = winners
-  }
-  return rounds
-}
-
-export const bracketLarge = buildCupBracket(cupTeams)
-export const bracketLargeWinner =
-  bracketLarge.at(-1)!.matches[0].winner === 'home'
-    ? bracketLarge.at(-1)!.matches[0].home!
-    : bracketLarge.at(-1)!.matches[0].away!
 
 // Obiekty turnieju w kształcie `VenueRow`. Hala bez adresu pokazuje stan
 // `address: null`, który kontrakt dopuszcza.
@@ -1064,3 +1001,229 @@ export const matchPageBasketball: MatchPageData = demoMatchPage(
   }),
   demoPeriods.basketball,
 )
+
+// --- Drabinka strony publicznej (#234) ---------------------------------------
+
+/** Puchar strony publicznej, ten sam co w przykładzie `puchar` kontraktu i w seedzie demo. */
+export const publicCupTournament: PublicShellTournament = {
+  ...publicTournament,
+  name: 'Puchar Osiedlowy 2026',
+  slug: 'puchar-osiedlowy-2026',
+}
+
+/** Puchar koszykarski: pole wyniku kafla bez miejsca na karne. */
+export const publicBasketballCupTournament: PublicShellTournament = {
+  ...publicCupTournament,
+  name: 'Puchar Koszykówki 2026',
+  slug: 'puchar-koszykowki-2026',
+  sport: { code: 'basketball', name: 'Koszykówka' },
+}
+
+/** Drużyny przykładu `puchar` w kolejności rozstawienia (seedy 1–6). */
+export const cupExampleTeams = ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Rysie Wola', 'Żubry Praga', 'Niedźwiedzie Mokotów'] as const
+
+/**
+ * Mecz pucharu demo w kształcie `Match` z kontraktu: pasuje i do reguł
+ * drabinki (`BracketMatch`), i do wierszy Terminarza (`MatchInRound`).
+ */
+export type DemoBracketMatch = BracketMatch & {
+  stageId: number
+  venue: { id: number; name: string } | null
+}
+
+/**
+ * Postęp pucharu demo: przed startem, po finale albo w trakcie rundy
+ * `round` (po `order`), w której zakończonych jest pierwszych `finished`
+ * meczów w kolejności gry, a następne `live` trwają. Wcześniejsze rundy są
+ * rozegrane. W rundzie finału mecz o 3. miejsce gra przed finałem.
+ */
+export type DemoBracketProgress = 'before' | 'done' | { round: number; finished: number; live?: number }
+
+export type DemoBracketOptions = {
+  teams: number
+  progress?: DemoBracketProgress
+  /** Domyślnie tak, gdy drużyn jest co najmniej cztery. */
+  thirdPlace?: boolean
+  sport?: 'football' | 'basketball'
+  /** Długie nazwy klubów: sprawdzają ucinanie i szerokość okna. */
+  longNames?: boolean
+  /** Nazwy w kolejności rozstawienia zamiast generowanych. */
+  names?: readonly string[]
+}
+
+const BRACKET_NICKS = ['Wilki', 'Orły', 'Sokoły', 'Lwy', 'Żubry', 'Rysie', 'Jastrzębie', 'Niedźwiedzie', 'Pantery', 'Byki', 'Kruki', 'Borsuki', 'Dziki', 'Lisy', 'Tygrysy', 'Smoki']
+const BRACKET_PLACES = ['Bemowo', 'Wola', 'Mokotów', 'Praga', 'Ursynów', 'Bielany', 'Targówek', 'Wawer', 'Ochota', 'Żoliborz', 'Białołęka', 'Wilanów', 'Rembertów', 'Ursus', 'Wesoła', 'Śródmieście']
+const BRACKET_VENUES = [
+  { id: 1, name: 'Boisko Bemowo' },
+  { id: 2, name: 'Stadion OSiR Wola' },
+  { id: 3, name: 'Hala Ursus' },
+]
+
+/** Nazwa rundy jak w generatorze (`BracketGenerator::roundName`). */
+function demoRoundName(teamsInRound: number): string {
+  if (teamsInRound === 2) return 'Finał'
+  if (teamsInRound === 4) return 'Półfinał'
+  if (teamsInRound === 8) return 'Ćwierćfinał'
+  return `1/${teamsInRound / 2} finału`
+}
+
+/** Powtarzalna losowość: zrzuty Chromatica i testy muszą widzieć te same wyniki. */
+function demoRandom(seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state += 0x6d2b79f5
+    let r = Math.imul(state ^ (state >>> 15), 1 | state)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * Puchar demo ułożony regułami generatora (#215): rozstawienie, wolne losy
+ * dla najwyżej rozstawionych, numery z dziurami, krawędzie i strony według
+ * ADR-0004, mecz o 3. miejsce w rundzie finału z numerem 2. Wyniki i awans
+ * jak w #216: awansuje się przy `finished`, remis w piłce rozstrzygają karne,
+ * a kosz remisu nie zna. Id meczu to `order · 1000 + matchNumber`, drużyny
+ * mają id równe rozstawieniu.
+ */
+export function demoBracket({
+  teams: count,
+  progress = 'before',
+  thirdPlace = count >= 4,
+  sport = 'football',
+  longNames = false,
+  names,
+}: DemoBracketOptions): DemoBracketMatch[] {
+  const size = bracketSize(count)
+  const rounds = Math.log2(size)
+  const positions = bracketSeedPositions(size)
+  const entrants = Array.from({ length: count }, (_, index) => {
+    const nick = BRACKET_NICKS[index % 16]!
+    const place = BRACKET_PLACES[(index * 5 + Math.floor(index / 16)) % 16]!
+    const name = names?.[index] ?? (longNames ? `Uczniowski Klub Sportowy ${nick} ${place} Warszawa` : `${nick} ${place}`)
+    return { id: index + 1, name }
+  })
+
+  const blank = (order: number, matchNumber: number): DemoBracketMatch => ({
+    id: order * 1000 + matchNumber,
+    stageId: 2,
+    round: { id: 100 + order, name: demoRoundName(2 ** (rounds - order + 1)), order },
+    matchNumber,
+    homeTeam: null,
+    awayTeam: null,
+    homeScore: null,
+    awayScore: null,
+    homePenalties: null,
+    awayPenalties: null,
+    status: 'scheduled',
+    kickoffAt: null,
+    venue: null,
+    winnerToMatchId: null,
+    loserToMatchId: null,
+    advancesToSlot: null,
+  })
+
+  // Mecze pozycyjne po rundzie i numerze; `null` w miejscu wolnego losu.
+  const grid = Array.from({ length: rounds }, (_, r) =>
+    Array.from({ length: size / 2 ** (r + 1) }, (_, p) =>
+      r === 0 && positions[2 * p + 1]! > count ? null : blank(r + 1, p + 1),
+    ),
+  )
+  const third = thirdPlace && rounds >= 2 ? blank(rounds, 2) : null
+
+  grid.forEach((row, r) =>
+    row.forEach((match, p) => {
+      if (!match || r === rounds - 1) return
+      match.winnerToMatchId = grid[r + 1]![Math.floor(p / 2)]!.id
+      match.loserToMatchId = r === rounds - 2 && third ? third.id : null
+      match.advancesToSlot = p % 2 === 0 ? 'home' : 'away'
+    }),
+  )
+
+  grid[0]!.forEach((match, p) => {
+    const home = entrants[positions[2 * p]! - 1]!
+    if (match) {
+      match.homeTeam = home
+      match.awayTeam = entrants[positions[2 * p + 1]! - 1]!
+      return
+    }
+    const target = grid[1]![Math.floor(p / 2)]!
+    if (p % 2 === 0) target.homeTeam = home
+    else target.awayTeam = home
+  })
+
+  // Rundy co tydzień od soboty 5 września, osiem meczów dziennie od 9:00
+  // UTC; w rundzie finału mecz o 3. miejsce o 10:00, finał o 12:00.
+  const inPlayOrder = grid.map((row, r) => {
+    const played = row.filter((match): match is DemoBracketMatch => match !== null)
+    return r === rounds - 1 && third ? [third, ...played] : played
+  })
+  inPlayOrder.forEach((matches, r) =>
+    matches.forEach((match, index) => {
+      const day = Date.UTC(2026, 8, 5) + (r * 7 + Math.floor(index / 8)) * 86_400_000
+      const hour = r === rounds - 1 ? (match === third ? 10 : 12) : 9 + (index % 8)
+      match.kickoffAt = new Date(day + hour * 3_600_000).toISOString().replace('.000Z', '+00:00')
+      match.venue = BRACKET_VENUES[index % BRACKET_VENUES.length]!
+    }),
+  )
+
+  const random = demoRandom(count * 7919 + (sport === 'football' ? 1 : 2))
+  const byId = new Map([...grid.flat(), third].filter((match): match is DemoBracketMatch => match !== null).map((match) => [match.id, match]))
+
+  function play(match: DemoBracketMatch, status: 'live' | 'finished') {
+    match.status = status
+    if (sport === 'basketball') {
+      const scale = status === 'live' ? 0.5 : 1
+      const home = Math.round((58 + random() * 38) * scale)
+      const away = Math.round((58 + random() * 38) * scale)
+      match.homeScore = home
+      match.awayScore = status === 'finished' && home === away ? away + 3 : away
+      return
+    }
+    // Wyżej rozstawiony (niższe id) częściej wygrywa, żeby drabinka wyglądała prawdopodobnie.
+    const goals = () => [0, 0, 1, 1, 1, 2, 2, 3][Math.floor(random() * 8)]!
+    let home = goals()
+    let away = goals()
+    if (random() < 0.35) {
+      if (match.homeTeam!.id < match.awayTeam!.id) home += 1
+      else away += 1
+    }
+    match.homeScore = status === 'live' ? Math.min(home, 2) : home
+    match.awayScore = status === 'live' ? Math.min(away, 1) : away
+    if (status === 'finished' && home === away) {
+      const winner = 4 + Math.floor(random() * 2)
+      const loser = winner - 1 - Math.floor(random() * 2)
+      const homeWins = random() < 0.5
+      match.homePenalties = homeWins ? winner : loser
+      match.awayPenalties = homeWins ? loser : winner
+    }
+  }
+
+  function advance(match: DemoBracketMatch) {
+    const winner = bracketWinnerSide(match)
+    if (!winner || !match.advancesToSlot) return
+    const slot = match.advancesToSlot === 'home' ? 'homeTeam' : 'awayTeam'
+    const next = match.winnerToMatchId === null ? undefined : byId.get(match.winnerToMatchId)
+    if (next) next[slot] = winner === 'home' ? match.homeTeam : match.awayTeam
+    const consolation = match.loserToMatchId === null ? undefined : byId.get(match.loserToMatchId)
+    if (consolation) consolation[slot] = winner === 'home' ? match.awayTeam : match.homeTeam
+  }
+
+  const current = progress === 'before' ? { round: 1, finished: 0, live: 0 } : progress === 'done' ? { round: rounds + 1, finished: 0, live: 0 } : progress
+  inPlayOrder.forEach((matches, r) =>
+    matches.forEach((match, index) => {
+      const order = r + 1
+      const status =
+        order < current.round || (order === current.round && index < current.finished)
+          ? 'finished'
+          : order === current.round && index < current.finished + (current.live ?? 0)
+            ? 'live'
+            : 'scheduled'
+      if (status === 'scheduled' || !match.homeTeam || !match.awayTeam) return
+      play(match, status)
+      if (status === 'finished') advance(match)
+    }),
+  )
+
+  return [...byId.values()].toSorted((a, b) => a.round.order - b.round.order || a.matchNumber - b.matchNumber)
+}

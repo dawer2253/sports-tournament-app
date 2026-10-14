@@ -448,7 +448,11 @@ describe('Drabinka — rundy i mecze', () => {
 
     const champion = (await screen.findByText('Zwycięzca pucharu')).closest('[data-slot="bracket-champion"]');
     expect(champion).toHaveTextContent('Orły Wola');
-    expect(screen.getByText('1:1 (k. 3:4)')).toBeInTheDocument();
+    // Karne w polu wyniku, w nawiasie przy wyniku każdej drużyny, pogrubione u zwycięzcy (#234).
+    const final = within(screen.getByRole('button', { name: 'Finał: Lwy Mokotów – Orły Wola' }));
+    expect(final.getByText('1:1')).toBeInTheDocument();
+    expect(final.getByText('(3)')).not.toHaveClass('font-bold');
+    expect(final.getByText('(4)')).toHaveClass('font-bold');
   });
 });
 
@@ -541,7 +545,7 @@ describe('Drabinka — okno meczu (#228)', () => {
     const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Zwycięzca: Ćwierćfinał 2');
 
     expect(dialog).toHaveAccessibleName('Lwy Mokotów – Zwycięzca: Ćwierćfinał 2');
-    expect(dialog).toHaveAccessibleDescription(/^Półfinał 1 · sob\., 10 paź, \d\d:00$/);
+    expect(dialog).toHaveAccessibleDescription(/^Półfinał 1, sob\., 10 paź, \d\d:00$/);
   });
 
   it('pola karnych pojawiają się dopiero przy remisie i „Zakończony”', async () => {

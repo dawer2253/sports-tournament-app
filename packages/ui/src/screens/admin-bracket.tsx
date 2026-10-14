@@ -137,7 +137,7 @@ export function AdminBracket({ state = 'w-trakcie' }: AdminBracketProps) {
       <ul aria-label={round.summary.name} className="space-y-2">
         {round.matches.map((match) => (
           <li key={match.id}>
-            <BracketMatchRow match={match} timeZone={scheduleTimeZone} />
+            <BracketMatchRow match={match} timeZone={scheduleTimeZone} penaltySlot />
           </li>
         ))}
       </ul>

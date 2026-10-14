@@ -1,5 +1,5 @@
 import type { AdminMatch, Match, MatchEvent, Player, SportEventType, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
-import type { BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, SeedingTeam, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { BracketMatch, BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, SeedingTeam, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -95,8 +95,16 @@ export const contractFitsSeedingTeam: ContractFitsSeedingTeam = true;
 
 /**
  * Mecz z kontraktu niesie wynik z karnymi w kształcie, z którego
- * `bracketWinnerSide` i `bracketScoreText` liczą zwycięzcę i napis (#227).
+ * `bracketWinnerSide` liczy zwycięzcę (#227).
  */
 type ContractFitsBracketScore = AdminMatch extends BracketScore ? true : never;
 
 export const contractFitsBracketScore: ContractFitsBracketScore = true;
+
+/**
+ * Mecz z kontraktu daje się podać regułom odczytu drabinki z design systemu
+ * (`matchLabel`, `bracketByes`, `bracketChampion`, #234) wprost.
+ */
+type ContractFitsBracketMatch = AdminMatch extends BracketMatch ? true : never;
+
+export const contractFitsBracketMatch: ContractFitsBracketMatch = true;

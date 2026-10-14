@@ -35,6 +35,19 @@ export function formatKickoff(
   return showDate ? `${formatMatchDay(iso, timeZone)}, ${time}` : time
 }
 
+/**
+ * Termin w dwóch krótkich częściach, „18.10” i „12:00”, do wąskiego pola
+ * kafla drabinki (#234). `null` bez terminu.
+ */
+export function formatKickoffParts(iso: string | null, timeZone?: string): { day: string; time: string } | null {
+  if (iso === null) return null
+  const date = new Date(iso)
+  return {
+    day: new Intl.DateTimeFormat('pl-PL', { day: '2-digit', month: '2-digit', timeZone }).format(date),
+    time: timeFormat(timeZone).format(date),
+  }
+}
+
 /** Różne dni, w które grają mecze z terminem, w kolejności chronologicznej. */
 export function matchDays(kickoffs: readonly (string | null)[], timeZone?: string): string[] {
   const dated = kickoffs.filter((iso): iso is string => iso !== null).sort()

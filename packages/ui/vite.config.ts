@@ -16,7 +16,17 @@ export default defineConfig({
   // Bez aliasu '@': wewnątrz pakietu obowiązują ścieżki względne, żeby te same
   // pliki dało się zaimportować z aplikacji. Patrz scripts/fix-imports.mjs.
   test: {
+    // Dwa projekty: `unit` (node) dla czystych reguł w `src/**/*.test.ts`
+    // i `storybook` (Chromium) dla funkcji `play`. Krok CI „Stories (funkcje
+    // play)” puszcza `npx vitest run`, więc łapie oba (#234).
     projects: [{
+      extends: true,
+      test: {
+        name: 'unit',
+        environment: 'node',
+        include: ['src/**/*.test.ts'],
+      },
+    }, {
       extends: true,
       plugins: [
       // The plugin will run tests for the stories defined in your Storybook config

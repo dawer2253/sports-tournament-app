@@ -10,6 +10,7 @@ import { StandalonePage } from './standalone-page';
 const TAB_PATHS: Record<PublicNavKey, string> = {
   home: '',
   standings: 'tabela',
+  bracket: 'drabinka',
   fixtures: 'terminarz',
   results: 'wyniki',
   stats: 'statystyki',

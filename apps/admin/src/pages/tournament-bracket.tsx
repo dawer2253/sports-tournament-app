@@ -3,6 +3,9 @@ import { firstFieldErrors, isValidationError, type AdminMatch, type Stage, type 
 import {
   BracketChampion,
   BracketMatchRow,
+  bracketByes,
+  bracketChampion,
+  matchLabel,
   Button,
   Card,
   CardContent,
@@ -29,14 +32,7 @@ import { AdminPage } from '../components/admin-page';
 import { DatesDialog } from '../components/dates-dialog';
 import { MatchDialog } from '../components/match-dialog';
 import { api } from '../lib/api';
-import {
-  bracketByes,
-  bracketChampion,
-  bracketRounds,
-  bracketRow,
-  bracketSizeSentence,
-  type BracketRound,
-} from '../lib/bracket';
+import { bracketRounds, bracketRow, bracketSizeSentence, type BracketRound } from '../lib/bracket';
 import { BRACKET_ROUNDS_ACCUSATIVE, MATCHES, plural } from '../lib/plural';
 import { defaultRound, hasStartedMatches, teamsWithoutMatches } from '../lib/schedule';
 import { scheduleKeys, useStageMatches, useStages } from '../lib/schedule-queries';
@@ -150,7 +146,12 @@ export function TournamentBracketPage() {
           onGenerate={openGenerate}
         />
         <WithoutDatesNotice matches={matches.data} onDistribute={openDates} />
-        <RoundsView rounds={rounds} matches={matches.data} onSelectMatch={openMatch} />
+        <RoundsView
+          rounds={rounds}
+          matches={matches.data}
+          penaltySlot={tournament.sport.allowsDraw}
+          onSelectMatch={openMatch}
+        />
         {champion && <BracketChampion team={champion} className="mt-4 max-w-sm" />}
       </>
     );
@@ -323,10 +324,13 @@ function WithoutDatesNotice({ matches, onDistribute }: { matches: AdminMatch[]; 
 function RoundsView({
   rounds,
   matches,
+  penaltySlot,
   onSelectMatch,
 }: {
   rounds: BracketRound[];
   matches: AdminMatch[];
+  /** Sport z remisem: pole wyniku ma miejsce na karne (#234). */
+  penaltySlot: boolean;
   onSelectMatch: (match: AdminMatch) => void;
 }) {
   const [params, setParams] = useSearchParams();
@@ -360,14 +364,18 @@ function RoundsView({
         <ul className="space-y-2">
           {round.matches.map((match) => (
             <li key={match.id}>
-              <BracketMatchRow match={bracketRow(match, matches)} onSelect={() => onSelectMatch(match)} />
+              <BracketMatchRow
+                match={bracketRow(match, matches)}
+                penaltySlot={penaltySlot}
+                onSelect={() => onSelectMatch(match)}
+              />
             </li>
           ))}
         </ul>
       </div>
       {byes.length > 0 && (
         <p className="mt-2 rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-          Wolne losy (bez meczu w 1. rundzie): {byes.map((bye) => `${bye.team} → ${bye.target}`).join(', ')}
+          Wolne losy (bez meczu w 1. rundzie): {byes.map((bye) => `${bye.team.name} → ${matchLabel(bye.target, matches)}`).join(', ')}
         </p>
       )}
     </>

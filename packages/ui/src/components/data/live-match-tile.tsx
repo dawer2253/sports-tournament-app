@@ -14,7 +14,8 @@ export interface LiveMatchTileProps {
 
 /**
  * Wyróżniony kafel meczu trwającego na Przeglądzie strony publicznej:
- * kolejka, `LiveMarker`, obiekt, para, wynik cząstkowy i strzelcy (#208).
+ * kolejka (w pucharze etykieta pozycji), `LiveMarker`, obiekt, para, wynik
+ * cząstkowy i strzelcy (#208).
  * Wynik jest najmocniejszym elementem kafla, więc stan nie dostaje
  * plakietki, tylko znacznik (patrz `LiveMarker`).
  */
@@ -30,7 +31,11 @@ export function LiveMatchTile({ match, action }: LiveMatchTileProps) {
     >
       {/* Kolejka to kontekst całego meczu, obiekt to jeden z jego faktów —
           różna ranga, więc różne miejsce w układzie, a nie kropka między nimi. */}
-      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{match.round.name}</p>
+      {/* W pucharze etykieta pozycji: mecz o 3. miejsce gra w rundzie
+          „Finał”, więc sama nazwa rundy myliłaby go z finałem (#234). */}
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {match.bracket?.label ?? match.round.name}
+      </p>
       <div className="mb-3 flex items-center justify-between gap-2">
         <LiveMarker />
         {match.venue && (
