@@ -44,6 +44,7 @@ export interface BracketMatchRowProps {
    * węższe, bez miejsca na karne.
    */
   penaltySlot?: boolean
+  /** Klasy opakowania wiersza, czyli kontenera, od którego liczy się próg układu. */
   className?: string
 }
 

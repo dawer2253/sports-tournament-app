@@ -31,7 +31,7 @@ export function BracketPage() {
   const { stage, matches, penaltySlot } = useBracket();
   const requested = Number(params.get(START_PARAM));
   const start = Number.isInteger(requested) && requested > 0 ? requested : undefined;
-  const initial = matches.data && currentRoundOrder(matches.data);
+  const entryStart = matches.data && currentRoundOrder(matches.data);
 
   const setStart = useCallback(
     (order: number) =>
@@ -47,8 +47,8 @@ export function BracketPage() {
   );
 
   useEffect(() => {
-    if (start === undefined && initial) setStart(initial);
-  }, [start, initial, setStart]);
+    if (start === undefined && entryStart) setStart(entryStart);
+  }, [start, entryStart, setStart]);
 
   if (!stage) {
     return (

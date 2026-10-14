@@ -112,7 +112,7 @@ function bracket(overrides: Record<number, Partial<AdminMatch>> = {}): AdminMatc
  * o 3. miejsce półfinały nie mają krawędzi przegranego.
  */
 function reseeded(seeding: number[], { thirdPlace }: { thirdPlace: boolean }): AdminMatch[] {
-  const byId = (side: AdminMatch['homeTeam']) => {
+  const reseed = (side: AdminMatch['homeTeam']) => {
     if (!side) return null;
     const { id, name, logoUrl } = TEAMS.find((candidate) => candidate.id === seeding[side.id - 1])!;
     return { id, name, logoUrl };
@@ -121,8 +121,8 @@ function reseeded(seeding: number[], { thirdPlace }: { thirdPlace: boolean }): A
     .filter((candidate) => thirdPlace || candidate.id !== 302)
     .map((candidate) => ({
       ...candidate,
-      homeTeam: byId(candidate.homeTeam),
-      awayTeam: byId(candidate.awayTeam),
+      homeTeam: reseed(candidate.homeTeam),
+      awayTeam: reseed(candidate.awayTeam),
       loserToMatchId: thirdPlace ? candidate.loserToMatchId : null,
     }));
 }
