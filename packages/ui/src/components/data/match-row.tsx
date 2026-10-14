@@ -1,9 +1,11 @@
 import { AlertTriangle, Check, ChevronRight, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { cva } from 'class-variance-authority'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn, isModifiedClick } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
+import { PenaltyScore } from './penalties'
 import { MATCH_STATUS_LABELS, type MatchCollision, type MatchCollisionType, type MatchRowData } from './match-row-data'
 import { scorerSides } from './scorer-lines'
 import { ScorerList } from './scorer-list'
@@ -33,9 +35,38 @@ import { ScorerList } from './scorer-list'
  * nich, więc długa lista wydłuża wiersz w dół, a wyniku nie przesuwa.
  * W szerokim wierszu lista zajmuje też puste pod terminem (gospodarz) i pod
  * stanem (gość) kolumny, żeby wpis nie zawijał się bez potrzeby.
+ *
+ * Wiersz fazy `knockout` w sporcie z remisem ma szerszą kolumnę wyniku, bo
+ * pole zawsze trzyma miejsce na karne (#234). Szerokość zależy od sportu
+ * i fazy, a nie od meczu, więc w jednej rundzie wynik stoi wszędzie tak samo.
  */
-const ROW_GRID =
-  'grid grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] gap-x-3 gap-y-1.5 @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]'
+const rowGrid = cva('grid items-center gap-x-3 gap-y-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm', {
+  variants: {
+    penaltySlot: {
+      false:
+        'grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+      true: 'grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+    },
+  },
+})
+
+/**
+ * Pole wyniku: puste „– : –” z ramką, a z wynikiem pełne, w kolorze stanu
+ * „na żywo” przy meczu trwającym. Z miejscem na karne ma trzy kolumny.
+ */
+const scoreField = cva('w-full rounded-md px-1 py-1 text-center text-sm tabular-nums', {
+  variants: {
+    state: {
+      empty: 'border text-muted-foreground',
+      live: 'bg-destructive font-semibold text-destructive-foreground',
+      done: 'bg-foreground font-semibold text-background',
+    },
+    penaltySlot: {
+      false: '',
+      true: 'grid grid-cols-[1.25rem_minmax(0,1fr)_1.25rem] items-baseline gap-x-0.5',
+    },
+  },
+})
 
 const STATUS_BADGE: Record<
   MatchRowData['status'],
@@ -90,26 +121,30 @@ export function CollisionBadge({ collisions, className }: { collisions: MatchCol
 
 /**
  * Wynik albo „– : –”. Mecz trwający ma wynik cząstkowy w kolorze stanu
- * „na żywo”, tak jak `LiveMarker`.
+ * „na żywo”, tak jak `LiveMarker`. W fazie `knockout` sportu z remisem pole
+ * ma po bokach miejsce na karne, „(4) 1 : 1 (3)”, z pogrubionymi karnymi
+ * zwycięzcy (#234).
  */
 function Score({ match }: { match: MatchRowData }) {
   const hasScore = match.homeScore !== null && match.awayScore !== null
+  const penaltySlot = match.bracket?.penaltySlot ?? false
+  const score = hasScore ? `${match.homeScore} : ${match.awayScore}` : '– : –'
   return (
     <span
       data-slot="match-score"
-      className={cn(
-        'w-full rounded-md px-1 py-1 text-center text-sm tabular-nums',
-        hasScore ? 'font-semibold' : 'border text-muted-foreground',
-        hasScore && (match.status === 'live' ? 'bg-destructive text-destructive-foreground' : 'bg-foreground text-background'),
-      )}
+      className={scoreField({ state: !hasScore ? 'empty' : match.status === 'live' ? 'live' : 'done', penaltySlot })}
     >
-      {hasScore ? `${match.homeScore} : ${match.awayScore}` : '– : –'}
+      {penaltySlot ? (
+        <PenaltyScore match={match} score={score} penaltyClassName="text-[11px]" />
+      ) : (
+        score
+      )}
     </span>
   )
 }
 
-function teamName(team: MatchRowData['homeTeam']) {
-  return team?.name ?? 'Do ustalenia'
+function teamName(team: MatchRowData['homeTeam'], source?: string) {
+  return team?.name ?? source ?? 'Do ustalenia'
 }
 
 export interface MatchRowProps {
@@ -165,14 +200,23 @@ export function MatchRow({
   statusDisplay = 'badge',
   className,
 }: MatchRowProps) {
-  const home = teamName(match.homeTeam)
-  const away = teamName(match.awayTeam)
+  const home = teamName(match.homeTeam, match.bracket?.homeSource)
+  const away = teamName(match.awayTeam, match.bracket?.awaySource)
   const label = `${home} – ${away}`
   const scorers = scorerSides(match)
+  // Pusty slot z podpisem źródła idzie kursywą i drobniej, jak w wierszu
+  // drabinki panelu; po stronie gospodarza z oddechem przy polu wyniku,
+  // żeby pochylona końcówka nie dochodziła do ramki.
+  const sourceName = 'text-xs font-normal italic text-muted-foreground'
 
   const content = (
     <>
       <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground @2xl/match-row:col-span-1 @2xl/match-row:block">
+        {/* W szerokim wierszu komórka jest blokiem, więc etykieta dostaje
+            własną linię nad terminem, a w wąskim odstęp daje `gap`. */}
+        {match.bracket && (
+          <span className="shrink-0 font-medium text-foreground @2xl/match-row:block">{match.bracket.label}</span>
+        )}
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (
           <span className="flex min-w-0 items-center gap-1">
@@ -181,11 +225,27 @@ export function MatchRow({
           </span>
         )}
       </div>
-      <span data-slot="match-team" className="col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1">{home}</span>
+      <span
+        data-slot="match-team"
+        className={cn(
+          'col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1',
+          !match.homeTeam && cn(sourceName, 'pe-1'),
+        )}
+      >
+        {home}
+      </span>
       <span className="col-start-2 row-start-2 flex @2xl/match-row:col-start-3 @2xl/match-row:row-start-1">
         <Score match={match} />
       </span>
-      <span data-slot="match-team" className="col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1">{away}</span>
+      <span
+        data-slot="match-team"
+        className={cn(
+          'col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1',
+          !match.awayTeam && sourceName,
+        )}
+      >
+        {away}
+      </span>
       <ScorerList
         lines={scorers.home}
         team={home}
@@ -214,7 +274,7 @@ export function MatchRow({
     </>
   )
 
-  const grid = cn(ROW_GRID, 'items-center rounded-xl border bg-card px-3 py-2.5 text-sm')
+  const grid = rowGrid({ penaltySlot: match.bracket?.penaltySlot ?? false })
   const interactive = cn(
     'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',

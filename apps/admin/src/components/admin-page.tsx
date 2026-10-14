@@ -1,10 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 import type { Tournament } from '@tournament/api-client';
-import { AdminShell, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
+import { AdminShell, isKnockoutOnly, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
-import { isKnockoutOnly } from '../lib/bracket';
 import { useStages } from '../lib/schedule-queries';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';

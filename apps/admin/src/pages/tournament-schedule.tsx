@@ -14,6 +14,7 @@ import {
   MatchRow,
   RoundList,
   Skeleton,
+  isKnockoutOnly,
   matchDays,
   toast,
 } from '@tournament/ui';
@@ -25,7 +26,6 @@ import { ChoiceCards } from '../components/choice-cards';
 import { DatesDialog } from '../components/dates-dialog';
 import { MatchDialog } from '../components/match-dialog';
 import { api } from '../lib/api';
-import { isKnockoutOnly } from '../lib/bracket';
 import { MATCHES, plural, ROUNDS, ROUNDS_ACCUSATIVE, TEAMS, TEAMS_PLAYING } from '../lib/plural';
 import {
   defaultRound,

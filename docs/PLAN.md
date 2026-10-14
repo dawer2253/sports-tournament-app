@@ -100,9 +100,10 @@ Uwagi:
   dokąd awansują jego uczestnicy (`winner_to_match_id`, `loser_to_match_id`).
   `advances_to_slot` jest wspólne dla obu krawędzi, bo strona wynika z pozycji meczu
   źródłowego, a nie z tego, kto awansuje ([ADR 0004](adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md)).
-  `rounds.name` jest zwykłą kolumną i organizer może ją zmienić; nie przechowujemy
-  natomiast etykiety wyliczanej z pozycji meczu ("1/2 finału") — zależy od rozmiaru
-  drabinki, więc liczy ją widok.
+  `rounds.name` nadaje generator razem z drabinką albo terminarzem („Kolejka 3”,
+  „Półfinał”) i znika razem z nimi (#215); nie przechowujemy natomiast etykiety
+  pozycji meczu („Półfinał 1”, „Mecz o 3. miejsce”) — wynika z krawędzi i rozmiaru
+  drabinki, więc liczy ją widok, jak w haśle „Match” w `CONTEXT.md`.
 - Karne (`home_penalties`, `away_penalties`) wypełnione wyłącznie w fazie `knockout`,
   przy meczu zakończonym remisem. Nie są zdobyczami: nie wchodzą do tabeli ani do statystyk.
 - Pauza (bye) nie tworzy meczu i nie ma własnej kolumny (decyzja #24).
@@ -329,6 +330,9 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 - Podział meczu ustawiany dla pojedynczego meczu. W S3 dotyczy całego
   turnieju, więc mecz o innych częściach (np. finał z dłuższymi połowami)
   dostaje podział turnieju (#210).
+- Dwumecz w pucharze (mecz i rewanż w parze). Zmienia model krawędzi, bo
+  zwycięzca wynika z sumy dwóch meczów, więc wymaga nowego ADR. W S4 para to
+  jeden mecz (#211, #234).
 
 ---
 

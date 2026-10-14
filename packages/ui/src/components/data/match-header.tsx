@@ -2,6 +2,7 @@ import { CalendarClock, MapPin } from 'lucide-react'
 import type * as React from 'react'
 import fieldPhoto from '../../assets/public/field.webp'
 import basketballPhoto from '../../assets/public/hero-basketball.webp'
+import { bracketWinnerSide } from '../../lib/bracket'
 import { formatKickoff } from '../../lib/kickoff'
 import { matchBandScrim, type MatchBandBackdrop } from '../../lib/match-band'
 import { cn } from '../../lib/utils'
@@ -12,6 +13,7 @@ import type { SportCode } from '../layout/public-shell-tournament'
 import { TeamLogo } from '../layout/team-logo'
 import type { MatchPageMatch, MatchPageTeam } from './match-page-data'
 import { MATCH_STATUS_LABELS } from './match-row-data'
+import { Penalties } from './penalties'
 import { scorerSides, type ScorerLine } from './scorer-lines'
 
 /** Zdjęcie pod pasem i jego kadr (`PhotoPanel.focus`). */
@@ -147,26 +149,45 @@ export function MatchHeader({ match, sport, brandColor, timeZone, className }: M
   const hasScorers = !scheduled && scorers.home.length + scorers.away.length > 0
   const score =
     scheduled || match.homeScore === null || match.awayScore === null ? '– : –' : `${match.homeScore} : ${match.awayScore}`
+  const penalties = !scheduled && match.homePenalties != null && match.awayPenalties != null
+  const winner = bracketWinnerSide(match)
+  const scoreLabel = penalties ? `Wynik ${score}, karne ${match.homePenalties} : ${match.awayPenalties}` : `Wynik ${score}`
 
   return (
     <Band sport={sport} className={cn('rounded-xl px-4 pt-4 pb-5 sm:px-8', className)}>
       <div aria-hidden className="absolute inset-0 -z-10" style={{ background: matchBandScrim(brandColor) }} />
       <section aria-label={`Mecz: ${home} – ${away}`} data-slot="match-band" className="text-sm">
         <div className="mb-3 flex items-center justify-between gap-2 font-medium">
-          <span {...bandText('top')}>{match.round.name}</span>
+          {/* W pucharze etykieta pozycji: mecz o 3. miejsce gra w rundzie „Finał” (#234). */}
+          <span {...bandText('top')}>{match.bracket?.label ?? match.round.name}</span>
           <Status status={match.status} />
         </div>
 
         <div className="grid grid-cols-[1fr_5rem_1fr] items-start gap-3 sm:grid-cols-[1fr_9rem_1fr] sm:gap-6">
           <BandTeam team={match.homeTeam} />
-          <p
-            {...bandText('top', true)}
-            data-slot="match-band-score"
-            aria-label={scheduled ? 'Mecz jeszcze się nie zaczął' : `Wynik ${score}`}
-            className="pt-2 text-center text-4xl font-extrabold whitespace-nowrap tabular-nums sm:text-6xl"
-          >
-            {score}
-          </p>
+          <div className="flex flex-col items-center">
+            <p
+              {...bandText('top', true)}
+              data-slot="match-band-score"
+              aria-label={scheduled ? 'Mecz jeszcze się nie zaczął' : scoreLabel}
+              className="pt-2 text-center text-4xl font-extrabold whitespace-nowrap tabular-nums sm:text-6xl"
+            >
+              {score}
+            </p>
+            {/* Karne pod wynikiem, w nawiasie po stronie każdej drużyny i pogrubione
+                u zwycięzcy, jak w kaflu drabinki (#216, #234). Tylko w meczu, który je ma. */}
+            {penalties && (
+              <p
+                {...bandText('top')}
+                aria-hidden
+                data-slot="match-band-penalties"
+                className="mt-1 flex w-full justify-between text-base whitespace-nowrap sm:text-xl"
+              >
+                <Penalties value={match.homePenalties} won={winner === 'home'} />
+                <Penalties value={match.awayPenalties} won={winner === 'away'} />
+              </p>
+            )}
+          </div>
           <BandTeam team={match.awayTeam} />
         </div>
 

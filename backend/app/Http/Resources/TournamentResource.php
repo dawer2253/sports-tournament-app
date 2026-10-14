@@ -32,6 +32,7 @@ class TournamentResource extends JsonResource
                 'id' => $this->sport->id,
                 'code' => $this->sport->code,
                 'name' => $this->sport->name,
+                'allowsDraw' => $this->sport->allowsDraw(),
             ],
             'branding' => [
                 'logoUrl' => $this->logoUrl(),

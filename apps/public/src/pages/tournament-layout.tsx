@@ -1,5 +1,5 @@
 import type { PublicTournament } from '@tournament/api-client';
-import { EmptyState, Skeleton } from '@tournament/ui';
+import { CUP_TABS, EmptyState, LEAGUE_TABS, Skeleton, isKnockoutOnly } from '@tournament/ui';
 import { PublicShell, type PublicNavKey } from '@tournament/ui/components/layout/public-shell.tsx';
 import { useEffect } from 'react';
 import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
@@ -10,6 +10,7 @@ import { StandalonePage } from './standalone-page';
 const TAB_PATHS: Record<PublicNavKey, string> = {
   home: '',
   standings: 'tabela',
+  bracket: 'drabinka',
   fixtures: 'terminarz',
   results: 'wyniki',
   stats: 'statystyki',
@@ -65,6 +66,8 @@ export function TournamentLayout() {
     return (
       <PublicShell
         tournament={tournament.data}
+        // Puchar ma Drabinkę w miejscu Tabeli (#234).
+        tabs={isKnockoutOnly(tournament.data.stages) ? CUP_TABS : LEAGUE_TABS}
         active={active}
         navHref={(key) => tabHref(slug, key)}
         onNavigate={(key) => void navigate(tabHref(slug, key))}

@@ -469,7 +469,7 @@ function bracketShape(array $matches, callable $seed): array
 
 // Przykłady `puchar` (panel i strona publiczna) mają spełniać te same
 // niezmienniki co generator (#227, DoD „Kontrakt”), więc test porównuje ich
-// kształt z drabinką, którą generator układa dla sześciu drużyn bez meczu
+// kształt z drabinką, którą generator układa dla sześciu drużyn z meczem
 // o 3. miejsce; w przykładzie seedy 1–6 to drużyny o id 1–6. Przykład jest
 // w trakcie gry, a awans po wyniku (#228) obsadza sloty zasilane krawędzią.
 // Generator zostawia je puste, więc z przykładu wypadają drużyny z tych
@@ -477,7 +477,7 @@ function bracketShape(array $matches, callable $seed): array
 it('ma przykłady puchar w kształcie drabinki z generatora', function (string $path) {
     $stage = cupWithTeams(6);
     $seeds = seedsOf($stage);
-    generateBracket($stage)->assertValidResponse(201);
+    generateBracket($stage, thirdPlaceMatch: true)->assertValidResponse(201);
 
     $generated = actingAsOrganizer($stage->tournament->user)
         ->getJson("/api/v1/tournaments/{$stage->tournament_id}/matches?stageId={$stage->id}")

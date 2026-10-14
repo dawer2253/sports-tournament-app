@@ -24,7 +24,7 @@ const TOURNAMENT = {
   name: 'Puchar Zimowy',
   slug: 'puchar-zimowy',
   status: 'draft',
-  sport: { id: 2, code: 'basketball', name: 'Koszykówka' },
+  sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false },
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   points: { win: 2, draw: 0, loss: 1 },
   tiebreakers: ['points'],

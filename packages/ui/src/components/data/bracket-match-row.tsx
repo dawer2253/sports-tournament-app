@@ -1,9 +1,19 @@
+import { cva } from 'class-variance-authority'
 import { Trophy } from 'lucide-react'
-import { bracketScoreText, bracketWinnerSide } from '../../lib/bracket'
+import { bracketWinnerSide } from '../../lib/bracket'
 import { formatKickoff } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
 import type { BracketMatchRowData, BracketSlot } from './bracket-match-row-data'
 import { MatchStatusBadge } from './match-row'
+import { PenaltyScore } from './penalties'
+
+/** Pole wyniku: puste z ramką albo wypełnione; w sporcie z remisem o stałej szerokości, z kolumnami na karne. */
+const scoreField = cva('rounded-md px-2 py-0.5 text-center tabular-nums', {
+  variants: {
+    empty: { true: 'border text-muted-foreground', false: 'bg-muted font-semibold' },
+    penaltySlot: { true: 'grid w-28 grid-cols-[1.75rem_minmax(0,1fr)_1.75rem] items-baseline gap-x-1', false: '' },
+  },
+})
 
 function SlotName({ slot, outcome, align }: { slot: BracketSlot; outcome: 'won' | 'lost' | null; align: 'start' | 'end' }) {
   return (
@@ -28,6 +38,12 @@ export interface BracketMatchRowProps {
   timeZone?: string
   /** Gdy podane, wiersz jest przyciskiem otwierającym okno meczu (#228). */
   onSelect?: () => void
+  /**
+   * Sport z remisem (`allowsDraw`): pole wyniku zawsze ma miejsce na karne,
+   * więc wynik nie skacze między wierszami rundy (#234). W koszu pole jest
+   * węższe, bez miejsca na karne.
+   */
+  penaltySlot?: boolean
   className?: string
 }
 
@@ -36,13 +52,15 @@ export interface BracketMatchRowProps {
  * gospodarz | wynik z karnymi | gość | stan i krawędzie. Zwycięzca jest
  * pogrubiony, przegrany przyciszony; pusty slot mówi, skąd przyjdzie
  * drużyna. Poniżej `sm` etykieta i krawędzie idą w osobnych liniach nad
- * i pod parą.
+ * i pod parą. Karne stoją w polu wyniku, w nawiasie przy wyniku każdej
+ * drużyny, „(4) 1:1 (3)”, jak w drabince strony publicznej (#234).
  */
-export function BracketMatchRow({ match, timeZone, onSelect, className }: BracketMatchRowProps) {
+export function BracketMatchRow({ match, timeZone, onSelect, penaltySlot = false, className }: BracketMatchRowProps) {
   const winner = bracketWinnerSide(match)
   const outcome = (side: 'home' | 'away') => (winner === null ? null : winner === side ? 'won' : 'lost')
   const name = (slot: BracketSlot) => slot.team?.name ?? slot.source ?? 'Do ustalenia'
   const label = `${match.label}: ${name(match.home)} – ${name(match.away)}`
+  const score = match.homeScore === null || match.awayScore === null ? '–' : `${match.homeScore}:${match.awayScore}`
 
   const grid = cn(
     'grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 rounded-xl border bg-card px-3 py-2.5 text-left text-sm',
@@ -59,12 +77,13 @@ export function BracketMatchRow({ match, timeZone, onSelect, className }: Bracke
       <SlotName slot={match.home} outcome={outcome('home')} align="end" />
       <span
         data-slot="bracket-score"
-        className={cn(
-          'rounded-md px-2 py-0.5 text-center tabular-nums',
-          match.homeScore === null ? 'border text-muted-foreground' : 'bg-muted font-semibold',
-        )}
+        className={scoreField({ empty: match.homeScore === null, penaltySlot })}
       >
-        {bracketScoreText(match)}
+        {penaltySlot ? (
+          <PenaltyScore match={match} score={score} penaltyClassName="text-xs" />
+        ) : (
+          score
+        )}
       </span>
       <SlotName slot={match.away} outcome={outcome('away')} align="start" />
       <span className="col-span-3 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground sm:col-span-1 sm:justify-end">

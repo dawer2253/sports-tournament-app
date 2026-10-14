@@ -97,7 +97,11 @@ test('organizer wpisuje remis z karnymi w półfinale, a zwycięzca i przegrany 
     await expect(dialog.getByText('Bobry awansują do finału.')).toBeVisible();
     await dialog.getByRole('button', { name: 'Zapisz' }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole('button', { name: 'Półfinał 1: Bobry – Gryfy' })).toContainText('1:1 (k. 4:3)');
+    // Karne w polu wyniku, w nawiasie przy wyniku każdej drużyny (#234).
+    const semi = page.getByRole('button', { name: 'Półfinał 1: Bobry – Gryfy' });
+    await expect(semi.getByText('1:1', { exact: true })).toBeVisible();
+    await expect(semi.getByText('(4)', { exact: true })).toBeVisible();
+    await expect(semi.getByText('(3)', { exact: true })).toBeVisible();
   });
 
   await test.step('zwycięzca stoi w finale, a przegrany w meczu o 3. miejsce', async () => {

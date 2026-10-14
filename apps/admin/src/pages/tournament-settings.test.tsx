@@ -76,7 +76,7 @@ const FOOTBALL: Tournament = {
   name: 'Liga Osiedlowa 2026',
   slug: 'liga-osiedlowa-2026',
   status: 'active',
-  sport: { id: 1, code: 'football', name: 'Piłka nożna' },
+  sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   // Punktacja inna niż domyślna, żeby „Przywróć domyślne" miało co zmienić.
   points: { win: 2, draw: 1, loss: 0 },
@@ -93,7 +93,7 @@ const BASKETBALL: Tournament = {
   name: 'Puchar Zimowy',
   slug: 'puchar-zimowy',
   status: 'draft',
-  sport: { id: 2, code: 'basketball', name: 'Koszykówka' },
+  sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false },
   points: { win: 2, draw: 0, loss: 1 },
   tiebreakers: ['points', 'head_to_head'],
 };

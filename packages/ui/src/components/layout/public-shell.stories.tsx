@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { publicTournament } from '../../lib/demo-data'
+import { CUP_TABS } from './public-nav'
 import { PublicShell, type PublicNavKey } from './public-shell'
 
 // Małe SVG w adresie `data:`, żeby story z logo nie zależało od sieci.
@@ -12,7 +13,7 @@ const LOGO_URL =
 
 /** Adresy zakładek, tak jak podaje je `apps/public`. */
 const navHref = (key: PublicNavKey) =>
-  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki' })[key]
+  ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki', bracket: '/t/liga-osiedlowa/drabinka' })[key]
 
 const meta = {
   title: 'UI/Shell strony publicznej',
@@ -76,6 +77,23 @@ export const Domyslny: Story = {
     await expect(canvas.getByText('Piłka nożna')).toBeInTheDocument()
     await expect(canvas.queryByText('Zakończony')).not.toBeInTheDocument()
     await expect(canvas.getByText('/t/liga-osiedlowa')).toBeInTheDocument()
+  },
+}
+
+/** Puchar (#234): Drabinka zamiast Tabeli, zaraz po Przeglądzie. */
+export const Puchar: Story = {
+  args: { tabs: CUP_TABS, active: 'bracket' },
+  play: async ({ canvasElement }) => {
+    const tabs = within(within(canvasElement).getByRole('navigation', { name: 'Sekcje turnieju' }))
+    await expect(tabs.getAllByRole('link').map((tab) => tab.textContent)).toEqual([
+      'Przegląd',
+      'Drabinka',
+      'Terminarz',
+      'Wyniki',
+      'Statystyki',
+    ])
+    await expect(tabs.getByRole('link', { name: 'Drabinka' })).toHaveAttribute('aria-current', 'page')
+    await expect(tabs.getByRole('link', { name: 'Drabinka' })).toHaveAttribute('href', '/t/liga-osiedlowa/drabinka')
   },
 }
 

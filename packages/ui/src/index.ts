@@ -1,7 +1,7 @@
 // Publiczne wejście pakietu. Aplikacje importują stąd, a nie z głębokich ścieżek.
 // Style motywu doładowuje się osobno: import '@tournament/ui/styles.css'.
 
-export { cn } from './lib/utils';
+export { cn, isModifiedClick } from './lib/utils';
 export * from './lib/bracket';
 export * from './lib/contrast';
 export * from './lib/kickoff';
@@ -40,6 +40,9 @@ export * from './components/ui/typography';
 
 export * from './components/data/bracket-match-row';
 export * from './components/data/bracket-match-row-data';
+export * from './components/data/bracket-match-tile';
+export * from './components/data/bracket-summary';
+export * from './components/data/bracket-tree';
 export * from './components/data/data-table';
 export * from './components/data/first-round-preview';
 export * from './components/data/leaderboard-data';
@@ -48,6 +51,7 @@ export * from './components/data/leaderboard-table';
 export * from './components/data/live-match-tile';
 export * from './components/data/match-row';
 export * from './components/data/match-row-data';
+export * from './components/data/penalties';
 export * from './components/data/scorer-lines';
 export * from './components/data/scorer-list';
 export * from './components/data/match-event-data';
@@ -90,6 +94,7 @@ export * from './components/layout/back-link';
 export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
 export * from './components/layout/photo-panel';
+export * from './components/layout/public-nav';
 export * from './components/layout/public-section';
 export * from './components/layout/public-shell-tournament';
 export * from './components/layout/team-crest';

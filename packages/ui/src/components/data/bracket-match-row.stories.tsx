@@ -9,21 +9,25 @@ const meta = {
   title: 'UI/Wiersz meczu drabinki',
   component: BracketMatchRow,
   parameters: { layout: 'padded' },
-  args: { match: quarterFinals![0]!, timeZone: scheduleTimeZone },
+  args: { match: quarterFinals![0]!, timeZone: scheduleTimeZone, penaltySlot: true },
 } satisfies Meta<typeof BracketMatchRow>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * Ćwierćfinał rozstrzygnięty karnymi: wynik „2:2 (k. 4:3)”, zwycięzca
- * pogrubiony, przegrany przyciszony, krawędź do półfinału.
+ * Ćwierćfinał rozstrzygnięty karnymi: karne w polu wyniku, „(4) 2:2 (3)”,
+ * pogrubione u zwycięzcy; zwycięzca pogrubiony, przegrany przyciszony,
+ * krawędź do półfinału.
  */
 export const PoKarnych: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     const row = canvas.getByRole('group', { name: 'Ćwierćfinał 2: Dragons – Wilki' })
-    await expect(within(row).getByText('2:2 (k. 4:3)')).toBeInTheDocument()
+    const score = row.querySelector('[data-slot="bracket-score"]')!
+    await expect(score).toHaveTextContent('(4)2:2(3)')
+    await expect(within(row).getByText('(4)')).toHaveClass('font-bold')
+    await expect(within(row).getByText('(3)')).toHaveClass('font-normal')
     await expect(within(row).getByText('Dragons')).toHaveClass('font-semibold')
     await expect(within(row).getByText('Wilki')).toHaveClass('text-muted-foreground')
     await expect(within(row).getByText('zwycięzca → Półfinał 1')).toBeInTheDocument()
@@ -41,6 +45,35 @@ export const DwieKrawedzie: Story = {
     await expect(canvas.getByText('przegrany → o 3. miejsce')).toBeInTheDocument()
     await expect(canvas.getByText('–')).toBeInTheDocument()
     await expect(canvas.getByText('Zaplanowany')).toBeInTheDocument()
+  },
+}
+
+/**
+ * Pole wyniku w piłce ma zawsze miejsce na karne, więc stoi tak samo
+ * w wierszu z karnymi i bez. W koszu (bez remisów) jest węższe, bez miejsca
+ * na karne (#234).
+ */
+export const PoleWyniku: Story = {
+  render: (args) => (
+    <div className="max-w-4xl space-y-2">
+      <BracketMatchRow {...args} match={quarterFinals![0]!} />
+      <BracketMatchRow {...args} match={quarterFinals![1]!} />
+      <div data-testid="kosz">
+        <BracketMatchRow {...args} match={{ ...quarterFinals![1]!, homePenalties: null, awayPenalties: null }} penaltySlot={false} />
+      </div>
+    </div>
+  ),
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    const fields = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="bracket-score"]')].map((field) =>
+      field.getBoundingClientRect(),
+    )
+    await expect(fields).toHaveLength(3)
+    const [penalties, plain, basketball] = fields as [DOMRect, DOMRect, DOMRect]
+    await expect(plain.width).toBeCloseTo(penalties.width, 1)
+    await expect(plain.left).toBeCloseTo(penalties.left, 1)
+    await expect(basketball.width).toBeLessThan(plain.width)
+    await expect(within(canvasElement).getByTestId('kosz').querySelector('[data-slot="penalties"]')).toBeNull()
   },
 }
 

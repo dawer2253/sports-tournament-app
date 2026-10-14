@@ -28,6 +28,30 @@ export type MatchRowData = {
    * samo: pod wynikiem nic nie stoi.
    */
   scorers?: MatchScorer[]
+  /** Karne meczu pucharowego rozstrzygniętego remisem (#216); brak pola to brak karnych. */
+  homePenalties?: number | null
+  awayPenalties?: number | null
+  /** Mecz fazy `knockout` (#234); mecz ligi go nie ma. */
+  bracket?: MatchRowBracket
+}
+
+/**
+ * Pozycja meczu fazy `knockout` w wierszu (#234): etykieta, podpisy pustych
+ * slotów i miejsce na karne. Liczy je aplikacja z kompletu meczów fazy
+ * (`bracketPosition`), bo wiersz zna tylko siebie, a z listy wierszy
+ * Terminarza etykiety nie da się policzyć.
+ */
+export type MatchRowBracket = {
+  /** „Półfinał 1”, „Mecz o 3. miejsce”, „Finał”. */
+  label: string
+  /** Skąd przyjdzie drużyna do pustego slotu: „Zwycięzca: Półfinał 1”. */
+  homeSource?: string
+  awaySource?: string
+  /**
+   * Sport z remisem (`allowsDraw`): pole wyniku zawsze ma miejsce na karne,
+   * także w meczu bez karnych, więc wynik nie skacze między wierszami (#162).
+   */
+  penaltySlot: boolean
 }
 
 /**

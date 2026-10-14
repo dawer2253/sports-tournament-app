@@ -58,7 +58,7 @@ it('oddaje turniej w kształcie z kontraktu, z liczbą drużyn', function () {
         ->assertValidRequest()
         ->assertValidResponse(200)
         ->assertJsonPath('data.0.slug', 'puchar-zimowy')
-        ->assertJsonPath('data.0.sport', ['id' => $tournament->sport_id, 'code' => 'basketball', 'name' => 'Koszykówka'])
+        ->assertJsonPath('data.0.sport', ['id' => $tournament->sport_id, 'code' => 'basketball', 'name' => 'Koszykówka', 'allowsDraw' => false])
         ->assertJsonPath('data.0.branding', ['logoUrl' => null, 'primaryColor' => '#1F7A45'])
         ->assertJsonPath('data.0.teamsCount', 3);
 });

@@ -2,16 +2,33 @@ import { EmptyState, Heading, StandingsTable, TiebreakerSentence } from '@tourna
 import { ListOrdered } from 'lucide-react';
 import { useStandings } from '../lib/queries';
 import { QueryState } from './query-state';
+import { TabLink } from './tab-link';
 import { useTournament } from './tournament-layout';
+import { useBracket } from './use-bracket';
 
 /**
  * Tabela (#206): `StandingsTable` z `scoreLabel` i `allowsDraw` z odpowiedzi,
  * pod nią `TiebreakerSentence` z jej `tiebreakers` — zdanie zgadza się więc
  * zawsze z wierszami, nad którymi stoi.
+ *
+ * Puchar tabeli nie ma (#234): pod `/tabela` stoi pusty stan z odnośnikiem do
+ * Drabinki, jak Terminarz pucharu w panelu (#227), a o tabelę strona nie pyta.
  */
 export function StandingsPage() {
   const { slug } = useTournament();
-  const standings = useStandings(slug);
+  const { cup } = useBracket();
+  const standings = useStandings(slug, !cup);
+
+  if (cup) {
+    return (
+      <EmptyState
+        icon={<ListOrdered />}
+        title="Puchar nie ma tabeli"
+        description="Przebieg pucharu pokazuje drabinka."
+        action={<TabLink tab="bracket">Przejdź do drabinki</TabLink>}
+      />
+    );
+  }
 
   if (!standings.data) {
     return <QueryState error={standings.error} label="tabeli" onRetry={() => void standings.refetch()} />;

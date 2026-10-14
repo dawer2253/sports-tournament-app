@@ -22,7 +22,7 @@ const TOURNAMENT = {
   name: 'Liga Osiedlowa 2026',
   slug: 'liga-osiedlowa-2026',
   status: 'active',
-  sport: { id: 1, code: 'football', name: 'Piłka nożna' },
+  sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points'],
@@ -37,7 +37,7 @@ const TOURNAMENT_2 = {
   name: 'Puchar Zimowy',
   slug: 'puchar-zimowy',
   status: 'draft',
-  sport: { id: 2, code: 'basketball', name: 'Koszykówka' },
+  sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false },
   teamsCount: 8,
 };
 

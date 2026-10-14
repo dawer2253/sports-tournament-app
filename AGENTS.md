@@ -55,7 +55,10 @@ npm run storybook     # design system na :6006
 
 Mecze mają w kontrakcie trzy przykłady: ligowy (domyślny), pucharowy i
 koszykarski. Żeby mock oddał drabinkę, dołóż do żądania nagłówek
-`Prefer: example=puchar`. Osobny przełącznik, `Prefer: example=koszykowka`,
+`Prefer: example=puchar` — obsługują go listy meczów panelu i strony
+publicznej oraz publiczne `/public/t/{slug}`, `/fixtures` i `/results`, więc
+strona publiczna pokazuje wtedy puchar z Drabinką. Ten puchar ma odpowiednik
+w seedzie demo (`puchar-osiedlowy-2026`). Osobny przełącznik, `Prefer: example=koszykowka`,
 oddaje turniej koszykarski — obsługują go publiczne tabele,
 `/public/t/{slug}` **i** publiczne `/fixtures` i `/results` (strzelcy
 z sumami rzutów), a w panelu turniej, terminarz, tabela i zdarzenia meczu
@@ -100,6 +103,11 @@ krok, więc czerwona funkcja `play` robi go czerwonym
 ([#71](https://github.com/dawer2253/sports-tournament-app/issues/71)). Merge
 blokuje to tylko wtedy, gdy „Frontend" jest wymaganym sprawdzeniem w ochronie
 gałęzi `main` — to ustawienie repo, nie tego pliku.
+
+Ta sama komenda puszcza też drugi projekt vitesta, `unit` (node, pliki
+`src/**/*.test.ts`), z testami czystych reguł design systemu, np. odczytu
+drabinki w `src/lib/bracket.test.ts` (#234). Sam ten projekt:
+`npx vitest run --project unit`.
 
 ### Testy E2E
 

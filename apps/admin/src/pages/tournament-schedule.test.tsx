@@ -20,7 +20,7 @@ const TOURNAMENT: Tournament = {
   name: 'Liga Osiedlowa 2026',
   slug: 'liga-osiedlowa-2026',
   status: 'active',
-  sport: { id: 1, code: 'football', name: 'Piłka nożna' },
+  sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points', 'score_diff'],
@@ -515,7 +515,7 @@ describe('Terminarz — okno meczu (#176)', () => {
     const { user } = renderSchedule('?round=1');
 
     const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
-    expect(dialog).toHaveAccessibleDescription('Kolejka 1 · mecz 1');
+    expect(dialog).toHaveAccessibleDescription('Kolejka 1, mecz 1');
     await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
     await user.type(within(dialog).getByLabelText('Wynik Wilki Bemowo'), '1');
     await user.type(within(dialog).getByLabelText('Wynik Sokoły Ursus'), '1');

@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type {
+  Match,
   PublicMatch,
   PublicMatchDetail,
   PublicMatchEvent,
@@ -12,6 +13,7 @@ import type {
 } from '@tournament/api-client';
 import { render } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
+import { demoBracket, type DemoBracketOptions } from '@tournament/ui/lib/demo-data.ts';
 import { RouterProvider, createMemoryRouter } from 'react-router';
 import { routes } from '../routes';
 import { API_URL as API, server } from './server';
@@ -24,7 +26,7 @@ export function tournament(overrides: Partial<PublicTournament> = {}): PublicTou
     name: 'Liga Osiedlowa 2026',
     slug: SLUG,
     status: 'active',
-    sport: { id: 1, code: 'football', name: 'Piłka nożna' },
+    sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
     branding: { logoUrl: null, primaryColor: '#1F7A45' },
     stages: [{ id: 1, type: 'league', name: 'Faza zasadnicza', order: 1, groups: [] }],
     stats: [
@@ -186,6 +188,7 @@ export function publicApi({
   results = [],
   leaderboards = (stat) => leaderboard({ stat: stat ?? 'goals' }),
   matches = [],
+  stageMatches = [],
 }: {
   data?: PublicTournament;
   standings?: StandingTable[];
@@ -194,8 +197,18 @@ export function publicApi({
   leaderboards?: (stat: string | null) => StatLeaderboard;
   /** Strony meczów (#210); mecz spoza listy daje `404` jak w API. */
   matches?: PublicMatchDetail[];
+  /** Mecze fazy dla `/matches?stageId=` (#234); filtr po `stageId` jak w API. */
+  stageMatches?: Match[];
 } = {}) {
-  const requests = { tournament: 0, standings: 0, fixtures: 0, results: 0, leaderboard: [] as (string | null)[], match: 0 };
+  const requests = {
+    tournament: 0,
+    standings: 0,
+    fixtures: 0,
+    results: 0,
+    leaderboard: [] as (string | null)[],
+    match: 0,
+    stageMatches: [] as (string | null)[],
+  };
   server.use(
     http.get(`${API}/public/t/:slug`, () => {
       requests.tournament++;
@@ -218,6 +231,11 @@ export function publicApi({
       requests.leaderboard.push(stat);
       return HttpResponse.json({ data: leaderboards(stat) });
     }),
+    http.get(`${API}/public/t/:slug/matches`, ({ request }) => {
+      const stageId = new URL(request.url).searchParams.get('stageId');
+      requests.stageMatches.push(stageId);
+      return HttpResponse.json({ data: stageMatches.filter((candidate) => String(candidate.stageId) === stageId) });
+    }),
     http.get(`${API}/public/t/:slug/matches/:match`, ({ params }) => {
       requests.match++;
       const found = matches.find((candidate) => String(candidate.id) === params.match);
@@ -227,6 +245,37 @@ export function publicApi({
     }),
   );
   return requests;
+}
+
+/** Puchar: jedna faza `knockout` o `id: 2`, jak przykład `puchar` w kontrakcie. */
+export function cup(overrides: Partial<PublicTournament> = {}): PublicTournament {
+  return tournament({
+    name: 'Puchar Osiedlowy 2026',
+    stages: [{ id: 2, type: 'knockout', name: 'Faza pucharowa', order: 1, groups: [] }],
+    ...overrides,
+  });
+}
+
+/**
+ * Mecze fazy pucharowej w kształcie kontraktu (`Match`), ułożone regułami
+ * generatora przez `demoBracket` z design systemu: id meczu to
+ * `order · 1000 + matchNumber`, a drużyny („Wilki Bemowo”, „Orły Bielany”…)
+ * mają id równe rozstawieniu. `overrides` po id meczu.
+ */
+export function cupMatches(options: DemoBracketOptions, overrides: Record<number, Partial<Match>> = {}): Match[] {
+  const team = (value: { id: number; name: string } | null) => value && { ...value, logoUrl: null };
+  return demoBracket(options).map((match) => ({
+    ...match,
+    groupId: null,
+    homeTeam: team(match.homeTeam),
+    awayTeam: team(match.awayTeam),
+    ...overrides[match.id],
+  }));
+}
+
+/** Mecz fazy jako wiersz `/fixtures` albo `/results`: bez strzelców. */
+export function asPublic(match: Match): PublicMatch {
+  return { ...match, scorers: [] };
 }
 
 /** Drzewo tras aplikacji w routerze pamięciowym, pod podanym adresem. */

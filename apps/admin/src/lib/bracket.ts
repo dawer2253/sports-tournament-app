@@ -1,9 +1,15 @@
-import type { AdminMatch, Stage } from '@tournament/api-client';
+import type { AdminMatch } from '@tournament/api-client';
 import {
+  THIRD_PLACE_LABEL,
   bracketSize,
+  bracketSlotSource,
   bracketWinnerSide,
   byesCount,
   formatRoundDates,
+  isThirdPlaceMatch,
+  matchLabel,
+  otherSide,
+  teamOn,
   type BracketMatchRowData,
   type BracketScore,
   type BracketSlot,
@@ -13,18 +19,12 @@ import { plural, TEAMS } from './plural';
 
 /**
  * Drabinka panelu złożona z meczów fazy (#227). Kontrakt nie ma listy rund
- * ani etykiet pozycji, więc wszystko poniżej wyprowadza się z kompletu meczów
- * i ich krawędzi, tak jak przewiduje ADR-0004.
+ * ani etykiet pozycji, więc wszystko wyprowadza się z kompletu meczów i ich
+ * krawędzi, tak jak przewiduje ADR-0004. Reguły odczytu (etykieta pozycji,
+ * mecz o 3. miejsce, podpis źródła, wolne losy, mistrz) leżą w `@tournament/ui`,
+ * bo te same woła strona publiczna (#234). Tu zostaje to, czego potrzebuje
+ * tylko panel: karty rund, wiersz drabinki i notka przed zapisem.
  */
-
-/**
- * Turniej w formacie `knockout`: same fazy pucharowe. Format nie jest polem
- * turnieju, mówią o nim wyłącznie fazy (ADR-0002, „Format” w `CONTEXT.md`).
- * W takim turnieju Drabinka zastępuje Terminarz.
- */
-export function isKnockoutOnly(stages: readonly Stage[]): boolean {
-  return stages.length > 0 && stages.every((stage) => stage.type === 'knockout');
-}
 
 /** Runda drabinki: mecze w kolejności gry i to, co pokazują karty rund. */
 export interface BracketRound {
@@ -36,33 +36,9 @@ export interface BracketRound {
   summary: RoundSummary;
 }
 
-/** Mecz o 3. miejsce: prowadzą do niego krawędzie przegranego. Osobnej flagi nie ma. */
-export function isThirdPlaceMatch(match: AdminMatch, matches: readonly AdminMatch[]): boolean {
-  return matches.some((candidate) => candidate.loserToMatchId === match.id);
-}
-
-/**
- * Etykieta pozycji meczu, której nie ma w danych: „Półfinał 1”, „Finał”,
- * „Mecz o 3. miejsce”. Numer to pozycja w pełnej drabince, więc w pierwszej
- * rundzie ma dziury po wolnych losach i tak zostaje w etykiecie.
- */
-export function matchLabel(match: AdminMatch, matches: readonly AdminMatch[]): string {
-  if (isThirdPlaceMatch(match, matches)) return 'Mecz o 3. miejsce';
-  return match.round.name === 'Finał' ? 'Finał' : `${match.round.name} ${match.matchNumber}`;
-}
-
-/** Skąd przyjdzie drużyna do pustego slotu: „Zwycięzca: Półfinał 1”. */
-function slotSource(match: AdminMatch, side: 'home' | 'away', matches: readonly AdminMatch[]): string | undefined {
-  const winner = matches.find((source) => source.winnerToMatchId === match.id && source.advancesToSlot === side);
-  if (winner) return `Zwycięzca: ${matchLabel(winner, matches)}`;
-  const loser = matches.find((source) => source.loserToMatchId === match.id && source.advancesToSlot === side);
-  if (loser) return `Przegrany: ${matchLabel(loser, matches)}`;
-  return undefined;
-}
-
 function slot(match: AdminMatch, side: 'home' | 'away', matches: readonly AdminMatch[]): BracketSlot {
-  const team = side === 'home' ? match.homeTeam : match.awayTeam;
-  return { team: team && { id: team.id, name: team.name }, source: slotSource(match, side, matches) };
+  const team = teamOn(match, side);
+  return { team: team && { id: team.id, name: team.name }, source: bracketSlotSource(match, side, matches) };
 }
 
 /** Wiersz meczu drabinki z gotowymi napisami dla `BracketMatchRow`. */
@@ -124,34 +100,6 @@ export function bracketRounds(matches: readonly AdminMatch[], timeZone?: string)
     .toSorted((a, b) => a.order - b.order);
 }
 
-/**
- * Wolne losy: drużyny postawione w meczu drugiej rundy bez krawędzi
- * prowadzącej do ich slotu, z etykietą tego meczu.
- */
-export function bracketByes(matches: readonly AdminMatch[]): { team: string; target: string }[] {
-  return matches
-    .filter((match) => match.round.order === 2)
-    .toSorted((a, b) => a.matchNumber - b.matchNumber)
-    .flatMap((match) =>
-      (['home', 'away'] as const).flatMap((side) => {
-        const team = side === 'home' ? match.homeTeam : match.awayTeam;
-        const fed = matches.some((source) => source.winnerToMatchId === match.id && source.advancesToSlot === side);
-        return team && !fed ? [{ team: team.name, target: matchLabel(match, matches) }] : [];
-      }),
-    );
-}
-
-/** Mistrz: zwycięzca finału (ostatnia runda, nie mecz o 3. miejsce), jeśli już jest. */
-export function bracketChampion(matches: readonly AdminMatch[]): { id: number; name: string } | null {
-  const lastOrder = Math.max(0, ...matches.map((match) => match.round.order));
-  const final = matches.find((match) => match.round.order === lastOrder && !isThirdPlaceMatch(match, matches));
-  if (!final) return null;
-  const side = bracketWinnerSide(final);
-  const team = side === 'home' ? final.homeTeam : side === 'away' ? final.awayTeam : null;
-  return team && { id: team.id, name: team.name };
-}
-
-const THIRD_PLACE = 'Mecz o 3. miejsce';
 
 /**
  * Etykieta pozycji w przypadku, którego wymaga notka: „do finału”, „w półfinale
@@ -161,7 +109,7 @@ const THIRD_PLACE = 'Mecz o 3. miejsce';
  */
 function positionPhrase(label: string, form: 'to' | 'in' | 'from'): string {
   const preposition = { to: 'do', in: 'w', from: 'z' }[form];
-  if (label === THIRD_PLACE) return `${preposition} meczu o 3. miejsce`;
+  if (label === THIRD_PLACE_LABEL) return `${preposition} meczu o 3. miejsce`;
   if (label.startsWith('1/')) return `${preposition} ${label}`;
   const [word = '', number] = label.split(' ');
   const base = word.toLowerCase();
@@ -188,8 +136,7 @@ export function advanceNote(original: AdminMatch, draft: BracketScore, matches: 
   const teamOf = (match: AdminMatch, score: BracketScore, role: 'winner' | 'loser') => {
     const winner = bracketWinnerSide(score);
     if (winner === null) return null;
-    const side = role === 'winner' ? winner : winner === 'home' ? 'away' : 'home';
-    return side === 'home' ? match.homeTeam : match.awayTeam;
+    return teamOn(match, role === 'winner' ? winner : otherSide(winner));
   };
 
   const moves = (
@@ -227,7 +174,7 @@ export function advanceNote(original: AdminMatch, draft: BracketScore, matches: 
         return `${where.charAt(0).toUpperCase()}${where.slice(1)} ${to.name} zastąpią ${from.name}.`;
       }
       if (to) {
-        return label === THIRD_PLACE
+        return label === THIRD_PLACE_LABEL
           ? `${to.name} zagrają ${positionPhrase(label, 'in')}.`
           : `${to.name} awansują ${positionPhrase(label, 'to')}.`;
       }

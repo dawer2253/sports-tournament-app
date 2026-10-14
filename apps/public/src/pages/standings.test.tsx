@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { SLUG, publicApi, renderAt, row, table, tournament } from '../test/public-api';
 
-const BASKETBALL = tournament({ name: 'Liga Koszykówki 2026', sport: { id: 2, code: 'basketball', name: 'Koszykówka' } });
+const BASKETBALL = tournament({ name: 'Liga Koszykówki 2026', sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false } });
 
 /** Treść każdego wiersza ciała tabeli, komórka po komórce, w kolejności z DOM-u. */
 function bodyRows() {

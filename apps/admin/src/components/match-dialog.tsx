@@ -13,6 +13,7 @@ import {
   cn,
   collisionLabel,
   formatKickoff,
+  matchLabel,
   toast,
 } from '@tournament/ui';
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
@@ -250,7 +251,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       }}
       onSubmit={submit}
       title={`${home} – ${away}`}
-      description={row ? `${row.label} · ${formatKickoff(match.kickoffAt)}` : `${match.round.name} · mecz ${match.matchNumber}`}
+      description={row ? `${row.label}, ${formatKickoff(match.kickoffAt)}` : `${match.round.name}, mecz ${match.matchNumber}`}
       submitLabel="Zapisz"
       pending={save.isPending}
       error={formError}
@@ -346,7 +347,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
           </div>
         </div>
 
-        <CollisionList match={match} matches={matches} onOpenMatch={onOpenMatch} />
+        <CollisionList match={match} matches={matches} knockout={knockout} onOpenMatch={onOpenMatch} />
         {note && <AdvanceNoteBox note={note} />}
       </div>
     </FormDialog>
@@ -379,14 +380,19 @@ function AdvanceNoteBox({ note }: { note: AdvanceNote }) {
  * Kolizje terminu tego meczu (#158). Kontrakt zna tylko `matchId`, więc opis
  * drugiej strony dokłada panel. Kolizja nie blokuje zapisu; kliknięcie otwiera
  * okno tamtego meczu, żeby organizator mógł od razu poprawić termin.
+ *
+ * W drabince drugi mecz podpisuje etykieta pozycji, a nie `round.name`, bo
+ * mecz o 3. miejsce gra w rundzie „Finał” (#234).
  */
 function CollisionList({
   match,
   matches,
+  knockout,
   onOpenMatch,
 }: {
   match: AdminMatch;
   matches: AdminMatch[];
+  knockout: boolean;
   onOpenMatch: (match: AdminMatch) => void;
 }) {
   const collisions = match.collisions ?? [];
@@ -407,7 +413,7 @@ function CollisionList({
               </li>
             );
           }
-          const description = `${other.homeTeam?.name ?? 'Do ustalenia'} – ${other.awayTeam?.name ?? 'Do ustalenia'} (${other.round.name}, ${formatKickoff(other.kickoffAt)})`;
+          const description = `${other.homeTeam?.name ?? 'Do ustalenia'} – ${other.awayTeam?.name ?? 'Do ustalenia'} (${knockout ? matchLabel(other, matches) : other.round.name}, ${formatKickoff(other.kickoffAt)})`;
           return (
             <li key={`${collision.type}-${index}`}>
               <button

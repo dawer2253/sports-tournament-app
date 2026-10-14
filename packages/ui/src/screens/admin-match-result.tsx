@@ -123,7 +123,7 @@ function MatchDialog({
       <DialogContent showCloseButton={false} className="max-h-[92vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{`${home} – ${away}`}</DialogTitle>
-          <DialogDescription>{`${match.round.name} · mecz ${demoMatchNumber(match)}`}</DialogDescription>
+          <DialogDescription>{`${match.round.name}, mecz ${demoMatchNumber(match)}`}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">

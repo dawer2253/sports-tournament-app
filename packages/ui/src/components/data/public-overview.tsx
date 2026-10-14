@@ -1,8 +1,10 @@
 import type * as React from 'react'
-import { CalendarClock, ChevronRight, History, ListOrdered, Radio, Trophy } from 'lucide-react'
+import { CalendarClock, ChevronRight, GitFork, History, ListOrdered, Radio, Trophy } from 'lucide-react'
+import type { BracketMatch } from '../../lib/bracket'
 import { isModifiedClick } from '../../lib/utils'
 import { PublicSection } from '../layout/public-section'
 import { Button } from '../ui/button'
+import { BracketSummary } from './bracket-summary'
 import { LeaderboardLeaders } from './leaderboard-leaders'
 import type { Leaderboard } from './leaderboard-data'
 import { LiveMatchTile } from './live-match-tile'
@@ -13,7 +15,7 @@ import { StandingsSnippet } from './standings-snippet'
 import type { StandingsTableRow } from './standings-table-row'
 
 /** Pełny widok, do którego prowadzi odnośnik sekcji Przeglądu. */
-export type PublicOverviewLink = 'standings' | 'fixtures' | 'results' | 'stats'
+export type PublicOverviewLink = 'standings' | 'bracket' | 'fixtures' | 'results' | 'stats'
 
 export interface PublicOverviewProps {
   /** `/fixtures` po kolejce, rosnąco (`groupByRound`) — jak Terminarz. */
@@ -22,6 +24,16 @@ export interface PublicOverviewProps {
   results?: RoundWithMatches<MatchInRound>[]
   /** Wiersze pierwszej tabeli turnieju; bez nich zamiast skrótu stoi `status.standings`. */
   standings?: StandingsTableRow[]
+  /**
+   * Puchar (#234): komplet meczów fazy `knockout`. Wtedy w miejscu skrótu
+   * tabeli stoi karta „Drabinka”, a bez meczów — jej pusty stan. Zanim
+   * zapytanie dotrze, w tym miejscu stoi `status.bracket`.
+   */
+  bracket?: {
+    matches?: readonly (BracketMatch & MatchRowData)[]
+    /** Sport z remisem: pole wyniku finału ma miejsce na karne. */
+    penaltySlot: boolean
+  }
   /**
    * Klasyfikacja domyślnej statystyki (`/leaderboard` bez `stat`); bez niej
    * zamiast karty lidera stoi `status.leaderboard`.
@@ -45,7 +57,7 @@ export interface PublicOverviewProps {
    * górze, wyników pod „Ostatnimi wynikami”, tabeli zamiast skrótu,
    * klasyfikacji zamiast karty lidera.
    */
-  status?: Partial<Record<'fixtures' | 'results' | 'standings' | 'leaderboard', React.ReactNode>>
+  status?: Partial<Record<'fixtures' | 'results' | 'standings' | 'bracket' | 'leaderboard', React.ReactNode>>
 }
 
 /** Atrybuty odnośnika: adres i przejęcie kliknięcia. */
@@ -66,7 +78,8 @@ function SectionLink({ link, children }: { link: LinkProps; children: string }) 
 /**
  * Przegląd strony publicznej (#206), od góry: Na żywo („Śledź na żywo” na
  * stronę meczu, #210), Najbliższe mecze,
- * Ostatnie wyniki, Tabela (skrót) i lider klasyfikacji (#207) pod tytułem
+ * Ostatnie wyniki, Tabela (skrót), a w pucharze karta „Drabinka” (#234),
+ * i lider klasyfikacji (#207) pod tytułem
  * z etykiety statystyki. Sekcja bez meczów znika, a klasyfikacja przed
  * pierwszym meczem zakończonym ma pusty stan. Kolejki
  * „najbliższa” i „ostatnia” to te, na których otwierają się Terminarz
@@ -76,6 +89,7 @@ export function PublicOverview({
   fixtures = [],
   results = [],
   standings,
+  bracket,
   leaderboard,
   timeZone,
   linkHref,
@@ -160,7 +174,21 @@ export function PublicOverview({
         </PublicSection>
       )}
       {status.results}
-      {standings ? (
+      {bracket ? (
+        bracket.matches ? (
+          <PublicSection title="Drabinka" icon={<GitFork />} action={<SectionLink link={link('bracket')}>Zobacz drabinkę</SectionLink>}>
+            <BracketSummary
+              matches={bracket.matches}
+              penaltySlot={bracket.penaltySlot}
+              timeZone={timeZone}
+              matchHref={matchHref}
+              onMatchNavigate={onMatchNavigate}
+            />
+          </PublicSection>
+        ) : (
+          status.bracket
+        )
+      ) : standings ? (
         <PublicSection title="Tabela (skrót)" icon={<ListOrdered />} action={<SectionLink link={link('standings')}>Zobacz pełną tabelę</SectionLink>}>
           <StandingsSnippet rows={standings} />
         </PublicSection>
