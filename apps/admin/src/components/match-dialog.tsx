@@ -162,6 +162,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       throw result.response.status === 422 && isValidationError(result.error) ? result.error : new Error(START_FAILED);
     },
     onSuccess: async (saved) => {
+      // Wynik i stan przychodzą z serwera z pominięciem pól, więc stare błędy par znikają tu.
+      clearPairErrors();
       setStartedHere(true);
       setStatus(saved.status);
       setHomeScore(saved.homeScore?.toString() ?? '');
@@ -226,29 +228,27 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   });
 
   /**
-   * Błąd pary z `422` dotyczy wartości, które organizer właśnie poprawia, więc
-   * znika przy pierwszej zmianie pola tej pary, a nie dopiero przy kolejnym
-   * zapisie. Ostrzeżenie o blokadzie przed zapisem liczy się z pól na bieżąco,
-   * więc nie znika razem z nim, dopóki blokada trwa.
+   * Błędy par z `422` dotyczą wartości, które organizer właśnie poprawia, więc
+   * znikają przy pierwszej zmianie wyniku, karnych albo stanu, a nie dopiero
+   * przy kolejnym zapisie. Czyścimy obie pary naraz: blokada zmiany zwycięzcy
+   * siada pod wynikiem także wtedy, gdy zwycięzcę zmieniły same karne, a błąd
+   * karnych schowanych razem z polami nie może wrócić nieaktualny. Ostrzeżenie
+   * o blokadzie przed zapisem liczy się z pól na bieżąco, więc zostaje, dopóki
+   * blokada trwa.
    */
-  function clearFieldError(field: 'homeScore' | 'homePenalties') {
-    setFieldErrors((current) => (current[field] ? { ...current, [field]: undefined } : current));
+  function clearPairErrors() {
+    setFieldErrors((current) =>
+      current.homeScore || current.homePenalties ? { ...current, homeScore: undefined, homePenalties: undefined } : current,
+    );
   }
 
-  function changeScore(set: (value: string) => void, value: string) {
-    set(value);
-    clearFieldError('homeScore');
-  }
-
-  function changePenalties(set: (value: string) => void, value: string) {
-    set(value);
-    clearFieldError('homePenalties');
+  function changePair(setValue: (value: string) => void, value: string) {
+    setValue(value);
+    clearPairErrors();
   }
 
   function changeStatus(next: MatchStatus) {
-    // Stan decyduje o remisie i karnych, więc jego zmiana unieważnia błędy obu par.
-    clearFieldError('homeScore');
-    clearFieldError('homePenalties');
+    clearPairErrors();
     setStatus(next);
     if (next === 'scheduled') {
       setHomeScore('');
@@ -309,8 +309,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
               <ScoreInputs
                 homeValue={homeScore}
                 awayValue={awayScore}
-                onHomeChange={(value) => changeScore(setHomeScore, value)}
-                onAwayChange={(value) => changeScore(setAwayScore, value)}
+                onHomeChange={(value) => changePair(setHomeScore, value)}
+                onAwayChange={(value) => changePair(setAwayScore, value)}
                 homeLabel={`Wynik ${home}`}
                 awayLabel={`Wynik ${away}`}
                 error={fieldErrors.homeScore}
@@ -328,22 +328,24 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
           {showsPenalties && (
             <div className="grid content-start justify-items-start gap-1">
               <p className="text-xs font-medium text-muted-foreground">Rzuty karne</p>
-              <ScoreInputs
-                homeValue={homePenalties}
-                awayValue={awayPenalties}
-                onHomeChange={(value) => changePenalties(setHomePenalties, value)}
-                onAwayChange={(value) => changePenalties(setAwayPenalties, value)}
-                homeLabel={`Karne ${home}`}
-                awayLabel={`Karne ${away}`}
-                error={fieldErrors.homePenalties}
-                errorId={penaltiesErrorId}
-                disabled={save.isPending}
-              />
-              {fieldErrors.homePenalties && (
-                <p id={penaltiesErrorId} className="mt-1 text-sm text-destructive">
-                  {fieldErrors.homePenalties}
-                </p>
-              )}
+              <div className="grid content-start gap-2">
+                <ScoreInputs
+                  homeValue={homePenalties}
+                  awayValue={awayPenalties}
+                  onHomeChange={(value) => changePair(setHomePenalties, value)}
+                  onAwayChange={(value) => changePair(setAwayPenalties, value)}
+                  homeLabel={`Karne ${home}`}
+                  awayLabel={`Karne ${away}`}
+                  error={fieldErrors.homePenalties}
+                  errorId={penaltiesErrorId}
+                  disabled={save.isPending}
+                />
+                {fieldErrors.homePenalties && (
+                  <p id={penaltiesErrorId} className="text-sm text-destructive">
+                    {fieldErrors.homePenalties}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

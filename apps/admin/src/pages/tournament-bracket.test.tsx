@@ -657,6 +657,61 @@ describe('Drabinka — okno meczu (#228)', () => {
     expect(within(dialog).queryByText(message)).not.toBeInTheDocument();
   });
 
+  it('blokada zmiany zwycięzcy na samych karnych znika spod wyniku przy poprawce karnych', async () => {
+    const blocked =
+      'Zwycięzca zagrał już dalej: Finał (Lwy Mokotów – Orły Wola). Cofnij te mecze do zaplanowanych, zanim zmienisz zwycięzcę.';
+    const state = serveMatches(
+      semis({
+        201: { status: 'finished', homeScore: 1, awayScore: 1, homePenalties: 4, awayPenalties: 3 },
+        202: { status: 'finished', homeScore: 1, awayScore: 0 },
+        301: { homeTeam: ref(1), awayTeam: ref(2), status: 'live', homeScore: 0, awayScore: 0 },
+        302: { homeTeam: ref(4), awayTeam: ref(3) },
+      }),
+    );
+    // Backend sadza blokadę pod `homeScore` także wtedy, gdy zwycięzcę zmieniły same karne.
+    serveSave(state, validationError('homeScore', blocked));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    const homePenalties = within(dialog).getByLabelText('Karne Lwy Mokotów');
+    await user.clear(homePenalties);
+    await user.type(homePenalties, '2');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await waitFor(() => expect(within(dialog).getByLabelText('Wynik Lwy Mokotów')).toHaveAttribute('aria-describedby'));
+
+    await user.clear(homePenalties);
+    await user.type(homePenalties, '5');
+
+    expect(within(dialog).getByLabelText('Wynik Lwy Mokotów')).not.toHaveAttribute('aria-describedby');
+    expect(within(dialog).queryByText(blocked)).not.toBeInTheDocument();
+  });
+
+  it('„Rozpocznij mecz” zdejmuje błąd wyniku z poprzedniego zapisu', async () => {
+    const state = serveMatches(semis());
+    const message = 'Mecz zaplanowany nie ma wyniku. Wyczyść pola albo zmień stan.';
+    let calls = 0;
+    server.use(
+      http.patch(MATCH_PATCH_URL, async ({ request, params }) => {
+        calls += 1;
+        if (calls === 1) return validationError('homeScore', message)();
+        const body = (await request.json()) as Record<string, unknown>;
+        const saved = state.matches.find((candidate) => candidate.id === Number(params.match))!;
+        return HttpResponse.json({ data: { ...saved, ...body } });
+      }),
+    );
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    await setScore(user, dialog, '1', '0');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await within(dialog).findByText(message);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Rozpocznij mecz' }));
+
+    await waitFor(() => expect(within(dialog).getByRole('radio', { name: 'Trwa' })).toBeChecked());
+    expect(within(dialog).queryByText(message)).not.toBeInTheDocument();
+  });
+
   it('notka przed zapisem: awans do finału i mecz o 3. miejsce', async () => {
     serveMatches(semis());
     const { user } = renderBracket('?round=2');
