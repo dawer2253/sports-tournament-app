@@ -5,6 +5,8 @@ import {
   BracketMatchRow,
   bracketByes,
   bracketChampion,
+  bracketSeeding,
+  isThirdPlaceMatch,
   matchLabel,
   Button,
   Card,
@@ -192,7 +194,7 @@ export function TournamentBracketPage() {
           tournamentId={tournament.id}
           stage={cup}
           teams={teams.data}
-          currentMatches={matches.data?.length ?? 0}
+          current={matches.data ?? []}
           onClose={() => setGenerating(false)}
           onDone={() => {
             setGenerating(false);
@@ -384,10 +386,13 @@ function RoundsView({
 
 /**
  * Okno „Rozstaw i wygeneruj” (#217, ustalenia 1–2): lista rozstawienia
- * startująca od kolejności drużyn z listy (backend jej nie przechowuje, więc
- * nie ma „Poprzedniej”), obok podgląd par 1. rundy i mecz o 3. miejsce.
- * Przy istniejącej drabince tytuł, ostrzeżenie i przycisk mówią o zastąpieniu,
- * bez osobnego kroku potwierdzenia, bo API zastępuje bez pytania (#215).
+ * startująca od kolejności drużyn z listy, obok podgląd par 1. rundy i mecz
+ * o 3. miejsce. Przy istniejącej drabince lista i przełącznik startują od niej
+ * (#239): rozstawienie odczytane z pozycji 1. rundy i wolnych losów
+ * (`bracketSeeding`), drużyny spoza drabinki na końcu. Backend rozstawienia
+ * nie przechowuje, więc innej „Poprzedniej” nie ma. Tytuł, ostrzeżenie
+ * i przycisk mówią wtedy o zastąpieniu, bez osobnego kroku potwierdzenia, bo
+ * API zastępuje bez pytania (#215).
  *
  * `422` pod `thirdPlaceMatch` siada przy przełączniku, reszta (`teamIds`,
  * `teams`, `stage`) nad przyciskami. Sukces unieważnia mecze i drużyny
@@ -397,25 +402,29 @@ function GenerateBracketDialog({
   tournamentId,
   stage,
   teams,
-  currentMatches,
+  current,
   onClose,
   onDone,
 }: {
   tournamentId: number;
   stage: Stage;
   teams: Team[];
-  currentMatches: number;
+  /** Mecze obecnej drabinki; pusta lista, gdy generujemy pierwszy raz. */
+  current: AdminMatch[];
   onClose: () => void;
   onDone: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [order, setOrder] = useState<SeedingTeam[]>(() => teams.map(({ id, name }) => ({ id, name })));
+  const currentMatches = current.length;
+  const replacing = currentMatches > 0;
+  const [order, setOrder] = useState<SeedingTeam[]>(() => initialSeeding(teams, current));
   const [locked, setLocked] = useState(0);
   const thirdPlaceAllowed = order.length >= 4;
-  const [thirdPlace, setThirdPlace] = useState(thirdPlaceAllowed);
+  const [thirdPlace, setThirdPlace] = useState(() =>
+    replacing ? current.some((match) => isThirdPlaceMatch(match, current)) : thirdPlaceAllowed,
+  );
   const [thirdPlaceError, setThirdPlaceError] = useState<string>();
   const [formError, setFormError] = useState<string>();
-  const replacing = currentMatches > 0;
 
   const generate = useMutation({
     mutationFn: async (body: { teamIds: number[]; thirdPlaceMatch: boolean }) => {
@@ -513,4 +522,20 @@ function GenerateBracketDialog({
       )}
     </FormDialog>
   );
+}
+
+/**
+ * Lista rozstawienia na start okna: rozstawienie obecnej drabinki, potem
+ * drużyny, których w niej nie ma (dodane po generowaniu), w kolejności
+ * z listy drużyn. Bez drabinki to sama lista drużyn. Nazwy idą z listy
+ * drużyn, bo w meczach mogą być sprzed zmiany nazwy.
+ */
+function initialSeeding(teams: Team[], current: AdminMatch[]): SeedingTeam[] {
+  const byId = new Map(teams.map((team) => [team.id, team]));
+  const seeded = bracketSeeding(current).flatMap(({ id }) => {
+    const team = byId.get(id);
+    return team ? [team] : [];
+  });
+  const placed = new Set(seeded.map((team) => team.id));
+  return [...seeded, ...teams.filter((team) => !placed.has(team.id))].map(({ id, name }) => ({ id, name }));
 }

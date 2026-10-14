@@ -11,6 +11,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Szeroki układ wiersza meczu (`MatchRow`): próg liczy się od szerokości
+   wiersza (kontener `match-row`, #198), nie okna. Wiersz z miejscem na karne
+   (`data-penalty-slot` na kontenerze, #234) ma szersze pole wyniku i na
+   stronie publicznej strzałkę odnośnika, więc przechodzi w sześć kolumn
+   dopiero od 48rem — przy 42rem nazwom zostawało ok. 71 px (#239). Uzasadnienie
+   liczb i granice pilnowane w stories siedzą przy `rowGrid` w `match-row.tsx`. */
+@custom-variant match-row-wide {
+  @container match-row (width >= 42rem) {
+    &:not(:where([data-penalty-slot] *)) {
+      @slot;
+    }
+  }
+  @container match-row (width >= 48rem) {
+    &:where([data-penalty-slot] *) {
+      @slot;
+    }
+  }
+}
+
 /*
   MOTYW — „pitch" (TournamentApp)
   ─────────────────────────────────────────────────────────────

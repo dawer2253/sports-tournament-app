@@ -4,6 +4,7 @@ import {
   bracketChampion,
   bracketPosition,
   bracketRoundSummaries,
+  bracketSeeding,
   bracketTeamsInPlay,
   bracketTree,
   currentRoundOrder,
@@ -86,6 +87,25 @@ describe('wolne losy', () => {
         slot.kind === 'match' ? matchLabel(slot.match, matches) : slot.kind === 'bye' ? `wolny los ${slot.bye.team.id}` : '–',
       ),
     ).toEqual(['wolny los 1', 'Ćwierćfinał 2', 'wolny los 2', 'Ćwierćfinał 4'])
+  })
+})
+
+describe('rozstawienie odczytane z drabinki', () => {
+  // Generator kładzie seed `s` na pozycji z `bracketSeedPositions`, a wolny
+  // los od razu w 2. rundzie; odczyt musi odwrócić oba przypadki (#239).
+  it.each([2, 3, 4, 5, 6, 7, 8, 11, 16, 23, 100])('przy %i drużynach wraca kolejność, z której drabinka powstała', (teams) => {
+    expect(bracketSeeding(demoBracket({ teams })).map((team) => team.id)).toEqual(Array.from({ length: teams }, (_, index) => index + 1))
+  })
+
+  it('wyniki, awans i mecz o 3. miejsce nie zmieniają odczytu', () => {
+    const names = ['Niedźwiedzie Mokotów', 'Jastrzębie Białołęka', 'Orły Bielany', 'Sokoły Ursus', 'Bobry Bemowo', 'Wilki Wola']
+    for (const progress of [{ round: 2, finished: 1 }, 'done'] as const) {
+      expect(bracketSeeding(demoBracket({ teams: 6, names, progress })).map((team) => team.name)).toEqual(names)
+    }
+  })
+
+  it('pusta faza nie ma rozstawienia', () => {
+    expect(bracketSeeding([])).toEqual([])
   })
 })
 

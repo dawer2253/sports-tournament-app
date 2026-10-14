@@ -25,7 +25,7 @@ import { ScorerList } from './scorer-list'
  * Układ przełącza szerokość samego wiersza (container query), nie okna: w
  * panelu obok terminarza stoją sidebar i lista kolejek, więc przy oknie
  * 1024 px wiersz ma ok. 480 px (#198). Sześć kolumn wymaga 478 px na stałe
- * kolumny, odstępy, padding i ramkę; próg `@2xl` (42rem = 672 px) zostawia
+ * kolumny, odstępy, padding i ramkę; próg `match-row-wide` (42rem = 672 px) zostawia
  * każdej nazwie drużyny przynajmniej 97 px. Granicę 80 px pilnują stories,
  * więc te liczby to uzasadnienie progu, nie źródło prawdy. Kontener jest
  * nazwany (`match-row`), żeby komórki i `CollisionBadge` nie łapały się na
@@ -39,13 +39,23 @@ import { ScorerList } from './scorer-list'
  * Wiersz fazy `knockout` w sporcie z remisem ma szerszą kolumnę wyniku, bo
  * pole zawsze trzyma miejsce na karne (#234). Szerokość zależy od sportu
  * i fazy, a nie od meczu, więc w jednej rundzie wynik stoi wszędzie tak samo.
+ *
+ * Nazwa drużyny łamie się na drugą linię, zanim dostanie wielokropek (#239),
+ * a wielokropek zostaje dla nazw dłuższych. Nazwy do 20 znaków
+ * („Niedźwiedzie Mokotów”) i podpisy pustych slotów („Przegrany: Półfinał 1”)
+ * mieszczą się w dwóch liniach od wiersza 319 px, czyli karty Przeglądu na
+ * telefonie 375 px. Dlatego w wąskim wierszu odstęp kolumn jest mniejszy,
+ * a strzałka odnośnika stoi w linii terminu zamiast w pasie po prawej; pole
+ * wyniku się nie zmienia. Wiersz z miejscem na karne przechodzi w szeroki
+ * układ dopiero od 48rem (wariant `match-row-wide` w `index.css`): przy 42rem
+ * nazwom zostawało ok. 71 px. Granice pilnuje story „Próg układu (puchar)”.
  */
-const rowGrid = cva('grid items-center gap-x-3 gap-y-1.5 rounded-xl border bg-card px-3 py-2.5 text-sm', {
+const rowGrid = cva('grid items-center gap-x-2 gap-y-1.5 match-row-wide:gap-x-3 rounded-xl border bg-card px-3 py-2.5 text-sm', {
   variants: {
     penaltySlot: {
       false:
-        'grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
-      true: 'grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] @2xl/match-row:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+        'grid-cols-[minmax(0,1fr)_3.5rem_minmax(0,1fr)] match-row-wide:grid-cols-[8rem_minmax(0,1fr)_3.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
+      true: 'grid-cols-[minmax(0,1fr)_5.5rem_minmax(0,1fr)] match-row-wide:grid-cols-[8rem_minmax(0,1fr)_5.5rem_minmax(0,1fr)_6.5rem_6.5rem]',
     },
   },
 })
@@ -114,7 +124,7 @@ export function CollisionBadge({ collisions, className }: { collisions: MatchCol
   return (
     <Badge variant="destructive" title={title} className={className}>
       <AlertTriangle />
-      <span className="sr-only @2xl/match-row:not-sr-only">{label}</span>
+      <span className="sr-only match-row-wide:not-sr-only">{label}</span>
     </Badge>
   )
 }
@@ -203,6 +213,9 @@ export function MatchRow({
   const home = teamName(match.homeTeam, match.bracket?.homeSource)
   const away = teamName(match.awayTeam, match.bracket?.awaySource)
   const label = `${home} – ${away}`
+  // Pole wyniku z miejscem na karne: szersza kolumna wyniku (`rowGrid`)
+  // i późniejszy próg szerokiego układu (`data-penalty-slot`).
+  const penaltySlot = match.bracket?.penaltySlot ?? false
   const scorers = scorerSides(match)
   // Pusty slot z podpisem źródła idzie kursywą i drobniej, jak w wierszu
   // drabinki panelu; po stronie gospodarza z oddechem przy polu wyniku,
@@ -211,11 +224,11 @@ export function MatchRow({
 
   const content = (
     <>
-      <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground @2xl/match-row:col-span-1 @2xl/match-row:block">
+      <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground match-row-wide:col-span-1 match-row-wide:block">
         {/* W szerokim wierszu komórka jest blokiem, więc etykieta dostaje
             własną linię nad terminem, a w wąskim odstęp daje `gap`. */}
         {match.bracket && (
-          <span className="shrink-0 font-medium text-foreground @2xl/match-row:block">{match.bracket.label}</span>
+          <span className="shrink-0 font-medium text-foreground match-row-wide:block">{match.bracket.label}</span>
         )}
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (
@@ -228,19 +241,19 @@ export function MatchRow({
       <span
         data-slot="match-team"
         className={cn(
-          'col-start-1 row-start-2 truncate text-right font-medium @2xl/match-row:col-start-2 @2xl/match-row:row-start-1',
+          'col-start-1 row-start-2 line-clamp-2 text-right font-medium wrap-break-word match-row-wide:col-start-2 match-row-wide:row-start-1',
           !match.homeTeam && cn(sourceName, 'pe-1'),
         )}
       >
         {home}
       </span>
-      <span className="col-start-2 row-start-2 flex @2xl/match-row:col-start-3 @2xl/match-row:row-start-1">
+      <span className="col-start-2 row-start-2 flex match-row-wide:col-start-3 match-row-wide:row-start-1">
         <Score match={match} />
       </span>
       <span
         data-slot="match-team"
         className={cn(
-          'col-start-3 row-start-2 truncate font-medium @2xl/match-row:col-start-4 @2xl/match-row:row-start-1',
+          'col-start-3 row-start-2 line-clamp-2 font-medium wrap-break-word match-row-wide:col-start-4 match-row-wide:row-start-1',
           !match.awayTeam && sourceName,
         )}
       >
@@ -250,31 +263,34 @@ export function MatchRow({
         lines={scorers.home}
         team={home}
         align="end"
-        className="col-start-1 row-start-3 @2xl/match-row:col-span-2 @2xl/match-row:row-start-2"
+        className="col-start-1 row-start-3 match-row-wide:col-span-2 match-row-wide:row-start-2"
       />
       <ScorerList
         lines={scorers.away}
         team={away}
-        className="col-start-3 row-start-3 @2xl/match-row:col-span-3 @2xl/match-row:col-start-4 @2xl/match-row:row-start-2"
+        className="col-start-3 row-start-3 match-row-wide:col-span-3 match-row-wide:col-start-4 match-row-wide:row-start-2"
       />
       {/* Stały slot kolizji przed stanem (#175): miejsce rezerwuje pusty
           wrapper, więc plakietka nie przesuwa kolumny wyniku. */}
-      <span className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 @2xl/match-row:col-span-2 @2xl/match-row:col-start-5">
-        <span className="flex shrink-0 justify-end @2xl/match-row:w-[6.5rem]">
+      <span className="col-start-3 row-start-1 flex flex-wrap items-center justify-end gap-x-1.5 gap-y-1 match-row-wide:col-span-2 match-row-wide:col-start-5">
+        <span className="flex shrink-0 justify-end match-row-wide:w-[6.5rem]">
           <CollisionBadge collisions={match.collisions ?? []} />
         </span>
-        <span className="flex shrink-0 justify-end @2xl/match-row:w-[6.5rem]">
+        <span className="flex shrink-0 justify-end match-row-wide:w-[6.5rem]">
           {statusDisplay === 'badge' ? (
             <MatchStatusBadge status={match.status} />
           ) : (
             match.status === 'live' && <LiveMarker />
           )}
         </span>
+        {/* W wąskim wierszu strzałka odnośnika stoi w linii terminu, a nie
+            w pasie po prawej, który zabierał nazwom 20 px (#239). */}
+        {href !== undefined && <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground match-row-wide:hidden" />}
       </span>
     </>
   )
 
-  const grid = rowGrid({ penaltySlot: match.bracket?.penaltySlot ?? false })
+  const grid = rowGrid({ penaltySlot })
   const interactive = cn(
     'w-full text-left transition-colors hover:border-ring/50 hover:bg-muted/40',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
@@ -290,12 +306,15 @@ export function MatchRow({
         event.preventDefault()
         onNavigate()
       }}
-      // Strzałka stoi poza siatką, w marginesie po prawej, więc kolumny
-      // i wynik zostają tam, gdzie w wierszu bez odnośnika.
-      className={cn(grid, interactive, 'relative pr-8')}
+      // W szerokim wierszu strzałka stoi poza siatką, w marginesie po prawej,
+      // więc kolumny i wynik zostają tam, gdzie w wierszu bez odnośnika.
+      className={cn(grid, interactive, 'relative match-row-wide:pr-8')}
     >
       {content}
-      <ChevronRight aria-hidden className="absolute top-1/2 right-2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <ChevronRight
+        aria-hidden
+        className="absolute top-1/2 right-2 hidden size-4 -translate-y-1/2 text-muted-foreground match-row-wide:block"
+      />
     </a>
   ) : onSelect ? (
     <button
@@ -317,5 +336,9 @@ export function MatchRow({
   // siebie), więc wiersz dostaje własne opakowanie i konsument nie musi
   // pamiętać o `@container` (#198). `className` trafia na nie, bo to ono
   // jest najbardziej zewnętrznym elementem i od niego liczy się próg.
-  return <div className={cn('@container/match-row', className)}>{row}</div>
+  return (
+    <div className={cn('@container/match-row', className)} data-penalty-slot={penaltySlot || undefined}>
+      {row}
+    </div>
+  )
 }
