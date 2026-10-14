@@ -54,7 +54,8 @@ test('kibic widzi w drabince zwycięzcę półfinału w finale, przegranego w me
   await test.step('w Drabince zwycięzca stoi w finale, a przegrany w meczu o 3. miejsce', async () => {
     await page.goto(`${PUBLIC_URL}/t/${cup.slug}`);
     await page.getByRole('navigation', { name: 'Sekcje turnieju' }).getByRole('link', { name: 'Drabinka' }).click();
-    await expect(page).toHaveURL(`${PUBLIC_URL}/t/${cup.slug}/drabinka`);
+    // Start okna trafia do `?od=` przy wejściu (#239): półfinał ma mecz niezakończony.
+    await expect(page).toHaveURL(`${PUBLIC_URL}/t/${cup.slug}/drabinka?od=1`);
 
     await expect(page.getByRole('link', { name: 'Finał: Bobry – Do ustalenia' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Mecz o 3. miejsce: Gryfy – Do ustalenia' })).toBeVisible();
