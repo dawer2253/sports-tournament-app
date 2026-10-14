@@ -99,6 +99,28 @@ describe('okno rund', () => {
     expect(requests.stageMatches).toContain('2');
   });
 
+  it('zakończenie rundy w czasie oglądania nie przesuwa okna, a wyliczony start trafia do ?od=', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    publicApi({ data: cup(), stageMatches: cupMatches({ teams: 16, progress: { round: 2, finished: 3 } }) });
+    const { router } = renderAt(`/t/${SLUG}/drabinka`);
+
+    await waitFor(() => expect(headings()).toEqual(['Ćwierćfinał', 'Półfinał']));
+    // `replace`: ten sam wpis historii, więc „wstecz” nie wraca na adres bez ?od=.
+    await waitFor(() => expect(router.state.location.search).toBe('?od=2'));
+    expect(router.state.historyAction).toBe('REPLACE');
+
+    // Organizator kończy ostatni ćwierćfinał: z samej reguły okno poszłoby na półfinał i finał.
+    expect((await tile('Półfinał 2')).getAttribute('aria-label')).toContain('Do ustalenia');
+    const refreshed = publicApi({ data: cup(), stageMatches: cupMatches({ teams: 16, progress: { round: 3, finished: 0 } }) });
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+    await waitFor(() => expect(refreshed.stageMatches).toEqual(['2']));
+    // Dane w oknie się odświeżyły: zwycięzca ostatniego ćwierćfinału stoi już w półfinale.
+    await waitFor(async () => expect((await tile('Półfinał 2')).getAttribute('aria-label')).not.toContain('Do ustalenia'));
+
+    expect(headings()).toEqual(['Ćwierćfinał', 'Półfinał']);
+    expect(router.state.location.search).toBe('?od=2');
+  });
+
   it.each(['', '?od=4', '?od=9'])('po finale kończy się na finale (%s)', async (query) => {
     publicApi({ data: cup(), stageMatches: cupMatches({ teams: 16, progress: 'done' }) });
     renderAt(`/t/${SLUG}/drabinka${query}`);
@@ -129,9 +151,10 @@ describe('okno rund', () => {
       fireEvent.touchEnd(tree, { changedTouches: [{ clientX: 200 + dx, clientY: 300 + dy }] });
     };
 
+    await waitFor(() => expect(router.state.location.search).toBe('?od=1'));
     swipe(30, 200);
     expect(headings()).toEqual(['1/8 finału', 'Ćwierćfinał']);
-    expect(router.state.location.search).toBe('');
+    expect(router.state.location.search).toBe('?od=1');
 
     swipe(-80, 10);
     await waitFor(() => expect(headings()).toEqual(['Ćwierćfinał', 'Półfinał']));
