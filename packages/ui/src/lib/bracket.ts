@@ -267,6 +267,29 @@ export function bracketByes<M extends BracketMatch>(matches: readonly M[]): Brac
     .toSorted((a, b) => a.position - b.position)
 }
 
+/**
+ * Rozstawienie, z którego drabinka powstała: drużyny w kolejności seedów,
+ * pierwszy element to seed 1 (odwrotność `firstRoundPairs`). Drużyna stoi
+ * na pozycji z `bracketSeedPositions` — w meczu 1. rundy albo, z wolnym
+ * losem, od razu w 2. rundzie w miejscu brakującego meczu. Wyniki niczego
+ * tu nie zmieniają, bo sloty 1. rundy i wolne losy zostają po starcie (#239).
+ */
+export function bracketSeeding(matches: readonly BracketMatch[]): BracketTeam[] {
+  if (matches.length === 0) return []
+  const positions = bracketSeedPositions(2 ** roundsCount(matches))
+  const seeds: BracketTeam[] = []
+  const place = (position: number, team: BracketTeam | null) => {
+    if (team) seeds[positions[position - 1]! - 1] = { id: team.id, name: team.name }
+  }
+  for (const match of matches) {
+    if (match.round.order !== 1) continue
+    place(2 * match.matchNumber - 1, match.homeTeam)
+    place(2 * match.matchNumber, match.awayTeam)
+  }
+  for (const bye of bracketByes(matches)) place(2 * bye.position - 1, bye.team)
+  return seeds.filter(Boolean)
+}
+
 /** Finał: mecz ostatniej rundy, który nie jest meczem o 3. miejsce. */
 export function bracketFinal<M extends BracketMatch>(matches: readonly M[]): M | null {
   const last = roundsCount(matches)

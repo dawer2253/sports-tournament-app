@@ -106,6 +106,27 @@ function bracket(overrides: Record<number, Partial<AdminMatch>> = {}): AdminMatc
   ];
 }
 
+/**
+ * Ta sama drabinka z innego rozstawienia: `seeding[0]` to seed 1, więc
+ * drużyna `t` z `bracket()` przechodzi w `seeding[t - 1]`. Bez meczu
+ * o 3. miejsce półfinały nie mają krawędzi przegranego.
+ */
+function reseeded(seeding: number[], { thirdPlace }: { thirdPlace: boolean }): AdminMatch[] {
+  const byId = (side: AdminMatch['homeTeam']) => {
+    if (!side) return null;
+    const { id, name, logoUrl } = TEAMS.find((candidate) => candidate.id === seeding[side.id - 1])!;
+    return { id, name, logoUrl };
+  };
+  return bracket()
+    .filter((candidate) => thirdPlace || candidate.id !== 302)
+    .map((candidate) => ({
+      ...candidate,
+      homeTeam: byId(candidate.homeTeam),
+      awayTeam: byId(candidate.awayTeam),
+      loserToMatchId: thirdPlace ? candidate.loserToMatchId : null,
+    }));
+}
+
 /** Sporty z kontraktu, okrojone do tego, czego używa okno meczu: remisy i typy zdarzeń. */
 function sport(id: number, code: Sport['code'], name: string, allowsDraw: boolean): Sport {
   return {
@@ -339,6 +360,37 @@ describe('Drabinka — okno rozstawienia', () => {
     expect(field).not.toBeNull();
   });
 
+  it('„Wygeneruj ponownie” startuje od obecnego rozstawienia i braku meczu o 3. miejsce, a nowa drużyna dochodzi na koniec', async () => {
+    // Seedy 1 i 2 (Sokoły, Lwy) z wolnym losem, ćwierćfinały Orły–Wilki i Żubry–Rysie: nie po kolejności z listy drużyn.
+    const state = serveMatches(reseeded([4, 1, 6, 2, 5, 3], { thirdPlace: false }));
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () =>
+        HttpResponse.json({ data: [...TEAMS, team(7, 'Kruki Żoliborz')] }),
+      ),
+    );
+    const bodies = serveGenerate(state);
+    const { user } = renderBracket();
+
+    await user.click(await screen.findByRole('button', { name: 'Więcej akcji drabinki' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Wygeneruj ponownie' }));
+    const dialog = screen.getByRole('dialog', { name: 'Rozstaw i wygeneruj ponownie' });
+    expect(seeding(dialog)).toEqual([
+      '1Sokoły Ursus',
+      '2Lwy Mokotów',
+      '3Żubry Praga',
+      '4Orły Wola',
+      '5Wilki Bemowo',
+      '6Rysie Bielany',
+      '7Kruki Żoliborz',
+    ]);
+    const toggle = within(dialog).getByRole('switch', { name: /Mecz o 3\. miejsce/ });
+    expect(toggle).toBeEnabled();
+    expect(toggle).not.toBeChecked();
+
+    await user.click(within(dialog).getByRole('button', { name: 'Zastąp drabinkę' }));
+    await waitFor(() => expect(bodies).toEqual([{ teamIds: [4, 1, 6, 2, 5, 3, 7], thirdPlaceMatch: false }]));
+  });
+
   it('przy istniejącej drabince okno ostrzega i ma „Zastąp drabinkę”, a po generowaniu ?round= znika', async () => {
     const state = serveMatches(bracket());
     const bodies = serveGenerate(state);
@@ -350,6 +402,7 @@ describe('Drabinka — okno rozstawienia', () => {
     expect(
       within(dialog).getByText('Obecna drabinka (6 meczów) zniknie razem z terminami i obiektami, także poprawionymi ręcznie.'),
     ).toBeInTheDocument();
+    expect(within(dialog).getByRole('switch', { name: /Mecz o 3\. miejsce/ })).toBeChecked();
 
     await user.click(within(dialog).getByRole('button', { name: 'Zastąp drabinkę' }));
     await waitFor(() => expect(bodies).toHaveLength(1));
