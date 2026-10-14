@@ -251,7 +251,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       }}
       onSubmit={submit}
       title={`${home} – ${away}`}
-      description={row ? `${row.label}, ${formatKickoff(match.kickoffAt)}` : `${match.round.name} · mecz ${match.matchNumber}`}
+      description={row ? `${row.label}, ${formatKickoff(match.kickoffAt)}` : `${match.round.name}, mecz ${match.matchNumber}`}
       submitLabel="Zapisz"
       pending={save.isPending}
       error={formError}
