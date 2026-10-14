@@ -21,7 +21,7 @@ const TOURNAMENT: Tournament = {
   name: 'Puchar Bemowa 2026',
   slug: 'puchar-bemowa-2026',
   status: 'active',
-  sport: { id: 1, code: 'football', name: 'Piłka nożna' },
+  sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
   branding: { logoUrl: null, primaryColor: '#1F7A45' },
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points'],
@@ -564,7 +564,7 @@ describe('Drabinka — okno meczu (#228)', () => {
   it('w koszykówce pól karnych nie ma nigdy', async () => {
     server.use(
       http.get(`${API}/tournaments/${TOURNAMENT.id}`, () =>
-        HttpResponse.json({ data: { ...TOURNAMENT, sport: { id: 2, code: 'basketball', name: 'Koszykówka' } } }),
+        HttpResponse.json({ data: { ...TOURNAMENT, sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false } } }),
       ),
     );
     serveMatches(semis());

@@ -5,7 +5,7 @@ import { SLUG, leaderRow, leaderboard, publicApi, renderAt, tournament } from '.
 
 const BASKETBALL = tournament({
   name: 'Liga Koszykówki 2026',
-  sport: { id: 2, code: 'basketball', name: 'Koszykówka' },
+  sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false },
   stats: [
     { code: 'points', label: 'Punkty' },
     { code: 'fouls', label: 'Faule' },

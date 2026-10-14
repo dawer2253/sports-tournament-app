@@ -221,7 +221,7 @@ describe('pas meczu', () => {
   it('w koszu stoją wszyscy zawodnicy z punktami, nie trzech jak w wierszu meczu', async () => {
     const scorers = [1, 2, 3, 4, 5].map((id) => scorer(1, 'home', id, { value: 10 + id, minutes: [] }));
     publicApi({
-      data: tournament({ sport: { id: 2, code: 'basketball', name: 'Koszykówka' } }),
+      data: tournament({ sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false } }),
       matches: [detail(1, { homeScore: 65, awayScore: 0, scorers })],
     });
     renderAt(`/t/${SLUG}/mecze/1`);

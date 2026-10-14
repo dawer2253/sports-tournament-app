@@ -24,7 +24,7 @@ export function tournament(overrides: Partial<PublicTournament> = {}): PublicTou
     name: 'Liga Osiedlowa 2026',
     slug: SLUG,
     status: 'active',
-    sport: { id: 1, code: 'football', name: 'Piłka nożna' },
+    sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
     branding: { logoUrl: null, primaryColor: '#1F7A45' },
     stages: [{ id: 1, type: 'league', name: 'Faza zasadnicza', order: 1, groups: [] }],
     stats: [

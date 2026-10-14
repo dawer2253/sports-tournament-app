@@ -488,7 +488,8 @@ export interface paths {
                          *           "sport": {
                          *             "id": 2,
                          *             "code": "basketball",
-                         *             "name": "Koszykówka"
+                         *             "name": "Koszykówka",
+                         *             "allowsDraw": false
                          *           },
                          *           "branding": {
                          *             "logoUrl": null,
@@ -521,7 +522,8 @@ export interface paths {
                          *           "sport": {
                          *             "id": 1,
                          *             "code": "football",
-                         *             "name": "Piłka nożna"
+                         *             "name": "Piłka nożna",
+                         *             "allowsDraw": true
                          *           },
                          *           "branding": {
                          *             "logoUrl": null,
@@ -611,7 +613,8 @@ export interface paths {
                          *         "sport": {
                          *           "id": 1,
                          *           "code": "football",
-                         *           "name": "Piłka nożna"
+                         *           "name": "Piłka nożna",
+                         *           "allowsDraw": true
                          *         },
                          *         "branding": {
                          *           "logoUrl": null,
@@ -856,7 +859,8 @@ export interface paths {
                          *         "sport": {
                          *           "id": 1,
                          *           "code": "football",
-                         *           "name": "Piłka nożna"
+                         *           "name": "Piłka nożna",
+                         *           "allowsDraw": true
                          *         },
                          *         "branding": {
                          *           "logoUrl": "http://localhost:8000/storage/tournaments/1/logo/hMbkow7jZDUOi8YzukrkRzF1eY8wqM7DJtNlFrEZ.png",
@@ -927,7 +931,8 @@ export interface paths {
                          *         "sport": {
                          *           "id": 1,
                          *           "code": "football",
-                         *           "name": "Piłka nożna"
+                         *           "name": "Piłka nożna",
+                         *           "allowsDraw": true
                          *         },
                          *         "branding": {
                          *           "logoUrl": null,
@@ -2820,10 +2825,13 @@ export interface paths {
         };
         /**
          * Publiczna strona turnieju
-         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
-         *     Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
+         * @description Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
+         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
          *     ten sam przełącznik obsługuje tabele i klasyfikację, więc wszystkie
-         *     widoki mocka mówią o tym samym sporcie.
+         *     widoki mocka mówią o tym samym sporcie. Trzeci, po
+         *     `Prefer: example=puchar`, to puchar piłkarski z jedną fazą `knockout`:
+         *     ten sam przełącznik daje jego mecze w `/matches`, `/fixtures`
+         *     i `/results`, więc strona publiczna pokazuje pod mockiem drabinkę.
          */
         get: {
             parameters: {
@@ -3066,6 +3074,29 @@ export interface paths {
                 };
                 304: components["responses"]["NotModified"];
                 404: components["responses"]["NotFound"];
+                /**
+                 * @description Brak `stageId` albo nie jest liczbą całkowitą. Lista bez filtra
+                 *     byłaby kompletem meczów turnieju, czyli rozmiarem, którego ta
+                 *     trasa nie oddaje.
+                 */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Podaj id fazy.",
+                         *       "errors": {
+                         *         "stageId": [
+                         *           "Podaj id fazy."
+                         *         ]
+                         *       }
+                         *     }
+                         */
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3116,8 +3147,9 @@ export interface paths {
          *     Mecz trwający niesie strzelców, którzy dochodzą w trakcie; mecz
          *     zaplanowany ma `scorers: []` (`PublicMatch`).
          *
-         *     Przykłady są dwa: `pilka` (domyślny) i `koszykowka`. Mock zwraca drugi
-         *     po wysłaniu nagłówka `Prefer: example=koszykowka`.
+         *     Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
+         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`,
+         *     a trzeci po `Prefer: example=puchar`.
          */
         get: {
             parameters: {
@@ -3207,8 +3239,9 @@ export interface paths {
          *     równym terminie (także między meczami bez terminu) rozstrzyga
          *     kolejność fazy, kolejki i `matchNumber`, malejąco — tak jak termin.
          *
-         *     Przykłady są dwa: `pilka` (domyślny) i `koszykowka`. Mock zwraca drugi
-         *     po wysłaniu nagłówka `Prefer: example=koszykowka`.
+         *     Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
+         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`,
+         *     a trzeci po `Prefer: example=puchar`.
          */
         get: {
             parameters: {
@@ -3615,6 +3648,13 @@ export interface components {
             id: number;
             code: components["schemas"]["SportCode"];
             name: string;
+            /**
+             * @description Czy mecz w tym sporcie może skończyć się remisem
+             *     (`SportConfig.allowsDraw`). Strona publiczna rezerwuje w polu
+             *     wyniku miejsce na karne tylko w sporcie z remisem, a w fazie
+             *     `knockout` nie ma tabeli, która by to pole niosła.
+             */
+            allowsDraw: boolean;
         };
         /**
          * @description Kryterium rozstrzygające o kolejności w tabeli. `points` jest zawsze
