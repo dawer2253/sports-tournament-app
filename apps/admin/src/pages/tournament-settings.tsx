@@ -13,19 +13,16 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
-  CardHeader,
-  CardTitle,
   ConfirmDeleteDialog,
   EmptyState,
   FormDialog,
-  Heading,
   ImageFileField,
   Input,
   isHexColor,
   Label,
   Separator,
+  SettingsSection,
   Skeleton,
   TiebreakerList,
   TournamentLogo,
@@ -99,10 +96,10 @@ export function TournamentSettingsPage() {
 
   return (
     <AdminPage tournament={tournament} section="settings">
-      <div className="max-w-2xl space-y-6">
+      <div className="space-y-6">
         <StatusSection tournament={tournament} />
         {form}
-        <DangerZone tournament={tournament} />
+        <TournamentDeletion tournament={tournament} />
       </div>
     </AdminPage>
   );
@@ -112,21 +109,21 @@ export function TournamentSettingsPage() {
  * Usuwanie turnieju (#83, #103). Przycisk jest zawsze aktywny: `Tournament`
  * nie mówi, czy rozegrano mecze, więc odmowę (`422`) pokazuje dopiero okno.
  */
-function DangerZone({ tournament }: { tournament: Tournament }) {
+function TournamentDeletion({ tournament }: { tournament: Tournament }) {
   const [deleting, setDeleting] = useState(false);
 
   return (
     <Card className="ring-destructive/40">
-      <CardHeader>
-        <CardTitle>Strefa zagrożenia</CardTitle>
-        <CardDescription>
-          Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
-        <Button variant="destructive" onClick={() => setDeleting(true)}>
-          <Trash2 className="size-4" /> Usuń turniej
-        </Button>
+        <SettingsSection
+          title="Usuwanie turnieju"
+          description="Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć."
+          action={
+            <Button variant="destructive" onClick={() => setDeleting(true)}>
+              <Trash2 className="size-4" /> Usuń turniej
+            </Button>
+          }
+        />
       </CardContent>
       {deleting && <DeleteTournamentDialog tournament={tournament} onClose={() => setDeleting(false)} />}
     </Card>
@@ -344,34 +341,34 @@ function LogoCard({ tournament, color }: { tournament: Tournament; color: string
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Logo</CardTitle>
-        <CardDescription>PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-4">
-        <TournamentLogo
-          logoUrl={logoUrl}
-          color={color}
-          onError={() => setFailedLogoUrl(logoUrl)}
-          className="size-16"
-        />
-        <div className="grid gap-2">
-          {logoUrl !== null && failedLogoUrl === logoUrl && (
-            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <AlertTriangle className="size-4" /> Nie udało się wczytać logo
-            </p>
-          )}
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setDialog('upload')}>
-              <Upload className="size-4" /> {logoUrl ? 'Zmień logo' : 'Wgraj logo'}
-            </Button>
-            {logoUrl && (
-              <Button variant="ghost" onClick={() => setDialog('delete')}>
-                <Trash2 className="size-4" /> Usuń logo
-              </Button>
-            )}
+      <CardContent>
+        <SettingsSection title="Logo" description="PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px.">
+          <div className="flex flex-wrap items-center gap-4">
+            <TournamentLogo
+              logoUrl={logoUrl}
+              color={color}
+              onError={() => setFailedLogoUrl(logoUrl)}
+              className="size-16"
+            />
+            <div className="grid gap-2">
+              {logoUrl !== null && failedLogoUrl === logoUrl && (
+                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <AlertTriangle className="size-4" /> Nie udało się wczytać logo
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => setDialog('upload')}>
+                  <Upload className="size-4" /> {logoUrl ? 'Zmień logo' : 'Wgraj logo'}
+                </Button>
+                {logoUrl && (
+                  <Button variant="ghost" onClick={() => setDialog('delete')}>
+                    <Trash2 className="size-4" /> Usuń logo
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        </SettingsSection>
       </CardContent>
       {/* Okna renderowane warunkowo: wybrany plik i błąd żyją tyle co okno. */}
       {dialog === 'upload' && <LogoUploadDialog tournament={tournament} color={color} onClose={close} />}
@@ -635,8 +632,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
       <form onSubmit={(event) => void handleSubmit(onSubmit)(event)} noValidate>
         <Card>
           <CardContent className="space-y-6">
-            <section className="space-y-4">
-              <Heading level="card">Dane</Heading>
+            <SettingsSection title="Dane" description="Nazwa turnieju i adres jego strony publicznej.">
               <div className="space-y-2">
                 <Label htmlFor="name">Nazwa</Label>
                 <Input
@@ -692,12 +688,11 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   </div>
                 )}
               </div>
-            </section>
+            </SettingsSection>
 
             <Separator />
 
-            <section className="space-y-4">
-              <Heading level="card">Wygląd</Heading>
+            <SettingsSection title="Wygląd" description="Kolor wiodący strony publicznej i tło domyślnego logo.">
               <Controller
                 control={control}
                 name="branding.primaryColor"
@@ -709,12 +704,11 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   />
                 )}
               />
-            </section>
+            </SettingsSection>
 
             <Separator />
 
-            <section className="space-y-4">
-              <Heading level="card">Rozgrywki</Heading>
+            <SettingsSection title="Rozgrywki" description="Długość meczu i jego podział na części.">
               <div className="grid w-44 content-start gap-2">
                 <Label htmlFor="match-duration">Długość meczu (min)</Label>
                 <Input
@@ -749,12 +743,14 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   />
                 )}
               />
-            </section>
+            </SettingsSection>
 
             <Separator />
 
-            <section className="space-y-4">
-              <Heading level="card">Punktacja</Heading>
+            <SettingsSection
+              title="Punktacja"
+              description="Punkty w tabeli za wynik meczu i kolejność rozstrzygania remisów."
+            >
               <div className="flex flex-wrap items-start gap-4">
                 {pointFields.map(({ key, label }) => {
                   const fieldError = errors.points?.[key];
@@ -813,7 +809,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   }))}
                 />
               </div>
-            </section>
+            </SettingsSection>
 
             {/* Błąd, którego nie da się przypiąć do pola. */}
             {errors.root && (

@@ -35,7 +35,18 @@ Ekran ma **trzy miejsca zapisu**, każde z jasnym zakresem:
    „Zapisz zmiany” na końcu, który wysyła **tylko zmienione pola** (`points`
    i `periods` zawsze w komplecie).
 
-Na dole „Strefa zagrożenia” z „Usuń turniej” ([#103](https://github.com/dawer2253/sports-tournament-app/issues/103)).
+Na dole „Usuwanie turnieju” z „Usuń turniej” ([#103](https://github.com/dawer2253/sports-tournament-app/issues/103)).
+
+Karty zajmują całą szerokość, jak listy reszty panelu. Każda sekcja to
+`SettingsSection` ([#243](https://github.com/dawer2253/sports-tournament-app/issues/243)):
+od `lg` tytuł z opisem stoi po lewej, a pola po prawej, w kolumnie do
+`max-w-2xl`, bo pole na całą szerokość ekranu trudniej czytać. Niżej sekcja
+idzie jedną kolumną, z opisem pod tytułem.
+
+Dwie sekcje mają **akcję**: „Otwórz stronę” w Statusie i „Usuń turniej”
+w Usuwaniu turnieju. Od `lg` akcja stoi przy prawym brzegu karty, poza
+limitem szerokości pól, i jest wyśrodkowana w pionie względem całej sekcji.
+Poniżej `lg` schodzi pod treść sekcji, do lewej krawędzi.
 
 ## Reguły
 - **Status.** Szkic: „Opublikuj”. Trwa: „Zakończ” i „Cofnij do szkicu”.
