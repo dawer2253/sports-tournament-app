@@ -59,6 +59,9 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // Domyślne REPEATABLE READ blokuje szczeliny i zderzało równoległe
+            // generowania terminarzy w różnych turniejach (ADR-0010).
+            'isolation_level' => 'READ COMMITTED',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

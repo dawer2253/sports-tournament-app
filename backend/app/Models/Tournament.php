@@ -139,8 +139,7 @@ class Tournament extends Model
      * dwa kroki, więc równoległe żądanie może zająć slug pomiędzy nimi —
      * rozstrzyga wtedy unikalny indeks, a jego naruszenie przechodzi do
      * kolejnego sufiksu. Sufiks rośnie także po naruszeniu, bez ponownego
-     * sprawdzenia tego samego: w transakcji z REPEATABLE READ odczyt nie
-     * zobaczyłby cudzego wiersza i pętla kręciłaby się w miejscu.
+     * sprawdzenia tego samego sluga: kolizja już pokazała, że jest zajęty.
      *
      * Ponawiana jest wyłącznie kolizja sluga. Każde inne naruszenie unikatu
      * powtórzyłoby się przy każdym sufiksie, więc idzie dalej jako błąd.

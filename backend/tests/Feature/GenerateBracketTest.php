@@ -379,21 +379,17 @@ it('przy pierwszym generowaniu nie blokuje kolejek innych faz', function () {
     expect(anotherConnectionCanAppendRound())->toBeTrue();
 });
 
-// Deadlock przy regeneracji zostaje i ponawia go transakcja. Cztery nieudane
-// próby z pięciu — liczba z docblocku `ScheduleGenerator::generate()`.
-it('po deadlocku przy regeneracji ponawia transakcję i układa jedną drabinkę', function () {
-    outsideTestTransaction(function () {
-        $stage = cupWithTeams(6);
-        generateBracket($stage)->assertValidResponse(201);
-        failWithDeadlock('insert into `matches`', 4);
+// W REPEATABLE READ kasowanie rund fazy kaskadą na mecze blokowało szczeliny
+// na końcu indeksów `matches` i regeneracje w różnych turniejach kończyły się
+// deadlockiem. READ COMMITTED tych blokad nie zakłada; blokada sprawdzenia
+// duplikatu w `rounds` zostaje (ADR-0010).
+it('przy regeneracji nie blokuje meczów innych faz', function () {
+    $stage = cupWithTeams(6);
+    generateBracket($stage)->assertValidResponse(201);
 
-        generateBracket($stage, thirdPlaceMatch: true)
-            ->assertValidResponse(201)
-            ->assertJsonPath('data', ['roundsCount' => 3, 'matchesCount' => 6]);
+    generateBracket($stage, thirdPlaceMatch: true)->assertValidResponse(201);
 
-        expect($stage->rounds()->count())->toBe(3)
-            ->and($stage->matches()->count())->toBe(6);
-    });
+    expect(anotherConnectionCanAppendMatch())->toBeTrue();
 });
 
 // Lista z jedną drużyną albo pusta łamie `minItems` w kontrakcie, więc bez

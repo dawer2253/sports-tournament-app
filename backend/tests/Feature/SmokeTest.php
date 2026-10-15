@@ -21,3 +21,9 @@ it('wykonuje zapytanie do bazy', function () {
 it('ma zmigrowaną bazę testową', function () {
     expect(Schema::hasTable('users'))->toBeTrue();
 });
+
+// Izolację ustawia konfiguracja połączenia, więc obowiązuje też w testach i CI
+// (ADR-0010).
+it('działa w READ COMMITTED', function () {
+    expect(DB::selectOne('select @@transaction_isolation as level')->level)->toBe('READ-COMMITTED');
+});

@@ -35,24 +35,18 @@ class ScheduleGenerator
      * dwa równoległe generowania tej samej fazy ustawiają się w kolejce,
      * zamiast przeplatać kasowanie i wstawianie.
      *
-     * Generowań w różnych fazach blokada wiersza nie szereguje, a zderzają się
-     * one na blokadach szczelin. Kasowanie kolejek fazy blokuje szczelinę za
-     * nimi w indeksie `rounds`, a kaskada na mecze — przez sprawdzenie kluczy
-     * `winner_to_match_id` i `loser_to_match_id` — także w `matches`. Kolejki
-     * i mecze każdej nowej fazy wstawiają się na koniec tych indeksów, więc
-     * dwa generowania w tej samej chwili to deadlock (1213). Dlatego:
+     * Generowań w różnych fazach blokada wiersza nie szereguje. Nie wchodzą
+     * w deadlock, bo połączenie działa w READ COMMITTED, które nie blokuje
+     * szczelin przy kasowaniu kolejek i kaskadzie na mecze (uzasadnienie i pomiar:
+     * ADR-0010, `docs/adr/0010-polaczenie-mysql-w-read-committed.md`).
+     * Transakcja nie jest ponawiana: deadlock, gdyby jednak wystąpił, wraca
+     * błędem od razu.
      *
-     * - pustej fazy nie kasujemy, więc pierwsze generowanie nie bierze żadnej
-     *   blokady szczeliny;
-     * - regeneracja ponawia całą transakcję po deadlocku. Każdy deadlock
-     *   kończy co najmniej jedną transakcję, więc N równoległych regeneracji
-     *   potrzebuje do N prób; pięć naraz przy pięciu próbach przeszło
-     *   w pomiarze bez błędu, a przy trzech próbach i sześciu naraz padała
-     *   prawie połowa.
-     *
-     * Blokad szczelin nie byłoby w ogóle w READ COMMITTED (w pomiarze zero
-     * deadlocków i bez obu poprawek), ale izolacja to decyzja dla całego
-     * połączenia, nie dla jednej klasy.
+     * Jedna blokada szczeliny zostaje: kolejki wstawiane przy regeneracji
+     * mają te same klucze `(stage_id, order)` co skasowane, więc sprawdzenie
+     * duplikatu blokuje szczelinę za nimi i generowanie innej fazy może
+     * czekać na commit. Pustej fazy nie kasujemy, więc pierwsze generowanie
+     * nie bierze nawet tej.
      *
      * @return array{roundsCount: int, matchesCount: int}
      *
@@ -85,7 +79,7 @@ class ScheduleGenerator
             $matchesCount = $this->insertMatches($stage, $rounds, $teams, $roundIds);
 
             return ['roundsCount' => count($rounds), 'matchesCount' => $matchesCount];
-        }, attempts: 5);
+        });
     }
 
     /**

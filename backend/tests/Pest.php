@@ -128,15 +128,39 @@ function softDeleteTeamLeavingPlayers(Team $team): void
 }
 
 /**
+ * Id rodzica sondy: największy `unsigned int`, więc wiersz ląduje na samym
+ * końcu indeksu, a rodzica o tym id nie ma.
+ */
+const PROBE_PARENT_ID = 4_294_967_295;
+
+/**
  * Czy drugie połączenie wstawi kolejkę na samym końcu indeksu `rounds`, póki
  * transakcja testu trzyma blokady tego, co test zrobił przed chwilą. Koniec
  * indeksu to miejsce, w które trafiają kolejki każdej nowej fazy, więc
  * blokada szczeliny w tym miejscu zderza ze sobą generowania w niezależnych
- * turniejach (deadlock z E2E przy trzech workerach). Faza o tym id nie
- * istnieje, dlatego sonda wyłącza u siebie klucze obce; czeka najwyżej
- * sekundę i niczego nie zostawia.
+ * turniejach (deadlock z E2E przy trzech workerach).
  */
 function anotherConnectionCanAppendRound(): bool
+{
+    return anotherConnectionCanAppend('rounds', ['stage_id' => PROBE_PARENT_ID, 'name' => 'Sonda', 'order' => 1]);
+}
+
+/**
+ * Jak `anotherConnectionCanAppendRound()`, tylko na końcu indeksów `matches`,
+ * w które trafiają mecze każdej nowej kolejki.
+ */
+function anotherConnectionCanAppendMatch(): bool
+{
+    return anotherConnectionCanAppend('matches', ['round_id' => PROBE_PARENT_ID, 'stage_id' => PROBE_PARENT_ID, 'match_number' => 1]);
+}
+
+/**
+ * Wiersz wskazuje rodziców, których nie ma, dlatego sonda wyłącza u siebie
+ * klucze obce; czeka najwyżej sekundę i niczego nie zostawia.
+ *
+ * @param  array<string, mixed>  $row
+ */
+function anotherConnectionCanAppend(string $table, array $row): bool
 {
     config(['database.connections.probe' => config('database.connections.'.DB::getDefaultConnection())]);
     $probe = DB::connection('probe');
@@ -145,7 +169,7 @@ function anotherConnectionCanAppendRound(): bool
     $probe->beginTransaction();
 
     try {
-        $probe->table('rounds')->insert(['stage_id' => 4_294_967_295, 'name' => 'Sonda', 'order' => 1]);
+        $probe->table($table)->insert($row);
 
         return true;
     } catch (QueryException $e) {
@@ -159,50 +183,4 @@ function anotherConnectionCanAppendRound(): bool
         $probe->rollBack();
         DB::purge('probe');
     }
-}
-
-/**
- * Uruchamia `$test` poza transakcją `RefreshDatabase`. Laravel ponawia
- * transakcję po deadlocku tylko na najwyższym poziomie, a w zagnieżdżonej
- * rzuca `DeadlockException` — inaczej test ponowienia nie zobaczy. Wszystko,
- * co `$test` zapisze, zostaje zatwierdzone, dlatego helper czyści potem każdą
- * tabelę poza `migrations` i `sports` (sporty wstawia migracja) i otwiera
- * transakcję z powrotem, żeby `RefreshDatabase` miał co wycofać.
- */
-function outsideTestTransaction(Closure $test): void
-{
-    $connection = DB::connection();
-    $connection->rollBack();
-
-    try {
-        $test();
-    } finally {
-        $schema = $connection->getSchemaBuilder();
-        $schema->withoutForeignKeyConstraints(function () use ($schema, $connection): void {
-            foreach ($schema->getTableListing(schemaQualified: false) as $table) {
-                if (! in_array($table, ['migrations', 'sports'], true)) {
-                    $connection->table($table)->delete();
-                }
-            }
-        });
-        $connection->beginTransaction();
-    }
-}
-
-/**
- * Udaje deadlock (1213) na pierwszych `$times` zapytaniach zaczynających się
- * od `$sqlPrefix`, zanim trafią do bazy. Laravel rozpoznaje go po komunikacie
- * MySQL-a, tak samo jak prawdziwy.
- */
-function failWithDeadlock(string $sqlPrefix, int $times): void
-{
-    DB::connection()->beforeExecuting(function (string $query) use ($sqlPrefix, &$times): void {
-        if ($times > 0 && str_starts_with($query, $sqlPrefix)) {
-            $times--;
-
-            throw new QueryException(DB::getDefaultConnection(), $query, [], new PDOException(
-                'SQLSTATE[40001]: Serialization failure: 1213 Deadlock found when trying to get lock; try restarting transaction'
-            ));
-        }
-    });
 }

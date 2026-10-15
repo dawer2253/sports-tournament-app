@@ -1,12 +1,16 @@
 name: Chromatic
 
-# Regresja wizualna Storybooka: na każdym PR-ze oraz baseline po merge do main.
-# Zależności instalujemy w rootcie (npm workspaces, jeden package-lock.json),
-# a sam build Storybooka leci w packages/ui.
+# Regresja wizualna Storybooka. Zależności instalujemy w rootcie (npm workspaces,
+# jeden package-lock.json), a sam build Storybooka leci w packages/ui.
+#
+# Tymczasowo tylko ręcznie (Actions → Chromatic → Run workflow): skończył się limit
+# snapshotów w planie Chromatica, a status „UI Tests” wisiał na PR-ach jako
+# pending. Żeby wrócić do pracy na każdym PR-ze i po merge'u do main, przywróć:
+#   push:
+#     branches: [main]
+#   pull_request:
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 # Nowszy push na ten sam branch anuluje poprzedni build (oszczędza minuty i snapshoty).
 concurrency:
