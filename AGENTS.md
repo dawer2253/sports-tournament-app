@@ -208,7 +208,9 @@ pliku przy odpowiednim eksporcie.
   i odpala się przy zmianach w `apps/**`, `packages/**`, `backend/**`, `e2e/**`,
   rootowym `package.json`, lockfile'u i `ci.yml` (patrz [Testy E2E](#testy-e2e)).
 - [`chromatic.yml`](.github/workflows/chromatic.yml) — regresja wizualna
-  Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`.
+  Storybooka. Wymaga sekretu `CHROMATIC_PROJECT_TOKEN`. **Tymczasowo
+  uruchamiany tylko ręcznie** (skończył się limit snapshotów w planie), powód
+  i sposób przywrócenia stoją w komentarzu w pliku.
 
 ## Setup dla nowych osób
 
