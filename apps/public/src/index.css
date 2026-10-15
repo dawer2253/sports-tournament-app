@@ -6,3 +6,14 @@
   design systemu nie trafiłyby do arkusza.
 */
 @source "../../../packages/ui/src";
+
+/*
+  Miejsce na pionowy pasek przewijania jest zarezerwowane zawsze. Bez tego
+  zakładka dłuższa od okna (zwykle Przegląd) dostaje pasek, a krótsze nie,
+  więc wycentrowana treść skacze w bok przy przełączaniu zakładek.
+*/
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+}
