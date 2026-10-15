@@ -3,9 +3,9 @@ import { cn } from '../../lib/utils'
 import { Heading } from './typography'
 
 export interface SettingsSectionProps extends Omit<React.ComponentProps<'section'>, 'title'> {
-  title: React.ReactNode
+  title: string
   /** Co sekcja ustawia i kiedy się zapisuje. Stoi pod tytułem. */
-  description?: React.ReactNode
+  description?: string
   /**
    * Przycisk albo odnośnik sekcji. Od `lg` stoi przy prawym brzegu,
    * wyśrodkowany w pionie; niżej pod polami.

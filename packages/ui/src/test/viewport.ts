@@ -15,6 +15,18 @@ export const phone375 = {
   globals: { viewport: { value: 'phone375', isRotated: false } },
 } as const
 
+/** Komputer o szerokości 1280 px, powyżej progu `lg` (#239, #243). */
+export const desktop1280 = {
+  parameters: {
+    viewport: {
+      options: {
+        desktop1280: { name: 'Komputer 1280', styles: { width: '1280px', height: '800px' }, type: 'desktop' },
+      },
+    },
+  },
+  globals: { viewport: { value: 'desktop1280', isRotated: false } },
+} as const
+
 /**
  * Słowa tekstu, które przeglądarka złamała w środku (`overflow-wrap`), bo
  * nie mieściły się w linii: zakres takiego słowa ma prostokąt w każdej linii.
