@@ -40,7 +40,8 @@ wszystkie trzy są czerwone.
 ## Uzasadnienie
 
 Żadna transakcja w backendzie nie zakłada spójnej migawki z REPEATABLE READ
-(przegląd wyników `grep -rn "DB::transaction" backend/app` z triage'u #237):
+(przegląd wyników `grep -rn "DB::transaction" backend/app` z triage'u
+[#237](https://github.com/dawer2253/sports-tournament-app/issues/237)):
 
 - `ScheduleGenerator::generate()`, `BracketGenerator::generate()`
   i `DateDistributor::distribute()` zaczynają od `lockForUpdate()` na fazie.
@@ -53,11 +54,14 @@ wszystkie trzy są czerwone.
 - `Tournament::createForOrganizer()` sprawdza slug poza transakcją, a w środku
   są same inserty.
 
-Pomiar z #237: w READ COMMITTED, przy sześciu procesach naraz, 0 deadlocków
+Pomiar z #237 (jednorazowy skrypt z `pcntl_fork`, poza repo): w READ
+COMMITTED, przy sześciu procesach naraz, 0 deadlocków
 na 120 prób we wszystkich czterech scenariuszach, także przy regeneracji.
 
-Pomiar blokad (`performance_schema.data_locks` w transakcji testu, po
-regeneracji terminarza czterech drużyn):
+Pomiar blokad, jednorazowy, przy wdrażaniu #237: test w `GenerateScheduleTest`
+regenerował terminarz czterech drużyn, a drugie połączenie (konto `root`,
+bo `sail` nie ma prawa do `performance_schema`) czytało
+`performance_schema.data_locks`, póki transakcja testu trwała:
 
 - REPEATABLE READ: 42 blokady szczelin w `matches` (indeksy
   `winner_to_match_id`, `loser_to_match_id`, `round_id + match_number`)
@@ -75,8 +79,9 @@ na unikalnym indeksie `rounds`, aż do `supremum`, jeśli faza jest ostatnia
 w indeksie. W `matches` tego nie ma, bo nowe kolejki mają nowe `round_id`.
 
 Skutek: generowanie nowej fazy w innym turnieju czeka na commit takiej
-regeneracji. Z rozkładu blokad wynika, że deadlock wymaga dwóch regeneracji sąsiednich faz w tej samej
-chwili, a pomiar z #237 go nie pokazał. Dlatego kryterium #237, by sonda
+regeneracji. Z rozkładu blokad wnioskujemy (nie mierzyliśmy tego osobno), że
+deadlock wymaga dwóch regeneracji sąsiednich faz w tej samej chwili, a pomiar
+z #237 go nie pokazał. Dlatego kryterium #237, by sonda
 wstawiała kolejkę na koniec `rounds` także po regeneracji, zamieniliśmy na
 sondę na koniec `matches`. Sonda na `rounds` byłaby czerwona w obu izolacjach.
 

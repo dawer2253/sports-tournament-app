@@ -128,6 +128,12 @@ function softDeleteTeamLeavingPlayers(Team $team): void
 }
 
 /**
+ * Id rodzica sondy: największy `unsigned int`, więc wiersz ląduje na samym
+ * końcu indeksu, a rodzica o tym id nie ma.
+ */
+const PROBE_PARENT_ID = 4_294_967_295;
+
+/**
  * Czy drugie połączenie wstawi kolejkę na samym końcu indeksu `rounds`, póki
  * transakcja testu trzyma blokady tego, co test zrobił przed chwilą. Koniec
  * indeksu to miejsce, w które trafiają kolejki każdej nowej fazy, więc
@@ -136,7 +142,7 @@ function softDeleteTeamLeavingPlayers(Team $team): void
  */
 function anotherConnectionCanAppendRound(): bool
 {
-    return anotherConnectionCanAppend('rounds', ['stage_id' => 4_294_967_295, 'name' => 'Sonda', 'order' => 1]);
+    return anotherConnectionCanAppend('rounds', ['stage_id' => PROBE_PARENT_ID, 'name' => 'Sonda', 'order' => 1]);
 }
 
 /**
@@ -145,7 +151,7 @@ function anotherConnectionCanAppendRound(): bool
  */
 function anotherConnectionCanAppendMatch(): bool
 {
-    return anotherConnectionCanAppend('matches', ['round_id' => 4_294_967_295, 'stage_id' => 4_294_967_295, 'match_number' => 1]);
+    return anotherConnectionCanAppend('matches', ['round_id' => PROBE_PARENT_ID, 'stage_id' => PROBE_PARENT_ID, 'match_number' => 1]);
 }
 
 /**

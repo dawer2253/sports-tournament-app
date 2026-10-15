@@ -35,17 +35,18 @@ class ScheduleGenerator
      * dwa równoległe generowania tej samej fazy ustawiają się w kolejce,
      * zamiast przeplatać kasowanie i wstawianie.
      *
-     * Generowań w różnych fazach blokada wiersza nie szereguje. Nie zderzają
-     * się, bo połączenie działa w READ COMMITTED, które nie blokuje szczelin
-     * przy kasowaniu kolejek i kaskadzie na mecze (uzasadnienie i pomiar:
+     * Generowań w różnych fazach blokada wiersza nie szereguje. Nie wchodzą
+     * w deadlock, bo połączenie działa w READ COMMITTED, które nie blokuje
+     * szczelin przy kasowaniu kolejek i kaskadzie na mecze (uzasadnienie i pomiar:
      * ADR-0010, `docs/adr/0010-polaczenie-mysql-w-read-committed.md`).
      * Transakcja nie jest ponawiana: deadlock, gdyby jednak wystąpił, wraca
      * błędem od razu.
      *
      * Jedna blokada szczeliny zostaje: kolejki wstawiane przy regeneracji
      * mają te same klucze `(stage_id, order)` co skasowane, więc sprawdzenie
-     * duplikatu blokuje szczelinę za nimi. Pustej fazy nie kasujemy, więc
-     * pierwsze generowanie nie bierze nawet tej.
+     * duplikatu blokuje szczelinę za nimi i generowanie innej fazy może
+     * czekać na commit. Pustej fazy nie kasujemy, więc pierwsze generowanie
+     * nie bierze nawet tej.
      *
      * @return array{roundsCount: int, matchesCount: int}
      *
