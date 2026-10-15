@@ -92,9 +92,23 @@ tabelę. Grupy istnieją tylko wewnątrz fazy `group`.
 Mecz należy do dokładnie jednej grupy albo do żadnej. Nie istnieje mecz
 międzygrupowy.
 
+Faza `group` może mieć jedną grupę. Wtedy działa jak liga, po której gra się
+puchar.
+
+**Skład grup** to przydział każdej drużyny turnieju do dokładnie jednej grupy
+fazy, razem z nazwami i kolejnością grup. Organizer ustala go zawsze w całości
+i w całości go zastępuje. Grupy mogą być nierówne, ale każda ma co najmniej dwie
+drużyny. **Losowanie grup** to wymieszanie drużyn do grup o zadanych rozmiarach.
+Wynikiem losowania jest zwykły skład grup, z którego nie da się odczytać, że
+był losowany. Koszyków nie ma.
+
 ## Round (kolejka / runda)
 
 Uporządkowany zbiór meczów rozgrywanych jako jedna całość. Należy do fazy.
+
+W fazie `group` kolejka jest wspólna dla wszystkich grup: „Kolejka 1” zawiera
+mecze pierwszej kolejki każdej grupy. Przy nierównych grupach ostatnie kolejki
+mają mecze tylko większych grup.
 
 To jeden byt o dwóch etykietach w UI. W fazie `league` i `group` mówi się o niej
 "kolejka", w fazie `knockout` "runda" (1/8 finału, półfinał, finał). Struktura
@@ -119,7 +133,13 @@ w dwóch turniejach to dwa niepowiązane byty. W obrębie jednego turnieju nazwa
 drużyny się nie powtarza.
 
 Usunięcie drużyny usuwa też jej mecze zaplanowane. Reszta terminarza zostaje
-bez zmian, nawet jeśli kolejka opustoszeje.
+bez zmian, nawet jeśli kolejka opustoszeje. Tak samo jest w grupie: grupa może
+po tym opustoszeć.
+
+Drużyna dodana po ustaleniu składu grup nie ma grupy, dopóki organizer nie
+zapisze składu od nowa. Do tego czasu nie stoi w żadnej tabeli, a terminarza
+fazy grupowej nie da się wygenerować. Od pierwszego meczu rozpoczętego fazy
+grupowej skład grup jest zamrożony i drużyny nie przechodzą między grupami.
 
 W pucharze jest inaczej, bo drabinki nie da się załatać jak kolejki. Usunięcie
 drużyny, która stoi w drabince, przed pierwszym meczem rozpoczętym fazy kasuje
