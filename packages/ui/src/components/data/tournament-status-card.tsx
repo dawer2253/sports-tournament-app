@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react'
 import { Button } from '../ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Card, CardContent } from '../ui/card'
+import { SettingsSection } from '../ui/settings-section'
 import type { TournamentRow } from './tournament-row'
 import { TournamentStatusBadge } from './tournament-status-badge'
 
@@ -50,34 +51,38 @@ export function TournamentStatusCard({ status, onChange, publicUrl, pending = fa
 
   return (
     <Card data-slot="tournament-status-card">
-      <CardHeader>
-        <CardTitle>Status</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <TournamentStatusBadge status={status} />
-          <p className="text-sm text-muted-foreground">{EFFECT[status]}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2" aria-busy={pending || undefined}>
-          {TRANSITIONS[status].map(({ target, label }, index) => (
-            <Button
-              key={target}
-              type="button"
-              variant={index === 0 ? 'default' : 'outline'}
-              disabled={pending}
-              onClick={() => onChange(target)}
-            >
-              {label}
-            </Button>
-          ))}
-          {published && (
-            <Button asChild variant="link" className="ml-auto">
-              <a href={publicUrl} target="_blank" rel="noopener noreferrer">
-                Otwórz stronę <ExternalLink className="size-4" />
-              </a>
-            </Button>
-          )}
-        </div>
+      <CardContent>
+        <SettingsSection
+          title="Status"
+          description="Zmiana statusu zapisuje się od razu, bez „Zapisz zmiany”."
+          action={
+            published && (
+              <Button asChild variant="link" className="px-0">
+                <a href={publicUrl} target="_blank" rel="noopener noreferrer">
+                  Otwórz stronę <ExternalLink className="size-4" />
+                </a>
+              </Button>
+            )
+          }
+        >
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <TournamentStatusBadge status={status} />
+            <p className="text-sm text-muted-foreground">{EFFECT[status]}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2" aria-busy={pending || undefined}>
+            {TRANSITIONS[status].map(({ target, label }, index) => (
+              <Button
+                key={target}
+                type="button"
+                variant={index === 0 ? 'default' : 'outline'}
+                disabled={pending}
+                onClick={() => onChange(target)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+        </SettingsSection>
       </CardContent>
     </Card>
   )

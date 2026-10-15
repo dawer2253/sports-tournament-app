@@ -2,13 +2,13 @@ import * as React from 'react'
 import { AlertTriangle, Trash2, Upload } from 'lucide-react'
 import { TournamentShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent, CardFooter } from '../components/ui/card'
 import { BrandColorPicker, DEFAULT_BRAND_COLOR } from '../components/ui/brand-color-picker'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { MatchPeriodsField } from '../components/ui/match-periods-field'
 import { Separator } from '../components/ui/separator'
-import { Heading } from '../components/ui/typography'
+import { SettingsSection } from '../components/ui/settings-section'
 import { TiebreakerList } from '../components/data/tiebreaker-list'
 import { TournamentStatusCard } from '../components/data/tournament-status-card'
 import type { TournamentRow } from '../components/data/tournament-row'
@@ -59,7 +59,7 @@ export function AdminSettings({
 
   return (
     <TournamentShellDemo active="settings" status={status} sportName={config.name}>
-      <div className="max-w-2xl space-y-6">
+      <div className="space-y-6">
         <TournamentStatusCard
           status={status}
           onChange={() => {}}
@@ -67,42 +67,41 @@ export function AdminSettings({
         />
 
         <Card>
-          <CardHeader>
-            <CardTitle>Logo</CardTitle>
-            <CardDescription>PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-4">
-            <TournamentLogo
-              logoUrl={logoUrl}
-              color={color}
-              onError={() => setFailedLogoUrl(logoUrl)}
-              className="size-16"
-            />
-            <div className="grid gap-2">
-              {logoUrl !== null && failedLogoUrl === logoUrl && (
-                <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <AlertTriangle className="size-4" /> Nie udało się wczytać logo
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline">
-                  <Upload className="size-4" /> {logoUrl ? 'Zmień logo' : 'Wgraj logo'}
-                </Button>
-                {logoUrl && (
-                  <Button variant="ghost">
-                    <Trash2 className="size-4" /> Usuń logo
-                  </Button>
-                )}
+          <CardContent>
+            <SettingsSection title="Logo" description="PNG, JPG lub WebP, do 2 MB, od 64×64 do 4096×4096 px.">
+              <div className="flex flex-wrap items-center gap-4">
+                <TournamentLogo
+                  logoUrl={logoUrl}
+                  color={color}
+                  onError={() => setFailedLogoUrl(logoUrl)}
+                  className="size-16"
+                />
+                <div className="grid gap-2">
+                  {logoUrl !== null && failedLogoUrl === logoUrl && (
+                    <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <AlertTriangle className="size-4" /> Nie udało się wczytać logo
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline">
+                      <Upload className="size-4" /> {logoUrl ? 'Zmień logo' : 'Wgraj logo'}
+                    </Button>
+                    {logoUrl && (
+                      <Button variant="ghost">
+                        <Trash2 className="size-4" /> Usuń logo
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            </SettingsSection>
           </CardContent>
         </Card>
 
         <form onSubmit={(event) => event.preventDefault()}>
           <Card>
             <CardContent className="space-y-6">
-              <section className="space-y-4">
-                <Heading level="card">Dane</Heading>
+              <SettingsSection title="Dane" description="Nazwa turnieju i adres jego strony publicznej.">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nazwa</Label>
                   <Input id="name" defaultValue={tournament.name} />
@@ -132,19 +131,17 @@ export function AdminSettings({
                     </div>
                   )}
                 </div>
-              </section>
+              </SettingsSection>
 
               <Separator />
 
-              <section className="space-y-4">
-                <Heading level="card">Wygląd</Heading>
+              <SettingsSection title="Wygląd" description="Kolor wiodący strony publicznej i tło domyślnego logo.">
                 <BrandColorPicker value={color} onChange={setColor} />
-              </section>
+              </SettingsSection>
 
               <Separator />
 
-              <section className="space-y-4">
-                <Heading level="card">Rozgrywki</Heading>
+              <SettingsSection title="Rozgrywki" description="Długość meczu i jego podział na części.">
                 <div className="flex flex-wrap items-start gap-4">
                   <div className="grid w-44 content-start gap-2">
                     <Label htmlFor="match-duration">Długość meczu (min)</Label>
@@ -153,12 +150,11 @@ export function AdminSettings({
                 </div>
                 {/* Podział meczu (#210): strona meczu liczy z niego części relacji. */}
                 <MatchPeriodsField value={periods} onChange={setPeriods} fallbackMinutes={demoPeriods[sport].minutes} />
-              </section>
+              </SettingsSection>
 
               <Separator />
 
-              <section className="space-y-4">
-                <Heading level="card">Punktacja</Heading>
+              <SettingsSection title="Punktacja" description="Punkty w tabeli za wynik meczu i kolejność rozstrzygania remisów.">
                 <div className="flex flex-wrap items-end gap-4">
                   {pointFields.map((field) => (
                     <div key={field.key} className="w-24 space-y-2">
@@ -187,7 +183,7 @@ export function AdminSettings({
                   </div>
                   <TiebreakerList items={config.tiebreakers} />
                 </div>
-              </section>
+              </SettingsSection>
             </CardContent>
             <CardFooter className="justify-end">
               <Button type="submit">Zapisz zmiany</Button>
@@ -196,14 +192,16 @@ export function AdminSettings({
         </form>
 
         <Card className="ring-destructive/40">
-          <CardHeader>
-            <CardTitle>Strefa zagrożenia</CardTitle>
-            <CardDescription>Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć.</CardDescription>
-          </CardHeader>
           <CardContent>
-            <Button variant="destructive">
-              <Trash2 className="size-4" /> Usuń turniej
-            </Button>
+            <SettingsSection
+              title="Usuwanie turnieju"
+              description="Usunięcie turnieju kasuje drużyny, mecze i wyniki. Tego nie da się cofnąć."
+              action={
+                <Button variant="destructive">
+                  <Trash2 className="size-4" /> Usuń turniej
+                </Button>
+              }
+            />
           </CardContent>
         </Card>
       </div>
