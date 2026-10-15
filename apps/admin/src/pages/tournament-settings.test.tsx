@@ -489,7 +489,7 @@ describe('ustawienia turnieju: logo', () => {
   }
 
   const logoCard = () =>
-    screen.getByText('Logo', { selector: '[data-slot="card-title"]' }).closest('[data-slot="card"]') as HTMLElement;
+    screen.getByRole('heading', { name: 'Logo', hidden: true }).closest('[data-slot="card"]') as HTMLElement;
 
   /**
    * `applyAccept: false`, bo inaczej user-event sam odfiltruje GIF po atrybucie
