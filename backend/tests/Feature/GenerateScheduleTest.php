@@ -1,11 +1,14 @@
 <?php
 
 use App\Models\GameMatch;
+use App\Models\Group;
 use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
 use App\Models\Venue;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Testing\TestResponse;
 use Random\Engine\Mt19937;
 use Random\Randomizer;
@@ -245,21 +248,19 @@ it('odmawia z 422 pod teams, gdy turniej ma mniej niż dwie drużyny', function 
 })->with(['bez drużyn' => 0, 'jedna drużyna' => 1]);
 
 // Faza pucharowa ma własny generator (`POST /stages/{stage}/bracket`, #215),
-// więc odmowa odsyła do drabinki. Grupy dowiezie S5.
-it('odmawia z 422 dla fazy innej niż league', function (string $state, string $message) {
+// więc odmowa odsyła do drabinki. Faza grupowa ma własny terminarz od #258 —
+// jego odmowy sprawdza zestaw niżej.
+it('odmawia z 422 dla fazy pucharowej', function () {
     $tournament = Tournament::factory()->create();
     Team::factory()->count(4)->for($tournament)->create();
-    $stage = Stage::factory()->for($tournament)->{$state}()->create();
+    $stage = Stage::factory()->knockout()->for($tournament)->create();
 
     generateSchedule($stage, 1)
         ->assertValidResponse(422)
-        ->assertJsonPath('errors', ['stage' => [$message]]);
+        ->assertJsonPath('errors', ['stage' => ['Faza pucharowa nie ma terminarza „każdy z każdym”. Wygeneruj dla niej drabinkę.']]);
 
     expect($stage->rounds()->exists())->toBeFalse();
-})->with([
-    'group' => ['group', 'Generowanie terminarza działa na razie tylko dla fazy ligowej.'],
-    'knockout' => ['knockout', 'Faza pucharowa nie ma terminarza „każdy z każdym”. Wygeneruj dla niej drabinkę.'],
-]);
+});
 
 // Status turnieju nie gra roli (#157, „Status turnieju”).
 it('generuje w turnieju w każdym statusie', function (string $status) {
@@ -292,4 +293,152 @@ it('nie przyjmuje pustego ciała', function () {
         ->postJson("/api/v1/stages/{$stage->id}/schedule", [])
         ->assertValidResponse(422)
         ->assertJsonPath('errors.meetings', ['Wybierz, ile razy grają ze sobą drużyny: raz albo dwa razy.']);
+});
+
+/**
+ * Faza `group` z grupami o zadanych rozmiarach. Drużyny dostają `group_id`
+ * po kolei, więc `id` drużyny niesie też jej grupę, a `order` grup rośnie
+ * z kolejnością w liście.
+ *
+ * @param  list<int>  $sizes
+ * @return array{Stage, list<Group>, Collection<int, Team>}
+ */
+function groupStageWithSizes(array $sizes): array
+{
+    $tournament = Tournament::factory()->create();
+    $stage = Stage::factory()->group()->for($tournament)->create();
+    $teams = Team::factory()->count(array_sum($sizes))->for($tournament)->create();
+
+    $groups = [];
+    $cursor = 0;
+
+    foreach ($sizes as $index => $size) {
+        $group = Group::factory()->for($stage)->create([
+            'name' => 'Grupa '.chr(65 + $index),
+            'order' => $index + 1,
+            'qualifiers' => 2,
+        ]);
+
+        foreach ($teams->slice($cursor, $size) as $team) {
+            $team->update(['group_id' => $group->id]);
+        }
+
+        $cursor += $size;
+        $groups[] = $group;
+    }
+
+    return [$stage, $groups, $teams];
+}
+
+// Niezmienniki 4 i 5 z wkładu #249 (#258).
+it('układa terminarz grup: pary w grupach, bez meczów międzygrupowych', function (int $meetings) {
+    [$stage, , $teams] = groupStageWithSizes([4, 3]);
+
+    generateSchedule($stage, $meetings)
+        ->assertValidResponse(201)
+        ->assertJsonPath('data', ['roundsCount' => 3 * $meetings, 'matchesCount' => 9 * $meetings]);
+
+    $groupOf = $teams->mapWithKeys(fn (Team $team): array => [$team->id => $team->group_id]);
+    $pairs = [];
+
+    foreach ($stage->matches()->get() as $match) {
+        expect($groupOf[$match->home_team_id])->toBe($groupOf[$match->away_team_id])
+            ->and($match->group_id)->toBe($groupOf[$match->home_team_id]);
+
+        $pairs[] = min($match->home_team_id, $match->away_team_id).'-'.max($match->home_team_id, $match->away_team_id);
+    }
+
+    // Dziewięć par w obu grupach, każda dokładnie `meetings` razy.
+    $counts = collect($pairs)->countBy();
+    expect($counts)->toHaveCount(9)
+        ->and($counts->values()->unique()->all())->toBe([$meetings]);
+})->with(['raz' => 1, 'dwa razy' => 2]);
+
+it('w kolejce każda drużyna gra najwyżej raz, a mecze idą grupami po order', function () {
+    [$stage, $groups] = groupStageWithSizes([5, 4]);
+
+    generateSchedule($stage, 1)->assertValidResponse(201);
+
+    // Pięć drużyn to pięć kolejek, cztery drużyny to trzy — faza ma pięć.
+    expect($stage->rounds()->count())->toBe(5);
+
+    $orderByGroup = collect($groups)->mapWithKeys(fn (Group $group): array => [$group->id => $group->order]);
+
+    foreach ($stage->rounds()->orderBy('order')->with('matches')->get() as $round) {
+        $playing = $round->matches->flatMap(fn (GameMatch $match): array => [$match->home_team_id, $match->away_team_id]);
+
+        expect($playing->count())->toBe($playing->unique()->count())
+            ->and($round->matches->pluck('match_number')->values()->all())->toBe(range(1, $round->matches->count()));
+
+        $orders = $round->matches->map(fn (GameMatch $match): int => $orderByGroup[$match->group_id])->values()->all();
+        $sorted = $orders;
+        sort($sorted);
+
+        expect($orders)->toBe($sorted);
+    }
+});
+
+it('odmawia z 422 pod stage, gdy faza grupowa nie ma składu', function () {
+    $tournament = Tournament::factory()->create();
+    Team::factory()->count(4)->for($tournament)->create();
+    $stage = Stage::factory()->group()->for($tournament)->create();
+
+    generateSchedule($stage, 1)
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors', ['stage' => ['Najpierw ustal skład grup.']]);
+
+    expect($stage->rounds()->exists())->toBeFalse();
+});
+
+it('odmawia z 422 pod teams, gdy drużyna turnieju nie ma grupy', function () {
+    [$stage] = groupStageWithSizes([4]);
+    Team::factory()->for($stage->tournament)->create(['name' => 'Pumy Saska Kępa']);
+
+    generateSchedule($stage, 1)
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors', ['teams' => ['Drużyna „Pumy Saska Kępa” nie ma grupy. Zapisz skład grup od nowa.']]);
+
+    expect($stage->rounds()->exists())->toBeFalse();
+});
+
+// Niezmiennik 8 z wkładu #249 (#258).
+it('usunięcie drużyny kasuje jej mecze zaplanowane, a grupa zostaje', function () {
+    [$stage, $groups, $teams] = groupStageWithSizes([4]);
+    generateSchedule($stage, 1)->assertValidResponse(201);
+
+    $victim = $teams->first();
+    $matches = $victim->matchesQuery()->pluck('id');
+
+    $victim->delete();
+
+    expect($matches)->not->toBeEmpty()
+        ->and(GameMatch::whereIn('id', $matches)->exists())->toBeFalse()
+        ->and(Group::query()->whereKey($groups[0]->id)->exists())->toBeTrue();
+});
+
+// Niezmiennik 9 z wkładu #249 (#258): kolejka jest wspólna, więc jej mecze
+// z różnych grup grają jednego dnia.
+it('rozkłada daty w trybie interval: cała kolejka fazy gra jednego dnia', function () {
+    [$stage] = groupStageWithSizes([4, 4]);
+    generateSchedule($stage, 1)->assertValidResponse(201);
+
+    actingAsOrganizer($stage->tournament->user)
+        ->postJson("/api/v1/stages/{$stage->id}/schedule/dates", [
+            'mode' => 'interval',
+            'startAt' => '2026-09-06T10:00:00+02:00',
+            'timeZone' => 'Europe/Warsaw',
+            'intervalDays' => 7,
+            'dayEndTime' => null,
+            'venueIds' => [],
+            'fromRound' => null,
+        ])
+        ->assertValidResponse(200);
+
+    foreach ($stage->rounds()->orderBy('order')->with('matches')->get() as $round) {
+        $days = $round->matches
+            ->map(fn (GameMatch $match): string => CarbonImmutable::parse($match->kickoff_at)->setTimezone('Europe/Warsaw')->toDateString())
+            ->unique();
+
+        expect($days)->toHaveCount(1);
+    }
 });

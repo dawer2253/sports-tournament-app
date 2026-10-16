@@ -13,10 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * własną tabelę. Mecz należy do dokładnie jednej grupy albo do żadnej —
  * mecz międzygrupowy nie istnieje.
  *
+ * `order` to kolejność grupy w fazie, a `qualifiers` liczba drużyn wychodzących
+ * z niej do drabinki (#250). Jedno i drugie nadaje `App\Groups\GroupComposition`
+ * przy zapisie całego składu.
+ *
  * Tabela nazywa się `groups`, co koliduje ze słowem zarezerwowanym MySQL 8.
  * Eloquent cytuje identyfikatory sam; uważaj w surowym SQL-u.
  */
-#[Fillable(['stage_id', 'tournament_id', 'name'])]
+#[Fillable(['stage_id', 'tournament_id', 'name', 'order', 'qualifiers'])]
 class Group extends Model
 {
     use HasFactory;

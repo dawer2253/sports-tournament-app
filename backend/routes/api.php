@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchEventController;
 use App\Http\Controllers\Api\PlayerController;
@@ -73,6 +74,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/match-events/{event}', [MatchEventController::class, 'destroy'])
         ->can('manage', 'event');
     Route::post('/stages/{stage}/schedule', [ScheduleController::class, 'store'])
+        ->can('manage', 'stage');
+    Route::put('/stages/{stage}/groups', [GroupController::class, 'update'])
         ->can('manage', 'stage');
     Route::post('/stages/{stage}/schedule/dates', [ScheduleController::class, 'dates'])
         ->can('manage', 'stage');

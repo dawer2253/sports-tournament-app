@@ -28,6 +28,8 @@ class StageResource extends JsonResource
             'groups' => $this->groups->map(fn (Group $group): array => [
                 'id' => $group->id,
                 'name' => $group->name,
+                'order' => $group->order,
+                'qualifiers' => $group->qualifiers,
             ])->all(),
         ];
     }
