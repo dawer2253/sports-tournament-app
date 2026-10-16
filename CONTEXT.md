@@ -102,6 +102,32 @@ drużyny. **Losowanie grup** to wymieszanie drużyn do grup o zadanych rozmiarac
 Wynikiem losowania jest zwykły skład grup, z którego nie da się odczytać, że
 był losowany. Koszyków nie ma.
 
+Każda grupa mówi, ile drużyn z niej wychodzi (patrz **Qualifiers**). Tę liczbę
+można zmieniać także po zamrożeniu składu, dopóki faza `knockout` nie ma meczu
+rozpoczętego.
+
+## Qualifiers (wyjście z grupy)
+
+Przejście najlepszych drużyn każdej grupy do fazy `knockout`. Każda grupa ma
+własną liczbę drużyn, które z niej wychodzą, więc z trzech grup do drabinki
+ośmiu wychodzi np. 3, 3 i 2. Drużyn z tego samego miejsca w różnych grupach
+(np. najlepszych trzecich) nie porównuje się ze sobą.
+
+Domyślnie z grupy wychodzi czołówka jej tabeli. Przy generowaniu drabinki
+organizer może podmienić drużynę na inną z tej samej grupy, np. gdy remis na
+linii rozstrzyga według regulaminu turnieju losowanie albo karne. Liczba
+drużyn wychodzących z grupy zostaje przy tym ta sama.
+
+Drabinka powstaje dopiero z wyjścia z grupy. Przed jej wygenerowaniem nie ma
+slotów opisanych miejscem w grupie („zwycięzca grupy A”), a po nim drabinka
+nie pamięta, z którego miejsca przyszła drużyna. Wynik meczu grupy wpisany
+później niczego w drabince nie zmienia. Gdy drabinka różni się od czołówki
+tabel, organizer widzi, kto gra zamiast kogo, i może ją wygenerować ponownie,
+dopóki faza `knockout` nie ma meczu rozpoczętego.
+
+_Unikaj_: „awans” i „kwalifikacja”. Awans to wejście zwycięzcy meczu
+pucharowego do meczu zależnego.
+
 ## Round (kolejka / runda)
 
 Uporządkowany zbiór meczów rozgrywanych jako jedna całość. Należy do fazy.
@@ -260,6 +286,13 @@ najwyżej rozstawieni spotykają się jak najpóźniej.
 Rozstawienie nie jest przechowywane: zostaje po nim tylko kształt drabinki.
 Losowanie to wymieszanie tej kolejności, w całości albo poniżej zablokowanej
 góry listy.
+
+W turnieju grupy + playoff rozstawienie proponuje automat z wyjścia z grupy:
+najpierw zwycięzcy grup, potem drugie miejsca i tak dalej. Kolejność grup
+w obrębie miejsca dobiera tak, żeby drużyny z jednej grupy nie grały ze sobą
+w pierwszej rundzie, o ile da się tego uniknąć, i spotkały się jak najpóźniej.
+Przy jednej grupie propozycja to po prostu kolejność tabeli. Organizer poprawia
+ją jak każde rozstawienie.
 
 ## Match duration (długość meczu)
 
