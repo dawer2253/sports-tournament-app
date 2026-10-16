@@ -55,6 +55,8 @@ export interface PublicShellProps {
   onNavigate?: (key: PublicNavKey) => void
   /** Zakładki w kolejności; bez nich zakładki ligi (`LEAGUE_TABS`). */
   tabs?: readonly PublicNavKey[]
+  /** PROTOTYP (#252): inne nazwy zakładek, np. „Grupy” zamiast „Tabela”. Nie do main. */
+  labels?: Partial<Record<PublicNavKey, string>>
   children: React.ReactNode
 }
 
@@ -67,7 +69,7 @@ const tabVariants = cva('whitespace-nowrap rounded-t-lg px-4 py-2.5 transition-c
   },
 })
 
-function Tabs({ active, navHref, onNavigate, tabs = LEAGUE_TABS }: Pick<PublicShellProps, 'active' | 'navHref' | 'onNavigate' | 'tabs'>) {
+function Tabs({ active, navHref, onNavigate, tabs = LEAGUE_TABS, labels }: Pick<PublicShellProps, 'active' | 'navHref' | 'onNavigate' | 'tabs' | 'labels'>) {
   const activeRef = React.useRef<HTMLAnchorElement>(null)
 
   // Na telefonie pięć zakładek nie mieści się i pasek przewija się w bok.
@@ -100,7 +102,7 @@ function Tabs({ active, navHref, onNavigate, tabs = LEAGUE_TABS }: Pick<PublicSh
             }}
             className={tabVariants({ active: isActive })}
           >
-            {TAB_LABELS[key]}
+            {labels?.[key] ?? TAB_LABELS[key]}
           </a>
         )
       })}
@@ -150,7 +152,7 @@ function HeroLayers({ hero }: { hero: Hero }) {
  * Obie zmienne stoją na korzeniu shella, więc trzymają się też ekranów pod
  * nim (`PhotoPanel`, domyślne logo).
  */
-export function PublicShell({ tournament, active, navHref, onNavigate, tabs, children }: PublicShellProps) {
+export function PublicShell({ tournament, active, navHref, onNavigate, tabs, labels, children }: PublicShellProps) {
   const { primaryColor, logoUrl } = tournament.branding
   const hero = HERO_BY_SPORT[tournament.sport.code]
   const brand = {
@@ -183,7 +185,7 @@ export function PublicShell({ tournament, active, navHref, onNavigate, tabs, chi
             </MetaList>
           </div>
         </div>
-        <Tabs active={active} navHref={navHref} onNavigate={onNavigate} tabs={tabs} />
+        <Tabs active={active} navHref={navHref} onNavigate={onNavigate} tabs={tabs} labels={labels} />
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">{children}</main>
