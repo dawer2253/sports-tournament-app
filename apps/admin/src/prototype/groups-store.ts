@@ -69,7 +69,13 @@ export const SCENARIOS = [
 export type ScenarioKey = (typeof SCENARIOS)[number]['key'];
 
 export const TEAM_COUNTS = [4, 6, 8, 9, 12, 16, 20] as const;
-export const GROUP_COUNTS = [1, 2, 3, 4] as const;
+export const GROUP_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+
+/** Liczby grup możliwe przy `teamCount` drużynach: grupa ma co najmniej dwie (#249). */
+export function groupCountOptions(teamCount: number): number[] {
+  const max = Math.max(1, Math.floor(teamCount / 2));
+  return GROUP_COUNTS.filter((count) => count <= max);
+}
 
 const TEAM_NAMES = [
   'Wilki Bemowo', 'Sokoły Ursus', 'Orły Wola', 'Lwy Mokotów', 'Rysie Bielany',
@@ -751,9 +757,12 @@ export const sim = {
   },
   /** Losowanie do `count` grup, w pamięci edytora. */
   draw(count: number) {
-    const draft = drawDraft(state.teams, count);
-    set({ draft, groupCount: count, draftDirty: true });
-    log(`POST /stage/groups/losowanie … ${count} grup × ${draft[0]!.teamIds.length}`);
+    // Grupa ma co najmniej dwie drużyny (#249), więc liczbę grup ogranicza
+    // połowa stawki — tak samo, jak przy zmianie liczby drużyn.
+    const groups = Math.min(count, Math.max(1, Math.floor(state.teams.length / 2)));
+    const draft = drawDraft(state.teams, groups);
+    set({ draft, groupCount: groups, draftDirty: true });
+    log(`POST /stage/groups/losowanie … ${groups} grup × ${draft[0]!.teamIds.length}`);
   },
   /** Przenosi drużynę do innej grupy (albo poza grupy, gdy `to === null`). */
   moveTeam(teamId: number, to: number | null) {

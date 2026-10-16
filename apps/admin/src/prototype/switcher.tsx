@@ -3,9 +3,9 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import {
-  GROUP_COUNTS,
   SCENARIOS,
   TEAM_COUNTS,
+  groupCountOptions,
   sim,
   useGroups,
   type ScenarioKey,
@@ -125,7 +125,7 @@ function StatePanel() {
                 value={s.groupCount}
                 onChange={(event) => sim.groupCount(Number(event.target.value))}
               >
-                {GROUP_COUNTS.map((count) => (
+                {groupCountOptions(s.teams.length).map((count) => (
                   <option key={count} value={count}>
                     {count}
                   </option>

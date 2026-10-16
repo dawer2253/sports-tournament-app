@@ -18,13 +18,22 @@ import {
 } from '@tournament/ui';
 import { RefreshCw, Save, Shuffle, X } from 'lucide-react';
 import { useState } from 'react';
-import { GROUP_COUNTS, groupStageStarted, sim, teamsWithoutGroup, useGroups, type Group } from './groups-store';
+import { groupCountOptions, groupStageStarted, sim, useGroups, type Group } from './groups-store';
 import { GroupBadge } from './shared';
 
 const NONE = 'none';
 
 function groupOptions(state: ReturnType<typeof useGroups>, exclude?: number) {
   return state.draft.map((group, index) => ({ index, label: group.name })).filter((option) => option.index !== exclude);
+}
+
+/**
+ * Drużyny bez grupy w szkicu. Pula czyta szkic, nie zapisany skład, więc
+ * przydział i odkliknięcie widać od razu, jeszcze przed zapisem.
+ */
+function missingFromDraft(state: ReturnType<typeof useGroups>) {
+  const assigned = new Set(state.draft.flatMap((group) => group.teamIds));
+  return state.teams.filter((team) => !assigned.has(team.id));
 }
 
 /** Pasek kontrolny edytora: liczba grup, losowanie i zapis. */
@@ -46,7 +55,7 @@ function EditorControls({ layout }: { layout: 'columns' | 'rows' }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {GROUP_COUNTS.map((count) => (
+            {groupCountOptions(state.teams.length).map((count) => (
               <SelectItem key={count} value={String(count)}>
                 {count}
               </SelectItem>
@@ -122,8 +131,7 @@ function QualifiersSelect({ group, index }: { group: Group | { teamIds: number[]
 /** Drużyny bez grupy w szkicu — nosi je osobny kafel/pula. */
 function UnassignedPool() {
   const state = useGroups();
-  const assigned = new Set(state.draft.flatMap((group) => group.teamIds));
-  const missing = state.teams.filter((team) => !assigned.has(team.id));
+  const missing = missingFromDraft(state);
   return (
     <div className={cn('rounded-xl border border-dashed p-3', missing.length === 0 && 'opacity-60')}>
       <p className="text-sm font-medium">Bez grupy {missing.length > 0 && `(${missing.length})`}</p>
@@ -144,6 +152,7 @@ function UnassignedPool() {
 /** Układ kolumnami: kafel na grupę, drużyny w środku (wariant A). */
 function ColumnsLayout() {
   const state = useGroups();
+  const missing = missingFromDraft(state);
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {state.draft.map((group, index) => (
@@ -187,11 +196,11 @@ function ColumnsLayout() {
           </ul>
         </div>
       ))}
-      {teamsWithoutGroup(state).length > 0 && (
+      {missing.length > 0 && (
         <div className="grid content-start gap-3 rounded-xl border border-dashed bg-card p-3">
           <GroupBadge name="Bez grupy" />
           <ul className="space-y-1">
-            {teamsWithoutGroup(state).map((team) => (
+            {missing.map((team) => (
               <li key={team.id} className="flex items-center gap-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">{team.name}</span>
                 <MoveSelect teamId={team.id} />

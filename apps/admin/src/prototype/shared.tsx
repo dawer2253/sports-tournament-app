@@ -64,7 +64,7 @@ export function UnfinishedGroupsNotice() {
   return (
     <div
       role="status"
-      className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-500/50 bg-amber-500/5 p-3 text-sm"
+      className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-500/50 bg-amber-500/5 p-3 text-sm"
     >
       <TriangleAlert aria-hidden className="size-4 shrink-0 text-amber-600" />
       <p className="min-w-0 flex-1">
