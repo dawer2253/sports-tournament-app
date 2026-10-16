@@ -1,28 +1,14 @@
 import { useMutation } from '@tanstack/react-query';
 import type { Tournament } from '@tournament/api-client';
-import { AdminShell, isKnockoutOnly, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
+import { AdminShell, isKnockoutOnly, Skeleton, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
 import { useStages } from '../lib/schedule-queries';
+import { SECTION_ROUTES } from '../lib/section-route';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
 import { useCurrentTournaments } from '../lib/use-current-tournaments';
-
-/**
- * Sekcje turnieju, które mają już swoją trasę pod `/tournaments/:id`. Reszta
- * zostaje nieczynna, dopóki nie powstanie odpowiedni widok — `AdminShell` sam
- * wyszarza kartę bez adresu, więc nie ma tu martwych odnośników.
- */
-const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
-  teams: 'teams',
-  groups: 'groups',
-  venues: 'venues',
-  settings: 'settings',
-  standings: 'standings',
-  schedule: 'schedule',
-  bracket: 'bracket',
-};
 
 /** Adres turnieju, czyli jego domyślnej sekcji (indeks trasy przekierowuje). */
 function tournamentRoute(id: number): string {
@@ -30,17 +16,17 @@ function tournamentRoute(id: number): string {
 }
 
 /**
- * Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran.
+ * Adres celu nawigacji; `tournamentId` to turniej, w którym stoi ekran.
  * W pucharze Terminarz nie ma adresu, bo zastępuje go Drabinka (#227),
  * więc `AdminShell` wyszarza kartę. Dopóki faz nie ma, karta zostaje czynna.
  */
-function navRoute(key: AdminNavKey, tournament: Tournament | undefined, knockoutOnly: boolean): string | undefined {
+function navRoute(key: AdminNavKey, tournamentId: number | undefined, knockoutOnly: boolean): string | undefined {
   if (key === 'dashboard') return '/';
   if (key === 'create') return '/tournaments/new';
-  if (!tournament) return undefined;
+  if (tournamentId === undefined) return undefined;
   if (key === 'schedule' && knockoutOnly) return undefined;
   const section = SECTION_ROUTES[key];
-  return section && `${tournamentRoute(tournament.id)}/${section}`;
+  return section && `${tournamentRoute(tournamentId)}/${section}`;
 }
 
 interface CommonProps {
@@ -55,6 +41,7 @@ interface PanelPageProps extends CommonProps {
   title: string;
   subtitle?: string;
   tournament?: never;
+  tournamentId?: never;
   section?: never;
 }
 
@@ -69,9 +56,39 @@ interface TournamentPageProps extends CommonProps {
   active?: never;
   title?: never;
   subtitle?: never;
+  tournamentId?: never;
 }
 
-export type AdminPageProps = PanelPageProps | TournamentPageProps;
+/**
+ * Sekcja turnieju, którego danych jeszcze nie ma — trasa-rodzic w drodze.
+ * Znamy wtedy `id` z adresu i to wystarczy, żeby shell stał w turnieju i nie
+ * migał shellem dashboardu przy przejściu A → B albo przy pierwszym wejściu
+ * (#262). Nazwę, status i sport dokłada lista bieżących z sidebaru; gdy i jej
+ * nie ma, nagłówek zostaje ze szkieletem.
+ */
+interface PendingTournamentPageProps extends CommonProps {
+  tournamentId: number;
+  section: AdminSectionKey;
+  tournament?: never;
+  active?: never;
+  title?: never;
+  subtitle?: never;
+}
+
+export type AdminPageProps = PanelPageProps | TournamentPageProps | PendingTournamentPageProps;
+
+/** Warianty, które stoją w turnieju — z pełnymi danymi albo tylko z id. */
+type InTournamentPage = TournamentPageProps | PendingTournamentPageProps;
+
+/**
+ * Id turnieju, w którym stoi ekran: pełne dane z API albo samo `tournamentId`
+ * z adresu, gdy trasa-rodzic czeka na odpowiedź.
+ */
+function pageTournamentId(props: InTournamentPage): number {
+  // Warianty wykluczają się: pełne dane albo `tournamentId`, nigdy oba puste,
+  // więc gałąź `else` ma zagwarantowane `tournamentId`.
+  return props.tournament ? props.tournament.id : props.tournamentId;
+}
 
 /**
  * Ekran panelu: `AdminShell` wpięty w router i w sesję.
@@ -87,7 +104,13 @@ export function AdminPage(props: AdminPageProps) {
   const navigate = useNavigate();
   const account = useAccount();
   const tournaments = useCurrentTournaments();
-  const stages = useStages(tournament?.id);
+  // Trasa-rodzic bez danych z API zna tylko `id` z adresu, a reszta (nazwa,
+  // status, sport) idzie z listy bieżących — tej samej pozycji, którą
+  // organizer kliknął, żeby tu wejść. Bez niej zostaje samo `id`.
+  const openId = props.section !== undefined ? pageTournamentId(props) : undefined;
+  const listed = tournaments.status === 'success' ? tournaments.items.find(({ id }) => id === openId) : undefined;
+  const open = tournament ?? listed;
+  const stages = useStages(openId);
   const knockoutOnly = isKnockoutOnly(stages.data ?? []);
 
   /**
@@ -111,21 +134,21 @@ export function AdminPage(props: AdminPageProps) {
 
   return (
     <AdminShell
-      {...(tournament
+      {...(props.section !== undefined
         ? {
             active: props.section,
-            tournament,
-            title: tournament.name,
-            subtitle: `${tournament.sport.name} · /t/${tournament.slug}`,
+            tournament: open ?? { id: pageTournamentId(props) },
+            title: open?.name ?? <Skeleton className="h-7 w-56" />,
+            subtitle: tournament && `${tournament.sport.name} · /t/${tournament.slug}`,
           }
         : { active: props.active, title: props.title, subtitle: props.subtitle })}
       actions={actions}
       user={account}
       tournaments={tournaments}
-      navHref={(key) => navRoute(key, tournament, knockoutOnly)}
+      navHref={(key) => navRoute(key, openId, knockoutOnly)}
       navDisabledReason={(key) => (key === 'schedule' && knockoutOnly ? 'W pucharze terminarzem jest Drabinka' : undefined)}
       onNavigate={(key) => {
-        const route = navRoute(key, tournament, knockoutOnly);
+        const route = navRoute(key, openId, knockoutOnly);
         if (route) void navigate(route);
       }}
       tournamentHref={tournamentRoute}

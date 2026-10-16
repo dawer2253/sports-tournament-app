@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Tournament } from '@tournament/api-client';
 import { Button, Card, CardContent, EmptyState, Skeleton } from '@tournament/ui';
-import { Outlet, useNavigate, useOutletContext, useParams } from 'react-router';
+import { Outlet, useLocation, useNavigate, useOutletContext, useParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { api } from '../lib/api';
 import { ApiError, isNotFound } from '../lib/api-error';
 import { parseRouteId } from '../lib/route-id';
+import { sectionFromPath } from '../lib/section-route';
 
 /**
  * Trasa-rodzic `/tournaments/:id`: wejście z listy przez „Otwórz" (#46)
@@ -13,14 +14,19 @@ import { parseRouteId } from '../lib/route-id';
  *
  * Turniej wczytuje się tu raz i schodzi do sekcji przez `Outlet`, więc
  * przejście między kartami nie pyta API od nowa, a nieprawidłowe id, 403, 404
- * i błąd obsługuje jedno miejsce zamiast każdej sekcji z osobna. Dopóki
- * turnieju nie ma, sekcja się nie renderuje: shell stoi wtedy bez kontekstu
- * turnieju, bo nie ma czego w nim pokazać.
+ * i błąd obsługuje jedno miejsce zamiast każdej sekcji z osobna.
+ *
+ * Dopóki turnieju nie ma, shell **nie** wychodzi z turnieju: zna `id` z adresu,
+ * więc trzyma karty sekcji i nie podświetla „Turnieje" — inaczej przełączenie
+ * A → B migałoby shellem dashboardu (#262). Nazwę, status i sport dokłada
+ * `AdminPage` z listy bieżących z sidebaru, a gdy i jej nie ma — szkieletem.
  */
 export function TournamentLayout() {
   const navigate = useNavigate();
   const params = useParams();
+  const { pathname } = useLocation();
   const id = parseRouteId(params.id);
+  const section = sectionFromPath(pathname);
 
   const tournament = useQuery({
     queryKey: ['tournament', id],
@@ -38,48 +44,48 @@ export function TournamentLayout() {
     void navigate('/');
   }
 
-  const notFound = id === null || isNotFound(tournament.error);
-
-  let content;
-  if (notFound) {
-    content = (
-      <EmptyState
-        title="Nie ma takiego turnieju"
-        description="Mógł zostać usunięty albo należy do innego organizatora."
-        action={<Button onClick={goToList}>Wróć do listy turniejów</Button>}
-      />
+  if (id === null || isNotFound(tournament.error)) {
+    // Wspólny stan dla 403 i 404, bez przepuszczania komunikatu z API.
+    return (
+      <AdminPage active="dashboard" title="Turniej">
+        <EmptyState
+          title="Nie ma takiego turnieju"
+          description="Mógł zostać usunięty albo należy do innego organizatora."
+          action={<Button onClick={goToList}>Wróć do listy turniejów</Button>}
+        />
+      </AdminPage>
     );
-  } else if (tournament.data) {
+  }
+
+  if (tournament.data) {
     // Dane przed błędem: nieudane odświeżenie w tle (np. po unieważnieniu
     // `['tournament', id]` przy zmianie drużyn) nie zdejmuje otwartej sekcji
     // razem z oknem, w którym organizer właśnie pracuje. Zostaje ostatni
     // wczytany turniej, a następne odświeżenie spróbuje znowu.
     return <Outlet context={tournament.data} />;
-  } else if (tournament.isError) {
-    content = (
-      <EmptyState
-        variant="error"
-        title="Nie udało się wczytać turnieju"
-        description={tournament.error.message}
-        action={
-          <Button variant="outline" onClick={() => void tournament.refetch()}>
-            Spróbuj ponownie
-          </Button>
-        }
-      />
-    );
-  } else {
-    content = (
-      <Card aria-busy="true" aria-label="Wczytywanie turnieju">
-        <CardContent>
-          <Skeleton className="h-5 w-80" />
-        </CardContent>
-      </Card>
-    );
   }
 
+  const content = tournament.isError ? (
+    <EmptyState
+      variant="error"
+      title="Nie udało się wczytać turnieju"
+      description={tournament.error.message}
+      action={
+        <Button variant="outline" onClick={() => void tournament.refetch()}>
+          Spróbuj ponownie
+        </Button>
+      }
+    />
+  ) : (
+    <Card aria-busy="true" aria-label="Wczytywanie turnieju">
+      <CardContent>
+        <Skeleton className="h-5 w-80" />
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <AdminPage active="dashboard" title="Turniej">
+    <AdminPage tournamentId={id} section={section}>
       {content}
     </AdminPage>
   );

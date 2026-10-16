@@ -41,10 +41,24 @@ const SECTIONS: { key: AdminSectionKey; label: string; icon: React.ElementType }
 ]
 
 /**
- * Turniej w sidebarze: pozycja listy bieżących albo turniej, w którym stoi
- * ekran. Po `id` shell rozpoznaje otwarty turniej na liście.
+ * Turniej w sidebarze: pozycja listy bieżących. Po `id` shell rozpoznaje
+ * otwarty turniej na liście.
  */
 export type AdminShellTournament = Pick<TournamentRow, 'id' | 'name' | 'status' | 'sport'>
+
+/**
+ * Turniej, w którym stoi ekran (nagłówek i podświetlenie w sidebarze). `id`
+ * jest znane od razu — z adresu — a nazwa, status i sport dochodzą z API.
+ * Dopóki ich nie ma, shell wie już, że stoi w turnieju, i nie udaje ekranu
+ * poza nim; brakujące pola zostają puste zamiast zgadywane (#262).
+ */
+export type AdminShellOpenTournament = Pick<TournamentRow, 'id'> &
+  Partial<Pick<TournamentRow, 'name' | 'status' | 'sport'>>
+
+/** Czy znamy nazwę, status i sport otwartego turnieju, czy dopiero po nie idziemy. */
+function hasDetails(tournament: AdminShellOpenTournament): tournament is AdminShellTournament {
+  return tournament.name !== undefined && tournament.status !== undefined && tournament.sport !== undefined
+}
 
 /**
  * Ile bieżących turniejów mieści sidebar. Aplikacja prosi API o tyle samo
@@ -84,14 +98,22 @@ export interface AdminShellProps {
    * bieżących (albo dokleja pod nią, gdy na liście go nie ma), nagłówek
    * dostaje karty sekcji, a prawa strona nagłówka status. Tytuł nadal podaje
    * ekran — w turnieju to nazwa turnieju, a podtytuł to sport i `/t/slug`.
+   *
+   * Wystarczy samo `id`, gdy dane są jeszcze w drodze: shell wie wtedy, że
+   * ekran stoi w turnieju, ale nagłówek zostaje bez nazwy, statusu i kart
+   * sekcji — do czasu, aż ekran poda turniej w całości.
    */
-  tournament?: AdminShellTournament
+  tournament?: AdminShellOpenTournament
   /**
    * Bieżące turnieje organizera do sidebaru. Wymagane, jak `user`: shell nie
    * zna API, a pominięta lista wyglądałaby jak brak turniejów.
    */
   tournaments: AdminShellTournamentList
-  title: string
+  /**
+   * Tytuł strony. Węzeł, a nie string, bo gdy turniej jest jeszcze w drodze,
+   * ekran podaje szkielet zamiast nazwy, której nie zna (#262).
+   */
+  title: React.ReactNode
   subtitle?: string
   actions?: React.ReactNode
   children: React.ReactNode
@@ -262,21 +284,26 @@ const sidebarNoteLinkClass = 'cursor-pointer font-medium text-sidebar-foreground
  */
 function tournamentListView(
   tournaments: AdminShellTournamentList,
-  tournament: AdminShellTournament | undefined,
+  tournament: AdminShellOpenTournament | undefined,
 ) {
   const items = tournaments.status === 'success' ? tournaments.items.slice(0, SIDEBAR_TOURNAMENTS_LIMIT) : []
+  // Nazwa, status i sport otwartego turnieju; bez nich nie ma czym zastąpić wiersza listy.
+  const detailed = tournament !== undefined && hasDetails(tournament) ? tournament : undefined
   // Zakończony nie jest bieżący, nawet jeśli lista jeszcze o tym nie wie:
   // stan otwartego turnieju jest świeższy niż lista, która odświeża się osobno.
-  const openIsCurrent = tournament !== undefined && isCurrentTournament(tournament)
-  const listed = openIsCurrent && items.some(({ id }) => id === tournament.id)
+  const openIsCurrent = detailed !== undefined && isCurrentTournament(detailed)
+  const onList = tournament !== undefined && items.some(({ id }) => id === tournament.id)
+  const listed = openIsCurrent && onList
   const visible = items
-    .filter(({ id }) => id !== tournament?.id || listed)
+    // Otwarty turniej bez własnych danych zostaje wierszem listy: jest tam, więc
+    // nie ma czym go zastąpić ani czego dorysowywać pod kreską.
+    .filter(({ id }) => id !== tournament?.id || listed || (onList && detailed === undefined))
     // Otwarty turniej rysujemy z jego własnych, świeższych danych.
-    .map((item) => (item.id === tournament?.id ? tournament : item))
+    .map((item) => (item.id === tournament?.id && detailed ? detailed : item))
   // Dopóki lista jest w drodze, nie wiadomo, czy bieżący turniej na niej
   // będzie; zakończony nie będzie na pewno. Przy błędzie listy otwarty turniej
   // zostaje pod kreską, bo inaczej sidebar nie mówiłby, gdzie organizer stoi.
-  const pinned = tournament && !listed && (tournaments.status !== 'pending' || !openIsCurrent) ? tournament : undefined
+  const pinned = detailed && !listed && (tournaments.status !== 'pending' || !openIsCurrent) ? detailed : undefined
   // Z `items`, nie z `visible`: turniej właśnie zakończony, który nieaktualna
   // lista jeszcze niesie, siedzi też w nieaktualnym `total`. Bieżący spoza
   // limitu stoi pod kreską, więc nie liczy się drugi raz w „więcej".
@@ -536,6 +563,9 @@ export function AdminShell({
   const nav: NavProps = { active, navHref, navDisabledReason, onNavigate }
   const account = accountView(user)
   const sidebar: SidebarProps = { ...nav, account, tournaments, tournament, tournamentHref, onOpenTournament }
+  // Samo `id` turnieju mówi, gdzie stoimy, ale nagłówka z niego nie złożymy:
+  // dopóki nie ma nazwy i statusu, zostaje układ ekranu poza turniejem.
+  const details = tournament && hasDetails(tournament) ? tournament : undefined
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -577,21 +607,21 @@ export function AdminShell({
           </div>
         </header>
 
-        <div className={cn('border-b bg-card px-4 sm:px-6', tournament ? 'pt-4' : 'py-4')}>
-          <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center', tournament && 'pb-4')}>
+        <div className={cn('border-b bg-card px-4 sm:px-6', details ? 'pt-4' : 'py-4')}>
+          <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center', details && 'pb-4')}>
             <div className="min-w-0">
               <Heading>{title}</Heading>
               {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
             </div>
-            {(tournament || actions) && (
+            {(details || actions) && (
               <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
                 {/* Status stoi też tutaj, bo poniżej `md` lista turniejów siedzi w zamkniętej szufladzie. */}
-                {tournament && <TournamentStatusBadge status={tournament.status} />}
+                {details && <TournamentStatusBadge status={details.status} />}
                 {actions}
               </div>
             )}
           </div>
-          {tournament && <SectionTabs {...nav} />}
+          {details && <SectionTabs {...nav} />}
         </div>
 
         <main className="flex-1 overflow-auto p-4 sm:p-6">{children}</main>
