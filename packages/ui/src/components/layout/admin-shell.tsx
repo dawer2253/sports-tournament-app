@@ -1,7 +1,7 @@
 import * as React from 'react'
 import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Settings,
-  Trophy, Search, Bell, LogOut, GitFork, ListOrdered, Menu,
+  Trophy, Search, Bell, LogOut, GitFork, ListOrdered, Menu, Layers,
 } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
@@ -19,7 +19,7 @@ import {
 } from '../ui/dropdown-menu'
 
 /** Sekcja turnieju, czyli jedna z kart pod tytułem strony. */
-export type AdminSectionKey = 'teams' | 'venues' | 'settings' | 'schedule' | 'standings' | 'bracket' | 'stats'
+export type AdminSectionKey = 'teams' | 'groups' | 'venues' | 'settings' | 'schedule' | 'standings' | 'bracket' | 'stats'
 
 /**
  * Cel nawigacji panelu: lista turniejów (`dashboard`, pozycja „Turnieje"),
@@ -31,6 +31,7 @@ export type AdminNavKey = 'dashboard' | 'create' | AdminSectionKey
 /** Kolejność kart jest stała: pojawienie się treści nie przesuwa znanych kart. */
 const SECTIONS: { key: AdminSectionKey; label: string; icon: React.ElementType }[] = [
   { key: 'teams', label: 'Drużyny', icon: Users },
+  { key: 'groups', label: 'Grupy', icon: Layers },
   { key: 'venues', label: 'Obiekty', icon: MapPin },
   { key: 'settings', label: 'Ustawienia', icon: Settings },
   { key: 'schedule', label: 'Terminarz', icon: CalendarDays },
