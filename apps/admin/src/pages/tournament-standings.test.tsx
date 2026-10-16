@@ -547,6 +547,7 @@ describe('tabele grup', () => {
     expect(rows.map((tableRow) => tableRow.textContent?.includes('wychodzi z grupy'))).toEqual([true, true, false, false]);
     expect(rows.filter((tableRow) => tableRow.classList.contains('border-dashed'))).toEqual([rows[1]]);
     expect(rows.map((tableRow) => within(tableRow).queryByText('remis na linii') !== null)).toEqual([false, true, true, false]);
+    expect(within(groupSection('Grupa A')).getByText('wychodzą')).toBeInTheDocument();
 
     // W Grupie B (wychodzi jedna, 3 do 0 punktów) remisu na linii nie ma.
     expect(within(groupSection('Grupa B')).queryByText('remis na linii')).not.toBeInTheDocument();

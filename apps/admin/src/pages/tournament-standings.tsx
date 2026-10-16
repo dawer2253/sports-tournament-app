@@ -22,7 +22,7 @@ import {
   TiebreakerEditor,
   TiebreakerSentence,
   toast,
-  withQualification,
+  withQualifiers,
   type TiebreakerItem,
 } from '@tournament/ui';
 import { ListOrdered } from 'lucide-react';
@@ -228,6 +228,12 @@ function StandingsSection({
         {/* Kolumnę R, jak nagłówek zdobyczy i zdanie pod tabelą, niesie
             odpowiedź tabeli (`allowsDraw`), więc tabela nie czeka na
             `GET /sports` — ten potrzebny jest już tylko edytorowi kryteriów. */}
+        {/* Bez faz tabela grupy wygląda jak tabela ligi: bez linii i sterowania. */}
+        {stages.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            Nie udało się wczytać liczby wychodzących z grup, więc tabele stoją bez linii wyjścia.
+          </p>
+        )}
         {tables ? (
           tables.map((table) => {
             const group = table.groupId === null ? undefined : groups.get(table.groupId);
@@ -245,19 +251,13 @@ function StandingsSection({
                   )}
                 </div>
                 <StandingsTable
-                  rows={group ? withQualification(table.rows, group.qualifiers) : table.rows}
+                  rows={group ? withQualifiers(table.rows, group.qualifiers) : table.rows}
                   scoreLabel={table.scoreLabel}
                   allowsDraw={table.allowsDraw}
                   previousPositions={previousPositions}
                   emptyAction={teamsLink}
                 />
-                {group && (
-                  <p className="text-xs text-muted-foreground">
-                    Z grupy {plural(group.qualifiers, QUALIFY)} {group.qualifiers} {plural(group.qualifiers, TEAMS)} —
-                    miejsca nad przerywaną linią. Remis na linii rozstrzyga organizer, podmieniając drużynę przy
-                    generowaniu drabinki.
-                  </p>
-                )}
+                {group && <QualifiersLegend qualifiers={group.qualifiers} teamsCount={table.rows.length} />}
               </section>
             );
           })
@@ -337,7 +337,7 @@ function GroupQualifiersControl({
   return (
     <div className="space-y-1 text-right">
       <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-        <span>wychodzi</span>
+        <span>{plural(group.qualifiers, QUALIFY)}</span>
         <Select
           value={String(group.qualifiers)}
           onValueChange={(next) => change.mutate(Number(next))}
@@ -364,5 +364,20 @@ function GroupQualifiersControl({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Zdanie pod tabelą grupy (wzór: `QualificationLegend` z prototypu #251).
+ * O linii mówi tylko wtedy, gdy ją widać: przy wyjściu równym liczbie drużyn
+ * (np. po usunięciu drużyny) wszyscy są nad nią, więc tabela linii nie ma.
+ */
+function QualifiersLegend({ qualifiers, teamsCount }: { qualifiers: number; teamsCount: number }) {
+  const count = `${plural(qualifiers, QUALIFY)} ${qualifiers} ${plural(qualifiers, TEAMS)}`;
+  return (
+    <p className="text-xs text-muted-foreground">
+      {qualifiers < teamsCount ? `Z grupy ${count} — miejsca nad przerywaną linią.` : `Z grupy ${count}.`} Remis na
+      linii rozstrzyga organizer, podmieniając drużynę przy generowaniu drabinki.
+    </p>
   );
 }

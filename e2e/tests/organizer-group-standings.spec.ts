@@ -13,7 +13,7 @@ test('organizer widzi tabelę grupy z linią wyjścia i ją przesuwa', async ({ 
   const teamIds: number[] = [];
 
   await test.step('układa przez API dwie grupy, terminarz i wynik meczu grupy A', async () => {
-    for (const name of ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Rysie Wola']) {
+    for (const name of ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Rysie Wola', 'Lwy Targówek']) {
       const { data, error } = await api.POST('/tournaments/{tournament}/teams', {
         params: { path: { tournament: groups.id } },
         body: { name },
@@ -29,8 +29,9 @@ test('organizer widzi tabelę grupy z linią wyjścia i ją przesuwa', async ({ 
       params: { path: { stage: stage.id } },
       body: {
         groups: [
-          { name: 'Grupa A', teamIds: teamIds.slice(0, 2), qualifiers: 1 },
-          { name: 'Grupa B', teamIds: teamIds.slice(2), qualifiers: 1 },
+          // Trzy drużyny w A: przy dwóch wychodzących linia dalej stoi nad ostatnią.
+          { name: 'Grupa A', teamIds: teamIds.slice(0, 3), qualifiers: 1 },
+          { name: 'Grupa B', teamIds: teamIds.slice(3), qualifiers: 1 },
         ],
       },
     });
@@ -65,11 +66,11 @@ test('organizer widzi tabelę grupy z linią wyjścia i ją przesuwa', async ({ 
     await page.goto(`/tournaments/${groups.id}/standings`);
 
     await expect(page.getByRole('region', { name: 'Faza grupowa · Grupa B' })).toBeVisible();
-    await expect(rows).toHaveCount(2);
+    await expect(rows).toHaveCount(3);
     await expect(rows.first()).toContainText(winner);
     await expect(rows.first().getByRole('cell').last()).toHaveText('3');
     await expect(qualifying).toHaveCount(1);
-    await expect(groupA.getByText(/Z grupy wychodzi 1 drużyna/)).toBeVisible();
+    await expect(groupA.getByText(/Z grupy wychodzi 1 drużyna — miejsca nad przerywaną linią/)).toBeVisible();
   });
 
   await test.step('zmiana liczby wychodzących przenosi linię', async () => {
@@ -77,6 +78,7 @@ test('organizer widzi tabelę grupy z linią wyjścia i ją przesuwa', async ({ 
     await page.getByRole('option', { name: '2' }).click();
 
     await expect(qualifying).toHaveCount(2);
-    await expect(groupA.getByText(/Z grupy wychodzą 2 drużyny/)).toBeVisible();
+    await expect(rows.last()).not.toContainText('wychodzi z grupy');
+    await expect(groupA.getByText(/Z grupy wychodzą 2 drużyny — miejsca nad przerywaną linią/)).toBeVisible();
   });
 });
