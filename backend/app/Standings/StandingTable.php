@@ -2,6 +2,7 @@
 
 namespace App\Standings;
 
+use App\Models\Group;
 use App\Models\Sport;
 use App\Models\Stage;
 
@@ -13,11 +14,13 @@ use App\Models\Stage;
 final readonly class StandingTable
 {
     /**
+     * @param  Group|null  $group  grupa tabeli w fazie `group`; `null` w lidze
      * @param  list<string>  $tiebreakers  kody `TiebreakerCode` w kolejności stosowania
      * @param  list<StandingRow>  $rows
      */
     public function __construct(
         public Stage $stage,
+        public ?Group $group,
         public Sport $sport,
         public array $tiebreakers,
         public array $rows,

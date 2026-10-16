@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Group;
 use App\Models\Stage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,12 +24,7 @@ class StageResource extends JsonResource
             'type' => $this->type,
             'name' => $this->name,
             'order' => $this->order,
-            'groups' => $this->groups->map(fn (Group $group): array => [
-                'id' => $group->id,
-                'name' => $group->name,
-                'order' => $group->order,
-                'qualifiers' => $group->qualifiers,
-            ])->all(),
+            'groups' => GroupResource::collection($this->groups),
         ];
     }
 }
