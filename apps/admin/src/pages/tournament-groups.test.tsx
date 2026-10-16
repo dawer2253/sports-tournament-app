@@ -102,7 +102,7 @@ describe('Grupy — edytor składu (#258)', () => {
   });
 
   it('bez zapisanego składu startują dwie grupy, a losowanie je wypełnia', async () => {
-    serveGroupPhase({ groups: [] });
+    const puts = serveGroupPhase({ groups: [] });
     const { user } = renderPanel('/tournaments/7/groups');
 
     expect(await screen.findByDisplayValue('Grupa A')).toBeInTheDocument();
@@ -111,7 +111,16 @@ describe('Grupy — edytor składu (#258)', () => {
     await user.click(screen.getByRole('button', { name: 'Losuj' }));
 
     // Po losowaniu każda drużyna ma grupę, więc szkic da się zapisać.
-    expect(screen.getByRole('button', { name: 'Zapisz skład grup' })).toBeEnabled();
+    const save = screen.getByRole('button', { name: 'Zapisz skład grup' });
+    expect(save).toBeEnabled();
+    await user.click(save);
+    await waitFor(() => expect(puts).toHaveLength(1));
+
+    // Kolejność drużyn w grupie idzie za listą z API, więc zapis jej nie przestawia.
+    const groups = (puts[0] as { groups: { teamIds: number[] }[] }).groups;
+    for (const group of groups) {
+      expect(group.teamIds).toEqual([...group.teamIds].sort((a, b) => a - b));
+    }
   });
 
   it('bez fazy grupowej mówi, że turniej jej nie ma', async () => {

@@ -137,6 +137,17 @@ function CompositionEditor({
   }));
   const current = draft ?? (saved.length > 0 ? saved : firstDraft(teams.length));
 
+  // Kolejność drużyn w grupie idzie za listą z API (po nazwie), bo backend
+  // przechowuje tylko `group_id` i odczytuje drużyny właśnie tak. Bez tego
+  // zapis przestawiałby skład: szkic trzymałby kolejność losowania, a odświeżone
+  // `teams` — alfabetyczną.
+  const teamOrder = new Map(teams.map((team, index) => [team.id, index]));
+  const inTeamOrder = (groups: GroupCompositionGroup[]): GroupCompositionGroup[] =>
+    groups.map((group) => ({
+      ...group,
+      teamIds: [...group.teamIds].sort((a, b) => (teamOrder.get(a) ?? 0) - (teamOrder.get(b) ?? 0)),
+    }));
+
   const save = useMutation({
     mutationFn: async (groups: GroupCompositionGroup[]) => {
       let result;
@@ -180,7 +191,7 @@ function CompositionEditor({
           <GroupCompositionEditor
             teams={teams.map((team) => ({ id: team.id, name: team.name }))}
             value={current}
-            onChange={setDraft}
+            onChange={(next) => setDraft(inTeamOrder(next))}
             onSave={() => save.mutate(current)}
             saving={save.isPending}
             error={save.isError ? saveErrorMessage(save.error) : undefined}
