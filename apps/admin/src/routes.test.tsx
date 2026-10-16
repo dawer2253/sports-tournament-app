@@ -153,6 +153,7 @@ describe('trasy turnieju', () => {
     }
     expect(sectionTabs().getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Drużyny',
+      'Grupy',
       'Obiekty',
       'Ustawienia',
       'Terminarz',

@@ -8,6 +8,7 @@ import { useStages } from '../lib/schedule-queries';
 import { endSession } from '../lib/session';
 import { useAccount } from '../lib/use-account';
 import { useCurrentTournaments } from '../lib/use-current-tournaments';
+import { currentVariant } from '../prototype/variant';
 
 /**
  * Sekcje turnieju, które mają już swoją trasę pod `/tournaments/:id`. Reszta
@@ -16,6 +17,7 @@ import { useCurrentTournaments } from '../lib/use-current-tournaments';
  */
 const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   teams: 'teams',
+  groups: 'groups',
   venues: 'venues',
   settings: 'settings',
   standings: 'standings',
@@ -39,7 +41,12 @@ function navRoute(key: AdminNavKey, tournament: Tournament | undefined, knockout
   if (!tournament) return undefined;
   if (key === 'schedule' && knockoutOnly) return undefined;
   const section = SECTION_ROUTES[key];
-  return section && `${tournamentRoute(tournament.id)}/${section}`;
+  if (!section) return undefined;
+  const path = `${tournamentRoute(tournament.id)}/${section}`;
+  // PROTOTYP (#251): gdy adres niesie `?variant=`, przechodzenie między kartami
+  // zachowuje wybrany wariant prototypu grup; bez wariantu adresy zostają czyste.
+  const variant = currentVariant();
+  return variant ? `${path}?variant=${variant}` : path;
 }
 
 interface CommonProps {

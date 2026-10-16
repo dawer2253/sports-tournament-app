@@ -2,15 +2,18 @@ import { Navigate, type RouteObject } from 'react-router';
 import { getToken } from './lib/session';
 import { LoginPage } from './pages/login';
 import { TeamPage } from './pages/team';
-import { TeamsPage } from './pages/teams';
-import { TournamentBracketPage } from './pages/tournament-bracket';
 import { TournamentCreatePage } from './pages/tournament-create';
 import { TournamentLayout } from './pages/tournament-layout';
-import { TournamentSchedulePage } from './pages/tournament-schedule';
 import { TournamentSettingsPage } from './pages/tournament-settings';
-import { TournamentStandingsPage } from './pages/tournament-standings';
 import { TournamentVenuesPage } from './pages/tournament-venues';
 import { TournamentsPage } from './pages/tournaments';
+import {
+  BracketPrototypePage,
+  GroupsPrototypePage,
+  SchedulePrototypePage,
+  StandingsPrototypePage,
+  TeamsPrototypePage,
+} from './prototype/pages';
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   return getToken() ? children : <Navigate to="/login" replace />;
@@ -56,15 +59,18 @@ export const routes: RouteObject[] = [
       // Po założeniu turnieju pierwszą rzeczą jest dodanie drużyn, a osobny
       // „przegląd" bez meczów byłby pusty.
       { index: true, element: <Navigate to="teams" replace /> },
-      { path: 'teams', element: <TeamsPage /> },
+      // PROTOTYP (#251): sekcje fazy grupowej w trzech wariantach (`?variant=`).
+      // Bez wariantu każda z nich oddaje zwykły ekran panelu.
+      { path: 'teams', element: <TeamsPrototypePage /> },
       // Skład jest dzieckiem turnieju, a nie listy: lista nie ma `Outlet`, a skład
       // zastępuje ją w całości, z tą samą aktywną kartą „Drużyny” (#89 pkt 3).
       { path: 'teams/:teamId', element: <TeamPage /> },
+      { path: 'groups', element: <GroupsPrototypePage /> },
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },
-      { path: 'standings', element: <TournamentStandingsPage /> },
-      { path: 'schedule', element: <TournamentSchedulePage /> },
-      { path: 'bracket', element: <TournamentBracketPage /> },
+      { path: 'standings', element: <StandingsPrototypePage /> },
+      { path: 'schedule', element: <SchedulePrototypePage /> },
+      { path: 'bracket', element: <BracketPrototypePage /> },
     ],
   },
 ];
