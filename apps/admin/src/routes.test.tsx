@@ -279,6 +279,36 @@ describe('trasy turnieju', () => {
     expect(await screen.findByRole('heading', { name: 'Puchar Zimowy' })).toBeInTheDocument();
   });
 
+  /**
+   * Shell stoi w trasie-rodzicu, więc zmiana turnieju i sekcji zmienia tylko
+   * jego propsy: sidebar i nagłówek zostają **tymi samymi węzłami DOM**. Gdyby
+   * ekran sekcji renderował własny `AdminPage`, React montowałby chrome od
+   * nowa, gubiąc stan szuflady nawigacji i restartując animacje (#263).
+   */
+  it('przełączenie turnieju i sekcji nie montuje shella od nowa', async () => {
+    server.use(
+      currentTournaments([TOURNAMENT, LIGA]),
+      http.get(`${API}/tournaments/:id`, ({ params }) =>
+        HttpResponse.json({ data: String(params.id) === String(LIGA.id) ? LIGA : TOURNAMENT }),
+      ),
+    );
+
+    const { router, user } = renderAt('/tournaments/7/teams');
+    await screen.findByRole('heading', { name: 'Puchar Zimowy' });
+    const sidebar = screen.getByRole('navigation', { name: 'Panel' });
+    const header = document.querySelector('header');
+
+    await user.click(panelNav().getByRole('link', { name: /Liga Letnia/ }));
+    await screen.findByRole('heading', { name: 'Liga Letnia' });
+    expect(screen.getByRole('navigation', { name: 'Panel' })).toBe(sidebar);
+    expect(document.querySelector('header')).toBe(header);
+
+    await user.click(sectionTabs().getByRole('link', { name: 'Obiekty' }));
+    expect(router.state.location.pathname).toBe('/tournaments/8/venues');
+    expect(screen.getByRole('navigation', { name: 'Panel' })).toBe(sidebar);
+    expect(document.querySelector('header')).toBe(header);
+  });
+
   describe.each(SECTION_PATHS)('/tournaments/:id/%s', (section) => {
     // 403 to cudzy turniej. Gdyby panel pokazał go inaczej niż 404 — choćby
     // przepuszczając komunikat z API — organizer mógłby sprawdzać, które id

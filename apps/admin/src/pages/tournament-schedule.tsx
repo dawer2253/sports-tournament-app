@@ -22,11 +22,11 @@ import {
 import { CalendarClock, CalendarDays, MoreHorizontal, RefreshCw, Trophy, UserX, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { AdminPage } from '../components/admin-page';
 import { ChoiceCards } from '../components/choice-cards';
 import { DatesDialog } from '../components/dates-dialog';
 import { GroupFilterChips } from '../components/group-filter-chips';
 import { MatchDialog } from '../components/match-dialog';
+import { SectionActions } from '../components/section-actions';
 import { api } from '../lib/api';
 import { GROUPS, MATCHES, plural, ROUNDS, ROUNDS_ACCUSATIVE, TEAMS, TEAMS_PLAYING } from '../lib/plural';
 import {
@@ -181,12 +181,9 @@ export function TournamentSchedulePage() {
   }
 
   return (
-    <AdminPage
-      tournament={tournament}
-      section="schedule"
-      actions={
-        stage &&
-        hasSchedule && (
+    <>
+      <SectionActions>
+        {stage && hasSchedule && (
           <>
             <Button variant="outline" onClick={openDates}>
               <CalendarClock className="size-4" /> Rozłóż daty
@@ -206,9 +203,8 @@ export function TournamentSchedulePage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </>
-        )
-      }
-    >
+        )}
+      </SectionActions>
       {content}
       {generating && stage && (
         <GenerateDialog
@@ -241,7 +237,7 @@ export function TournamentSchedulePage() {
           sportCode={tournament.sport.code}
         />
       )}
-    </AdminPage>
+    </>
   );
 }
 

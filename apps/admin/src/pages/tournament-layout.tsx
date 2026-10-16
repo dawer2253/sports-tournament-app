@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Tournament } from '@tournament/api-client';
 import { Button, Card, CardContent, EmptyState, Skeleton } from '@tournament/ui';
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate, useOutletContext, useParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
+import { SectionActionsSlot } from '../components/section-actions';
 import { api } from '../lib/api';
 import { ApiError, isNotFound } from '../lib/api-error';
 import { parseRouteId } from '../lib/route-id';
@@ -16,6 +18,13 @@ import { sectionFromPath } from '../lib/section-route';
  * przejście między kartami nie pyta API od nowa, a nieprawidłowe id, 403, 404
  * i błąd obsługuje jedno miejsce zamiast każdej sekcji z osobna.
  *
+ * `AdminPage` (a w nim `AdminShell`) stoi **tutaj**, nie w ekranach sekcji:
+ * inaczej zmiana trasy podmieniałaby jeden shell na drugi i React montowałby
+ * sidebar z nagłówkiem od zera — przy przejściu wczytywanie → wczytany
+ * w trasie-rodzicu, a przy zmianie sekcji w ekranie (#263). Ten sam
+ * `AdminPage` we wszystkich stanach zmienia tylko propsy. Akcje nagłówka,
+ * które powstają w sekcji, wchodzą portalem (`SectionActions`).
+ *
  * Dopóki turnieju nie ma, shell **nie** wychodzi z turnieju: zna `id` z adresu,
  * więc trzyma karty sekcji i nie podświetla „Turnieje" — inaczej przełączenie
  * A → B migałoby shellem dashboardu (#262). Nazwę, status i sport dokłada
@@ -27,6 +36,8 @@ export function TournamentLayout() {
   const { pathname } = useLocation();
   const id = parseRouteId(params.id);
   const section = sectionFromPath(pathname);
+  // Węzeł nagłówka, do którego sekcja wstawia akcje portalem.
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null);
 
   const tournament = useQuery({
     queryKey: ['tournament', id],
@@ -57,15 +68,13 @@ export function TournamentLayout() {
     );
   }
 
-  if (tournament.data) {
-    // Dane przed błędem: nieudane odświeżenie w tle (np. po unieważnieniu
-    // `['tournament', id]` przy zmianie drużyn) nie zdejmuje otwartej sekcji
-    // razem z oknem, w którym organizer właśnie pracuje. Zostaje ostatni
-    // wczytany turniej, a następne odświeżenie spróbuje znowu.
-    return <Outlet context={tournament.data} />;
-  }
-
-  const content = tournament.isError ? (
+  // `data` przed błędem: nieudane odświeżenie w tle (np. po unieważnieniu
+  // `['tournament', id]` przy zmianie drużyn) nie zdejmuje otwartej sekcji
+  // razem z oknem, w którym organizer właśnie pracuje. Zostaje ostatni
+  // wczytany turniej, a następne odświeżenie spróbuje znowu.
+  const content = tournament.data ? (
+    <Outlet context={{ tournament: tournament.data }} />
+  ) : tournament.isError ? (
     <EmptyState
       variant="error"
       title="Nie udało się wczytać turnieju"
@@ -85,19 +94,25 @@ export function TournamentLayout() {
   );
 
   return (
-    <AdminPage tournamentId={id} section={section}>
-      {content}
-    </AdminPage>
+    <SectionActionsSlot.Provider value={actionsSlot}>
+      <AdminPage
+        {...(tournament.data ? { tournament: tournament.data, section } : { tournamentId: id, section })}
+        // Zawsze ten sam węzeł, żeby nagłówek nie zależał od tego, czy sekcja ma akcje.
+        actions={<div ref={setActionsSlot} className="contents" />}
+      >
+        {content}
+      </AdminPage>
+    </SectionActionsSlot.Provider>
   );
 }
 
 /** Turniej wczytany przez `TournamentLayout`, dla ekranów sekcji. */
 export function useTournament(): Tournament {
-  const tournament = useOutletContext<Tournament | undefined>();
+  const context = useOutletContext<{ tournament: Tournament } | undefined>();
   // Bez tego ekran wpięty poza trasą `/tournaments/:id` dostałby `undefined`
   // otypowane jako turniej i wywróciłby się dopiero na pierwszym polu.
-  if (!tournament) {
+  if (!context) {
     throw new Error('useTournament() działa tylko w sekcji pod TournamentLayout.');
   }
-  return tournament;
+  return context.tournament;
 }

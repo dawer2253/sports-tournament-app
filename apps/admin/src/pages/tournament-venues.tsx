@@ -13,7 +13,7 @@ import {
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { AdminPage } from '../components/admin-page';
+import { SectionActions } from '../components/section-actions';
 import { api } from '../lib/api';
 import { plural, SCHEDULED_MATCHES } from '../lib/plural';
 import { useListMutation, type ListTexts } from '../lib/use-list-mutation';
@@ -78,17 +78,14 @@ export function TournamentVenuesPage() {
   const close = () => setDialog(null);
 
   return (
-    <AdminPage
-      tournament={tournament}
-      section="venues"
-      actions={
-        showCreate && (
+    <>
+      <SectionActions>
+        {showCreate && (
           <Button onClick={() => setDialog({ kind: 'form', venue: null })}>
             <Plus className="size-4" /> Dodaj obiekt
           </Button>
-        )
-      }
-    >
+        )}
+      </SectionActions>
       <VenuesTable
         venues={venues.data ?? []}
         status={venues.status}
@@ -111,7 +108,7 @@ export function TournamentVenuesPage() {
       {dialog?.kind === 'delete' && (
         <VenueDeleteDialog tournament={tournament} venue={dialog.venue} onClose={close} />
       )}
-    </AdminPage>
+    </>
   );
 }
 

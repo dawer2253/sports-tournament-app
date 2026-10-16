@@ -30,9 +30,9 @@ import {
 import { CalendarClock, GitFork, MoreHorizontal, RefreshCw, Trophy, UserX } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { AdminPage } from '../components/admin-page';
 import { DatesDialog } from '../components/dates-dialog';
 import { MatchDialog } from '../components/match-dialog';
+import { SectionActions } from '../components/section-actions';
 import { api } from '../lib/api';
 import { bracketRounds, bracketRow, bracketSizeSentence, type BracketRound } from '../lib/bracket';
 import { BRACKET_ROUNDS_ACCUSATIVE, MATCHES, plural } from '../lib/plural';
@@ -160,12 +160,9 @@ export function TournamentBracketPage() {
   }
 
   return (
-    <AdminPage
-      tournament={tournament}
-      section="bracket"
-      actions={
-        cup &&
-        hasBracket && (
+    <>
+      <SectionActions>
+        {cup && hasBracket && (
           <>
             <Button variant="outline" onClick={openDates}>
               <CalendarClock className="size-4" /> Rozłóż daty
@@ -185,9 +182,8 @@ export function TournamentBracketPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </>
-        )
-      }
-    >
+        )}
+      </SectionActions>
       {content}
       {generating && cup && teams.data && (
         <GenerateBracketDialog
@@ -224,7 +220,7 @@ export function TournamentBracketPage() {
           knockout
         />
       )}
-    </AdminPage>
+    </>
   );
 }
 

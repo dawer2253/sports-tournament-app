@@ -21,7 +21,6 @@ import {
 import { ListOrdered } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { AdminPage } from '../components/admin-page';
 import { UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { plural, TEAMS, TEAMS_CHANGING_PLACE } from '../lib/plural';
@@ -85,11 +84,7 @@ export function TournamentStandingsPage() {
   const sports = useSports();
   const sport = sports.data?.find((candidate) => candidate.id === tournament.sport.id);
 
-  return (
-    <AdminPage tournament={tournament} section="standings">
-      <StandingsSection tournament={tournament} sport={sport} sportsFailed={sports.isError} />
-    </AdminPage>
-  );
+  return <StandingsSection tournament={tournament} sport={sport} sportsFailed={sports.isError} />;
 }
 
 function StandingsSection({
