@@ -16,6 +16,7 @@ import { useCurrentTournaments } from '../lib/use-current-tournaments';
  */
 const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   teams: 'teams',
+  groups: 'groups',
   venues: 'venues',
   settings: 'settings',
   standings: 'standings',

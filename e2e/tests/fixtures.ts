@@ -20,10 +20,16 @@ interface Fixtures {
   tournament: Tournament;
   /** Świeży puchar (`format: 'knockout'`) w piłce nożnej, założony przez API. */
   cup: Tournament;
+  /** Świeży turniej grupowy (`format: 'groups_playoff'`) w piłce nożnej, założony przez API. */
+  groups: Tournament;
 }
 
 /** Nowy turniej piłkarski w danym formacie, przez API. */
-async function createTournament(api: ApiClient, format: 'league' | 'knockout', prefix: string): Promise<Tournament> {
+async function createTournament(
+  api: ApiClient,
+  format: 'league' | 'groups_playoff' | 'knockout',
+  prefix: string,
+): Promise<Tournament> {
   const sports = await api.GET('/sports');
   const football = sports.data?.data.find((sport) => sport.code === 'football');
   expect(football, 'piłka nożna w GET /sports').toBeDefined();
@@ -58,6 +64,10 @@ export const test = base.extend<Fixtures>({
 
   cup: async ({ api }, use) => {
     await use(await createTournament(api, 'knockout', 'Puchar E2E'));
+  },
+
+  groups: async ({ api }, use) => {
+    await use(await createTournament(api, 'groups_playoff', 'Grupy E2E'));
   },
 });
 

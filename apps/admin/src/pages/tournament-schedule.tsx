@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstFieldErrors, isValidationError, type AdminMatch, type Stage, type Team } from '@tournament/api-client';
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -18,17 +19,19 @@ import {
   matchDays,
   toast,
 } from '@tournament/ui';
-import { CalendarClock, CalendarDays, MoreHorizontal, RefreshCw, Trophy, UserX } from 'lucide-react';
+import { CalendarClock, CalendarDays, MoreHorizontal, RefreshCw, Trophy, UserX, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { AdminPage } from '../components/admin-page';
 import { ChoiceCards } from '../components/choice-cards';
 import { DatesDialog } from '../components/dates-dialog';
+import { GroupFilterChips } from '../components/group-filter-chips';
 import { MatchDialog } from '../components/match-dialog';
 import { api } from '../lib/api';
-import { MATCHES, plural, ROUNDS, ROUNDS_ACCUSATIVE, TEAMS, TEAMS_PLAYING } from '../lib/plural';
+import { GROUPS, MATCHES, plural, ROUNDS, ROUNDS_ACCUSATIVE, TEAMS, TEAMS_PLAYING } from '../lib/plural';
 import {
   defaultRound,
+  groupScheduleSize,
   hasStartedMatches,
   roundRobinSize,
   scheduleRounds,
@@ -48,9 +51,11 @@ const GENERATE_FAILED = 'Nie udało się wygenerować terminarza. Spróbuj ponow
 const MEETINGS_REQUIRED = 'Wybierz, ile razy grają ze sobą drużyny.';
 
 /**
- * Terminarz ligi (#174, wariant D z #162): lista kolejek z boku, mecze
- * wybranej kolejki obok. Kolejki, daty i liczniki panel liczy z meczów fazy,
- * bo kontrakt nie ma listy kolejek.
+ * Terminarz fazy rozgrywek (#174, wariant D z #162): lista kolejek z boku,
+ * mecze wybranej kolejki obok. Obsługuje ligę i fazę grupową (#258) — w fazie
+ * grupowej kolejka jest wspólna dla wszystkich grup, więc dochodzi filtr po
+ * grupie, a bez filtra wiersz niesie plakietkę swojej grupy. Kolejki, daty
+ * i liczniki panel liczy z meczów fazy, bo kontrakt nie ma listy kolejek.
  *
  * Generowanie, rozkład dat (#175) i ponowne generowanie idą w oknach,
  * otwieranych z akcji nagłówka, z pustego stanu albo z komunikatu. Wiersze są
@@ -59,17 +64,22 @@ const MEETINGS_REQUIRED = 'Wybierz, ile razy grają ze sobą drużyny.';
 export function TournamentSchedulePage() {
   const tournament = useTournament();
   const stages = useStages(tournament.id);
-  const league = stages.data?.find((stage) => stage.type === 'league');
-  const matches = useStageMatches(tournament.id, league?.id);
+  const stage = stages.data?.find((candidate) => candidate.type === 'league' || candidate.type === 'group');
+  const matches = useStageMatches(tournament.id, stage?.id);
   const teams = useTeams(tournament.id);
   const [generating, setGenerating] = useState(false);
   const [distributing, setDistributing] = useState(false);
   const [openMatchId, setOpenMatchId] = useState<number | null>(null);
+  const [groupFilter, setGroupFilter] = useState<number | null>(null);
   const [, setParams] = useSearchParams();
 
+  const isGroup = stage?.type === 'group';
+  const groups = stage?.groups ?? [];
   const started = hasStartedMatches(matches.data ?? []);
   const hasSchedule = (matches.data?.length ?? 0) > 0;
   const selectedMatch = matches.data?.find((match) => match.id === openMatchId);
+  const unassigned = (teams.data ?? []).filter((team) => team.groupId === null);
+  const groupSizes = groups.map((group) => (teams.data ?? []).filter((team) => team.groupId === group.id).length);
   const openGenerate = () => setGenerating(true);
   const openDates = () => setDistributing(true);
 
@@ -105,8 +115,8 @@ export function TournamentSchedulePage() {
         }
       />
     );
-  } else if (stages.data && !league) {
-    content = <WithoutLeague tournamentId={tournament.id} stages={stages.data} />;
+  } else if (stages.data && !stage) {
+    content = <WithoutScheduleStage tournamentId={tournament.id} stages={stages.data} />;
   } else if (!matches.data) {
     content = (
       <Card aria-busy="true" aria-label="Wczytywanie terminarza">
@@ -117,48 +127,55 @@ export function TournamentSchedulePage() {
         </CardContent>
       </Card>
     );
-  } else if (!hasSchedule) {
-    const count = teams.data?.length;
+  } else if (isGroup && groups.length === 0) {
     content = (
       <EmptyState
-        icon={<CalendarDays />}
-        title="Terminarz nie jest jeszcze wygenerowany"
-        description={
-          count === undefined
-            ? undefined
-            : count < 2
-              ? 'Liga potrzebuje co najmniej dwóch drużyn. Dodaj je w zakładce Drużyny.'
-              : `${count} ${plural(count, TEAMS_PLAYING)} każdy z każdym. Najpierw powstaną pary i kolejki, daty rozłożysz potem.`
-        }
+        icon={<Users />}
+        title="Najpierw ustal skład grup"
+        description="Faza grupowa powstaje z grup. Ich skład ustala karta Grupy."
         action={
-          count !== undefined && count < 2 ? (
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button disabled>
-                <RefreshCw className="size-4" /> Wygeneruj terminarz
-              </Button>
-              <Button asChild variant="outline">
-                <Link to={`/tournaments/${tournament.id}/teams`}>Przejdź do drużyn</Link>
-              </Button>
-            </div>
-          ) : (
-            <Button disabled={count === undefined} onClick={openGenerate}>
-              <RefreshCw className="size-4" /> Wygeneruj terminarz
-            </Button>
-          )
+          <Button asChild>
+            <Link to={`/tournaments/${tournament.id}/groups`}>Przejdź do grup</Link>
+          </Button>
         }
       />
+    );
+  } else if (!hasSchedule) {
+    content = (
+      <>
+        {isGroup && <UnassignedTeamsNotice teams={unassigned} tournamentId={tournament.id} />}
+        <EmptySchedule
+          isGroup={isGroup}
+          tournamentId={tournament.id}
+          teamsCount={teams.data?.length}
+          groupsCount={groups.length}
+          onGenerate={openGenerate}
+        />
+      </>
     );
   } else {
     const rounds = scheduleRounds(withCollisionTitles(matches.data));
     content = (
       <>
-        <MissingTeamsNotice
-          teams={teamsWithoutMatches(teams.data ?? [], matches.data)}
-          started={started}
-          onGenerate={openGenerate}
-        />
+        {isGroup ? (
+          <UnassignedTeamsNotice teams={unassigned} tournamentId={tournament.id} />
+        ) : (
+          <MissingTeamsNotice
+            teams={teamsWithoutMatches(teams.data ?? [], matches.data)}
+            started={started}
+            onGenerate={openGenerate}
+          />
+        )}
         <WithoutDatesNotice matches={matches.data} onDistribute={openDates} />
-        <RoundsView rounds={rounds} onSelectMatch={openMatch} />
+        {isGroup && groups.length > 0 && (
+          <GroupFilterChips groups={groups} value={groupFilter} onChange={setGroupFilter} className="mb-4" />
+        )}
+        <RoundsView
+          rounds={rounds}
+          groups={isGroup ? groups : []}
+          groupFilter={isGroup ? groupFilter : null}
+          onSelectMatch={openMatch}
+        />
       </>
     );
   }
@@ -168,7 +185,7 @@ export function TournamentSchedulePage() {
       tournament={tournament}
       section="schedule"
       actions={
-        league &&
+        stage &&
         hasSchedule && (
           <>
             <Button variant="outline" onClick={openDates}>
@@ -193,19 +210,21 @@ export function TournamentSchedulePage() {
       }
     >
       {content}
-      {generating && league && (
+      {generating && stage && (
         <GenerateDialog
           tournamentId={tournament.id}
-          stage={league}
+          stage={stage}
           teamsCount={teams.data?.length ?? 0}
           currentMatches={matches.data?.length ?? 0}
+          groupSizes={isGroup ? groupSizes : undefined}
+          missingGroup={isGroup ? unassigned[0]?.name : undefined}
           onClose={() => setGenerating(false)}
         />
       )}
-      {distributing && league && matches.data && (
+      {distributing && stage && matches.data && (
         <DatesDialog
           tournament={tournament}
-          stage={league}
+          stage={stage}
           matches={matches.data}
           rounds={scheduleRounds(withCollisionTitles(matches.data))}
           onClose={() => setDistributing(false)}
@@ -227,11 +246,11 @@ export function TournamentSchedulePage() {
 }
 
 /**
- * Turniej bez fazy `league` nie dostaje żadnej akcji generowania (#157).
- * W pucharze Terminarz zastępuje Drabinka (#227): karta jest w nawigacji
- * nieczynna, a wejście z adresu odsyła tam. Grupy dowiezie S5.
+ * Turniej bez fazy `league` ani `group` nie dostaje żadnej akcji generowania
+ * (#157). W pucharze Terminarz zastępuje Drabinka (#227): karta jest
+ * w nawigacji nieczynna, a wejście z adresu odsyła tam.
  */
-function WithoutLeague({ tournamentId, stages }: { tournamentId: number; stages: Stage[] }) {
+function WithoutScheduleStage({ tournamentId, stages }: { tournamentId: number; stages: Stage[] }) {
   if (isKnockoutOnly(stages)) {
     return (
       <EmptyState
@@ -249,8 +268,72 @@ function WithoutLeague({ tournamentId, stages }: { tournamentId: number; stages:
   return (
     <EmptyState
       icon={<Trophy />}
-      title="Terminarz fazy grupowej pojawi się razem z grupami"
-      description="Generowanie terminarza działa na razie tylko dla ligi."
+      title="Ten turniej nie ma terminarza"
+      description="Terminarz układa faza ligowa albo grupowa."
+    />
+  );
+}
+
+/**
+ * Pusty terminarz fazy: z pustego stanu otwiera się to samo okno generowania
+ * co z nagłówka. Liga potrzebuje dwóch drużyn, faza grupowa — ustalonego składu
+ * (#258).
+ */
+function EmptySchedule({
+  isGroup,
+  tournamentId,
+  teamsCount,
+  groupsCount,
+  onGenerate,
+}: {
+  isGroup: boolean;
+  tournamentId: number;
+  teamsCount: number | undefined;
+  groupsCount: number;
+  onGenerate: () => void;
+}) {
+  if (isGroup) {
+    return (
+      <EmptyState
+        icon={<CalendarDays />}
+        title="Terminarz grup nie jest jeszcze wygenerowany"
+        description={`${groupsCount} ${plural(groupsCount, GROUPS)}, każdy z każdym w swojej grupie. Kolejka jest wspólna dla wszystkich grup.`}
+        action={
+          <Button disabled={teamsCount === undefined} onClick={onGenerate}>
+            <RefreshCw className="size-4" /> Wygeneruj terminarz
+          </Button>
+        }
+      />
+    );
+  }
+
+  return (
+    <EmptyState
+      icon={<CalendarDays />}
+      title="Terminarz nie jest jeszcze wygenerowany"
+      description={
+        teamsCount === undefined
+          ? undefined
+          : teamsCount < 2
+            ? 'Liga potrzebuje co najmniej dwóch drużyn. Dodaj je w zakładce Drużyny.'
+            : `${teamsCount} ${plural(teamsCount, TEAMS_PLAYING)} każdy z każdym. Najpierw powstaną pary i kolejki, daty rozłożysz potem.`
+      }
+      action={
+        teamsCount !== undefined && teamsCount < 2 ? (
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button disabled>
+              <RefreshCw className="size-4" /> Wygeneruj terminarz
+            </Button>
+            <Button asChild variant="outline">
+              <Link to={`/tournaments/${tournamentId}/teams`}>Przejdź do drużyn</Link>
+            </Button>
+          </div>
+        ) : (
+          <Button disabled={teamsCount === undefined} onClick={onGenerate}>
+            <RefreshCw className="size-4" /> Wygeneruj terminarz
+          </Button>
+        )
+      }
     />
   );
 }
@@ -287,6 +370,29 @@ function MissingTeamsNotice({
 }
 
 /**
+ * Drużyna dodana po ustaleniu składu grup nie ma grupy (#258), więc terminarza
+ * fazy grupowej nie da się wygenerować. Odnośnik prowadzi do karty Grupy, gdzie
+ * organizer zapisuje skład od nowa.
+ */
+function UnassignedTeamsNotice({ teams, tournamentId }: { teams: Team[]; tournamentId: number }) {
+  if (teams.length === 0) return null;
+  const names = teams.map((team) => team.name).join(', ');
+  return (
+    <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/50 p-3 text-sm">
+      <UserX aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+      <p className="min-w-0 flex-1">
+        {teams.length === 1
+          ? `Drużyna ${names} nie ma grupy. Zapisz skład grup od nowa.`
+          : `Drużyny ${names} nie mają grupy. Zapisz skład grup od nowa.`}
+      </p>
+      <Button size="sm" variant="outline" asChild>
+        <Link to={`/tournaments/${tournamentId}/groups`}>Przejdź do grup</Link>
+      </Button>
+    </div>
+  );
+}
+
+/**
  * Świeżo wygenerowany terminarz nie ma dat (#158). Gdy żaden mecz nie ma
  * terminu, nad listą stoi podpowiedź z tym samym przyciskiem co w nagłówku.
  */
@@ -309,12 +415,19 @@ function WithoutDatesNotice({ matches, onDistribute }: { matches: AdminMatch[]; 
  * Kolejka z adresu (`?round=7`, po `order`), więc wybór przetrwa
  * odświeżenie. Bez parametru albo z numerem, którego nie ma, otwiera się
  * pierwsza kolejka z meczem niezakończonym (#162, pkt 1).
+ *
+ * W fazie grupowej dochodzi filtr po grupie (#258): filtruje mecze w kolejce,
+ * a bez filtra każdy wiersz niesie plakietkę grupy.
  */
 function RoundsView({
   rounds,
+  groups,
+  groupFilter,
   onSelectMatch,
 }: {
   rounds: ScheduleRound[];
+  groups: Stage['groups'];
+  groupFilter: number | null;
   onSelectMatch: (match: AdminMatch) => void;
 }) {
   const [params, setParams] = useSearchParams();
@@ -322,7 +435,9 @@ function RoundsView({
   const round = rounds.find((candidate) => candidate.order === requested) ?? defaultRound(rounds);
   if (!round) return null;
 
-  const oneDay = matchDays(round.matches.map((match) => match.kickoffAt)).length === 1;
+  const visible = groupFilter === null ? round.matches : round.matches.filter((match) => match.groupId === groupFilter);
+  const oneDay = matchDays(visible.map((match) => match.kickoffAt)).length === 1;
+  const namesByGroup = new Map(groups.map((group) => [group.id, group.name]));
 
   function select(id: number) {
     const target = rounds.find((candidate) => candidate.id === id);
@@ -354,9 +469,18 @@ function RoundsView({
           <span className="text-sm text-muted-foreground">{round.summary.dates}</span>
         </div>
         <ul className="space-y-2">
-          {round.matches.map((match) => (
-            <li key={match.id}>
-              <MatchRow match={match} showDate={!oneDay} onSelect={() => onSelectMatch(match)} />
+          {visible.map((match) => (
+            <li key={match.id} className="flex items-start gap-2">
+              {groupFilter === null && match.groupId !== null && namesByGroup.has(match.groupId) && (
+                <span className="w-24 shrink-0 pt-2.5">
+                  <Badge variant="secondary" className="font-medium">
+                    {namesByGroup.get(match.groupId)}
+                  </Badge>
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <MatchRow match={match} showDate={!oneDay} onSelect={() => onSelectMatch(match)} />
+              </div>
             </li>
           ))}
         </ul>
@@ -371,6 +495,10 @@ function RoundsView({
  * terminarzu tytuł, ostrzeżenie i przycisk mówią o zastąpieniu, bo API
  * zastępuje bez pytania (#157).
  *
+ * Faza grupowa (#258) liczy kolejki i mecze inaczej niż liga: kolejki to
+ * najdłuższa grupa, a mecze to suma par w grupach. Pusty `groupSizes` znaczy
+ * ligę.
+ *
  * `422` siada w oknie: brak wyboru przy polu, odmowa ze stanu fazy (`stage`,
  * `teams`) nad przyciskami. Sukces unieważnia mecze i drużyny (liczniki meczów
  * zaplanowanych), a okno zamyka się dopiero po odświeżeniu listy.
@@ -380,12 +508,16 @@ function GenerateDialog({
   stage,
   teamsCount,
   currentMatches,
+  groupSizes,
+  missingGroup,
   onClose,
 }: {
   tournamentId: number;
   stage: Stage;
   teamsCount: number;
   currentMatches: number;
+  groupSizes: number[] | undefined;
+  missingGroup: string | undefined;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -393,6 +525,7 @@ function GenerateDialog({
   const [fieldError, setFieldError] = useState<string>();
   const [formError, setFormError] = useState<string>();
   const replacing = currentMatches > 0;
+  const isGroup = groupSizes !== undefined;
 
   const generate = useMutation({
     mutationFn: async (value: 1 | 2) => {
@@ -445,13 +578,27 @@ function GenerateDialog({
   }
 
   const option = (value: 1 | 2, label: string) => {
-    const { roundsCount, matchesCount } = roundRobinSize(teamsCount, value);
+    const { roundsCount, matchesCount } = groupSizes
+      ? groupScheduleSize(groupSizes, value)
+      : roundRobinSize(teamsCount, value);
     return {
       value,
       label,
       description: `${roundsCount} ${plural(roundsCount, ROUNDS)}, ${matchesCount} ${plural(matchesCount, MATCHES)}`,
     };
   };
+
+  const title = isGroup
+    ? replacing
+      ? 'Wygeneruj terminarz grup ponownie'
+      : 'Wygeneruj terminarz grup'
+    : replacing
+      ? 'Wygeneruj terminarz ponownie'
+      : 'Wygeneruj terminarz';
+
+  const description = isGroup
+    ? `${stage.name} · ${(groupSizes ?? []).length} ${plural((groupSizes ?? []).length, GROUPS)}. Kolejka jest wspólna dla wszystkich grup.`
+    : `${stage.name} · ${teamsCount} ${plural(teamsCount, TEAMS)}. Kolejność drużyn jest losowana.`;
 
   return (
     <FormDialog
@@ -460,8 +607,8 @@ function GenerateDialog({
         if (!open) onClose();
       }}
       onSubmit={submit}
-      title={replacing ? 'Wygeneruj terminarz ponownie' : 'Wygeneruj terminarz'}
-      description={`${stage.name} · ${teamsCount} ${plural(teamsCount, TEAMS)}. Kolejność drużyn jest losowana.`}
+      title={title}
+      description={description}
       submitLabel={replacing ? 'Zastąp terminarz' : 'Wygeneruj'}
       pending={generate.isPending}
       error={formError}
@@ -478,10 +625,16 @@ function GenerateDialog({
         errorMessage={fieldError}
         className="gap-3 lg:grid-cols-2"
       />
+      {isGroup && missingGroup && (
+        <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          Drużyna „{missingGroup}” nie ma grupy. Zapisz skład grup od nowa.
+        </p>
+      )}
       {replacing && (
         <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          Obecny terminarz ({currentMatches} {plural(currentMatches, MATCHES)}) zniknie razem z terminami
-          i obiektami, także poprawionymi ręcznie.
+          {isGroup
+            ? `Obecny terminarz grup (${currentMatches} ${plural(currentMatches, MATCHES)}) zniknie razem z terminami i wynikami.`
+            : `Obecny terminarz (${currentMatches} ${plural(currentMatches, MATCHES)}) zniknie razem z terminami i obiektami, także poprawionymi ręcznie.`}
         </p>
       )}
       <p className="text-xs text-muted-foreground">Mecze powstaną bez dat.</p>

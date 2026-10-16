@@ -108,12 +108,29 @@ export function teamsWithoutMatches<T extends { id: number }>(teams: readonly T[
 /**
  * Rozmiar terminarza „każdy z każdym” przed wygenerowaniem, do opisu opcji
  * w oknie: n − 1 kolejek przy parzystym n, n przy nieparzystym (pauza), razy
- * liczba spotkań.
+ * liczba spotkań. Jedna grupa liczy się jak liga, więc wzór bierze
+ * `groupScheduleSize`, a nie powtarza go drugi raz (#258).
  */
 export function roundRobinSize(teams: number, meetings: 1 | 2): { roundsCount: number; matchesCount: number } {
+  return groupScheduleSize([teams], meetings);
+}
+
+/**
+ * Rozmiar terminarza fazy grupowej przed wygenerowaniem, do opisu opcji w oknie
+ * (#258): kolejki to najdłuższa grupa (n przy nieparzystym, n − 1 przy
+ * parzystym), a mecze to suma par w grupach, razy liczba spotkań. Grupa
+ * z jedyną żywą drużyną nie daje ani kolejki, ani meczu.
+ */
+export function groupScheduleSize(
+  sizes: readonly number[],
+  meetings: 1 | 2,
+): { roundsCount: number; matchesCount: number } {
+  const rounds = (size: number) => (size < 2 ? 0 : size % 2 === 0 ? size - 1 : size);
+  const matches = (size: number) => (size < 2 ? 0 : (size * (size - 1)) / 2);
+
   return {
-    roundsCount: (teams % 2 === 0 ? teams - 1 : teams) * meetings,
-    matchesCount: ((teams * (teams - 1)) / 2) * meetings,
+    roundsCount: Math.max(0, ...sizes.map(rounds)) * meetings,
+    matchesCount: sizes.reduce((sum, size) => sum + matches(size), 0) * meetings,
   };
 }
 

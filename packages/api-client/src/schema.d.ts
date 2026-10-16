@@ -1040,6 +1040,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stages/{stage}/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: components["parameters"]["StageId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Ustaw skład grup fazy
+         * @description Zastępuje cały skład grup fazy `group`: kasuje dotychczasowe grupy
+         *     i wstawia nowe, a drużyny przydziela do nich przez `group_id`. Wszystko
+         *     dzieje się w jednej transakcji. Skład wolno ustalać, dopóki faza nie ma
+         *     meczu trwającego ani zakończonego — od tego momentu jest zamrożony.
+         *
+         *     `order` grup wynika z kolejności w ciele, od jedynki. Gdy faza ma już
+         *     terminarz, zapis kasuje jej kolejki razem z meczami, a faz innych nie
+         *     rusza. Odmowa niczego nie zmienia: poprzedni skład i `group_id` drużyn
+         *     zostają.
+         *
+         *     Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stage: components["parameters"]["StageId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "groups": [
+                     *         {
+                     *           "name": "Grupa A",
+                     *           "teamIds": [
+                     *             3,
+                     *             7,
+                     *             9,
+                     *             12
+                     *           ],
+                     *           "qualifiers": 3
+                     *         },
+                     *         {
+                     *           "name": "Grupa B",
+                     *           "teamIds": [
+                     *             1,
+                     *             4,
+                     *             8
+                     *           ],
+                     *           "qualifiers": 2
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Grupy fazy w kolejności, w jakiej mają stać. */
+                        groups: {
+                            name: string;
+                            /**
+                             * @description Drużyny grupy. Każda drużyna turnieju należy dokładnie
+                             *     do jednej grupy fazy.
+                             */
+                            teamIds: number[];
+                            /** @description Liczba drużyn wychodzących z tej grupy do drabinki. */
+                            qualifiers: number;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Skład grup zapisany */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 2,
+                         *         "type": "group",
+                         *         "name": "Faza grupowa",
+                         *         "order": 1,
+                         *         "groups": [
+                         *           {
+                         *             "id": 3,
+                         *             "name": "Grupa A",
+                         *             "order": 1,
+                         *             "qualifiers": 3
+                         *           },
+                         *           {
+                         *             "id": 4,
+                         *             "name": "Grupa B",
+                         *             "order": 2,
+                         *             "qualifiers": 2
+                         *           }
+                         *         ]
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Stage"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Składu nie da się zapisać albo ciało jest niepoprawne */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stages/{stage}/schedule": {
         parameters: {
             query?: never;
@@ -1053,27 +1185,35 @@ export interface paths {
         put?: never;
         /**
          * Wygeneruj terminarz fazy
-         * @description Układa fazę `league` w kolejki „każdy z każdym” według tablic Bergera
-         *     i zastępuje cały dotychczasowy terminarz fazy, także terminy i obiekty
-         *     poprawione ręcznie. Wszystko dzieje się w jednej transakcji.
+         * @description Układa fazę `league` albo `group` w kolejki „każdy z każdym” według
+         *     tablic Bergera i zastępuje cały dotychczasowy terminarz fazy, także
+         *     terminy i obiekty poprawione ręcznie. Wszystko dzieje się w jednej
+         *     transakcji.
          *
-         *     - Grają wszystkie drużyny turnieju. Ich kolejność na wejściu jest
-         *       losowana przy każdym wywołaniu, więc kolejne generowanie daje inne
-         *       pary w kolejkach.
+         *     - W fazie `league` grają wszystkie drużyny turnieju. Ich kolejność na
+         *       wejściu jest losowana przy każdym wywołaniu, więc kolejne generowanie
+         *       daje inne pary w kolejkach.
+         *     - W fazie `group` pary powstają osobno w każdej grupie, a mecze trafiają
+         *       do wspólnych kolejek fazy z ustawionym `groupId`. Kolejka jest
+         *       wspólna dla wszystkich grup ([ADR-0011](../../docs/adr/0011-kolejka-fazy-grupowej-jest-wspolna.md)):
+         *       w kolejce najpierw idą mecze pierwszej grupy według `Group.order`,
+         *       potem kolejnych, a wewnątrz grupy obowiązuje kolejność Bergera.
          *     - `meetings: 2` dokłada rewanż jako czyste lustro: kolejka
          *       `n − 1 + t` (`n` przy nieparzystej liczbie drużyn) to kolejka `t`
-         *       z odwróconym gospodarzem.
+         *       z odwróconym gospodarzem. Dotyczy całej fazy.
          *     - Przy nieparzystej liczbie drużyn jedna drużyna pauzuje w każdej
          *       kolejce. Pauza nie tworzy meczu.
          *     - Kolejki nazywają się „Kolejka 1”, „Kolejka 2”… z numeracją ciągłą
          *       przez obie rundy. Mecze są `scheduled`, bez `kickoffAt` i bez
          *       obiektu.
          *
-         *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
-         *     faza nie jest `league` albo ma mecz `live` lub `finished`, i pod
-         *     `teams`, gdy turniej ma mniej niż dwie drużyny. Faza `knockout` dostaje
-         *     osobny komunikat, który odsyła do `POST /stages/{stage}/bracket`. Mecze
-         *     dociąga się potem przez `GET /tournaments/{tournament}/matches?stageId=`.
+         *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy faza
+         *     nie jest `league` ani `group`, ma mecz `live` lub `finished`, albo
+         *     w fazie `group` brakuje składu grup; pod `teams`, gdy turniej ma mniej
+         *     niż dwie drużyny albo w fazie `group` któraś drużyna turnieju nie ma
+         *     grupy. Faza `knockout` dostaje osobny komunikat, który odsyła do
+         *     `POST /stages/{stage}/bracket`. Mecze dociąga się potem przez
+         *     `GET /tournaments/{tournament}/matches?stageId=`.
          */
         post: {
             parameters: {
@@ -3808,6 +3948,16 @@ export interface components {
             /** Format: int64 */
             id: number;
             name: string;
+            /**
+             * @description Kolejność grupy w fazie, od jedynki. Nadaje ją kolejność grup
+             *     w ciele `PUT /stages/{stage}/groups`.
+             */
+            order: number;
+            /**
+             * @description Liczba drużyn wychodzących z grupy do drabinki playoffu. Ustala się
+             *     razem ze składem w `PUT /stages/{stage}/groups`.
+             */
+            qualifiers: number;
         };
         Stage: {
             /** Format: int64 */
@@ -3816,9 +3966,9 @@ export interface components {
             name: string;
             order: number;
             /**
-             * @description Pusta dla faz `league` i `knockout`. W fazie `group` pusta, dopóki
-             *     organizer nie utworzy grup — faza powstaje przy zakładaniu turnieju
-             *     bez nich.
+             * @description Pusta dla faz `league` i `knockout`. W fazie `group` wypełniona po
+             *     `PUT /stages/{stage}/groups`, a dopóki organizer nie ustali składu —
+             *     pusta, bo faza powstaje przy zakładaniu turnieju bez grup.
              */
             groups: components["schemas"]["Group"][];
         };
@@ -3846,7 +3996,9 @@ export interface components {
             logoUrl: string | null;
             /**
              * Format: int64
-             * @description Grupa w fazie `group`. `null`, gdy turniej nie ma fazy grupowej.
+             * @description Grupa w fazie `group`, nadana przez `PUT /stages/{stage}/groups`.
+             *     `null`, gdy turniej nie ma fazy grupowej albo gdy drużyna doszła po
+             *     ustaleniu składu grup.
              */
             groupId: number | null;
             /** @description Liczba zawodników drużyny, bez usuniętych. */
@@ -3971,7 +4123,8 @@ export interface components {
             stageId: number;
             /**
              * Format: int64
-             * @description Grupa, w ramach której mecz się liczy. `null` poza fazą `group`. Nie istnieje mecz międzygrupowy.
+             * @description Grupa, w ramach której mecz się liczy. Wypełnione w fazie `group`,
+             *     `null` poza nią. Nie istnieje mecz międzygrupowy.
              */
             groupId: number | null;
             round: components["schemas"]["RoundSummary"];
