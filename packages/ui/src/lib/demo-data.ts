@@ -155,7 +155,7 @@ export const basketballStandingsTableRows: StandingsTableRow[] = [
 ]
 
 // Tabela grupy (#259): cztery drużyny, wychodzą dwie. Miejsca 2 i 3 mają po
-// 4 punkty, więc linia wyjścia przecina remis — `withQualification` daje im
+// 4 punkty, więc linia wyjścia przecina remis — `withQualifiers` daje im
 // plakietkę „remis na linii”.
 export const groupStandingsQualifiers = 2
 

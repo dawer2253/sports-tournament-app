@@ -21,9 +21,9 @@ export type StandingsTableRow = {
   points: number
   /**
    * Tylko w tabeli grupy: drużyna jest nad linią wyjścia. Kontrakt tego pola
-   * nie zna — dokłada je `withQualification` z `Group.qualifiers`.
+   * nie zna — dokłada je `withQualifiers` z `Group.qualifiers`.
    */
   qualifies?: boolean
-  /** Tylko w tabeli grupy: remis na linii wyjścia (`withQualification`). */
+  /** Tylko w tabeli grupy: remis na linii wyjścia (`withQualifiers`). */
   tied?: boolean
 }

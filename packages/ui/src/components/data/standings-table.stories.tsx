@@ -8,7 +8,7 @@ import {
   standingsTablePreviewRows,
   standingsTableRows,
 } from '../../lib/demo-data'
-import { withQualification } from '../../lib/qualification'
+import { withQualifiers } from '../../lib/qualifiers'
 import { StandingsTable } from './standings-table'
 
 const meta = {
@@ -68,7 +68,7 @@ export const Pilka: Story = {
  * drużyny dostają plakietkę „remis na linii”.
  */
 export const Grupa: Story = {
-  args: { rows: withQualification(groupStandingsTableRows, groupStandingsQualifiers) },
+  args: { rows: withQualifiers(groupStandingsTableRows, groupStandingsQualifiers) },
   play: async ({ canvasElement }) => {
     const rows = within(canvasElement).getAllByRole('row').slice(1)
 

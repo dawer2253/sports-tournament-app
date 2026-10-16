@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
-import { withQualification } from './qualification'
+import { withQualifiers } from './qualifiers'
 
 /** Wiersz z samymi polami, które liczą się dla linii wyjścia. */
 function row(position: number, points: number, played = 2): StandingsTableRow {
@@ -20,9 +20,9 @@ function row(position: number, points: number, played = 2): StandingsTableRow {
 
 const flags = (rows: StandingsTableRow[]) => rows.map(({ qualifies, tied }) => [qualifies, tied])
 
-describe('withQualification', () => {
+describe('withQualifiers', () => {
   it('oznacza wychodzących miejscami ≤ qualifiers, bez remisu przy różnych punktach', () => {
-    const rows = withQualification([row(1, 6), row(2, 4), row(3, 3), row(4, 0)], 2)
+    const rows = withQualifiers([row(1, 6), row(2, 4), row(3, 3), row(4, 0)], 2)
 
     expect(flags(rows)).toEqual([
       [true, false],
@@ -32,20 +32,20 @@ describe('withQualification', () => {
     ])
   })
 
-  it('przy równych punktach na linii oznacza remisem cały blok tych punktów', () => {
-    const rows = withQualification([row(1, 6), row(2, 4), row(3, 4), row(4, 4), row(5, 1)], 2)
+  it('przy równych punktach na linii oznacza remisem dwa wiersze przy linii', () => {
+    const rows = withQualifiers([row(1, 6), row(2, 4), row(3, 4), row(4, 4), row(5, 1)], 2)
 
     expect(flags(rows)).toEqual([
       [true, false],
       [true, true],
       [false, true],
-      [false, true],
+      [false, false],
       [false, false],
     ])
   })
 
   it('nie widzi remisu, zanim drużyny na linii zagrały', () => {
-    const rows = withQualification([row(1, 0, 0), row(2, 0, 0), row(3, 0, 0)], 1)
+    const rows = withQualifiers([row(1, 0, 0), row(2, 0, 0), row(3, 0, 0)], 1)
 
     expect(flags(rows)).toEqual([
       [true, false],
@@ -55,7 +55,7 @@ describe('withQualification', () => {
   })
 
   it('bez linii, gdy wychodzą wszyscy: remisu na linii nie ma', () => {
-    const rows = withQualification([row(1, 3), row(2, 3)], 2)
+    const rows = withQualifiers([row(1, 3), row(2, 3)], 2)
 
     expect(flags(rows)).toEqual([
       [true, false],
@@ -65,7 +65,7 @@ describe('withQualification', () => {
 
   it('nie zmienia wierszy wejściowych', () => {
     const input = [row(1, 3), row(2, 3)]
-    withQualification(input, 1)
+    withQualifiers(input, 1)
 
     expect(input[0]).not.toHaveProperty('qualifies')
   })

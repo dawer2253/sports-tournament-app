@@ -126,7 +126,7 @@ function standingsColumns(scoreLabel: string, allowsDraw: boolean, previousPosit
 }
 
 /** Ostatni wychodzący, pod którym stoi niewychodzący — tam idzie linia wyjścia. */
-function isQualificationLine(rows: StandingsTableRow[], index: number) {
+function isQualifiersLine(rows: StandingsTableRow[], index: number) {
   return rows[index]!.qualifies === true && rows[index + 1]?.qualifies === false
 }
 
@@ -136,9 +136,9 @@ function isQualificationLine(rows: StandingsTableRow[], index: number) {
  * krój. Drużyny z tą samą liczbą punktów tworzą blok, który od reszty oddziela
  * grubsza linia — remis czyta się wtedy jako całość.
  *
- * W tabeli grupy wiersze niosą `qualifies` i `tied` (`withQualification`):
+ * W tabeli grupy wiersze niosą `qualifies` i `tied` (`withQualifiers`):
  * wychodzący są wyróżnieni, pod ostatnim z nich stoi przerywana linia wyjścia,
- * a blok remisu na linii dostaje plakietkę. Tabela ligi tych pól nie ma
+ * a dwa wiersze remisu na linii dostają plakietkę. Tabela ligi tych pól nie ma
  * i wygląda jak dotąd.
  */
 export function StandingsTable({
@@ -176,13 +176,13 @@ export function StandingsTable({
         headerClassName="[&_th]:h-9 [&_th]:text-xs [&_th]:font-medium [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground [&_tr]:bg-muted/60 [&_tr]:hover:bg-muted/60"
         rowClassName={(row, index) => {
           const moved = previousPositions !== undefined && previousPositions.get(row.team.id) !== row.position
-          const afterLine = index > 0 && isQualificationLine(rows, index - 1)
+          const afterLine = index > 0 && isQualifiersLine(rows, index - 1)
           // Linia wyjścia wygrywa z granicą bloku punktów: w zwiniętych
           // ramkach ciągła przykryłaby przerywaną.
           const newPointsBlock = !afterLine && index > 0 && rows[index - 1]!.points !== row.points
           return cn(
             newPointsBlock && 'border-t-2 border-t-border',
-            isQualificationLine(rows, index) && 'border-b-2 border-dashed border-b-border',
+            isQualifiersLine(rows, index) && 'border-b-2 border-dashed border-b-border',
             row.qualifies && 'bg-primary/5',
             moved && 'bg-accent hover:bg-accent',
           )
