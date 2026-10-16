@@ -44,12 +44,12 @@ describe('withQualifiers', () => {
     ])
   })
 
-  it('nie widzi remisu, zanim drużyny na linii zagrały', () => {
+  it('widzi remis na linii także przed pierwszym meczem, bo dorobek jest równy', () => {
     const rows = withQualifiers([row(1, 0, 0), row(2, 0, 0), row(3, 0, 0)], 1)
 
     expect(flags(rows)).toEqual([
-      [true, false],
-      [false, false],
+      [true, true],
+      [false, true],
       [false, false],
     ])
   })

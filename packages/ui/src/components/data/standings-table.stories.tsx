@@ -75,6 +75,9 @@ export const Grupa: Story = {
     await expect(rows[0]).toHaveTextContent('wychodzi z grupy')
     await expect(rows[1]).toHaveTextContent('wychodzi z grupy')
     await expect(rows[2]).not.toHaveTextContent('wychodzi z grupy')
+    await expect(rows[0]).toHaveClass('bg-primary/5')
+    await expect(rows[1]).toHaveClass('bg-primary/5')
+    await expect(rows[2]).not.toHaveClass('bg-primary/5')
 
     // Linia tylko pod ostatnim wychodzącym; granica bloku punktów (4 → 4 nie,
     // 9 → 4 tak) ustępuje jej pod linią.
