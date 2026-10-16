@@ -229,11 +229,7 @@ function StandingsSection({
             odpowiedź tabeli (`allowsDraw`), więc tabela nie czeka na
             `GET /sports` — ten potrzebny jest już tylko edytorowi kryteriów. */}
         {/* Bez faz tabela grupy wygląda jak tabela ligi: bez linii i sterowania. */}
-        {stages.isError && (
-          <p role="alert" className="text-sm text-destructive">
-            Nie udało się wczytać liczby wychodzących z grup, więc tabele stoją bez linii wyjścia.
-          </p>
-        )}
+        {stages.isError && <EmptyState variant="error" title="Nie udało się wczytać liczby wychodzących z grup" />}
         {tables ? (
           tables.map((table) => {
             const group = table.groupId === null ? undefined : groups.get(table.groupId);
@@ -257,7 +253,7 @@ function StandingsSection({
                   previousPositions={previousPositions}
                   emptyAction={teamsLink}
                 />
-                {group && <QualifiersLegend qualifiers={group.qualifiers} teamsCount={table.rows.length} />}
+                {group && <QualifiersLegend qualifiers={group.qualifiers} />}
               </section>
             );
           })
@@ -367,17 +363,12 @@ function GroupQualifiersControl({
   );
 }
 
-/**
- * Zdanie pod tabelą grupy (wzór: `QualificationLegend` z prototypu #251).
- * O linii mówi tylko wtedy, gdy ją widać: przy wyjściu równym liczbie drużyn
- * (np. po usunięciu drużyny) wszyscy są nad nią, więc tabela linii nie ma.
- */
-function QualifiersLegend({ qualifiers, teamsCount }: { qualifiers: number; teamsCount: number }) {
-  const count = `${plural(qualifiers, QUALIFY)} ${qualifiers} ${plural(qualifiers, TEAMS)}`;
+/** Zdanie pod tabelą grupy, jak w #259 (wzór: `QualificationLegend` z prototypu #251). */
+function QualifiersLegend({ qualifiers }: { qualifiers: number }) {
   return (
     <p className="text-xs text-muted-foreground">
-      {qualifiers < teamsCount ? `Z grupy ${count} — miejsca nad przerywaną linią.` : `Z grupy ${count}.`} Remis na
-      linii rozstrzyga organizer, podmieniając drużynę przy generowaniu drabinki.
+      Z grupy {plural(qualifiers, QUALIFY)} {qualifiers} {plural(qualifiers, TEAMS)} — miejsca nad przerywaną linią.
+      Remis na linii rozstrzyga organizer, podmieniając drużynę przy generowaniu drabinki.
     </p>
   );
 }
