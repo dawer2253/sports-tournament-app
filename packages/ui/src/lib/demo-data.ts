@@ -154,6 +154,18 @@ export const basketballStandingsTableRows: StandingsTableRow[] = [
   { position: 4, team: { id: 14, name: 'Orlęta Praga', logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 204, scoreAgainst: 243, scoreDifference: -39, points: 3 },
 ]
 
+// Tabela grupy (#259): cztery drużyny, wychodzą dwie. Miejsca 2 i 3 mają po
+// 4 punkty, więc linia wyjścia przecina remis — `withQualification` daje im
+// plakietkę „remis na linii”.
+export const groupStandingsQualifiers = 2
+
+export const groupStandingsTableRows: StandingsTableRow[] = [
+  { position: 1, team: { id: 21, name: 'Wilki Bemowo', logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 7, scoreAgainst: 1, scoreDifference: 6, points: 9 },
+  { position: 2, team: { id: 22, name: 'Sokoły Ursus', logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 4, scoreDifference: 0, points: 4 },
+  { position: 3, team: { id: 23, name: 'Orły Bielany', logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 4, scoreDifference: -1, points: 4 },
+  { position: 4, team: { id: 24, name: 'Lwy Targówek', logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 2, scoreAgainst: 7, scoreDifference: -5, points: 0 },
+]
+
 export type Scorer = { pos: number; player: string; team: Team; goals: number }
 
 export const scorers: Scorer[] = [

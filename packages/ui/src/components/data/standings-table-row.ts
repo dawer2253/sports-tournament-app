@@ -19,4 +19,11 @@ export type StandingsTableRow = {
   scoreDifference: number
   /** Punkty za wyniki meczów, nigdy zdobycze. */
   points: number
+  /**
+   * Tylko w tabeli grupy: drużyna jest nad linią wyjścia. Kontrakt tego pola
+   * nie zna — dokłada je `withQualification` z `Group.qualifiers`.
+   */
+  qualifies?: boolean
+  /** Tylko w tabeli grupy: remis na linii wyjścia (`withQualification`). */
+  tied?: boolean
 }

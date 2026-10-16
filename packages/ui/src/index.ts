@@ -8,6 +8,7 @@ export * from './lib/group-composition';
 export * from './lib/kickoff';
 export * from './lib/match-band';
 export * from './lib/plural';
+export * from './lib/qualification';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
