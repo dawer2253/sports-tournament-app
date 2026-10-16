@@ -206,7 +206,7 @@ export function GroupCompositionEditor({
                   replace(Number(next), (current) => ({ ...current, teamIds: [...current.teamIds, team.id] }))
                 }
               >
-                <SelectTrigger size="sm" className="w-36" aria-label="Przypisz drużynę do grupy">
+                <SelectTrigger size="sm" className="w-44" aria-label="Przypisz drużynę do grupy">
                   <SelectValue placeholder="Przypisz do grupy" />
                 </SelectTrigger>
                 <SelectContent>
