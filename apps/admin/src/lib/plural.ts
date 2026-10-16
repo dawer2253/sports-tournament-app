@@ -24,4 +24,7 @@ export const COLLISIONS = ['kolizja', 'kolizje', 'kolizji'] as const;
 export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] as const;
 
 /** Podgląd kolejności przy tabeli: „2 drużyny zmieniają miejsce” (#173). */
+/** Orzeczenie przed liczbą wychodzących z grupy: „wychodzą 2 drużyny”. */
+export const QUALIFY = ['wychodzi', 'wychodzą', 'wychodzi'] as const;
+
 export const TEAMS_CHANGING_PLACE = ['drużyna zmienia', 'drużyny zmieniają', 'drużyn zmienia'] as const;

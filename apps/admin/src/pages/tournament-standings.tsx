@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   firstFieldErrors,
   isValidationError,
+  type Group,
   type Sport,
   type StandingTable,
   type TiebreakerCode,
@@ -11,11 +12,17 @@ import {
   Button,
   EmptyState,
   Heading,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Skeleton,
   StandingsTable,
   TiebreakerEditor,
   TiebreakerSentence,
   toast,
+  withQualification,
   type TiebreakerItem,
 } from '@tournament/ui';
 import { ListOrdered } from 'lucide-react';
@@ -23,11 +30,14 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
-import { plural, TEAMS, TEAMS_CHANGING_PLACE } from '../lib/plural';
+import { plural, QUALIFY, TEAMS, TEAMS_CHANGING_PLACE } from '../lib/plural';
+import { scheduleKeys, useStages } from '../lib/schedule-queries';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
 
 const SAVE_FAILED = 'Nie udało się zapisać kolejności. Spróbuj ponownie.';
+
+const QUALIFIERS_FAILED = 'Nie udało się zmienić liczby wychodzących. Spróbuj ponownie.';
 
 /**
  * Tabele turnieju pod `['tournament', id, 'standings', tiebreakers]`, czyli
@@ -74,10 +84,17 @@ function saveErrorMessage(error: unknown): string {
 }
 
 /**
- * Tabela ligi z kartą „Rozstrzyganie remisów” (#173, wariant z #163). Każda
- * zmiana szkicu odpytuje tabelę z parametrem podglądu, a odniesieniem dla
- * strzałek i podświetlenia jest tabela według zapisanej listy. Zapis idzie
- * osobno, przyciskiem, samym `{ tiebreakers }`.
+ * Tabela ligi albo tabele grup z kartą „Rozstrzyganie remisów” (#173, wariant
+ * z #163). Każda zmiana szkicu odpytuje tabele z parametrem podglądu,
+ * a odniesieniem dla strzałek i podświetlenia są tabele według zapisanej
+ * listy. Zapis idzie osobno, przyciskiem, samym `{ tiebreakers }`. Lista
+ * kryteriów jest jedna na turniej, więc edytor jest wspólny dla wszystkich
+ * tabel.
+ *
+ * Tabela grupy (#259, wariant A z #251) dostaje linię wyjścia, plakietkę
+ * remisu na linii i sterowanie liczbą wychodzących. Liczby wychodzących
+ * odpowiedź tabeli nie niesie, więc panel bierze ją z grup fazy
+ * (`GET /tournaments/{tournament}/stages`).
  */
 export function TournamentStandingsPage() {
   const tournament = useTournament();
@@ -106,6 +123,11 @@ function StandingsSection({
 
   const base = useStandings(tournament.id, null);
   const shown = useStandings(tournament.id, dirty ? current : null);
+  const stages = useStages(tournament.id);
+  const groups = useMemo(
+    () => new Map((stages.data ?? []).flatMap((stage) => stage.groups).map((group) => [group.id, group] as const)),
+    [stages.data],
+  );
 
   const save = useMutation({
     mutationFn: async (tiebreakers: string[]) => {
@@ -207,25 +229,38 @@ function StandingsSection({
             odpowiedź tabeli (`allowsDraw`), więc tabela nie czeka na
             `GET /sports` — ten potrzebny jest już tylko edytorowi kryteriów. */}
         {tables ? (
-          tables.map((table) => (
-            <section key={`${table.stageId}-${table.groupId}`} className="space-y-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <Heading level="card">
-                  {table.groupName ? `${table.stageName} · ${table.groupName}` : table.stageName}
-                </Heading>
-                <span className="text-xs text-muted-foreground">
-                  {table.rows.length} {plural(table.rows.length, TEAMS)}
-                </span>
-              </div>
-              <StandingsTable
-                rows={table.rows}
-                scoreLabel={table.scoreLabel}
-                allowsDraw={table.allowsDraw}
-                previousPositions={previousPositions}
-                emptyAction={teamsLink}
-              />
-            </section>
-          ))
+          tables.map((table) => {
+            const group = table.groupId === null ? undefined : groups.get(table.groupId);
+            const heading = table.groupName ? `${table.stageName} · ${table.groupName}` : table.stageName;
+            return (
+              <section key={`${table.stageId}-${table.groupId}`} aria-label={heading} className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Heading level="card">{heading}</Heading>
+                  {group ? (
+                    <GroupQualifiersControl tournamentId={tournament.id} group={group} teamsCount={table.rows.length} />
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {table.rows.length} {plural(table.rows.length, TEAMS)}
+                    </span>
+                  )}
+                </div>
+                <StandingsTable
+                  rows={group ? withQualification(table.rows, group.qualifiers) : table.rows}
+                  scoreLabel={table.scoreLabel}
+                  allowsDraw={table.allowsDraw}
+                  previousPositions={previousPositions}
+                  emptyAction={teamsLink}
+                />
+                {group && (
+                  <p className="text-xs text-muted-foreground">
+                    Z grupy {plural(group.qualifiers, QUALIFY)} {group.qualifiers} {plural(group.qualifiers, TEAMS)} —
+                    miejsca nad przerywaną linią. Remis na linii rozstrzyga organizer, podmieniając drużynę przy
+                    generowaniu drabinki.
+                  </p>
+                )}
+              </section>
+            );
+          })
         ) : (
           <StandingsTable
             rows={[]}
@@ -243,6 +278,91 @@ function StandingsSection({
       </div>
       <div className="lg:sticky lg:top-4">{editor}</div>
       <UnsavedChangesGuard when={dirty} />
+    </div>
+  );
+}
+
+/**
+ * Liczba wychodzących z grupy przy jej tabeli (#259; prototyp #251: „liczbę
+ * wychodzących zmienia się przy tabeli”). Wybór od razu idzie
+ * `PATCH /groups/{group}`, bez okna: to jedna wartość, a nie formularz.
+ * Działa także po zamrożeniu składu, do pierwszego meczu rozpoczętego fazy
+ * pucharowej — potem `422` pod `stage` siada tu, pod listą.
+ *
+ * Po zapisie unieważnia fazy (tam żyje `Group.qualifiers`) i tabele, choć
+ * te liczby wychodzących nie niosą — linia i plakietka liczą się z obu.
+ */
+function GroupQualifiersControl({
+  tournamentId,
+  group,
+  teamsCount,
+}: {
+  tournamentId: number;
+  group: Group;
+  teamsCount: number;
+}) {
+  const queryClient = useQueryClient();
+  const change = useMutation({
+    mutationFn: async (qualifiers: number) => {
+      let result;
+      try {
+        result = await api.PATCH('/groups/{group}', {
+          params: { path: { group: group.id } },
+          body: { qualifiers },
+        });
+      } catch (cause) {
+        // `fetch` bez odpowiedzi (sieć) odrzuca `TypeError`.
+        if (cause instanceof TypeError) throw new Error(QUALIFIERS_FAILED);
+        throw cause;
+      }
+      const { error, response } = result;
+      if (!response.ok) throw response.status === 422 && isValidationError(error) ? error : new Error(QUALIFIERS_FAILED);
+    },
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: scheduleKeys.stages(tournamentId) }),
+        queryClient.invalidateQueries({ queryKey: ['tournament', tournamentId, 'standings'] }),
+      ]),
+  });
+
+  // Grupa mogła stracić drużynę po zapisie składu: bieżąca wartość zostaje
+  // na liście, żeby wybór pokazywał to, co zapisane.
+  const options = Array.from({ length: Math.max(teamsCount, group.qualifiers, 1) }, (_, index) => index + 1);
+  const error = change.isError
+    ? isValidationError(change.error)
+      ? Object.values(firstFieldErrors(change.error)).join(' ') || change.error.message
+      : change.error.message
+    : undefined;
+
+  return (
+    <div className="space-y-1 text-right">
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span>wychodzi</span>
+        <Select
+          value={String(group.qualifiers)}
+          onValueChange={(next) => change.mutate(Number(next))}
+          disabled={change.isPending}
+        >
+          <SelectTrigger size="sm" className="w-16" aria-label={`Ile drużyn wychodzi z grupy ${group.name}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((count) => (
+              <SelectItem key={count} value={String(count)}>
+                {count}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span>
+          z {teamsCount}
+        </span>
+      </div>
+      {error && (
+        <p role="alert" className="text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
