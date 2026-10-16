@@ -22,6 +22,9 @@ export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] 
 /** Liczba drużyn w nagłówku tabeli (#173). */
 export const TEAMS = ['drużyna', 'drużyny', 'drużyn'] as const;
 
+/** Liczba grup w edytorze składu i terminie fazy grupowej (#258). */
+export const GROUPS = ['grupa', 'grupy', 'grup'] as const;
+
 /** Podgląd kolejności przy tabeli: „2 drużyny zmieniają miejsce” (#173). */
 export const TEAMS_CHANGING_PLACE = ['drużyna zmienia', 'drużyny zmieniają', 'drużyn zmienia'] as const;
 

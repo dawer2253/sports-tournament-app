@@ -118,6 +118,25 @@ export function roundRobinSize(teams: number, meetings: 1 | 2): { roundsCount: n
 }
 
 /**
+ * Rozmiar terminarza fazy grupowej przed wygenerowaniem, do opisu opcji w oknie
+ * (#258): kolejki to najdłuższa grupa (n przy nieparzystym, n − 1 przy
+ * parzystym), a mecze to suma par w grupach, razy liczba spotkań. Grupa
+ * z jedyną żywą drużyną nie daje ani kolejki, ani meczu.
+ */
+export function groupScheduleSize(
+  sizes: readonly number[],
+  meetings: 1 | 2,
+): { roundsCount: number; matchesCount: number } {
+  const rounds = (size: number) => (size < 2 ? 0 : size % 2 === 0 ? size - 1 : size);
+  const matches = (size: number) => (size < 2 ? 0 : (size * (size - 1)) / 2);
+
+  return {
+    roundsCount: Math.max(0, ...sizes.map(rounds)) * meetings,
+    matchesCount: sizes.reduce((sum, size) => sum + matches(size), 0) * meetings,
+  };
+}
+
+/**
  * Mecze `scheduled` z terminem w kolejkach od `fromRound` — tyle terminów
  * nadpisze ponowny rozkład dat (#158). Panel pyta o potwierdzenie tylko
  * wtedy, gdy `overwritten > 0`.

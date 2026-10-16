@@ -1,6 +1,6 @@
 import type { AdminMatch } from '@tournament/api-client';
 import { describe, expect, it } from 'vitest';
-import { defaultRound, roundRobinSize, scheduleRounds, teamsWithoutMatches } from './schedule';
+import { defaultRound, groupScheduleSize, roundRobinSize, scheduleRounds, teamsWithoutMatches } from './schedule';
 
 function match(id: number, order: number, matchNumber: number, overrides: Partial<AdminMatch> = {}): AdminMatch {
   return {
@@ -112,5 +112,21 @@ describe('roundRobinSize', () => {
     [2, 2, 2, 2],
   ] as const)('%i drużyn, %i spotkania: %i kolejek, %i meczów', (teams, meetings, roundsCount, matchesCount) => {
     expect(roundRobinSize(teams, meetings)).toEqual({ roundsCount, matchesCount });
+  });
+});
+
+describe('groupScheduleSize', () => {
+  // Kolejki to najdłuższa grupa, mecze to suma par w grupach (#258).
+  it.each([
+    [[4, 4], 1, 3, 12],
+    [[4, 4], 2, 6, 24],
+    [[5, 4], 1, 5, 16],
+    [[3, 2], 1, 3, 4],
+    [[4], 2, 6, 12],
+    // Grupa z jedyną żywą drużyną nie daje ani kolejki, ani meczu.
+    [[1, 4], 1, 3, 6],
+    [[], 1, 0, 0],
+  ] as const)('grupy %j, %i spotkania: %i kolejek, %i meczów', (sizes, meetings, roundsCount, matchesCount) => {
+    expect(groupScheduleSize([...sizes], meetings)).toEqual({ roundsCount, matchesCount });
   });
 });

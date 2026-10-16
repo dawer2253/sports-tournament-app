@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { AdminMatch, MatchEvent, Player, Sport, Stage, Team, Tournament } from '@tournament/api-client';
+import type { AdminMatch, Group, MatchEvent, Player, Sport, Stage, Team, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -856,5 +856,98 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     expect(bodies).toEqual([]);
     expect(state.posts).toEqual([]);
     expect(within(dialog).getByLabelText('Minuta')).toHaveValue('12');
+  });
+});
+
+// --- faza grupowa (#258) -----------------------------------------------------
+
+const GROUP_A: Group = { id: 21, name: 'Grupa A', order: 1, qualifiers: 2 };
+const GROUP_B: Group = { id: 22, name: 'Grupa B', order: 2, qualifiers: 2 };
+const GROUP: Stage = { id: 13, type: 'group', name: 'Faza grupowa', order: 1, groups: [GROUP_A, GROUP_B] };
+
+/** Cztery drużyny w dwóch grupach: pierwsze dwie w A, kolejne w B. */
+function groupedTeams(): Team[] {
+  return [
+    { ...TEAMS[0]!, groupId: GROUP_A.id },
+    { ...TEAMS[1]!, groupId: GROUP_A.id },
+    { ...TEAMS[2]!, groupId: GROUP_B.id },
+    { ...TEAMS[3]!, groupId: GROUP_B.id },
+  ];
+}
+
+/** Jedna kolejka fazy grupowej: po meczu z każdej grupy. */
+function groupRound(): AdminMatch[] {
+  return [
+    match(1, 1, 1, 2, { stageId: GROUP.id, groupId: GROUP_A.id }),
+    match(1, 2, 3, 4, { stageId: GROUP.id, groupId: GROUP_B.id }),
+  ];
+}
+
+describe('Terminarz — faza grupowa (#258)', () => {
+  function serveGroupPhase({ groups = GROUP.groups, teams = groupedTeams(), matches = groupRound() } = {}) {
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/stages`, () => HttpResponse.json({ data: [{ ...GROUP, groups }] })),
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => HttpResponse.json({ data: teams })),
+    );
+    return serveMatches(matches);
+  }
+
+  it('bez składu grup odsyła do karty Grupy', async () => {
+    serveGroupPhase({ groups: [], matches: [] });
+    renderSchedule();
+
+    expect(await screen.findByText('Najpierw ustal skład grup')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Przejdź do grup' })).toHaveAttribute(
+      'href',
+      `/tournaments/${TOURNAMENT.id}/groups`,
+    );
+  });
+
+  it('filtr po grupie zwęża kolejkę, a bez filtra wiersz niesie plakietkę grupy', async () => {
+    serveGroupPhase();
+    const { user } = renderSchedule('?round=1');
+
+    await screen.findByRole('heading', { name: 'Kolejka 1' });
+    expect(matchRows()).toEqual(['Wilki Bemowo – Sokoły Ursus', 'Orły Bielany – Rysie Wola']);
+    // Nazwa grupy występuje dwa razy: jako chip filtra i jako plakietka wiersza.
+    expect(screen.getAllByText('Grupa A')).toHaveLength(2);
+
+    const chip = (name: string) =>
+      within(screen.getByRole('group', { name: 'Filtr grup' })).getByRole('button', { name });
+
+    await user.click(chip('Grupa B'));
+    expect(matchRows()).toEqual(['Orły Bielany – Rysie Wola']);
+    // Bez filtra plakietka znika razem z meczami drugiej grupy.
+    expect(screen.getAllByText('Grupa A')).toHaveLength(1);
+
+    await user.click(chip('Wszystkie grupy'));
+    expect(matchRows()).toEqual(['Wilki Bemowo – Sokoły Ursus', 'Orły Bielany – Rysie Wola']);
+  });
+
+  it('drużyna bez grupy dostaje komunikat z odnośnikiem do Grup', async () => {
+    serveGroupPhase({ teams: [...groupedTeams(), team(5, 'Łosie Ursynów')] });
+    renderSchedule();
+
+    expect(await screen.findByText('Drużyna Łosie Ursynów nie ma grupy. Zapisz skład grup od nowa.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Przejdź do grup' })).toHaveAttribute(
+      'href',
+      `/tournaments/${TOURNAMENT.id}/groups`,
+    );
+  });
+
+  it('pusty terminarz grup liczy grupy i generuje z tego samego okna co liga', async () => {
+    serveGroupPhase({ matches: [] });
+    const { user } = renderSchedule();
+
+    expect(await screen.findByText('Terminarz grup nie jest jeszcze wygenerowany')).toBeInTheDocument();
+    expect(
+      screen.getByText('2 grupy, każdy z każdym w swojej grupie. Kolejka jest wspólna dla wszystkich grup.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Wygeneruj terminarz' }));
+    const dialog = screen.getByRole('dialog', { name: 'Wygeneruj terminarz grup' });
+    // Dwie grupy po dwie drużyny: jedna kolejka i dwa mecze na spotkanie.
+    expect(within(dialog).getByText('1 kolejka, 2 mecze')).toBeInTheDocument();
+    expect(within(dialog).getByText('2 kolejki, 4 mecze')).toBeInTheDocument();
   });
 });
