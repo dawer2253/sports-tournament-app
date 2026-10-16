@@ -6,6 +6,7 @@ export * from './lib/bracket';
 export * from './lib/contrast';
 export * from './lib/kickoff';
 export * from './lib/match-band';
+export * from './lib/plural';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
@@ -46,6 +47,7 @@ export * from './components/data/bracket-summary';
 export * from './components/data/bracket-tree';
 export * from './components/data/data-table';
 export * from './components/data/first-round-preview';
+export * from './components/data/group-composition';
 export * from './components/data/leaderboard-data';
 export * from './components/data/leaderboard-leaders';
 export * from './components/data/leaderboard-table';
