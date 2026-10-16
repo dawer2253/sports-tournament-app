@@ -1062,7 +1062,8 @@ export interface paths {
          *     rusza. Odmowa niczego nie zmienia: poprzedni skład i `group_id` drużyn
          *     zostają.
          *
-         *     Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem.
+         *     Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem,
+         *     a po jego zamrożeniu zmienia przez `PATCH /groups/{group}`.
          */
         put: {
             parameters: {
@@ -1170,6 +1171,93 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/groups/{group}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group: components["parameters"]["GroupId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Zmień liczbę wychodzących z grupy
+         * @description Zmienia `qualifiers` jednej grupy, także po zamrożeniu składu, bo tabela
+         *     grupy klaruje się dopiero w trakcie fazy. Wolno to robić do pierwszego
+         *     meczu trwającego albo zakończonego w fazie `knockout` turnieju — od
+         *     tego momentu drabinka gra, a liczba wychodzących jest zamrożona. Skład
+         *     grupy, terminarz i tabele zostają bez zmian.
+         *
+         *     `qualifiers` nie może przekroczyć liczby drużyn grupy (bez usuniętych),
+         *     a suma wychodzących ze wszystkich grup fazy nie może spaść poniżej
+         *     dwóch. Odmowa niczego nie zmienia.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    group: components["parameters"]["GroupId"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "qualifiers": 2
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Liczba drużyn wychodzących z grupy do drabinki. */
+                        qualifiers: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description Liczba wychodzących zapisana */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 3,
+                         *         "name": "Grupa A",
+                         *         "order": 1,
+                         *         "qualifiers": 2
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Group"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Liczby wychodzących nie da się zmienić albo ciało jest niepoprawne */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
         trace?: never;
     };
     "/stages/{stage}/schedule": {
@@ -1832,8 +1920,9 @@ export interface paths {
          *     /tournaments/{tournament}/teams`, a konflikt nazw daje `422` z błędem
          *     pod `name`.
          *
-         *     Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
-         *     tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
+         *     Przypisania do grupy nie zmienia się tutaj: `Team.groupId` jest
+         *     wyłącznie do odczytu, a grupę drużynie nadaje skład zapisany przez
+         *     `PUT /stages/{stage}/groups`.
          */
         patch: {
             parameters: {
@@ -2860,8 +2949,10 @@ export interface paths {
          * Tabele turnieju
          * @description Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
          *     z zakończonych meczów. Mecz trwający (`live`) się nie liczy. Jedna
-         *     pozycja na fazę `league` i jedna na każdą grupę w fazie `group`. Faza
-         *     `knockout` nie ma tabeli.
+         *     pozycja na fazę `league` i jedna na każdą grupę w fazie `group`,
+         *     w kolejności faz, a w fazie `group` w kolejności `Group.order`. Tabela
+         *     grupy liczy się wyłącznie z drużyn i meczów tej grupy, a grupa bez
+         *     żywych drużyn ma tabelę bez wierszy. Faza `knockout` nie ma tabeli.
          *
          *     Tabela zawiera komplet drużyn fazy, także tych, które nie rozegrały
          *     jeszcze meczu: dostają wiersz z zerami. Przed pierwszym meczem i w fazie
@@ -3955,7 +4046,9 @@ export interface components {
             order: number;
             /**
              * @description Liczba drużyn wychodzących z grupy do drabinki playoffu. Ustala się
-             *     razem ze składem w `PUT /stages/{stage}/groups`.
+             *     razem ze składem w `PUT /stages/{stage}/groups`, a zmienia przez
+             *     `PATCH /groups/{group}`. Może przekraczać liczbę drużyn grupy, gdy
+             *     drużynę usunięto po zapisie składu.
              */
             qualifiers: number;
         };
@@ -4467,8 +4560,13 @@ export interface components {
             /** Format: int64 */
             stageId: number;
             stageName: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Grupa tabeli w fazie `group`: każda grupa ma własną tabelę z samymi
+             *     swoimi drużynami i meczami. `null` w tabeli fazy `league`.
+             */
             groupId: number | null;
+            /** @description `Group.name` grupy tabeli; `null` w tabeli fazy `league`. */
             groupName: string | null;
             /**
              * @description Nagłówek kolumny `scoreFor`:`scoreAgainst`, wyprowadzony ze sportu
@@ -4735,6 +4833,7 @@ export interface components {
         PlayerId: number;
         VenueId: number;
         StageId: number;
+        GroupId: number;
         MatchId: number;
         MatchEventId: number;
         /**
