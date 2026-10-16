@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
 import { organizer, tournamentList } from '../../lib/demo-data'
 import { isCurrentTournament } from '../data/tournament-row'
+import { Skeleton } from '../ui/skeleton'
 import { phone375 } from '../../test/viewport'
 import { AdminShell, type AdminNavKey, type AdminShellTournament, type AdminShellTournamentList } from './admin-shell'
 
@@ -137,6 +138,37 @@ export const WTurnieju: Story = {
     // Status stoi w nagłówku strony niezależnie od sidebaru, który poniżej `md`
     // znika.
     await expect(canvas.getAllByText('Trwa')).toHaveLength(2)
+  },
+}
+
+/**
+ * Turniej jest w drodze: znamy tylko `id` z adresu. Shell już wie, że
+ * organizator stoi w turnieju — wiersz listy jest podświetlony, a „Turnieje"
+ * nie — ale bez nazwy i statusu nie ma czego postawić w nagłówku ani jak
+ * nazwać kart sekcji. Ekran podaje wtedy szkielet tytułu, a nie zgaduje nazwy
+ * (#262).
+ */
+export const TurniejWczytujeSie: Story = {
+  args: {
+    active: 'teams',
+    tournament: { id: demoTournament.id },
+    title: <Skeleton className="h-7 w-56" />,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const sidebar = sidebarOf(canvasElement)
+
+    const open = within(sidebar.getByRole('list', { name: 'Bieżące turnieje' }))
+      .getByText(demoTournament.name)
+      .closest('a')!
+    await expect(open).toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.getByText('Turnieje').closest('a')).not.toHaveAttribute('aria-current')
+
+    // Bez danych nie ma kart sekcji ani statusu w nagłówku — status widać
+    // tylko w sidebarze, który rysuje swój wiersz listy.
+    await expect(canvas.queryByRole('navigation', { name: 'Sekcje turnieju' })).not.toBeInTheDocument()
+    await expect(canvas.getAllByText('Trwa')).toHaveLength(1)
+    await expect(sidebar.queryByRole('list', { name: 'Otwarty turniej' })).not.toBeInTheDocument()
   },
 }
 

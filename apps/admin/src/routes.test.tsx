@@ -33,6 +33,9 @@ const TOURNAMENT = {
   updatedAt: '2026-09-01T10:00:00+02:00',
 };
 
+/** Drugi turniej do przełączenia z sidebaru; ten sam kształt, inne id i nazwa. */
+const LIGA = { ...TOURNAMENT, id: 8, name: 'Liga Letnia', slug: 'liga-letnia' };
+
 const SECTION_PATHS = ['teams', 'venues', 'settings'];
 
 beforeEach(() => {
@@ -83,6 +86,20 @@ function renderAt(path: string) {
 
 function sectionTabs() {
   return within(screen.getByRole('navigation', { name: 'Sekcje turnieju' }));
+}
+
+/** Sidebar panelu; po przejściu na inny turniej to nowy element, więc szukamy od nowa. */
+function panelNav() {
+  return within(screen.getByRole('navigation', { name: 'Panel' }));
+}
+
+/** Odpowiedź, którą test trzyma, żeby zobaczyć stan pośredni, i zwalnia w swoim czasie. */
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
 }
 
 describe('trasy turnieju', () => {
@@ -199,6 +216,67 @@ describe('trasy turnieju', () => {
     await user.click(sectionTabs().getByRole('link', { name: 'Obiekty' }));
     await user.click((await sidebar()).getByRole('link', { name: /Liga Letnia/ }));
     expect(router.state.location.pathname).toBe('/tournaments/8/teams');
+  });
+
+  /**
+   * Przełączenie A → B z wstrzymaną odpowiedzią na B. W tym oknie shell nie
+   * może udać, że organizator wyszedł z turnieju: wtedy „Turnieje" dostają
+   * `aria-current`, tytuł staje się „Turniej", a karty sekcji znikają (#262).
+   */
+  it('przełączenie turnieju nie miga shellem dashboardu', async () => {
+    const held = deferred();
+    server.use(
+      currentTournaments([TOURNAMENT, LIGA]),
+      http.get(`${API}/tournaments/:id`, async ({ params }) => {
+        const id = String(params.id);
+        // Odpowiedź na turniej docelowy wisi, więc stan pośredni jest widoczny.
+        if (id === String(LIGA.id)) await held.promise;
+        return HttpResponse.json({ data: id === String(LIGA.id) ? LIGA : TOURNAMENT });
+      }),
+    );
+
+    const { user } = renderAt('/tournaments/7/teams');
+    await screen.findByRole('heading', { name: 'Puchar Zimowy' });
+
+    await user.click(panelNav().getByRole('link', { name: /Liga Letnia/ }));
+
+    // Nazwa turnieju docelowego jest już znana z listy w sidebarze — tej samej,
+    // którą organizer kliknął — więc nagłówek nie cofa się do „Turniej".
+    expect(screen.getByRole('heading', { name: 'Liga Letnia' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Turniej' })).not.toBeInTheDocument();
+    expect(panelNav().getByRole('link', { name: 'Turnieje' })).not.toHaveAttribute('aria-current');
+    expect(sectionTabs().getByRole('link', { name: 'Drużyny' })).toHaveAttribute('aria-current', 'page');
+    // Treść nie robi się pusta: widać stan wczytywania wewnątrz shella turnieju.
+    expect(screen.getByLabelText('Wczytywanie turnieju')).toBeInTheDocument();
+
+    held.resolve();
+    expect(await screen.findByRole('heading', { name: 'Liga Letnia' })).toBeInTheDocument();
+    expect(panelNav().getByRole('link', { name: /Liga Letnia/ })).toHaveAttribute('aria-current', 'page');
+  });
+
+  /**
+   * Pierwsze wejście z adresu: nie ma jeszcze ani turnieju, ani listy, z której
+   * mogłaby przyjść nazwa. Stan wczytywania nie może udawać dashboardu (#262).
+   */
+  it('pierwsze wejście na turniej nie udaje dashboardu', async () => {
+    const held = deferred();
+    server.use(
+      currentTournaments([]),
+      http.get(`${API}/tournaments/:id`, async () => {
+        await held.promise;
+        return HttpResponse.json({ data: TOURNAMENT });
+      }),
+    );
+
+    renderAt('/tournaments/7/teams');
+
+    expect(screen.queryByRole('heading', { name: 'Turniej' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Wczytywanie turnieju')).toBeInTheDocument();
+    await panelNav().findByText(/Brak bieżących turniejów/);
+    expect(panelNav().getByRole('link', { name: 'Turnieje' })).not.toHaveAttribute('aria-current');
+
+    held.resolve();
+    expect(await screen.findByRole('heading', { name: 'Puchar Zimowy' })).toBeInTheDocument();
   });
 
   describe.each(SECTION_PATHS)('/tournaments/:id/%s', (section) => {
