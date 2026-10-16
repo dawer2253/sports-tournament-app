@@ -9,10 +9,12 @@ export function GroupFilterChips({
   groups,
   value,
   onChange,
+  className,
 }: {
   groups: Group[];
   value: number | null;
   onChange: (next: number | null) => void;
+  className?: string;
 }) {
   const chip = (active: boolean) =>
     cn(
@@ -21,7 +23,7 @@ export function GroupFilterChips({
     );
 
   return (
-    <div role="group" aria-label="Filtr grup" className="flex flex-wrap gap-1.5">
+    <div role="group" aria-label="Filtr grup" className={cn('flex flex-wrap gap-1.5', className)}>
       <button type="button" aria-pressed={value === null} className={chip(value === null)} onClick={() => onChange(null)}>
         Wszystkie grupy
       </button>

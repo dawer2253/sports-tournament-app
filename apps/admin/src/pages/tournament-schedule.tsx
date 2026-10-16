@@ -168,7 +168,7 @@ export function TournamentSchedulePage() {
         )}
         <WithoutDatesNotice matches={matches.data} onDistribute={openDates} />
         {isGroup && groups.length > 0 && (
-          <GroupFilterChips groups={groups} value={groupFilter} onChange={setGroupFilter} />
+          <GroupFilterChips groups={groups} value={groupFilter} onChange={setGroupFilter} className="mb-4" />
         )}
         <RoundsView
           rounds={rounds}
