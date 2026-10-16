@@ -71,11 +71,10 @@ export function UnfinishedGroupsNotice() {
       <TriangleAlert aria-hidden className="size-4 shrink-0 text-amber-600" />
       <p className="min-w-0 flex-1">
         {plural(left, [
-          'Mecz fazy grupowej nie jest jeszcze rozegrany',
-          `${left} mecze fazy grupowej nie są jeszcze rozegrane`,
-          `${left} meczów fazy grupowej nie jest jeszcze rozegranych`,
+          'Mecz fazy grupowej nie jest jeszcze rozegrany.',
+          `${left} mecze fazy grupowej nie są jeszcze rozegrane.`,
+          `${left} meczów fazy grupowej nie jest jeszcze rozegranych.`,
         ])}
-        {', więc tabele mogą się jeszcze zmienić. Drabinkę wolno wygenerować, a rozjazd z tabelami opisze Drabinka.'}
       </p>
     </div>
   );
