@@ -257,7 +257,21 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 | S3 | 7–8 | Eventy (strzelcy/kartki) + strona publiczna (tabela/terminarz/wyniki) | publiczny link do pokazania |
 | S4 | 9–10 | **Drabinka + kaskada** | format pucharowy działa |
 | S5 | 11–12 | **Grupy + playoff** + strzelcy + branding | pełny zakres formatów |
-| S6 | 13–14 | Testy, poprawki, deploy, **dokumentacja/praca** | wersja na obronę |
+| S6 | 13–14 | Testy, poprawki, **deploy na środowisko dostępne z sieci** | aplikacja stoi pod publicznym adresem |
+
+**Po S6** idzie **S7: lifting strony publicznej**. Dzisiejsza strona to POC
+i potrzebuje docelowego wyglądu.
+
+Kolejne funkcjonalności wchodzą, **jeśli czas i zasoby pozwolą**, w tej
+kolejności:
+
+1. Zgłoszenia drużyn do konkretnego turnieju.
+2. Generator grafik do social mediów.
+3. Serwer MCP do obsługi ligi przez organizatora.
+4. Trzeci sport, najlepiej z setami, żeby potwierdzić, że model udźwignie
+   inną punktację.
+
+**Dokumentacja i praca** idą na sam koniec, po wszystkich funkcjonalnościach.
 
 ---
 

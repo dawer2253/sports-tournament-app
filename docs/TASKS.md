@@ -69,5 +69,18 @@ Do zrobienia:
 ## S6 — Stabilizacja (zespół)
 - [ ] Feature-testy API kluczowych ścieżek (zespół)
 - [ ] Poprawki UX po testach z makiet (zespół)
-- [ ] Deploy + dane demo (seeders) (W)
+- [ ] Deploy na środowisko dostępne z sieci + dane demo (seeders) (W)
+- Kamień: aplikacja stoi pod publicznym adresem
+
+## S7 — Lifting strony publicznej
+- [ ] Docelowy wygląd strony publicznej w miejsce dzisiejszego POC
+
+## Jeśli czas i zasoby pozwolą
+W tej kolejności:
+- [ ] Zgłoszenia drużyn do konkretnego turnieju
+- [ ] Generator grafik do social mediów
+- [ ] Serwer MCP do obsługi ligi przez organizatora
+- [ ] Trzeci sport, najlepiej z setami (potwierdza, że model udźwignie inną punktację)
+
+## Na koniec — dokumentacja
 - [ ] Dokumentacja / rozdziały pracy (każdy swój wycinek)
