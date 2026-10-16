@@ -1062,8 +1062,7 @@ export interface paths {
          *     rusza. Odmowa niczego nie zmienia: poprzedni skład i `group_id` drużyn
          *     zostają.
          *
-         *     Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem,
-         *     a po zamrożeniu zmienia ją `PATCH /groups/{group}` (ticket #259).
+         *     Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem.
          */
         put: {
             parameters: {
@@ -3955,9 +3954,8 @@ export interface components {
              */
             order: number;
             /**
-             * @description Liczba drużyn wychodzących z grupy do drabinki playoffu. Zmienia się
-             *     razem ze składem, a po zamrożeniu ustala ją
-             *     `PATCH /groups/{group}` (ticket #259).
+             * @description Liczba drużyn wychodzących z grupy do drabinki playoffu. Ustala się
+             *     razem ze składem w `PUT /stages/{stage}/groups`.
              */
             qualifiers: number;
         };
