@@ -32,20 +32,13 @@ function tournamentRoute(id: number): string {
 /**
  * Adres celu nawigacji; `tournament` to turniej, w którym stoi ekran.
  * W pucharze Terminarz nie ma adresu, bo zastępuje go Drabinka (#227),
- * a w turnieju bez fazy grupowej karta Grupy jest nieczynna (#258).
- * Dopóki faz nie ma (`groupStage` `undefined`), karta zostaje czynna.
+ * więc `AdminShell` wyszarza kartę. Dopóki faz nie ma, karta zostaje czynna.
  */
-function navRoute(
-  key: AdminNavKey,
-  tournament: Tournament | undefined,
-  knockoutOnly: boolean,
-  groupStage: boolean | undefined,
-): string | undefined {
+function navRoute(key: AdminNavKey, tournament: Tournament | undefined, knockoutOnly: boolean): string | undefined {
   if (key === 'dashboard') return '/';
   if (key === 'create') return '/tournaments/new';
   if (!tournament) return undefined;
   if (key === 'schedule' && knockoutOnly) return undefined;
-  if (key === 'groups' && groupStage === false) return undefined;
   const section = SECTION_ROUTES[key];
   return section && `${tournamentRoute(tournament.id)}/${section}`;
 }
@@ -96,8 +89,6 @@ export function AdminPage(props: AdminPageProps) {
   const tournaments = useCurrentTournaments();
   const stages = useStages(tournament?.id);
   const knockoutOnly = isKnockoutOnly(stages.data ?? []);
-  // `undefined`, dopóki faz nie ma: wtedy karta Grupy zostaje czynna.
-  const groupStage = stages.data ? stages.data.some((stage) => stage.type === 'group') : undefined;
 
   /**
    * Wylogowanie unieważnia token po stronie API, a nie tylko zapomina go
@@ -131,14 +122,10 @@ export function AdminPage(props: AdminPageProps) {
       actions={actions}
       user={account}
       tournaments={tournaments}
-      navHref={(key) => navRoute(key, tournament, knockoutOnly, groupStage)}
-      navDisabledReason={(key) => {
-        if (key === 'schedule' && knockoutOnly) return 'W pucharze terminarzem jest Drabinka';
-        if (key === 'groups' && groupStage === false) return 'Turniej nie ma fazy grupowej';
-        return undefined;
-      }}
+      navHref={(key) => navRoute(key, tournament, knockoutOnly)}
+      navDisabledReason={(key) => (key === 'schedule' && knockoutOnly ? 'W pucharze terminarzem jest Drabinka' : undefined)}
       onNavigate={(key) => {
-        const route = navRoute(key, tournament, knockoutOnly, groupStage);
+        const route = navRoute(key, tournament, knockoutOnly);
         if (route) void navigate(route);
       }}
       tournamentHref={tournamentRoute}

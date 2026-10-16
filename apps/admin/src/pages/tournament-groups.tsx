@@ -91,7 +91,7 @@ function GroupsSection({
     );
   }
   if (teams.isError || matches.isError) {
-    return <EmptyState variant="error" title="Nie udało się wczytać drużyn turnieju" />;
+    return <EmptyState variant="error" title="Nie udało się wczytać danych fazy grupowej" />;
   }
   if (!teams.data || !matches.data) {
     return <Skeleton role="status" aria-label="Wczytywanie składu grup" className="h-64 w-full" />;
