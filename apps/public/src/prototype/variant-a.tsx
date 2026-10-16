@@ -20,6 +20,7 @@ import {
   openMatches,
   tabPath,
 } from './shared';
+import { DivergenceNote } from './variant-b';
 import { Overview, type VariantPages } from './variant-pages';
 
 const TABS: readonly PublicNavKey[] = ['home', 'standings', 'bracket', 'fixtures', 'results', 'stats'];
@@ -51,12 +52,15 @@ function Bracket({ demo }: { demo: Demo }) {
     );
   }
   return (
-    <BracketTree
-      matches={demo.knockout}
-      penaltySlot={demo.allowsDraw}
-      matchHref={(match) => matchPath(match.id)}
-      onMatchNavigate={(match) => void navigate(matchPath(match.id))}
-    />
+    <div className="space-y-4">
+      <DivergenceNote demo={demo} />
+      <BracketTree
+        matches={demo.knockout}
+        penaltySlot={demo.allowsDraw}
+        matchHref={(match) => matchPath(match.id)}
+        onMatchNavigate={(match) => void navigate(matchPath(match.id))}
+      />
+    </div>
   );
 }
 

@@ -97,7 +97,21 @@ function Bracket({ demo }: { demo: Demo }) {
   }
   return (
     <div className="space-y-4">
-      {demo.divergence.length > 0 && (
+      <DivergenceNote demo={demo} />
+      <BracketTree
+        matches={demo.knockout}
+        penaltySlot={demo.allowsDraw}
+        matchHref={(match) => matchPath(match.id)}
+        onMatchNavigate={(match) => void navigate(matchPath(match.id))}
+      />
+    </div>
+  );
+}
+
+/** Notka nad drabinką, gdy drabinka nie idzie za bieżącą tabelą (#250); ustalenie #252 dla wariantu A. */
+export function DivergenceNote({ demo }: { demo: Demo }) {
+  if (demo.divergence.length === 0) return null;
+  return (
         <div className="flex gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
           <Info className="mt-0.5 size-4 shrink-0 text-amber-600" />
           <p>
@@ -110,14 +124,6 @@ function Bracket({ demo }: { demo: Demo }) {
             ))}
           </p>
         </div>
-      )}
-      <BracketTree
-        matches={demo.knockout}
-        penaltySlot={demo.allowsDraw}
-        matchHref={(match) => matchPath(match.id)}
-        onMatchNavigate={(match) => void navigate(matchPath(match.id))}
-      />
-    </div>
   );
 }
 

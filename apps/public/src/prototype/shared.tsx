@@ -128,7 +128,9 @@ export function Pills<K extends string | number>({
 // --- Tabela grupy --------------------------------------------------------------
 
 /**
- * Tabela grupy z linią wyjścia (`Group.qualifiers`, #250). `StandingsTable`
+ * Tabela grupy z linią wyjścia (`Group.qualifiers`, #250). Nazwa drużyny
+ * jest zawsze cała: na telefonie znikają W/R/P i zdobycze, a długa nazwa
+ * łamie się do drugiej linii (ustalenie #252). `StandingsTable`
  * z DS nie zna linii, więc prototyp rysuje tabelę sam — to rzecz do DS
  * w tickecie wykonawczym. `compact` zostawia M, +/- i Pkt.
  */
@@ -161,9 +163,9 @@ export function GroupTable({
               <th className={cn(head, 'w-8')} title="Mecze">M</th>
               {!compact && (
                 <>
-                  <th className={cn(head, 'w-8')} title="Wygrane">W</th>
-                  {demo.allowsDraw && <th className={cn(head, 'w-8')} title="Remisy">R</th>}
-                  <th className={cn(head, 'w-8')} title="Porażki">P</th>
+                  <th className={cn(head, 'hidden w-8 sm:table-cell')} title="Wygrane">W</th>
+                  {demo.allowsDraw && <th className={cn(head, 'hidden w-8 sm:table-cell')} title="Remisy">R</th>}
+                  <th className={cn(head, 'hidden w-8 sm:table-cell')} title="Porażki">P</th>
                   <th className={cn(head, 'hidden w-16 sm:table-cell')}>{demo.scoreLabel}</th>
                 </>
               )}
@@ -183,9 +185,9 @@ export function GroupTable({
                 <td className={cn(cell, 'pl-3', row.qualifies && 'font-semibold text-primary')}>
                   <span className={cn('inline-block w-5 rounded', row.qualifies && 'bg-primary/10')}>{row.position}</span>
                 </td>
-                <td className="max-w-0 px-1.5 py-2 font-medium">
+                <td className="px-1.5 py-2 leading-snug font-medium">
                   <span className="flex items-center gap-1.5">
-                    <span className="truncate">{row.team.name}</span>
+                    <span className="break-words">{row.team.name}</span>
                     {marked?.has(row.team.id) && (
                       <span title="Gra w drabince" className="shrink-0 rounded bg-primary/10 px-1 text-[10px] font-semibold text-primary">
                         PLAYOFF
@@ -196,9 +198,9 @@ export function GroupTable({
                 <td className={cell}>{row.played}</td>
                 {!compact && (
                   <>
-                    <td className={cell}>{row.won}</td>
-                    {demo.allowsDraw && <td className={cell}>{row.drawn}</td>}
-                    <td className={cell}>{row.lost}</td>
+                    <td className={cn(cell, 'hidden sm:table-cell')}>{row.won}</td>
+                    {demo.allowsDraw && <td className={cn(cell, 'hidden sm:table-cell')}>{row.drawn}</td>}
+                    <td className={cn(cell, 'hidden sm:table-cell')}>{row.lost}</td>
                     <td className={cn(cell, 'hidden sm:table-cell')}>
                       {row.scoreFor}:{row.scoreAgainst}
                     </td>
