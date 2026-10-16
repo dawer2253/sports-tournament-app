@@ -8,6 +8,7 @@ import { CalendarDays, GitFork, Info, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { AdminPage } from '../components/admin-page';
+import { GROUPS, ROUNDS, TEAMS, plural } from '../lib/plural';
 import { CompositionEditor } from './composition';
 import { groupStageStarted, useGroups, type GMatch } from './groups-store';
 import { BracketView, InlineSeeding } from './qualification';
@@ -40,7 +41,7 @@ export function GroupsScreenB() {
                 <li key={group.id} className="flex items-center gap-2">
                   <span className="font-medium">{group.name}</span>
                   <span className="text-muted-foreground">
-                    {group.teamIds.length} drużyn · wychodzi {group.qualifiers}
+                    {group.teamIds.length} {plural(group.teamIds.length, TEAMS)} · wychodzi {group.qualifiers}
                   </span>
                 </li>
               ))}
@@ -83,7 +84,7 @@ export function ScheduleScreenB() {
           <EmptyState
             icon={<CalendarDays />}
             title="Krok 2 · Terminarz grup"
-            description={`${state.groups.length} grup, każdy z każdym w swojej grupie. Kolejka zbiera mecze wszystkich grup.`}
+            description={`${state.groups.length} ${plural(state.groups.length, GROUPS)}, każdy z każdym w swojej grupie. Kolejka zbiera mecze wszystkich grup.`}
             action={<Button onClick={() => setGenerating(true)}>Wygeneruj terminarz</Button>}
           />
         )}
@@ -105,7 +106,8 @@ export function ScheduleScreenB() {
                   <div className="flex flex-wrap items-baseline gap-2">
                     <Heading level="card">Grupa {groupLetter(group.order)}</Heading>
                     <span className="text-xs text-muted-foreground">
-                      {group.teamIds.length} drużyn · wychodzi {group.qualifiers} · {rounds.length} kolejek
+                      {group.teamIds.length} {plural(group.teamIds.length, TEAMS)} · wychodzi {group.qualifiers} ·{' '}
+                      {rounds.length} {plural(rounds.length, ROUNDS)}
                     </span>
                   </div>
                   {rounds.map((order) => (

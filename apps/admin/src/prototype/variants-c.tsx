@@ -28,6 +28,7 @@ import { CalendarDays, Layers, RefreshCw, Users } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { Link } from 'react-router';
 import { AdminPage } from '../components/admin-page';
+import { GROUPS, TEAMS, plural } from '../lib/plural';
 import { useTournament } from '../pages/tournament-layout';
 import { CompositionEditor } from './composition';
 import { scoreLabel, sim, standingsFor, teamById, useGroups, type GMatch, type Group } from './groups-store';
@@ -74,7 +75,7 @@ export function TeamsScreenC() {
         <CompositionEditor layout="rows" />
         {state.groups.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            Zapisany skład: {state.groups.length} grup ·{' '}
+            Zapisany skład: {state.groups.length} {plural(state.groups.length, GROUPS)} ·{' '}
             {state.groups.map((group) => `${group.name} (${group.teamIds.length})`).join(', ')}
           </p>
         )}
@@ -191,7 +192,7 @@ export function ScheduleScreenC() {
         <EmptyState
           icon={<CalendarDays />}
           title="Terminarz grup nie jest jeszcze wygenerowany"
-          description={`${state.groups.length} grup, każdy z każdym w swojej grupie. Kolejka zbiera mecze wszystkich grup.`}
+          description={`${state.groups.length} ${plural(state.groups.length, GROUPS)}, każdy z każdym w swojej grupie. Kolejka zbiera mecze wszystkich grup.`}
           action={
             <Button onClick={() => setGenerating(true)}>
               <RefreshCw className="size-4" /> Wygeneruj terminarz
@@ -273,7 +274,7 @@ function CombinedStandings() {
                     <TableCell colSpan={columns} className="py-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <GroupBadge name={group.name} />
-                        <span className="text-xs text-muted-foreground">{group.teamIds.length} drużyn</span>
+                        <span className="text-xs text-muted-foreground">{group.teamIds.length} {plural(group.teamIds.length, TEAMS)}</span>
                         <span className="ml-auto">
                           <GroupQualifiersSelect group={group} />
                         </span>

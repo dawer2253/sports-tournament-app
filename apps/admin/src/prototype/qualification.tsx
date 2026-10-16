@@ -19,6 +19,7 @@ import {
 } from '@tournament/ui';
 import { ArrowDown, ArrowUp, GitFork, Info, Shuffle, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { MATCHES, TEAMS, plural } from '../lib/plural';
 import {
   bracketSize,
   proposalFor,
@@ -354,7 +355,7 @@ export function SeedingDialog({ onClose }: { onClose: () => void }) {
       title={state.knockout.length > 0 ? 'Rozstaw i wygeneruj ponownie' : 'Rozstaw i wygeneruj'}
       description={
         teams > 0
-          ? `Wychodzi ${teams} drużyn z ${state.groups.length} grup. Drabinka na ${bracketSize(teams)}.`
+          ? `Wychodzi ${teams} ${plural(teams, TEAMS)} z ${state.groups.length} grup. Drabinka pomieści ${bracketSize(teams)} ${plural(bracketSize(teams), TEAMS)}.`
           : 'Propozycja pojawi się, gdy grupy będą miały skład.'
       }
       submitLabel={state.knockout.length > 0 ? 'Zastąp drabinkę' : 'Wygeneruj'}
@@ -364,7 +365,8 @@ export function SeedingDialog({ onClose }: { onClose: () => void }) {
       <ThirdPlaceSwitch value={thirdPlace} onChange={setThirdPlace} teams={teams} />
       {state.knockout.length > 0 && (
         <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          Obecna drabinka ({state.knockout.length} meczów) zniknie razem z terminami i obiektami.
+          Obecna drabinka ({state.knockout.length} {plural(state.knockout.length, MATCHES)}) zniknie razem z terminami i
+          obiektami.
         </p>
       )}
     </FormDialog>
@@ -400,7 +402,7 @@ export function InlineSeeding({
       <div className="flex flex-wrap items-center gap-2">
         <Heading level="card">Rozstawienie z tabel grup</Heading>
         <span className="text-xs text-muted-foreground">
-          {list.length} drużyn · wychodzi {state.groups.reduce((sum, group) => sum + group.qualifiers, 0)}
+          {list.length} {plural(list.length, TEAMS)} · wychodzi {state.groups.reduce((sum, group) => sum + group.qualifiers, 0)}
         </span>
         <Button
           type="button"
@@ -462,7 +464,8 @@ export function BracketView({ onRegenerate }: { onRegenerate?: () => void }) {
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed p-3 text-sm">
           <Info aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           <p className="min-w-0 flex-1">
-            Wyczerpanie tabel nie rusza drabinki. „Wygeneruj ponownie" przelicza ją z bieżących tabel i zastępuje obecne pary.
+            Wyniki dopisane w tabelach grup nie ruszają drabinki. „Wygeneruj ponownie" przelicza ją z bieżących tabel i
+            zastępuje obecne pary.
           </p>
           <Button size="sm" variant="outline" onClick={onRegenerate}>
             Wygeneruj ponownie
@@ -477,10 +480,13 @@ export function BracketView({ onRegenerate }: { onRegenerate?: () => void }) {
 export function BracketEmptyNotice() {
   const state = useGroups();
   if (state.groups.length === 0 || state.knockout.length > 0) return null;
+  const qualified = state.groups.reduce((sum, group) => sum + group.qualifiers, 0);
   return (
     <div className="mb-4 flex items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
       <TriangleAlert aria-hidden className="size-4 shrink-0" />
-      <span>Z grup wychodzi {state.groups.reduce((sum, group) => sum + group.qualifiers, 0)} drużyn — do rozstawienia z tabel.</span>
+      <span>
+        Z grup wychodzi {qualified} {plural(qualified, TEAMS)} — do rozstawienia z tabel.
+      </span>
     </div>
   );
 }

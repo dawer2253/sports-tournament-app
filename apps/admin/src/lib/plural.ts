@@ -13,6 +13,9 @@ export const BRACKET_ROUNDS_ACCUSATIVE = ['rundę', 'rundy', 'rund'] as const;
 /** Mecze w generowaniu terminarza: „190 meczów” (#174). */
 export const MATCHES = ['mecz', 'mecze', 'meczów'] as const;
 
+/** Grupy w składzie fazy grupowej: „2 grupy”, „5 grup” (#249). */
+export const GROUPS = ['grupa', 'grupy', 'grup'] as const;
+
 /** Kolizje w toaście rozkładu dat: „2 kolizje”, „5 kolizji” (#175). */
 export const COLLISIONS = ['kolizja', 'kolizje', 'kolizji'] as const;
 

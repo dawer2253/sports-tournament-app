@@ -15,6 +15,7 @@ import {
   cn,
 } from '@tournament/ui';
 import type { ReactNode } from 'react';
+import { TEAMS, plural } from '../lib/plural';
 import { scoreLabel, standingsFor, useGroups, type Group } from './groups-store';
 import { GroupBadge } from './shared';
 
@@ -117,8 +118,7 @@ export function QualificationLegend({ group }: { group: Group }) {
   const tied = rows.some((row) => row.tied);
   return (
     <p className="text-xs text-muted-foreground">
-      Z grupy wychodzi {group.qualifiers}{' '}
-      {group.qualifiers === 1 ? 'drużyna' : 'drużyny'} — miejsca nad przerywaną linią.{' '}
+      Z grupy wychodzi {group.qualifiers} {plural(group.qualifiers, TEAMS)} — miejsca nad przerywaną linią.{' '}
       {tied
         ? 'Remis na linii rozstrzyga organizer: przy generowaniu drabinki podmienia drużynę na inną z tej samej grupy.'
         : 'Remis na linii rozstrzyga regulamin turnieju, a organizer potwierdza go przy generowaniu drabinki.'}

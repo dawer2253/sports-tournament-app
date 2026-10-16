@@ -8,6 +8,7 @@ import {
 } from '@tournament/ui';
 import { TriangleAlert, UserX } from 'lucide-react';
 import { useState } from 'react';
+import { plural } from '../lib/plural';
 import {
   sim,
   standingsFor,
@@ -45,12 +46,13 @@ export function UnassignedTeamsNotice() {
   const missing = teamsWithoutGroup(state);
   if (missing.length === 0) return null;
   const names = missing.map((team) => team.name).join(', ');
+  const one = missing.length === 1;
   return (
     <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/50 p-3 text-sm">
       <UserX aria-hidden className="size-4 shrink-0 text-muted-foreground" />
       <p className="min-w-0 flex-1">
-        {missing.length === 1 ? `Drużyna ${names} nie ma grupy.` : `Drużyny ${names} nie mają grupy.`} Zapisz skład grup od
-        nowa, żeby wróciła do tabeli i terminarza.
+        {one ? `Drużyna ${names} nie ma grupy.` : `Drużyny ${names} nie mają grupy.`} Zapisz skład grup od nowa, żeby{' '}
+        {one ? 'wróciła' : 'wróciły'} do tabeli i terminarza.
       </p>
     </div>
   );
@@ -68,8 +70,12 @@ export function UnfinishedGroupsNotice() {
     >
       <TriangleAlert aria-hidden className="size-4 shrink-0 text-amber-600" />
       <p className="min-w-0 flex-1">
-        {left === 1 ? 'Mecz grup nie jest rozegrany' : `${left} mecze grup nie są rozegrane`}, więc tabele mogą się jeszcze
-        zmienić. Drabinkę wolno wygenerować, a rozjazd z tabelami opisze Drabinka.
+        {plural(left, [
+          'Mecz fazy grupowej nie jest jeszcze rozegrany',
+          `${left} mecze fazy grupowej nie są jeszcze rozegrane`,
+          `${left} meczów fazy grupowej nie jest jeszcze rozegranych`,
+        ])}
+        {', więc tabele mogą się jeszcze zmienić. Drabinkę wolno wygenerować, a rozjazd z tabelami opisze Drabinka.'}
       </p>
     </div>
   );
@@ -192,8 +198,8 @@ export function MatchResultDialog({ match, onClose }: { match: GMatch; onClose: 
           setError('Wpisz wynik obu drużyn.');
           return;
         }
-        if (status !== 'scheduled' && state.sport !== 'basketball' && parsed.home === parsed.away && status === 'finished') {
-          setError('Mecz fazy grupowej może skończyć się remisem — tabela grupy to wytrzymuje.');
+        if (status === 'finished' && state.sport === 'basketball' && parsed.home === parsed.away) {
+          setError('Koszykówka nie kończy się remisem — wpisz różne wyniki.');
           return;
         }
         sim.setResult(match.id, parsed.home, parsed.away, status);

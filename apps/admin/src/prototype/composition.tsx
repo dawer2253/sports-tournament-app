@@ -18,6 +18,7 @@ import {
 } from '@tournament/ui';
 import { RefreshCw, Save, Shuffle, X } from 'lucide-react';
 import { useState } from 'react';
+import { MATCHES, TEAMS, plural } from '../lib/plural';
 import { groupCountOptions, groupStageStarted, sim, useGroups, type Group } from './groups-store';
 import { GroupBadge } from './shared';
 
@@ -80,7 +81,8 @@ function EditorControls({ layout }: { layout: 'columns' | 'rows' }) {
       )}
       {!frozen && state.matches.length > 0 && (
         <p className="w-full rounded-md bg-destructive/10 p-2 text-xs text-destructive">
-          Zapis składu skasuje terminarz grup ({state.matches.length} meczów), także terminy i wyniki.
+          Zapis składu skasuje terminarz grup ({state.matches.length} {plural(state.matches.length, MATCHES)}), także
+          terminy i wyniki.
         </p>
       )}
     </div>
@@ -169,7 +171,7 @@ function ColumnsLayout() {
           <div className="flex items-center justify-between">
             <QualifiersSelect group={group} index={index} />
             <span className="text-xs text-muted-foreground">
-              {group.teamIds.length} {group.teamIds.length === 1 ? 'drużyna' : 'drużyny'}
+              {group.teamIds.length} {plural(group.teamIds.length, TEAMS)}
             </span>
           </div>
           <ul className="space-y-1">
@@ -244,7 +246,7 @@ function RowsLayout() {
           <div key={index} className="flex items-center justify-between gap-2 rounded-xl border p-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{group.name}</p>
-              <p className="text-xs text-muted-foreground">{group.teamIds.length} drużyn</p>
+              <p className="text-xs text-muted-foreground">{group.teamIds.length} {plural(group.teamIds.length, TEAMS)}</p>
             </div>
             <QualifiersSelect group={group} index={index} />
           </div>

@@ -8,6 +8,7 @@ import { CalendarDays, GitFork, RefreshCw, Users } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { AdminPage } from '../components/admin-page';
+import { GROUPS, plural } from '../lib/plural';
 import { CompositionEditor } from './composition';
 import { proposalFor, useGroups, type GMatch } from './groups-store';
 import { BracketView, PairPreview, SeedingDialog } from './qualification';
@@ -29,7 +30,7 @@ export function GroupsScreenA() {
         <CompositionEditor layout="columns" />
         {state.groups.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            Zapisany skład: {state.groups.length} grup ·{' '}
+            Zapisany skład: {state.groups.length} {plural(state.groups.length, GROUPS)} ·{' '}
             {state.groups.map((group) => `${group.name} (${group.teamIds.length})`).join(', ')}
           </p>
         )}
@@ -74,7 +75,7 @@ export function ScheduleScreenA() {
         <EmptyState
           icon={<CalendarDays />}
           title="Terminarz grup nie jest jeszcze wygenerowany"
-          description={`${state.groups.length} grup, każdy z każdym w swojej grupie. Kolejka jest wspólna dla wszystkich grup.`}
+          description={`${state.groups.length} ${plural(state.groups.length, GROUPS)}, każdy z każdym w swojej grupie. Kolejka jest wspólna dla wszystkich grup.`}
           action={
             <Button onClick={() => setGenerating(true)}>
               <RefreshCw className="size-4" /> Wygeneruj terminarz

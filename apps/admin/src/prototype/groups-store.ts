@@ -8,6 +8,7 @@
 // drabinkę przed końcem grup). Drabinka jest atrapą S4, bo ten prototyp dotyczy
 // wyłącznie dojścia do niej i korekty par.
 import { useSyncExternalStore } from 'react';
+import { GROUPS, TEAMS, plural } from '../lib/plural';
 
 export type Sport = 'football' | 'basketball';
 export type Team = { id: number; name: string };
@@ -743,11 +744,11 @@ export const sim = {
   teamCount(count: number) {
     const groups = Math.min(state.groupCount, Math.max(1, Math.floor(count / 2)));
     set(build(state.scenario, state.sport, count, groups));
-    log(`GET /teams … ${count} drużyn`);
+    log(`GET /teams … ${count} ${plural(count, TEAMS)}`);
   },
   groupCount(count: number) {
     set(build(state.scenario === 'no-groups' ? 'no-groups' : state.scenario, state.sport, state.teamCount, count));
-    log(`GET /stage … ${count} grup`);
+    log(`GET /stage … ${count} ${plural(count, GROUPS)}`);
   },
   latency(ms: number) {
     set({ latencyMs: ms });
@@ -762,7 +763,7 @@ export const sim = {
     const groups = Math.min(count, Math.max(1, Math.floor(state.teams.length / 2)));
     const draft = drawDraft(state.teams, groups);
     set({ draft, groupCount: groups, draftDirty: true });
-    log(`POST /stage/groups/losowanie … ${groups} grup × ${draft[0]!.teamIds.length}`);
+    log(`POST /stage/groups/losowanie … ${groups} ${plural(groups, GROUPS)} × ${draft[0]!.teamIds.length}`);
   },
   /** Przenosi drużynę do innej grupy (albo poza grupy, gdy `to === null`). */
   moveTeam(teamId: number, to: number | null) {
@@ -815,7 +816,7 @@ export const sim = {
     if (qualifiers < 2) return 'Z grup muszą wyjść co najmniej dwie drużyny.';
     const groups = commit(state.draft, (index) => state.groups[index]?.id ?? 300 + index);
     set({ groups, draftDirty: false, matches: [], knockout: [], lastSeeding: null, extraTeam: null });
-    log(`PUT /stages/77/groups … ${groups.length} grup (terminarz grup skasowany)`);
+    log(`PUT /stages/77/groups … ${groups.length} ${plural(groups.length, GROUPS)} (terminarz grup skasowany)`);
     return undefined;
   },
   generateSchedule(meetings: 1 | 2) {
@@ -841,7 +842,7 @@ export const sim = {
   },
   generateBracket(teamIds: number[], thirdPlace: boolean) {
     set({ knockout: buildKnockout(teamIds, thirdPlace), thirdPlace, lastSeeding: teamIds });
-    log(`POST /stages/78/bracket … ${teamIds.length} drużyn, 3. miejsce: ${thirdPlace ? 'tak' : 'nie'}`);
+    log(`POST /stages/78/bracket … ${teamIds.length} ${plural(teamIds.length, TEAMS)}, 3. miejsce: ${thirdPlace ? 'tak' : 'nie'}`);
   },
   clearBracket() {
     set({ knockout: [], lastSeeding: null });

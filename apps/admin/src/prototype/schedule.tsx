@@ -16,7 +16,7 @@ import {
 import { CalendarClock, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { ChoiceCards } from '../components/choice-cards';
-import { MATCHES, ROUNDS, plural } from '../lib/plural';
+import { GROUPS, MATCHES, ROUNDS, plural } from '../lib/plural';
 import {
   groupStageStarted,
   scheduleSize,
@@ -105,7 +105,7 @@ export function GenerateScheduleDialog({ onClose }: { onClose: () => void }) {
         onClose();
       }}
       title={replacing ? 'Wygeneruj terminarz grup ponownie' : 'Wygeneruj terminarz grup'}
-      description={`Faza grupowa · ${state.groups.length} grup. Kolejka jest wspólna dla wszystkich grup.`}
+      description={`Faza grupowa · ${state.groups.length} ${plural(state.groups.length, GROUPS)}. Kolejka jest wspólna dla wszystkich grup.`}
       submitLabel={replacing ? 'Zastąp terminarz' : 'Wygeneruj'}
       error={error}
     >
