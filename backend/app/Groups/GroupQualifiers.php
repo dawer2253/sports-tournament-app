@@ -18,6 +18,12 @@ use Illuminate\Validation\ValidationException;
  */
 class GroupQualifiers
 {
+    /** Wspólne z `GroupComposition`: ta sama reguła przy zapisie składu. */
+    public const TOO_MANY_MESSAGE = 'Z grupy nie może wyjść więcej drużyn, niż w niej gra.';
+
+    /** Wspólne z `GroupComposition`: ta sama reguła przy zapisie składu. */
+    public const TOO_FEW_IN_STAGE_MESSAGE = 'Z grup muszą wyjść co najmniej dwie drużyny.';
+
     /**
      * @throws ValidationException playoff gra, z grupy wychodzi więcej drużyn,
      *                             niż w niej gra, albo suma w fazie spada poniżej dwóch
@@ -29,7 +35,7 @@ class GroupQualifiers
             // Równoległy zapis składu mógł grupę skasować — wtedy 404.
             $group = $stage->groups()->findOrFail($group->id);
 
-            if ($this->playoffHasStarted($stage)) {
+            if ($stage->tournament->hasStartedKnockoutMatches()) {
                 throw ValidationException::withMessages([
                     'stage' => 'Faza pucharowa ma rozegrane mecze, więc liczby wychodzących z grup nie można zmienić.',
                 ]);
@@ -37,26 +43,18 @@ class GroupQualifiers
 
             // Relacja pomija drużyny usunięte miękko: te w grupie już nie grają.
             if ($qualifiers > $group->teams()->count()) {
-                throw ValidationException::withMessages(['qualifiers' => 'Z grupy nie może wyjść więcej drużyn, niż w niej gra.']);
+                throw ValidationException::withMessages(['qualifiers' => self::TOO_MANY_MESSAGE]);
             }
 
             $others = (int) $stage->groups()->whereKeyNot($group->id)->sum('qualifiers');
 
             if ($others + $qualifiers < 2) {
-                throw ValidationException::withMessages(['qualifiers' => 'Z grup muszą wyjść co najmniej dwie drużyny.']);
+                throw ValidationException::withMessages(['qualifiers' => self::TOO_FEW_IN_STAGE_MESSAGE]);
             }
 
             $group->update(['qualifiers' => $qualifiers]);
 
             return $group;
         });
-    }
-
-    private function playoffHasStarted(Stage $stage): bool
-    {
-        return $stage->tournament->stages()
-            ->where('type', 'knockout')
-            ->get()
-            ->contains(fn (Stage $knockout): bool => $knockout->hasStartedMatches());
     }
 }
