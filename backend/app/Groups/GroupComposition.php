@@ -54,6 +54,10 @@ class GroupComposition
                     'qualifiers' => $group['qualifiers'],
                 ]);
 
+                // `group_id` nigdy nie przychodzi z ciała żądania — grupę tworzymy
+                // tutaj, w turnieju fazy, a drużyny sprawdził `ensureComposition`,
+                // więc predykat `Team::groupBelongsToSameTournament()` (dla CRUD
+                // drużyn) nie ma tu czego pilnować.
                 Team::query()
                     ->where('tournament_id', $stage->tournament_id)
                     ->whereIn('id', $group['teamIds'])
