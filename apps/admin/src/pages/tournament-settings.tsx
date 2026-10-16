@@ -33,7 +33,6 @@ import { AlertTriangle, Trash2, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
-import { AdminPage } from '../components/admin-page';
 import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
@@ -95,13 +94,11 @@ export function TournamentSettingsPage() {
   }
 
   return (
-    <AdminPage tournament={tournament} section="settings">
-      <div className="space-y-6">
-        <StatusSection tournament={tournament} />
-        {form}
-        <TournamentDeletion tournament={tournament} />
-      </div>
-    </AdminPage>
+    <div className="space-y-6">
+      <StatusSection tournament={tournament} />
+      {form}
+      <TournamentDeletion tournament={tournament} />
+    </div>
   );
 }
 

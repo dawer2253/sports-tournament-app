@@ -3,6 +3,22 @@
 Obowiązują [zasady globalne z rootu](../AGENTS.md), w tym „Testy frontendu”
 (vitest + msw, pułapka z `server.listen()`).
 
+## Shell turnieju
+
+`AdminShell` każdego ekranu turnieju stoi **raz**, w `TournamentLayout`
+(`src/pages/tournament-layout.tsx`), a nie w ekranach sekcji. Ekran, który
+opakowałby się we własne `AdminPage`, przy zmianie sekcji albo przy przejściu
+wczytywanie → wczytany kazałby Reactowi odmontować sidebar i nagłówek — ginie
+wtedy stan szuflady nawigacji
+([#263](https://github.com/dawer2253/sports-tournament-app/issues/263)).
+Pilnuje tego test „przełączenie turnieju i sekcji nie montuje shella od nowa”
+w `src/routes.test.tsx`.
+
+Akcje nagłówka („Dodaj drużynę”, „Dodaj obiekt”, akcje terminarza i drabinki)
+powstają w ekranie sekcji, a do nagłówka trafiają portalem przez
+`<SectionActions>` z `src/components/section-actions.tsx`. Turniej bierz
+z `useTournament()`.
+
 ## Formularze i okna
 
 Zasada całego panelu: list, ustawień, terminarza i każdego przyszłego ekranu.

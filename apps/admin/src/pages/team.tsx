@@ -12,7 +12,6 @@ import {
 import { ArrowLeft, ImageMinus, ImageUp, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { AdminPage } from '../components/admin-page';
 import { PlayerDeleteDialog, PlayerFormDialog } from '../components/player-dialogs';
 import {
   TeamDeleteDialog,
@@ -145,7 +144,7 @@ export function TeamPage() {
   }
 
   return (
-    <AdminPage tournament={tournament} section="teams">
+    <>
       <Link
         to={listPath}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -191,7 +190,7 @@ export function TeamPage() {
           )}
         </>
       )}
-    </AdminPage>
+    </>
   );
 }
 

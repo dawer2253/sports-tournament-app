@@ -14,7 +14,6 @@ import {
 import { Users } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { AdminPage } from '../components/admin-page';
 import { api } from '../lib/api';
 import { scheduleKeys, useStageMatches, useStages } from '../lib/schedule-queries';
 import { hasStartedMatches } from '../lib/schedule';
@@ -55,9 +54,12 @@ export function TournamentGroupsPage() {
   const groupStage = stages.data?.find((stage) => stage.type === 'group');
 
   return (
-    <AdminPage tournament={tournament} section="groups">
-      <GroupsSection tournament={tournament} stage={groupStage} stagesFailed={stages.isError} stagesPending={stages.isPending} />
-    </AdminPage>
+    <GroupsSection
+      tournament={tournament}
+      stage={groupStage}
+      stagesFailed={stages.isError}
+      stagesPending={stages.isPending}
+    />
   );
 }
 
