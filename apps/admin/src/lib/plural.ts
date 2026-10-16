@@ -23,5 +23,8 @@ export const COLLISIONS = ['kolizja', 'kolizje', 'kolizji'] as const;
 /** Pusty stan terminarza: „2 drużyny grają każdy z każdym” (#174). */
 export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] as const;
 
+/** Orzeczenie przed liczbą wychodzących z grupy: „wychodzą 2 drużyny” (#259). */
+export const QUALIFY = ['wychodzi', 'wychodzą', 'wychodzi'] as const;
+
 /** Podgląd kolejności przy tabeli: „2 drużyny zmieniają miejsce” (#173). */
 export const TEAMS_CHANGING_PLACE = ['drużyna zmienia', 'drużyny zmieniają', 'drużyn zmienia'] as const;

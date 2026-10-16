@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Sport, StandingRow, StandingTable, TiebreakerCode, Tournament } from '@tournament/api-client';
+import type { Group, Sport, Stage, StandingRow, StandingTable, TiebreakerCode, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -458,5 +458,155 @@ describe('tabela: zapis kolejności', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Masz niezapisane zmiany' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/tournaments/7/standings');
+  });
+});
+
+describe('tabele grup', () => {
+  const GROUP_A: Group = { id: 31, name: 'Grupa A', order: 1, qualifiers: 2 };
+  const GROUP_B: Group = { id: 32, name: 'Grupa B', order: 2, qualifiers: 1 };
+
+  function groupStage(groups: Group[]): Stage {
+    return { id: 21, type: 'group', name: 'Faza grupowa', order: 1, groups };
+  }
+
+  /**
+   * Tabela grupy jak z backendu. W Grupie A miejsca 2 i 3 mają po 4 punkty,
+   * więc przy dwóch wychodzących linia przecina remis.
+   */
+  function groupTable(group: Group, rows: StandingRow[]): StandingTable {
+    return { ...tables(TOURNAMENT.tiebreakers)[0]!, stageId: 21, stageName: 'Faza grupowa', groupId: group.id, groupName: group.name, rows };
+  }
+
+  const groupARows = [
+    row(1, 1, 'Wilki Bemowo', 6, 4),
+    row(2, 2, 'Sokoły Ursus', 4, 1),
+    row(3, 3, 'Orły Bielany', 4, 0),
+    row(4, 4, 'Lwy Targówek', 0, -5),
+  ];
+  const groupBRows = [row(1, 5, 'Żubry Wola', 3, 2), row(2, 6, 'Rysie Mokotów', 0, -2)];
+
+  /** Serwer z fazą grupową: `PATCH /groups/{group}` zmienia `qualifiers` w fazach. */
+  function groupsApi({ groups = [GROUP_A, GROUP_B], patch }: { groups?: Group[]; patch?: () => Response } = {}) {
+    let current = groups;
+    const patches: unknown[] = [];
+    let standingsRequests = 0;
+    standingsApi({
+      standings: () => {
+        standingsRequests += 1;
+        return current.map((group) => groupTable(group, group.id === GROUP_A.id ? groupARows : groupBRows));
+      },
+    });
+    server.use(
+      http.get(`${API}/tournaments/:id/stages`, () => HttpResponse.json({ data: [groupStage(current)] })),
+      http.patch(`${API}/groups/:id`, async ({ request, params }) => {
+        const body = (await request.json()) as { qualifiers: number };
+        patches.push({ group: Number(params.id), ...body });
+        if (patch) return patch();
+        current = current.map((group) => (group.id === Number(params.id) ? { ...group, ...body } : group));
+        return HttpResponse.json({ data: current.find((group) => group.id === Number(params.id)) });
+      }),
+    );
+    return { patches, standingsRequests: () => standingsRequests };
+  }
+
+  const groupSection = (name: string) => screen.getByRole('region', { name: `Faza grupowa · ${name}` });
+  const bodyRows = (section: HTMLElement) => within(section).getAllByRole('row').slice(1);
+
+  /** Jak `renderStandings`, ale tabel jest kilka, więc czeka na sterowanie. */
+  async function renderGroups() {
+    const router = createMemoryRouter(routes, { initialEntries: ['/tournaments/7/standings'] });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toaster />
+      </QueryClientProvider>,
+    );
+    // Linia wyjścia czeka na liczbę wychodzących z faz.
+    await screen.findByRole('combobox', { name: 'Ile drużyn wychodzi z grupy Grupa A' });
+    return { user: userEvent.setup() };
+  }
+
+  it('rysuje jedną tabelę na grupę, w kolejności grup, z nagłówkiem grupy', async () => {
+    groupsApi();
+    await renderGroups();
+
+    expect(screen.getAllByRole('heading', { name: /^Faza grupowa/ }).map((heading) => heading.textContent)).toEqual([
+      'Faza grupowa · Grupa A',
+      'Faza grupowa · Grupa B',
+    ]);
+    expect(within(groupSection('Grupa B')).getByText('Żubry Wola')).toBeInTheDocument();
+    expect(within(groupSection('Grupa A')).queryByText('Żubry Wola')).not.toBeInTheDocument();
+  });
+
+  it('rysuje linię pod ostatnim wychodzącym i plakietkę remisu na linii przy równych punktach', async () => {
+    groupsApi();
+    await renderGroups();
+
+    const rows = bodyRows(groupSection('Grupa A'));
+    expect(rows.map((tableRow) => tableRow.textContent?.includes('wychodzi z grupy'))).toEqual([true, true, false, false]);
+    expect(rows.filter((tableRow) => tableRow.classList.contains('border-dashed'))).toEqual([rows[1]]);
+    expect(rows.map((tableRow) => within(tableRow).queryByText('remis na linii') !== null)).toEqual([false, true, true, false]);
+    expect(within(groupSection('Grupa A')).getByText('wychodzą')).toBeInTheDocument();
+
+    // W Grupie B (wychodzi jedna, 3 do 0 punktów) remisu na linii nie ma.
+    expect(within(groupSection('Grupa B')).queryByText('remis na linii')).not.toBeInTheDocument();
+    expect(
+      within(groupSection('Grupa A')).getByText(
+        /Z grupy wychodzą 2 drużyny — miejsca nad przerywaną linią\. Remis na linii rozstrzyga organizer/,
+      ),
+    ).toBeInTheDocument();
+    expect(within(groupSection('Grupa B')).getByText(/Z grupy wychodzi 1 drużyna —/)).toBeInTheDocument();
+  });
+
+  it('zmiana liczby wychodzących wysyła PATCH, odświeża tabele i przenosi linię', async () => {
+    const { patches, standingsRequests } = groupsApi();
+    const { user } = await renderGroups();
+    const before = standingsRequests();
+
+    await user.click(screen.getByRole('combobox', { name: 'Ile drużyn wychodzi z grupy Grupa A' }));
+    await user.click(await screen.findByRole('option', { name: '3' }));
+
+    await waitFor(() => {
+      const rows = bodyRows(groupSection('Grupa A'));
+      expect(rows.filter((tableRow) => tableRow.classList.contains('border-dashed'))).toEqual([rows[2]]);
+    });
+    expect(patches).toEqual([{ group: GROUP_A.id, qualifiers: 3 }]);
+    expect(standingsRequests()).toBeGreaterThan(before);
+    // Linia stoi teraz między 4 a 0 punktów — remisu na linii już nie ma.
+    expect(within(groupSection('Grupa A')).queryByText('remis na linii')).not.toBeInTheDocument();
+  });
+
+  it('422 pod qualifiers siada przy sterowaniu i niczego nie zmienia', async () => {
+    const message = 'Z grup muszą wyjść co najmniej dwie drużyny.';
+    groupsApi({
+      patch: () => HttpResponse.json({ message, errors: { qualifiers: [message] } }, { status: 422 }),
+    });
+    const { user } = await renderGroups();
+
+    await user.click(screen.getByRole('combobox', { name: 'Ile drużyn wychodzi z grupy Grupa A' }));
+    await user.click(await screen.findByRole('option', { name: '1' }));
+
+    expect(await within(groupSection('Grupa A')).findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByRole('combobox', { name: 'Ile drużyn wychodzi z grupy Grupa A' })).toHaveTextContent('2');
+    const rows = bodyRows(groupSection('Grupa A'));
+    expect(rows.filter((tableRow) => tableRow.classList.contains('border-dashed'))).toEqual([rows[1]]);
+  });
+
+  it('w turnieju z jedną grupą tabela jest jedna', async () => {
+    groupsApi({ groups: [GROUP_A] });
+    await renderGroups();
+
+    expect(screen.getAllByRole('table')).toHaveLength(1);
+    expect(screen.getByRole('heading', { name: 'Faza grupowa · Grupa A' })).toBeInTheDocument();
+  });
+
+  it('tabela ligi nie ma linii wyjścia ani sterowania', async () => {
+    standingsApi();
+    await renderStandings();
+
+    expect(screen.queryByRole('combobox', { name: /Ile drużyn wychodzi/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/wychodzi z grupy/)).not.toBeInTheDocument();
+    expect(screen.getByText('3 drużyny')).toBeInTheDocument();
   });
 });

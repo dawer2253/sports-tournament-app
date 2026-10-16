@@ -324,6 +324,18 @@ class Tournament extends Model
         return $this->matches()->whereIn('matches.status', GameMatch::STARTED_STATUSES)->exists();
     }
 
+    /**
+     * Czy faza `knockout` turnieju ma mecz rozpoczęty. Od niego playoff gra,
+     * więc liczba wychodzących z grup jest zamrożona (#250, `GroupQualifiers`).
+     */
+    public function hasStartedKnockoutMatches(): bool
+    {
+        return $this->matches()
+            ->where('stages.type', 'knockout')
+            ->whereIn('matches.status', GameMatch::STARTED_STATUSES)
+            ->exists();
+    }
+
     protected function guardLabel(): string
     {
         return "turniej „{$this->name}”";

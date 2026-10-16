@@ -101,7 +101,7 @@ class GroupComposition
 
             if ($group['qualifiers'] > count($group['teamIds'])) {
                 throw ValidationException::withMessages([
-                    "groups.{$index}.qualifiers" => 'Z grupy nie może wyjść więcej drużyn, niż w niej gra.',
+                    "groups.{$index}.qualifiers" => GroupQualifiers::TOO_MANY_MESSAGE,
                 ]);
             }
         }
@@ -120,7 +120,7 @@ class GroupComposition
         }
 
         if (array_sum(array_column($groups, 'qualifiers')) < 2) {
-            throw ValidationException::withMessages(['groups' => 'Z grup muszą wyjść co najmniej dwie drużyny.']);
+            throw ValidationException::withMessages(['groups' => GroupQualifiers::TOO_FEW_IN_STAGE_MESSAGE]);
         }
     }
 

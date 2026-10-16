@@ -21,7 +21,7 @@ class StandingTableResource extends JsonResource
     }
 
     /**
-     * Grupy dojdą z fazą grupową (S5); dziś tabela ma wyłącznie faza `league`.
+     * Tabela grupy niesie jej `id` i nazwę, tabela ligi — `null` w obu polach.
      *
      * @return array<string, mixed>
      */
@@ -32,8 +32,8 @@ class StandingTableResource extends JsonResource
         return [
             'stageId' => $table->stage->id,
             'stageName' => $table->stage->name,
-            'groupId' => null,
-            'groupName' => null,
+            'groupId' => $table->group?->id,
+            'groupName' => $table->group?->name,
             'scoreLabel' => $table->sport->scoreLabel(),
             'allowsDraw' => $table->sport->allowsDraw(),
             'tiebreakers' => array_map(fn (string $code): array => [

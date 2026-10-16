@@ -24,6 +24,8 @@ info:
     grup, a `POST /stages/{stage}/schedule` układa w każdej grupie terminarz
     „każdy z każdym”. Dzięki temu `Stage.groups`, `Team.groupId`
     i `Match.groupId` niosą grupy, a `groupId` przestaje być zawsze `null`.
+    Każda grupa ma własną tabelę (`StandingTable.groupId`), a liczbę
+    wychodzących z niej zmienia `PATCH /groups/{group}`.
     Model fazy i grup opisuje
     [ADR-0002](../../docs/adr/0002-faza-istnieje-zawsze.md).
 
@@ -670,7 +672,8 @@ paths:
         rusza. Odmowa niczego nie zmienia: poprzedni skład i `group_id` drużyn
         zostają.
 
-        Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem.
+        Liczbę wychodzących z grupy (`qualifiers`) ustala się razem ze składem,
+        a po jego zamrożeniu zmienia przez `PATCH /groups/{group}`.
       requestBody:
         required: true
         content:
@@ -780,6 +783,76 @@ paths:
                     message: Z grup muszą wyjść co najmniej dwie drużyny.
                     errors:
                       groups: [Z grup muszą wyjść co najmniej dwie drużyny.]
+
+  /groups/{group}:
+    parameters:
+      - { $ref: '#/components/parameters/GroupId' }
+    patch:
+      tags: [Schedule]
+      summary: Zmień liczbę wychodzących z grupy
+      description: |
+        Zmienia `qualifiers` jednej grupy, także po zamrożeniu składu, bo tabela
+        grupy klaruje się dopiero w trakcie fazy. Wolno to robić do pierwszego
+        meczu trwającego albo zakończonego w fazie `knockout` turnieju — od
+        tego momentu drabinka gra, a liczba wychodzących jest zamrożona. Skład
+        grupy, terminarz i tabele zostają bez zmian.
+
+        `qualifiers` nie może przekroczyć liczby drużyn grupy (bez usuniętych),
+        a suma wychodzących ze wszystkich grup fazy nie może spaść poniżej
+        dwóch. Odmowa niczego nie zmienia.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [qualifiers]
+              properties:
+                qualifiers:
+                  type: integer
+                  minimum: 1
+                  description: Liczba drużyn wychodzących z grupy do drabinki.
+            example:
+              qualifiers: 2
+      responses:
+        '200':
+          description: Liczba wychodzących zapisana
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/Group' }
+              example:
+                data: { id: 3, name: Grupa A, order: 1, qualifiers: 2 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Liczby wychodzących nie da się zmienić albo ciało jest niepoprawne
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              examples:
+                playoffTrwa:
+                  summary: Faza `knockout` ma mecz trwający albo zakończony
+                  value:
+                    message: Faza pucharowa ma rozegrane mecze, więc liczby wychodzących z grup nie można zmienić.
+                    errors:
+                      stage: [Faza pucharowa ma rozegrane mecze, więc liczby wychodzących z grup nie można zmienić.]
+                zaDuzeWyjscie:
+                  summary: Z grupy wychodzi więcej drużyn, niż w niej gra
+                  value:
+                    message: Z grupy nie może wyjść więcej drużyn, niż w niej gra.
+                    errors:
+                      qualifiers: [Z grupy nie może wyjść więcej drużyn, niż w niej gra.]
+                zaMaloWychodzi:
+                  summary: Suma `qualifiers` w fazie spadłaby poniżej dwóch
+                  value:
+                    message: Z grup muszą wyjść co najmniej dwie drużyny.
+                    errors:
+                      qualifiers: [Z grup muszą wyjść co najmniej dwie drużyny.]
 
   /stages/{stage}/schedule:
     parameters:
@@ -1257,8 +1330,9 @@ paths:
         /tournaments/{tournament}/teams`, a konflikt nazw daje `422` z błędem
         pod `name`.
 
-        Przypisania do grupy nie da się w v0.1 zmienić: grupy są poza zakresem
-        tej wersji, więc `Team.groupId` jest wyłącznie do odczytu i zawsze `null`.
+        Przypisania do grupy nie zmienia się tutaj: `Team.groupId` jest
+        wyłącznie do odczytu, a grupę drużynie nadaje skład zapisany przez
+        `PUT /stages/{stage}/groups`.
       requestBody:
         required: true
         content:
@@ -2290,8 +2364,10 @@ paths:
       description: |
         Tabela nie jest bytem zapisywanym: jest liczona przy każdym odczycie
         z zakończonych meczów. Mecz trwający (`live`) się nie liczy. Jedna
-        pozycja na fazę `league` i jedna na każdą grupę w fazie `group`. Faza
-        `knockout` nie ma tabeli.
+        pozycja na fazę `league` i jedna na każdą grupę w fazie `group`,
+        w kolejności faz, a w fazie `group` w kolejności `Group.order`. Tabela
+        grupy liczy się wyłącznie z drużyn i meczów tej grupy, a grupa bez
+        żywych drużyn ma tabelę bez wierszy. Faza `knockout` nie ma tabeli.
 
         Tabela zawiera komplet drużyn fazy, także tych, które nie rozegrały
         jeszcze meczu: dostają wiersz z zerami. Przed pierwszym meczem i w fazie
@@ -3571,6 +3647,11 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64 }
+    GroupId:
+      name: group
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
     MatchId:
       name: match
       in: path
@@ -4134,7 +4215,9 @@ components:
           minimum: 1
           description: |
             Liczba drużyn wychodzących z grupy do drabinki playoffu. Ustala się
-            razem ze składem w `PUT /stages/{stage}/groups`.
+            razem ze składem w `PUT /stages/{stage}/groups`, a zmienia przez
+            `PATCH /groups/{group}`. Może przekraczać liczbę drużyn grupy, gdy
+            drużynę usunięto po zapisie składu.
 
     Stage:
       type: object
@@ -4741,8 +4824,15 @@ components:
       properties:
         stageId: { type: integer, format: int64 }
         stageName: { type: string }
-        groupId: { type: [integer, 'null'], format: int64 }
-        groupName: { type: [string, 'null'] }
+        groupId:
+          type: [integer, 'null']
+          format: int64
+          description: |
+            Grupa tabeli w fazie `group`: każda grupa ma własną tabelę z samymi
+            swoimi drużynami i meczami. `null` w tabeli fazy `league`.
+        groupName:
+          type: [string, 'null']
+          description: '`Group.name` grupy tabeli; `null` w tabeli fazy `league`.'
         scoreLabel:
           type: string
           description: |

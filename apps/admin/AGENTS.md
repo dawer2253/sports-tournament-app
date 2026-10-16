@@ -37,6 +37,10 @@ i 7) rozciągnął go na cały panel. Ten plik jest ich jedynym opisem dla kodu.
 - **Pola w kilku kolumnach równają się do góry**, więc podpis pod jednym polem
   (np. „Zmieni długość meczu w całym turnieju”) nie przesuwa pola obok. Pole
   w siatce ma `content-start`, jak `TextField`.
+- **Wyjątek: liczba wychodzących z grupy przy jej tabeli** (#259, wariant A
+  prototypu #251). To jedna wartość, a nie formularz: wybór w `Select` od razu
+  idzie `PATCH /groups/{group}`, a `422` siada pod nim. Okno dla jednej liczby
+  odcinałoby ją od tabeli, w której widać skutek (linię wyjścia).
 - **Listy wyboru idą przez `Select` z design systemu**, a nie przez natywny
   `<select>`, który ma inną wysokość i ramkę niż `Input` obok.
 - **Toasty** rysuje jeden `Toaster` w `main.tsx`. `toast` bierz z

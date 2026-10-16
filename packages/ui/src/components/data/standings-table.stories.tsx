@@ -2,10 +2,13 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import {
   basketballStandingsTableRows,
+  groupStandingsQualifiers,
+  groupStandingsTableRows,
   standingsScoreLabel,
   standingsTablePreviewRows,
   standingsTableRows,
 } from '../../lib/demo-data'
+import { withQualifiers } from '../../lib/qualifiers'
 import { StandingsTable } from './standings-table'
 
 const meta = {
@@ -49,6 +52,43 @@ export const Pilka: Story = {
     await expect(rows[1]).toHaveClass('border-t-2')
     await expect(rows[2]).not.toHaveClass('border-t-2')
     await expect(rows[3]).toHaveClass('border-t-2')
+
+    // Liga nie ma linii wyjścia ani remisu na linii.
+    for (const row of rows) {
+      await expect(row).not.toHaveClass('border-dashed')
+      await expect(row).not.toHaveTextContent('wychodzi z grupy')
+    }
+    await expect(canvas.queryByText('remis na linii')).not.toBeInTheDocument()
+  },
+}
+
+/**
+ * Grupa: wychodzą dwie drużyny. Wychodzący są wyróżnieni, a pod ostatnim
+ * z nich stoi przerywana linia. Miejsca 2 i 3 mają po 4 punkty, więc obie
+ * drużyny dostają plakietkę „remis na linii”.
+ */
+export const Grupa: Story = {
+  args: { rows: withQualifiers(groupStandingsTableRows, groupStandingsQualifiers) },
+  play: async ({ canvasElement }) => {
+    const rows = within(canvasElement).getAllByRole('row').slice(1)
+
+    await expect(rows[0]).toHaveTextContent('wychodzi z grupy')
+    await expect(rows[1]).toHaveTextContent('wychodzi z grupy')
+    await expect(rows[2]).not.toHaveTextContent('wychodzi z grupy')
+    await expect(rows[0]).toHaveClass('bg-primary/5')
+    await expect(rows[1]).toHaveClass('bg-primary/5')
+    await expect(rows[2]).not.toHaveClass('bg-primary/5')
+
+    // Linia tylko pod ostatnim wychodzącym; granica bloku punktów (4 → 4 nie,
+    // 9 → 4 tak) ustępuje jej pod linią.
+    await expect(rows[1]).toHaveClass('border-dashed')
+    await expect(rows.filter((row) => row.classList.contains('border-dashed'))).toHaveLength(1)
+    await expect(rows[2]).not.toHaveClass('border-t-2')
+
+    await expect(within(rows[1]!).getByText('remis na linii')).toBeInTheDocument()
+    await expect(within(rows[2]!).getByText('remis na linii')).toBeInTheDocument()
+    await expect(rows[0]).not.toHaveTextContent('remis na linii')
+    await expect(rows[3]).not.toHaveTextContent('remis na linii')
   },
 }
 
