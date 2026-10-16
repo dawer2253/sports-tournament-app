@@ -2,11 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { teams } from '../../lib/demo-data'
-import {
-  GroupCompositionEditor,
-  type GroupCompositionEditorProps,
-  type GroupCompositionGroup,
-} from './group-composition'
+import { type GroupCompositionGroup } from '../../lib/group-composition'
+import { GroupCompositionEditor, type GroupCompositionEditorProps } from './group-composition'
 
 const six = teams.slice(0, 6).map(({ id, name }) => ({ id, name }))
 
@@ -90,10 +87,13 @@ export const Losowanie: Story = {
   },
 }
 
-/** Poprawny szkic zapisuje się jednym przyciskiem. */
+/** Poprawny szkic zapisuje się jednym przyciskiem; liczniki mówią o dwóch grupach po trzy drużyny. */
 export const Zapis: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
+
+    await expect(canvas.getAllByText('3 drużyny')).toHaveLength(2)
+    await expect(canvas.getByText('Każda drużyna ma grupę.')).toBeInTheDocument()
 
     await userEvent.click(canvas.getByRole('button', { name: 'Zapisz skład grup' }))
     await expect(args.onSave).toHaveBeenCalled()

@@ -4,6 +4,7 @@
 export { cn, isModifiedClick } from './lib/utils';
 export * from './lib/bracket';
 export * from './lib/contrast';
+export * from './lib/group-composition';
 export * from './lib/kickoff';
 export * from './lib/match-band';
 export * from './lib/plural';
