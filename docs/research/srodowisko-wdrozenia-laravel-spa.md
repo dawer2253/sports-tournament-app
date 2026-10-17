@@ -39,6 +39,11 @@ Ceny dostawców:
 - Laravel — [Laravel Cloud — cennik](https://cloud.laravel.com/pricing),
   [Forge — cennik](https://forge.laravel.com/pricing),
   [Deployment (13.x)](https://laravel.com/docs/13.x/deployment).
+- OVHcloud (ceny w PLN) — [VPS](https://www.ovhcloud.com/pl/vps/).
+- Mikrus — [cennik](https://mikr.us/), [Mikrus dla edukacji](https://edu.mikr.us).
+- Heroku — [cennik](https://www.heroku.com/pricing),
+  [Dynos](https://devcenter.heroku.com/articles/dynos).
+- Koyeb — [cennik](https://www.koyeb.com/pricing).
 - Darmowe plany i uczelniane — [Google Cloud Free Tier](https://cloud.google.com/free/docs/free-cloud-features),
   [Oracle Always Free Resources](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm),
   [GitHub Student Developer Pack](https://education.github.com/pack),
@@ -62,6 +67,10 @@ Strona Oracle (`oracle.com/cloud/free`) odpowiada na to narzędzie kodem 403
 nie z marketingowej. Strona `hetzner.com/cloud` renderuje ceny po stronie
 przeglądarki — stąd źródłem cen jest dokumentacja.
 
+Waluty są różne i **nie przeliczano ich na jedną** (§10): Hetzner w EUR bez VAT,
+OVHcloud i Mikrus w PLN (OVHcloud podaje netto i brutto, Mikrus tylko brutto),
+reszta dostawców w USD. Gdzie cena jest niejasna, tak jest napisane.
+
 ## 1. Streszczenie: fakty w skrócie
 
 - **W repo nie ma nic produkcyjnego.** Brak Dockerfile'a i brak joba deploy
@@ -83,8 +92,13 @@ przeglądarki — stąd źródłem cen jest dokumentacja.
   wyłącznie Managed Postgres. Laravel Cloud ma MySQL Flex w każdym planie.
 - **Jedna maszyna za kilka euro miesięcznie wystarcza na ten ruch.** Hetzner
   CX23 (2 vCPU, 4 GB, 40 GB) to 5,49 €/mies. bez VAT i bez IPv4 (§4.1);
-  DigitalOcean 2 GiB/2 vCPU/60 GiB to 18 $/mies. (§4.2). Wszystkie wymagania
+  DigitalOcean 2 GiB/2 vCPU/60 GiB to 18 $/mies. (§4.2); OVHcloud VPS-1
+  (2 vCPU, 4 GB, 40 GB NVMe, własny IPv4, dzienny backup) to 16,32 PLN netto /
+  20,07 PLN brutto (§4.4). Wszystkie wymagania
   (Docker, MySQL 8, trwały dysk, domena, TLS) spełnia goły VPS.
+- **W darmowym PaaS-ie nie ma kompletnego zestawu.** Fly.io i Koyeb **nie mają
+  planu darmowego**, Render Free usypia i gubi pliki, Railway Free nie przyjmuje
+  własnej domeny, a Heroku nie ma ani darmowego dyno, ani MySQL (§5, §7).
 - **PaaS kupuje mniej pracy za wyższą cenę i mniej kontroli.** Git push
   zamiast SSH, ale bez compose, z limitami rozmiaru wolumenu i bez
   zarządzalnego MySQL u części dostawców (§5).
@@ -258,6 +272,50 @@ stronie.
 Oba są „darmowe" w sensie braku opłaty, nie w sensie braku pracy: stawiasz
 Dockera i compose sam, jak na każdym VPS.
 
+### 4.4. Tanie VPS-y z cenami w PLN: OVHcloud i Mikrus
+
+Dwie oferty, których ceny są podane i rozliczane w złotych — istotne, jeśli
+płatność ma iść z polskiego konta i z fakturą. Oba dają root i trwały dysk, więc
+mieszczą stos z §4.
+
+**OVHcloud** ([VPS](https://www.ovhcloud.com/pl/vps/)), ceny miesięczne,
+w nawiasie brutto (z polskim VAT). W cenie: codzienny backup z ostatnich 24 h,
+**dedykowany adres IPv4** i nielimitowany transfer:
+
+| Plan | vCPU | RAM | Dysk | Netto / mies. | Brutto / mies. |
+|---|---|---|---|---|---|
+| VPS-1 | 2 | 4 GB | 40 GB NVMe | 16,32 PLN | **20,07 PLN** |
+| VPS-2 | 4 | 8 GB | 75 GB NVMe | 30,77 PLN | 37,85 PLN |
+| VPS-3 | 6 | 12 GB | 100 GB NVMe | 44,37 PLN | 54,58 PLN |
+| VPS-4 | 8 | 24 GB | 200 GB NVMe | 85,08 PLN | 104,65 PLN |
+
+VPS-1 (2 vCPU, 4 GB, 40 GB) to najtańsza w tym badaniu maszyna z **własnym
+IPv4** i rozliczeniem miesięcznym, a zasoby są porównywalne z Hetznerem CX23
+i DigitalOcean 2 GiB z §4.1–4.2.
+
+**Mikrus** ([cennik](https://mikr.us/)), polska firma, serwery w Helsinkach, ale
+technicznie to **LXC, nie pełna wirtualizacja**: współdzielony publiczny IPv4
+z **do 7 przekierowanymi portami TCP/UDP** plus własny IPv6, moc procesora
+przydzielana dynamicznie i przycinana przy dłuższym obciążeniu („nie jest to moc
+gwarantowana"), jedna opłata **roczna**, ceny brutto:
+
+| Plan | RAM | Dysk | Cena / rok | Docker |
+|---|---|---|---|---|
+| Mikrus 1.0 | 384 MB | 5 GB | 35 PLN | nie |
+| Mikrus 2.1 | 1 GB | 10 GB | 75 PLN | tak |
+| Mikrus 3.0 | 2 GB | 25 GB | 130 PLN | tak |
+| Mikrus 3.5 | 4 GB | 40 GB | 197 PLN | tak |
+| Mikrus 4.1 | 8 GB | 80 GB | 395 PLN | tak |
+| FROG | 256 MB | 3 GB | 0 PLN | tylko Alpine |
+
+Roczne 130 zł za 2 GB / 25 GB (Mikrus 3.0) to ok. 11 zł/mies. — najniższa
+w tym zestawieniu kwota za maszynę, która udźwignie cały stos (FROG jest
+darmowy, ale 256 MB bez Dockera go nie uniesie). Dla S6 liczą się dwa haczyki:
+brak własnego IPv4
+(adres trzeba wyprowadzić przekierowaniem portów u Mikrusa albo przez
+CloudFlare) i dynamiczna, niegwarantowana moc CPU. Laravel + MySQL + dwa fronty
+na 1 GB (2.1) to dolna granica, bezpieczniej celować w 3.0.
+
 ## 5. Opcja: PaaS
 
 PaaS-y zdejmują konfigurację serwera i dają deploy z gita, ale narzucają model
@@ -342,6 +400,25 @@ miejsca na uploady.
   kontener.
 - Domena i TLS: własna domena i **automatyczny HTTPS wliczone** również w free.
 
+### 5.5. Heroku i Koyeb: PaaS-y bez planu darmowego
+
+- **Heroku** ([cennik](https://www.heroku.com/pricing)): najtańszy dyno to
+  **Eco 5 $/mies.** (0,5 GB, **usypia po 30 min bezczynności**, tylko konta
+  prywatne), stale włączony **Basic 7 $/mies.** Zarządzalne zasoby danych to
+  **Postgres** (Essential-0 od 5 $/mies.), Key-Value Store i Kafka — ale
+  **zarządzalnego MySQL nie ma**. System plików dyno jest **efemeryczny**: pliki znikają przy
+  zatrzymaniu i restarcie, także automatycznym
+  ([Dynos](https://devcenter.heroku.com/articles/dynos)). Domena i TLS są
+  w cenie (custom domains + ACM). Czyli: płatne, a uploady i tak wymagają
+  wolumenu albo magazynu obiektowego, którego Heroku nie oferuje.
+- **Koyeb** ([cennik](https://www.koyeb.com/pricing)): **brak planu
+  darmowego** — Pro 29 $/mies. + zużycie, Scale 299 $/mies.; darmowy jest
+  jedynie serverless Postgres (5 h, 0,25 vCPU / 1 GB / 1 GB dysku). Wolumeny
+  i snapshoty NVMe wchodzą od Pro. Zarządzalnego MySQL brak. Koyeb ogłosił
+  dołączenie do Mistral AI 17 lutego 2026
+  ([blog Koyeba](https://www.koyeb.com/blog/koyeb-is-joining-mistral-ai-to-build-the-future-of-ai-infrastructure)),
+  co jest ryzykiem dla projektu, który ma stać kilka miesięcy.
+
 ## 6. Platformy pod Laravela wprost: Laravel Cloud i Forge
 
 ### 6.1. Laravel Cloud
@@ -391,19 +468,28 @@ konfigurować nginx/TLS/deployu ręcznie.
 - **Fly.io** — brak darmowego planu; tylko trial (§5.3).
 - **DigitalOcean App Platform Free** — tylko statyki (§5.4); nie utrzyma
   Laravela.
+- **Heroku** — brak planu darmowego; najtaniej Eco 5 $/mies., który usypia,
+  a i tak gubi pliki (§5.5).
+- **Koyeb** — brak planu darmowego (§5.5).
 - **Google Cloud Free Tier** — darmowa `e2-micro` w USA i 30 GB dysku (§4.3);
   działający Laravel + MySQL na 1 GB to ciasno, ale możliwe.
 - **Oracle Always Free** — najhojniejszy darmowy zestaw (do 2 OCPU / 12 GB ARM,
   200 GB dysku, 10 TB ruchu), ale groźba odebrania bezczynnej instancji (§4.3).
 - **GitHub Student Developer Pack** ([pack](https://education.github.com/pack)):
   m.in. **Azure z 100 $ kredytu** (18+), domena `.me` na rok w Namecheap
-  z certyfikatem SSL i GitHub Pro. **Azure for Students**
+  z certyfikatem SSL, GitHub Pro i **13 $/mies. kredytu na Heroku przez 24
+  miesiące**. **Azure for Students**
   ([azure.microsoft.com/free/students](https://azure.microsoft.com/en-us/free/students/)):
   100 $ kredytu bez karty, 750 h maszyn B1s/B2pts/B2ats przez 12 miesięcy.
-  To finansuje mały VPS/kontener na czas projektu inżynierskiego.
+  To finansuje mały VPS/kontener na czas projektu inżynierskiego. Kredyt na
+  Heroku pokrywa Eco/Basic, ale nie zmienia efemerycznego dysku ani braku MySQL
+  (§5.5).
 - **Hosting uczelniany** — nie badano konkretnej oferty żadnej uczelni; to
-  zależne od jednostki i nie da się tego ustalić bez zapytania. Jeśli zespół ma
-  taki zasób, traktuj go jak zwykły VPS z §4 (root, Docker, własna domena,
+  zależne od jednostki i nie da się tego ustalić bez zapytania. Jedyny konkretny
+  ślad to **Mikrus dla edukacji** ([edu.mikr.us](https://edu.mikr.us)), gdzie
+  Mikrus udostępnia VPS-y polskim szkołom i uczelniom — nie sprawdzono jednak
+  warunków (rozmiar, czas, kto musi wystąpić). Jeśli zespół ma taki zasób,
+  traktuj go jak zwykły VPS z §4 (root, Docker, własna domena,
   niepewna trwałość i dostępność) — ale wszystkie te cechy trzeba potwierdzić
   u dostawcy, czego w tym badaniu nie zrobiono.
 
@@ -434,6 +520,8 @@ i uwzględnienia, że `Storage::disk('public')->url()` składa URL z `APP_URL`
 - Fly.io: w cenniku tylko Managed Postgres.
 - DO App Platform: dev DB to tylko Postgres; MySQL = płatny Managed Database.
 - Railway: MySQL z obrazu + wolumen; na Free wolumen 500 MB.
+- Heroku: tylko Postgres i Key-Value — zarządzalnego MySQL nie ma (§5.5).
+- Koyeb: tylko serverless Postgres (§5.5).
 - Laravel Cloud: MySQL Flex w każdym planie (jedyne zarządzalne MySQL w tym
   zestawieniu).
 
@@ -498,9 +586,13 @@ twierdzeń.
   czasu deployu i wybudzenia. Wszystkie liczby o zachowaniu platform pochodzą
   z ich cenników/dokumentacji.
 - **Cen nie porównywano w jednej walucie ani z VAT.** Hetzner podaje EUR bez
-  VAT i bez IPv4 (§4.1); reszta w USD. Kursu nie przeliczano.
+  VAT i bez IPv4 (§4.1); OVHcloud i Mikrus w PLN (OVHcloud netto i brutto,
+  Mikrus brutto), reszta w USD. Kursów nie przeliczano, więc liczby z różnych
+  sekcji nie są wprost porównywalne.
 - **Nie badano konkretnego hostingu uczelnianego** ani nie ustalano, czy zespół
-  ma dostęp do Azure/studentów (§7) — to zależy od uczelni.
+  ma dostęp do Azure/studentów (§7) — to zależy od uczelni. Jedyny konkretny
+  ślad, **Mikrus dla edukacji** ([edu.mikr.us](https://edu.mikr.us)), pozostaje
+  niezweryfikowany co do warunków.
 - **Nie sprawdzono Coolify/Dokploy** ani innych self-hosted PaaS-ów (§9).
 - **Nie mierzono realnego zużycia RAM/CPU/ruchu** tego stacku: 48 testów
   Feature i seed demo to nie profil obciążenia. Dobór rozmiaru maszyny jest
