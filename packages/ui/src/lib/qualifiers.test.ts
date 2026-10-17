@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
-import { bracketDivergence, withQualifiers } from './qualifiers'
+import { bracketTeamIds, qualifiersDivergence, withQualifiers } from './qualifiers'
 
 /** Wiersz z samymi polami, które liczą się dla linii wyjścia. */
 function row(position: number, points: number, played = 2): StandingsTableRow {
@@ -71,55 +71,38 @@ describe('withQualifiers', () => {
   })
 })
 
-/** Tabela grupy: drużyny w kolejności miejsc, id i nazwy z listy. */
-function group(groupId: number, qualifiers: number, names: string[]) {
-  return {
-    groupId,
-    qualifiers,
-    rows: names.map((name, index) => ({ position: index + 1, team: { id: groupId * 10 + index + 1, name } })),
-  }
-}
+/** Wiersze grupy w kolejności miejsc: id drużyny to jej dzisiejsze miejsce. */
+const GROUP = [row(1, 9), row(2, 6), row(3, 3), row(4, 0)]
+const ids = (rows: StandingsTableRow[]) => rows.map((candidate) => candidate.team.id)
 
-/** Mecz drabinki z parą drużyn z tabel (`null` to pusty slot). */
-function pair(home: { id: number; name: string } | null, away: { id: number; name: string } | null) {
-  return { homeTeam: home, awayTeam: away }
-}
+describe('bracketTeamIds', () => {
+  it('bierze drużyny z wszystkich meczów, także z wolnym losem w 2. rundzie, bez pustych slotów', () => {
+    const team = (id: number) => ({ id })
+    const matches = [
+      { homeTeam: team(2), awayTeam: team(3) },
+      { homeTeam: team(1), awayTeam: null },
+      { homeTeam: null, awayTeam: null },
+    ]
 
-const A = group(1, 2, ['Sokoły', 'Wilki', 'Orły', 'Rysie'])
-const B = group(2, 2, ['Żubry', 'Lwy', 'Niedźwiedzie', 'Jastrzębie'])
-const team = (table: ReturnType<typeof group>, position: number) => table.rows[position - 1]!.team
+    expect([...bracketTeamIds(matches)].toSorted()).toEqual([1, 2, 3])
+  })
+})
 
-describe('bracketDivergence', () => {
-  it('drabinka z czołówki obu tabel nie ma rozjazdu', () => {
-    const matches = [pair(team(A, 1), team(B, 2)), pair(team(B, 1), team(A, 2)), pair(team(A, 1), null)]
+describe('qualifiersDivergence', () => {
+  it('drabinka z czołówki tabeli nie ma rozjazdu', () => {
+    const { plays, missing } = qualifiersDivergence(GROUP, 2, new Set([1, 2, 99]))
 
-    expect(bracketDivergence([A, B], matches)).toEqual([])
+    expect([ids(plays), ids(missing)]).toEqual([[], []])
   })
 
-  it('drużyna z drabinki pod linią swojej grupy daje rozjazd z drużyną, która stoi dziś nad linią', () => {
-    const matches = [pair(team(A, 1), team(B, 2)), pair(team(B, 1), team(A, 3))]
+  it('drużyna z drabinki pod linią i drużyna nad linią spoza drabinki, w kolejności tabeli', () => {
+    const { plays, missing } = qualifiersDivergence(GROUP, 2, new Set([1, 3]))
 
-    expect(bracketDivergence([A, B], matches)).toEqual([
-      { groupId: 1, inBracket: [team(A, 3)], aboveLine: [team(A, 2)] },
-    ])
+    expect([ids(plays), ids(missing)]).toEqual([[3], [2]])
   })
 
-  it('bez meczów drabinki rozjazdu nie ma, choć nikt w niej nie gra', () => {
-    expect(bracketDivergence([A, B], [])).toEqual([])
-  })
-
-  it('drużyna z wolnym losem, która stoi od razu w 2. rundzie, gra w drabince', () => {
-    const C = group(3, 3, ['Kruki', 'Dziki', 'Lisy'])
-    // Kruki mają wolny los: ich pierwszy mecz to półfinał, a nie 1. runda.
-    const matches = [pair(team(C, 2), team(C, 3)), pair(team(C, 1), null)]
-
-    expect(bracketDivergence([C], matches)).toEqual([])
-  })
-
-  it('liczba wychodzących podniesiona po wygenerowaniu daje drużynę nad linią bez miejsca w drabince', () => {
-    const raised = { ...A, qualifiers: 3 }
-    const matches = [pair(team(A, 1), team(B, 2)), pair(team(B, 1), team(A, 2))]
-
-    expect(bracketDivergence([raised, B], matches)).toEqual([{ groupId: 1, inBracket: [], aboveLine: [team(A, 3)] }])
+  it('liczba wychodzących zmieniona po wygenerowaniu daje człon bez pary', () => {
+    expect(ids(qualifiersDivergence(GROUP, 3, new Set([1, 2])).missing)).toEqual([3])
+    expect(ids(qualifiersDivergence(GROUP, 1, new Set([1, 2])).plays)).toEqual([2])
   })
 })

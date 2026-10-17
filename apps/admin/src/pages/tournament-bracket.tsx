@@ -13,6 +13,7 @@ import {
   bracketByes,
   bracketChampion,
   bracketSeeding,
+  bracketTeamIds,
   isThirdPlaceMatch,
   matchLabel,
   Button,
@@ -402,13 +403,6 @@ function UnplayedGroupMatchesNotice({ count, className }: { count: number; class
         zmienić.
       </p>
     </div>
-  );
-}
-
-/** Drużyny stojące w drabince: z wszystkich meczów fazy, także z wolnym losem. */
-function bracketTeamIds(matches: AdminMatch[]): Set<number> {
-  return new Set(
-    matches.flatMap((match) => [match.homeTeam?.id, match.awayTeam?.id]).filter((id): id is number => id !== undefined),
   );
 }
 

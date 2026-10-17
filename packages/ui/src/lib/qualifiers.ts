@@ -22,53 +22,35 @@ export function withQualifiers<Row extends StandingsTableRow>(rows: readonly Row
   }))
 }
 
-/** Drużyna w regule rozjazdu: tyle, ile potrzeba do porównania i do zdania. */
-export type DivergenceTeam = { id: number; name: string }
 
 /**
- * Tabela grupy z jej liczbą wychodzących (`Group.qualifiers`, po
- * `StandingTable.groupId`). Wiersze w kolejności miejsc z API.
+ * Drużyny stojące w drabince: z wszystkich meczów fazy pucharowej. To zbiór
+ * rozstawionych — generator obsadza 1. rundę i sloty po wolnych losach od
+ * razu, a późniejsze rundy dostają już tylko drużyny z wcześniejszych.
  */
-export type GroupLine = {
-  groupId: number
-  qualifiers: number
-  rows: readonly { position: number; team: DivergenceTeam }[]
-}
-
-/**
- * Rozjazd drabinki z dzisiejszą tabelą jednej grupy (#250, #268): kto gra
- * w drabince, choć stoi dziś pod linią, i kto stoi nad linią, choć w drabince
- * nie gra.
- */
-export type BracketDivergence = {
-  groupId: number
-  inBracket: DivergenceTeam[]
-  aboveLine: DivergenceTeam[]
-}
-
-/**
- * Rozjazd drabinki z tabelami grup (#268, notka z #252). Drabinka nie pamięta,
- * z którego miejsca przyszła drużyna, a wynik grupy wpisany po jej
- * wygenerowaniu jej nie rusza („Qualifiers” w `CONTEXT.md`), więc strona
- * porównuje sama: drużyny drabinki z danej grupy z drużynami nad linią tej
- * grupy. Rozjazd daje też świadoma podmiana przy remisie na linii — tak
- * ustala #252.
- *
- * Drużyny drabinki to wszystkie drużyny z jej meczów. To zbiór rozstawionych:
- * generator obsadza 1. rundę i sloty po wolnych losach od razu, a późniejsze
- * rundy dostają już tylko drużyny z wcześniejszych. Bez meczów drabinki
- * rozjazdu nie ma. Grupa bez rozjazdu nie trafia do wyniku.
- */
-export function bracketDivergence(
-  groups: readonly GroupLine[],
+export function bracketTeamIds(
   matches: readonly { homeTeam: { id: number } | null; awayTeam: { id: number } | null }[],
-): BracketDivergence[] {
-  const entrants = new Set(matches.flatMap((match) => [match.homeTeam?.id, match.awayTeam?.id]))
-  if (entrants.size === 0) return []
+): Set<number> {
+  return new Set(matches.flatMap((match) => [match.homeTeam?.id, match.awayTeam?.id]).filter((id) => id !== undefined))
+}
 
-  return groups.flatMap(({ groupId, qualifiers, rows }) => {
-    const inBracket = rows.filter((row) => row.position > qualifiers && entrants.has(row.team.id)).map((row) => row.team)
-    const aboveLine = rows.filter((row) => row.position <= qualifiers && !entrants.has(row.team.id)).map((row) => row.team)
-    return inBracket.length || aboveLine.length ? [{ groupId, inBracket, aboveLine }] : []
-  })
+/**
+ * Rozjazd drabinki z dzisiejszą tabelą jednej grupy (#250, #260, #268): kto
+ * z grupy gra w drabince poza czołówką `qualifiers` (`plays`) i kogo
+ * z czołówki w drabince nie ma (`missing`), oba w kolejności tabeli. Drabinka
+ * nie pamięta, z którego miejsca przyszła drużyna, a wynik grupy wpisany po
+ * jej wygenerowaniu jej nie rusza („Qualifiers” w `CONTEXT.md`), więc rozjazd
+ * liczy się przy odczycie. Daje go wynik wpisany później, świadoma podmiana
+ * przy remisie na linii i zmiana liczby wychodzących. Bez rozjazdu obie listy
+ * są puste.
+ */
+export function qualifiersDivergence<Row extends { position: number; team: { id: number } }>(
+  rows: readonly Row[],
+  qualifiers: number,
+  bracketTeams: ReadonlySet<number>,
+): { plays: Row[]; missing: Row[] } {
+  return {
+    plays: rows.filter((row) => row.position > qualifiers && bracketTeams.has(row.team.id)),
+    missing: rows.filter((row) => row.position <= qualifiers && !bracketTeams.has(row.team.id)),
+  }
 }

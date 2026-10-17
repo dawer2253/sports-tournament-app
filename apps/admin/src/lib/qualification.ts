@@ -1,5 +1,5 @@
 import type { BracketSeed, Group, StandingTable, Team } from '@tournament/api-client';
-import { groupLetter, type SeedingTeam } from '@tournament/ui';
+import { groupLetter, qualifiersDivergence, type SeedingTeam } from '@tournament/ui';
 
 /**
  * Wyjście z grup do drabinki playoffu (#250, #260) od strony panelu.
@@ -65,8 +65,9 @@ export type GroupDivergence = { group: Group; plays: Placed[]; missing: Placed[]
  * Rozjazd drabinki z tabelami grup (#250): grupy, w których drużyny
  * w drabince różnią się od czołowych `qualifiers` tabeli — bo organizer
  * rozstrzygnął remis na linii, tabela zmieniła się po generowaniu albo
- * zmieniła się liczba wychodzących. Drużyny drabinki to wszystkie drużyny
- * z jej meczów: awansujący i tak stoją w niej od 1. rundy albo wolnego losu.
+ * zmieniła się liczba wychodzących. Regułę dla jednej grupy dzieli ze stroną
+ * publiczną design system (`qualifiersDivergence`, #268); drużyny drabinki
+ * daje `bracketTeamIds`.
  */
 export function bracketDivergence(
   bracketTeamIds: ReadonlySet<number>,
@@ -77,9 +78,8 @@ export function bracketDivergence(
   return groups.flatMap((group) => {
     const rows = tableByGroup.get(group.id)?.rows ?? [];
     const placed = (row: (typeof rows)[number]): Placed => ({ name: row.team.name, position: row.position });
-    const plays = rows.filter((row) => row.position > group.qualifiers && bracketTeamIds.has(row.team.id)).map(placed);
-    const missing = rows.filter((row) => row.position <= group.qualifiers && !bracketTeamIds.has(row.team.id)).map(placed);
-    return plays.length > 0 || missing.length > 0 ? [{ group, plays, missing }] : [];
+    const { plays, missing } = qualifiersDivergence(rows, group.qualifiers, bracketTeamIds);
+    return plays.length > 0 || missing.length > 0 ? [{ group, plays: plays.map(placed), missing: missing.map(placed) }] : [];
   });
 }
 
