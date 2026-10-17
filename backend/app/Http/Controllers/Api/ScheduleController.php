@@ -8,6 +8,7 @@ use App\Http\Requests\Stages\GenerateScheduleRequest;
 use App\Http\Requests\Stages\ScheduleDatesRequest;
 use App\Models\Stage;
 use App\Schedule\BracketGenerator;
+use App\Schedule\BracketSeeding;
 use App\Schedule\DateDistributor;
 use App\Schedule\ScheduleGenerator;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,15 @@ class ScheduleController extends Controller
         $result = $generator->generate($stage, $request->teamIds(), $request->thirdPlaceMatch());
 
         return response()->json(['data' => $result], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Propozycja rozstawienia drabinki playoffu z tabel grup (#260). Liczona
+     * przy odczycie i niezapisywana; odmowy (`422`) rzuca `BracketSeeding`.
+     */
+    public function seeding(Stage $stage, BracketSeeding $seeding): JsonResponse
+    {
+        return response()->json(['data' => $seeding->propose($stage)]);
     }
 
     /**

@@ -20,6 +20,7 @@ export type TournamentStatus = Schemas['TournamentStatus'];
 export type Stage = Schemas['Stage'];
 export type StageType = Schemas['StageType'];
 export type Group = Schemas['Group'];
+export type BracketSeed = Schemas['BracketSeed'];
 export type Team = Schemas['Team'];
 export type Player = Schemas['Player'];
 export type Venue = Schemas['Venue'];

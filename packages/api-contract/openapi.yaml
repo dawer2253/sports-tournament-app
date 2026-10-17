@@ -25,7 +25,10 @@ info:
     „każdy z każdym”. Dzięki temu `Stage.groups`, `Team.groupId`
     i `Match.groupId` niosą grupy, a `groupId` przestaje być zawsze `null`.
     Każda grupa ma własną tabelę (`StandingTable.groupId`), a liczbę
-    wychodzących z niej zmienia `PATCH /groups/{group}`.
+    wychodzących z niej zmienia `PATCH /groups/{group}`. Drabinkę playoffu
+    rozstawia się z tabel grup: propozycję oddaje
+    `GET /stages/{stage}/bracket/seeding`, a `POST /stages/{stage}/bracket`
+    przyjmuje z każdej grupy tyle drużyn, ile z niej wychodzi.
     Model fazy i grup opisuje
     [ADR-0002](../../docs/adr/0002-faza-istnieje-zawsze.md).
 
@@ -1127,10 +1130,19 @@ paths:
         dotychczasową drabinkę fazy, także terminy i obiekty poprawione ręcznie.
         Wszystko dzieje się w jednej transakcji.
 
-        - `teamIds` to wszystkie drużyny turnieju, każda dokładnie raz,
-          w kolejności rozstawienia: pierwsza jest najwyżej rozstawiona.
-          Losowanie to wymieszanie tej listy po stronie klienta. Kolejność
-          nie jest przechowywana, zostaje po niej tylko kształt drabinki.
+        - `teamIds` to drużyny drabinki w kolejności rozstawienia: pierwsza
+          jest najwyżej rozstawiona. Losowanie to wymieszanie tej listy po
+          stronie klienta. Kolejność nie jest przechowywana, zostaje po niej
+          tylko kształt drabinki.
+        - W turnieju bez fazy `group` (sam puchar) lista to wszystkie drużyny
+          turnieju, każda dokładnie raz.
+        - W turnieju z fazą `group` lista to dokładnie `Group.qualifiers`
+          drużyn z każdej grupy fazy, każda raz. Drużyny nie muszą być
+          czołówką tabeli grupy: podmiana na niższe miejsce z tej samej grupy
+          to rozstrzygnięcie remisu na linii. Propozycję z tabel oddaje
+          `GET /stages/{stage}/bracket/seeding`. Generować wolno także przed
+          końcem meczów grup, a wynik meczu grupy wpisany później drabinki nie
+          rusza.
         - Rozmiar drabinki to najbliższa potęga dwójki ≥ liczby drużyn.
           Seed trafia na pozycję według standardowej reguły (1–16, 8–9, 4–13…),
           więc seedy 1…2^k nie spotkają się, zanim zostanie 2^k drużyn.
@@ -1146,13 +1158,18 @@ paths:
         - Mecze są `scheduled`, bez `kickoffAt` i bez obiektu. Daty rozkłada
           `POST /stages/{stage}/schedule/dates`.
 
-        Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
-        faza nie jest `knockout` albo ma mecz `live` lub `finished`; pod
-        `teams`, gdy turniej ma mniej niż dwie drużyny; pod `teamIds`, gdy
-        lista nie jest dokładnie zbiorem drużyn turnieju; pod
-        `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono przy mniej niż
-        czterech drużynach. Odmowa niczego nie zmienia. Mecze dociąga się potem
-        przez `GET /tournaments/{tournament}/matches?stageId=`.
+        Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`,
+        gdy faza nie jest `knockout`, ma mecz `live` lub `finished` albo
+        faza `group` turnieju nie ma składu grup; pod `teams`, gdy
+        turniej ma mniej niż dwie drużyny (sam puchar); pod `groups`,
+        gdy grupa ma mniej żywych drużyn, niż z niej wychodzi; pod
+        `teamIds`, gdy lista nie jest dokładnie zbiorem drużyn turnieju
+        (sam puchar) albo z którejś grupy ma inną liczbę drużyn niż
+        `qualifiers` lub zawiera drużynę bez grupy (turniej z fazą
+        `group`); pod `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono
+        przy mniej niż czterech drużynach. Odmowa niczego nie zmienia.
+        Mecze dociąga się potem przez
+        `GET /tournaments/{tournament}/matches?stageId=`.
       requestBody:
         required: true
         content:
@@ -1166,7 +1183,10 @@ paths:
                   minItems: 2
                   uniqueItems: true
                   items: { type: integer, format: int64 }
-                  description: Drużyny turnieju w kolejności rozstawienia, od najwyżej rozstawionej.
+                  description: |
+                    Drużyny drabinki w kolejności rozstawienia, od najwyżej
+                    rozstawionej: w samym pucharze wszystkie drużyny turnieju,
+                    w turnieju z fazą `group` wychodzący z grup.
                 thirdPlaceMatch:
                   type: boolean
                   description: Czy dołożyć mecz o 3. miejsce. Bez wartości domyślnej.
@@ -1212,7 +1232,7 @@ paths:
                     errors:
                       stage: [Faza ma rozegrane mecze, więc nie można wygenerować drabinki ponownie.]
                 zaMaloDruzyn:
-                  summary: Mniej niż dwie drużyny
+                  summary: Sam puchar — mniej niż dwie drużyny
                   value:
                     message: Puchar potrzebuje co najmniej dwóch drużyn.
                     errors:
@@ -1223,12 +1243,122 @@ paths:
                     message: Lista musi zawierać każdą drużynę turnieju dokładnie raz.
                     errors:
                       teamIds: [Lista musi zawierać każdą drużynę turnieju dokładnie raz.]
+                zlaLiczbaZGrupy:
+                  summary: Turniej z fazą `group` — z grupy inna liczba drużyn niż `qualifiers` albo drużyna bez grupy
+                  value:
+                    message: Lista musi zawierać tyle drużyn z każdej grupy, ile z niej wychodzi.
+                    errors:
+                      teamIds: [Lista musi zawierać tyle drużyn z każdej grupy, ile z niej wychodzi.]
+                bezSkladuGrup:
+                  summary: Faza `group` turnieju bez ustalonego składu grup
+                  value:
+                    message: Najpierw ustal skład grup.
+                    errors:
+                      stage: [Najpierw ustal skład grup.]
+                malaGrupa:
+                  summary: Grupa ma mniej żywych drużyn, niż z niej wychodzi
+                  value:
+                    message: Grupa „Grupa A” ma mniej drużyn, niż z niej wychodzi.
+                    errors:
+                      groups: [Grupa „Grupa A” ma mniej drużyn, niż z niej wychodzi.]
                 meczO3Miejsce:
                   summary: Mecz o 3. miejsce przy mniej niż czterech drużynach
                   value:
                     message: Mecz o 3. miejsce wymaga co najmniej czterech drużyn.
                     errors:
                       thirdPlaceMatch: [Mecz o 3. miejsce wymaga co najmniej czterech drużyn.]
+
+  /stages/{stage}/bracket/seeding:
+    parameters:
+      - { $ref: '#/components/parameters/StageId' }
+    get:
+      tags: [Schedule]
+      summary: Propozycja rozstawienia drabinki z tabel grup
+      description: |
+        Propozycja rozstawienia fazy `knockout` w turnieju z fazą `group`,
+        liczona przy każdym odczycie z bieżących tabel grup
+        (`GET /tournaments/{tournament}/standings`) i z bieżących
+        `Group.qualifiers`. Niczego nie zapisuje: to punkt startowy listy
+        `teamIds` dla `POST /stages/{stage}/bracket`, którą organizer może
+        jeszcze poprawić.
+
+        Z każdej grupy wchodzi `qualifiers` czołowych drużyn tabeli. Kolejność
+        listy to rozstawienie od 1, a powstaje tak:
+
+        1. Start miejscami, a w obrębie miejsca w kolejności `Group.order`:
+           1A, 1B, …, 2A, 2B, … Przy jednej grupie to kolejność tabeli.
+        2. Koszt listy to wektor: ile par drużyn z jednej grupy może się
+           spotkać najwcześniej w 1. rundzie, ile w 2. itd., porównywany
+           leksykograficznie od 1. rundy. Pozycje w drabince są te same co
+           w `POST /stages/{stage}/bracket`.
+        3. Lista poprawia się zamianami dwóch drużyn z tego samego miejsca
+           tabeli: w każdym kroku wygrywa zamiana o najmniejszym koszcie, przy
+           remisie ta leżąca najniżej na liście. Koniec, gdy żadna zamiana nie
+           obniża kosztu.
+
+        Dzięki temu `position` nie maleje wzdłuż listy, a przy tych samych
+        tabelach dwa odczyty dają tę samą listę. Drużyna bez grupy (dodana po
+        zapisie składu) nie trafia do propozycji.
+
+        Odmowy to `422`: pod `stage`, gdy faza nie jest `knockout`, turniej
+        nie ma fazy `group` albo faza `group` nie ma składu grup; pod
+        `groups`, gdy grupa ma mniej żywych drużyn, niż z niej wychodzi.
+        Odmowa, a nie pusta lista, bo pusta propozycja wyglądałaby jak
+        „nikt nie wychodzi z grup”, a klient ma pokazać powód i odesłać do
+        składu grup. `422` przy `GET` ma już podgląd tabel
+        (`GET /tournaments/{tournament}/standings`).
+      responses:
+        '200':
+          description: Propozycja rozstawienia, od najwyżej rozstawionej drużyny
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    minItems: 2
+                    items: { $ref: '#/components/schemas/BracketSeed' }
+              example:
+                data:
+                  - { teamId: 7, groupId: 3, position: 1 }
+                  - { teamId: 1, groupId: 4, position: 1 }
+                  - { teamId: 9, groupId: 3, position: 2 }
+                  - { teamId: 4, groupId: 4, position: 2 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422':
+          description: Propozycji nie da się policzyć
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+              examples:
+                nieTaFaza:
+                  summary: Faza inna niż `knockout`
+                  value:
+                    message: Drabinkę generuje się tylko w fazie pucharowej.
+                    errors:
+                      stage: [Drabinkę generuje się tylko w fazie pucharowej.]
+                bezFazyGrupowej:
+                  summary: Turniej bez fazy `group` (sam puchar)
+                  value:
+                    message: Propozycja rozstawienia z grup jest tylko w turnieju z fazą grupową.
+                    errors:
+                      stage: [Propozycja rozstawienia z grup jest tylko w turnieju z fazą grupową.]
+                bezSkladuGrup:
+                  summary: Faza `group` bez ustalonego składu grup
+                  value:
+                    message: Najpierw ustal skład grup.
+                    errors:
+                      stage: [Najpierw ustal skład grup.]
+                malaGrupa:
+                  summary: Grupa ma mniej żywych drużyn, niż z niej wychodzi
+                  value:
+                    message: Grupa „Grupa A” ma mniej drużyn, niż z niej wychodzi.
+                    errors:
+                      groups: [Grupa „Grupa A” ma mniej drużyn, niż z niej wychodzi.]
 
   /tournaments/{tournament}/teams:
     parameters:
@@ -4218,6 +4348,21 @@ components:
             razem ze składem w `PUT /stages/{stage}/groups`, a zmienia przez
             `PATCH /groups/{group}`. Może przekraczać liczbę drużyn grupy, gdy
             drużynę usunięto po zapisie składu.
+
+    BracketSeed:
+      type: object
+      description: |
+        Pozycja propozycji rozstawienia (`GET /stages/{stage}/bracket/seeding`):
+        drużyna, jej grupa i miejsce w tabeli grupy. Klient składa z tego
+        etykietę pochodzenia („1A”), której API nie przechowuje.
+      required: [teamId, groupId, position]
+      properties:
+        teamId: { type: integer, format: int64 }
+        groupId: { type: integer, format: int64 }
+        position:
+          type: integer
+          minimum: 1
+          description: Miejsce drużyny w bieżącej tabeli grupy (`StandingRow.position`).
 
     Stage:
       type: object

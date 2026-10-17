@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { AdminMatch, Sport, Team, Tournament } from '@tournament/api-client';
+import type { AdminMatch, BracketSeed, Sport, Stage, StandingTable, Team, Tournament } from '@tournament/api-client';
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
@@ -219,11 +219,19 @@ function matchRows() {
 
 /**
  * Pozycje listy rozstawienia, z numerem na początku. Zablokowana pozycja
- * kończy się niewidocznym „zablokowana” dla czytnika ekranu.
+ * kończy się niewidocznym „zablokowana” dla czytnika ekranu. Wybór podmiany
+ * w obrębie grupy (#260) niesie ukryty natywny `<select>` z opcjami Radixa,
+ * więc jego tekst wypada.
  */
 function seeding(dialog: HTMLElement) {
   const list = within(dialog).getByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' });
-  return within(list).getAllByRole('listitem').map((item) => item.textContent ?? '');
+  return within(list)
+    .getAllByRole('listitem')
+    .map((item) => {
+      const visible = item.cloneNode(true) as HTMLElement;
+      visible.querySelectorAll('select').forEach((select) => select.remove());
+      return visible.textContent ?? '';
+    });
 }
 
 async function openGenerate(user: ReturnType<typeof userEvent.setup>) {
@@ -857,5 +865,307 @@ describe('Drabinka — okno meczu (#228)', () => {
       awayScore: null,
       kickoffAt: new Date('2026-10-11T12:00').toISOString(),
     });
+  });
+});
+
+// --- Turniej grupy + playoff (#260) ------------------------------------------
+
+const GROUP_A = { id: 3, name: 'Grupa A', order: 1, qualifiers: 2 };
+const GROUP_B = { id: 4, name: 'Grupa B', order: 2, qualifiers: 2 };
+const GROUP_STAGE: Stage = { id: 13, type: 'group', name: 'Faza grupowa', order: 1, groups: [GROUP_A, GROUP_B] };
+const PLAYOFF_STAGE: Stage = { ...CUP_STAGE, order: 2 };
+
+/** Te same drużyny w dwóch grupach po trzy: A — Lwy, Orły, Rysie; B — Sokoły, Wilki, Żubry. */
+const GROUP_TEAMS = TEAMS.map((candidate) => ({ ...candidate, groupId: candidate.id <= 3 ? GROUP_A.id : GROUP_B.id }));
+
+/** Tabela grupy z drużynami po id w kolejności miejsc. */
+function groupTable(group: typeof GROUP_A, ids: number[]): StandingTable {
+  return {
+    stageId: GROUP_STAGE.id,
+    stageName: GROUP_STAGE.name,
+    groupId: group.id,
+    groupName: group.name,
+    scoreLabel: 'Bramki',
+    allowsDraw: true,
+    tiebreakers: [{ code: 'points', label: 'Punkty w tabeli' }],
+    rows: ids.map((id, index) => {
+      const { name, logoUrl } = TEAMS.find((candidate) => candidate.id === id)!;
+      return {
+        position: index + 1,
+        team: { id, name, logoUrl },
+        played: 2,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        scoreFor: 0,
+        scoreAgainst: 0,
+        scoreDifference: 0,
+        points: 6 - 3 * index,
+      };
+    }),
+  };
+}
+
+/** Grupa A: Orły, Lwy, Rysie; grupa B: Wilki, Sokoły, Żubry. */
+const GROUP_TABLES = [groupTable(GROUP_A, [2, 1, 3]), groupTable(GROUP_B, [5, 4, 6])];
+
+/** Propozycja z backendu dla 2 × 2: 1A, 1B, 2A, 2B. */
+const PROPOSAL: BracketSeed[] = [
+  { teamId: 2, groupId: GROUP_A.id, position: 1 },
+  { teamId: 5, groupId: GROUP_B.id, position: 1 },
+  { teamId: 1, groupId: GROUP_A.id, position: 2 },
+  { teamId: 4, groupId: GROUP_B.id, position: 2 },
+];
+
+const PLAYOFF_ROUNDS = { 1: { id: 20, name: 'Półfinał', order: 1 }, 2: { id: 21, name: 'Finał', order: 2 } } as const;
+
+/** Drabinka na cztery z podanych seedów (po id): półfinały 1–4 i 2–3, finał pusty. */
+function playoffBracket([s1, s2, s3, s4]: number[], overrides: Partial<AdminMatch> = {}): AdminMatch[] {
+  return [
+    match(401, 1, 1, s1!, s4!, { round: PLAYOFF_ROUNDS[1], winnerToMatchId: 403, advancesToSlot: 'home', ...overrides }),
+    match(402, 1, 2, s2!, s3!, { round: PLAYOFF_ROUNDS[1], winnerToMatchId: 403, advancesToSlot: 'away' }),
+    match(403, 2, 1, null, null, { round: PLAYOFF_ROUNDS[2] }),
+  ];
+}
+
+/** Mecz fazy grupowej w podanym statusie; do licznika nierozegranych. */
+function groupMatch(id: number, status: AdminMatch['status']): AdminMatch {
+  return match(id, 1, id, 1, 2, {
+    stageId: GROUP_STAGE.id,
+    groupId: GROUP_A.id,
+    status,
+    ...(status === 'scheduled' ? {} : { homeScore: 1, awayScore: 0 }),
+  });
+}
+
+/**
+ * Turniej grupy + playoff po stronie „serwera”: fazy, drużyny z grupami,
+ * mecze każdej fazy po `stageId`, tabele i propozycja. Zapis drabinki
+ * podmienia `state.bracket`.
+ */
+function servePlayoff({
+  bracket: initial = [],
+  groupMatches = [groupMatch(501, 'finished'), groupMatch(502, 'finished')],
+  stage = GROUP_STAGE,
+  proposal = () => HttpResponse.json({ data: PROPOSAL }),
+}: {
+  bracket?: AdminMatch[];
+  groupMatches?: AdminMatch[];
+  stage?: Stage;
+  proposal?: () => Response;
+} = {}) {
+  const state = { bracket: [...initial], proposalCalls: 0 };
+  const page = (data: AdminMatch[]) =>
+    HttpResponse.json({ data, meta: { currentPage: 1, lastPage: 1, perPage: 200, total: data.length } });
+  server.use(
+    tournamentStages([stage, PLAYOFF_STAGE]),
+    http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => HttpResponse.json({ data: GROUP_TEAMS })),
+    http.get(MATCHES_URL, ({ request }) =>
+      page(new URL(request.url).searchParams.get('stageId') === String(GROUP_STAGE.id) ? groupMatches : state.bracket),
+    ),
+    http.get(`${API}/tournaments/${TOURNAMENT.id}/standings`, () => HttpResponse.json({ data: GROUP_TABLES })),
+    http.get(`${BRACKET_URL}/seeding`, () => {
+      state.proposalCalls += 1;
+      return proposal();
+    }),
+  );
+  return state;
+}
+
+/** Ciała generowania drabinki playoffu; sukces stawia drabinkę z wysłanych seedów. */
+function servePlayoffGenerate(state: { bracket: AdminMatch[] }, respond?: () => Response) {
+  const bodies: { teamIds: number[]; thirdPlaceMatch: boolean }[] = [];
+  server.use(
+    http.post(BRACKET_URL, async ({ request }) => {
+      const body = (await request.json()) as { teamIds: number[]; thirdPlaceMatch: boolean };
+      bodies.push(body);
+      if (respond) return respond();
+      state.bracket = playoffBracket(body.teamIds);
+      return HttpResponse.json({ data: { roundsCount: 2, matchesCount: 3 } }, { status: 201 });
+    }),
+  );
+  return bodies;
+}
+
+function previewRows(dialog: HTMLElement) {
+  const list = within(dialog).getByRole('list', { name: 'Podgląd 1. rundy' });
+  return within(list).getAllByRole('listitem').map((item) => item.textContent);
+}
+
+/** Okno playoffu czeka na świeżą propozycję, zanim pokaże listę. */
+async function openPlayoffGenerate(user: ReturnType<typeof userEvent.setup>) {
+  const dialog = await openGenerate(user);
+  await within(dialog).findByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' });
+  return screen.getByRole('dialog', { name: 'Rozstaw i wygeneruj' });
+}
+
+/** Notka o rozjeździe drabinki z tabelami jako cały wiersz statusu. */
+async function divergenceNotice() {
+  return (await screen.findByText(/Drabinka różni się od tabel grup/)).closest<HTMLElement>('[role="status"]')!;
+}
+
+describe('Drabinka — playoff z grup (#260)', () => {
+  it('pusty stan mówi o liczbie wychodzących i ostrzega przed nierozegranymi meczami grup', async () => {
+    servePlayoff({ groupMatches: [groupMatch(501, 'finished'), groupMatch(502, 'scheduled'), groupMatch(503, 'live')] });
+    renderBracket();
+
+    expect(
+      await screen.findByText('Z grup wychodzą 4 drużyny: drabinka na 4. Rozstawienie startuje z tabel grup.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('2 mecze fazy grupowej nie są jeszcze rozegrane.');
+    expect(screen.getByRole('button', { name: 'Rozstaw i wygeneruj' })).toBeEnabled();
+  });
+
+  it('bez składu grup odsyła do karty Grupy, a przycisk jest wyłączony', async () => {
+    const state = servePlayoff({ stage: { ...GROUP_STAGE, groups: [] } });
+    renderBracket();
+
+    expect(
+      await screen.findByText('Drabinka powstaje z wyjścia z grup. Najpierw ustal skład grup w zakładce Grupy.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rozstaw i wygeneruj' })).toBeDisabled();
+    expect(screen.getByRole('link', { name: 'Przejdź do grup' })).toHaveAttribute('href', `/tournaments/${TOURNAMENT.id}/groups`);
+    expect(state.proposalCalls).toBe(0);
+  });
+
+  it('odmowa propozycji pod groups trafia do pustego stanu i wyłącza generowanie', async () => {
+    const message = 'Grupa „Grupa B” ma mniej drużyn, niż z niej wychodzi.';
+    servePlayoff({ proposal: () => HttpResponse.json({ message, errors: { groups: [message] } }, { status: 422 }) });
+    renderBracket();
+
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rozstaw i wygeneruj' })).toBeDisabled();
+    expect(screen.getByRole('link', { name: 'Przejdź do grup' })).toBeInTheDocument();
+  });
+
+  it('okno startuje z propozycji z backendu, z pochodzeniem i parami 1. rundy, bez losowania', async () => {
+    servePlayoff();
+    const { user } = renderBracket();
+
+    const dialog = await openPlayoffGenerate(user);
+    expect(seeding(dialog)).toEqual(['11AOrły Wola', '21BWilki Bemowo', '32ALwy Mokotów', '42BSokoły Ursus']);
+    expect(previewRows(dialog)).toEqual(['11A Orły Wola–2B Sokoły Ursus', '21B Wilki Bemowo–2A Lwy Mokotów']);
+    expect(within(dialog).queryByRole('combobox', { name: 'Zablokowane pozycje' })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /Wylosuj/ })).not.toBeInTheDocument();
+  });
+
+  it('podmienia drużynę wyłącznie w obrębie jej grupy i wysyła podmienioną listę', async () => {
+    const state = servePlayoff();
+    const bodies = servePlayoffGenerate(state);
+    const { user } = renderBracket();
+
+    const dialog = await openPlayoffGenerate(user);
+    await user.click(within(dialog).getByRole('combobox', { name: 'Drużyna na pozycji 3' }));
+    expect((await screen.findAllByRole('option')).map((option) => option.textContent)).toEqual([
+      'Lwy Mokotów (2A)',
+      'Rysie Bielany (3A)',
+    ]);
+    await user.click(screen.getByRole('option', { name: 'Rysie Bielany (3A)' }));
+
+    expect(seeding(dialog)[2]).toBe('33ARysie Bielany');
+    expect(previewRows(dialog)[1]).toBe('21B Wilki Bemowo–3A Rysie Bielany');
+    await user.click(within(dialog).getByRole('button', { name: 'Wygeneruj' }));
+
+    expect(await screen.findByText('Wygenerowano drabinkę: 2 rundy, 3 mecze')).toBeInTheDocument();
+    expect(bodies).toEqual([{ teamIds: [2, 5, 3, 4], thirdPlaceMatch: true }]);
+  });
+
+  it.each([
+    ['teamIds', 'Lista musi zawierać tyle drużyn z każdej grupy, ile z niej wychodzi.'],
+    ['groups', 'Grupa „Grupa A” ma mniej drużyn, niż z niej wychodzi.'],
+  ])('422 pod %s siada nad przyciskami okna', async (key, message) => {
+    const state = servePlayoff();
+    servePlayoffGenerate(state, () => HttpResponse.json({ message, errors: { [key]: [message] } }, { status: 422 }));
+    const { user } = renderBracket();
+
+    const dialog = await openPlayoffGenerate(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Wygeneruj' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Rozstaw i wygeneruj' })).toBeInTheDocument();
+  });
+
+  it('po wygenerowaniu z podmianą opisuje rozjazd z tabelami i nie mówi o drużynach spoza drabinki', async () => {
+    servePlayoff({ bracket: playoffBracket([2, 5, 3, 4]) });
+    renderBracket();
+
+    const notice = await divergenceNotice();
+    expect(notice).toHaveTextContent(
+      'Drabinka różni się od tabel grup: Rysie Bielany (3. w grupie A) zamiast Lwy Mokotów (2. w grupie A).',
+    );
+    expect(within(notice).getByRole('button', { name: 'Wygeneruj ponownie' })).toBeEnabled();
+    expect(screen.queryByText(/w turnieju, ale nie w drabince/)).not.toBeInTheDocument();
+  });
+
+  it('drabinka z czołówki tabel nie ma notki o rozjeździe', async () => {
+    servePlayoff({ bracket: playoffBracket([2, 5, 1, 4]) });
+    renderBracket();
+
+    expect(await screen.findByRole('tab', { selected: true })).toHaveTextContent('Półfinał');
+    expect(screen.queryByText(/Drabinka różni się od tabel grup/)).not.toBeInTheDocument();
+  });
+
+  it('„Wygeneruj ponownie” liczy propozycję od nowa z bieżących tabel, a nie z obecnej drabinki', async () => {
+    const state = servePlayoff({ bracket: playoffBracket([2, 5, 3, 4]) });
+    const { user } = renderBracket();
+
+    await user.click(await screen.findByRole('button', { name: 'Więcej akcji drabinki' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Wygeneruj ponownie' }));
+    const dialog = screen.getByRole('dialog', { name: 'Rozstaw i wygeneruj ponownie' });
+
+    await within(dialog).findByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' });
+    expect(seeding(screen.getByRole('dialog'))).toEqual([
+      '11AOrły Wola',
+      '21BWilki Bemowo',
+      '32ALwy Mokotów',
+      '42BSokoły Ursus',
+    ]);
+    expect(state.proposalCalls).toBe(1);
+  });
+
+  it('po starcie playoffu „Wygeneruj ponownie” jest wyłączone w notce i w menu', async () => {
+    servePlayoff({ bracket: playoffBracket([2, 5, 3, 4], { status: 'live', homeScore: 0, awayScore: 0 }) });
+    const { user } = renderBracket();
+
+    expect(within(await divergenceNotice()).getByRole('button', { name: 'Wygeneruj ponownie' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Więcej akcji drabinki' }));
+    expect(await screen.findByRole('menuitem', { name: 'Wygeneruj ponownie' })).toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+describe('Drabinka — playoff z grup, nieaktualne odczyty (#260)', () => {
+  it('okno dociąga świeżą listę drużyn, zanim ułoży propozycję', async () => {
+    servePlayoff();
+    // Pierwszy odczyt (ekran) nie zna jeszcze Orłów z propozycji, kolejne już tak.
+    let calls = 0;
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => {
+        calls += 1;
+        return HttpResponse.json({ data: calls === 1 ? GROUP_TEAMS.filter((candidate) => candidate.id !== 2) : GROUP_TEAMS });
+      }),
+    );
+    const { user } = renderBracket();
+
+    const dialog = await openPlayoffGenerate(user);
+    expect(seeding(dialog)).toEqual(['11AOrły Wola', '21BWilki Bemowo', '32ALwy Mokotów', '42BSokoły Ursus']);
+    expect(calls).toBeGreaterThan(1);
+  });
+
+  it('gdy drużyny z propozycji nie ma także w świeżej liście, okno mówi o tym zamiast skracać listę', async () => {
+    servePlayoff();
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () =>
+        HttpResponse.json({ data: GROUP_TEAMS.filter((candidate) => candidate.id !== 2) }),
+      ),
+    );
+    const { user } = renderBracket();
+
+    const dialog = await openGenerate(user);
+    expect(
+      await within(dialog).findByText(
+        'Drużyny albo grupy zmieniły się w trakcie wczytywania. Zamknij okno i otwórz je ponownie.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' })).not.toBeInTheDocument();
   });
 });

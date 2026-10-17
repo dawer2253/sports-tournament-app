@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { AdminMatch } from '@tournament/api-client';
+import { firstFieldErrors, isValidationError, type AdminMatch } from '@tournament/api-client';
 import { api } from './api';
 import { ApiError } from './api-error';
 
@@ -16,6 +16,8 @@ export const scheduleKeys = {
       ? (['tournament', tournamentId, 'matches'] as const)
       : (['tournament', tournamentId, 'matches', stageId] as const),
   venues: (tournamentId: number) => ['tournament', tournamentId, 'venues'] as const,
+  /** Propozycja rozstawienia drabinki z tabel grup (#260). */
+  seeding: (tournamentId: number, stageId: number) => ['tournament', tournamentId, 'seeding', stageId] as const,
 };
 
 /** Największa strona listy meczów w kontrakcie. */
@@ -79,6 +81,32 @@ export function useVenues(tournamentId: number) {
       });
       if (error) throw new ApiError(error.message, response.status);
       return data.data;
+    },
+  });
+}
+
+const SEEDING_FAILED = 'Nie udało się wczytać propozycji rozstawienia. Spróbuj ponownie.';
+
+/**
+ * Propozycja rozstawienia fazy `knockout` z bieżących tabel grup (#260).
+ * Liczy się przy każdym odczycie, więc nie ma czego trzymać: okno
+ * rozstawienia czeka na odczyt świeższy niż samo okno. `422` (brak składu,
+ * grupa mniejsza niż liczba wychodzących) to odpowiedź z domeny, więc jej
+ * zdanie idzie w `message` błędu, a nie ogólny komunikat.
+ */
+export function useBracketSeeding(tournamentId: number, stageId: number | undefined, enabled = true) {
+  return useQuery({
+    queryKey: scheduleKeys.seeding(tournamentId, stageId ?? 0),
+    enabled: enabled && stageId !== undefined,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/stages/{stage}/bracket/seeding', {
+        params: { path: { stage: stageId! } },
+      });
+      if (data) return data.data;
+      if (response.status === 422 && isValidationError(error)) {
+        throw new ApiError(Object.values(firstFieldErrors(error))[0] ?? error.message, response.status);
+      }
+      throw new ApiError(SEEDING_FAILED, response.status);
     },
   });
 }

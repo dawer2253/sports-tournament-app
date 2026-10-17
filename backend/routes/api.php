@@ -83,6 +83,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'stage');
     Route::post('/stages/{stage}/bracket', [ScheduleController::class, 'bracket'])
         ->can('manage', 'stage');
+    Route::get('/stages/{stage}/bracket/seeding', [ScheduleController::class, 'seeding'])
+        ->can('manage', 'stage');
 
     Route::get('/tournaments/{tournament}/teams', [TeamController::class, 'index'])
         ->can('manage', 'tournament');

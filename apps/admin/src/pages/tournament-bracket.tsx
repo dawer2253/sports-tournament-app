@@ -1,5 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { firstFieldErrors, isValidationError, type AdminMatch, type Stage, type Team } from '@tournament/api-client';
+import { useMutation, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
+import {
+  firstFieldErrors,
+  isValidationError,
+  type AdminMatch,
+  type BracketSeed,
+  type Stage,
+  type Team,
+} from '@tournament/api-client';
 import {
   BracketChampion,
   BracketMatchRow,
@@ -27,17 +34,25 @@ import {
   toast,
   type SeedingTeam,
 } from '@tournament/ui';
-import { CalendarClock, GitFork, MoreHorizontal, RefreshCw, Trophy, UserX } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { CalendarClock, GitFork, Info, MoreHorizontal, RefreshCw, TriangleAlert, Trophy, UserX } from 'lucide-react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { DatesDialog } from '../components/dates-dialog';
 import { MatchDialog } from '../components/match-dialog';
 import { SectionActions } from '../components/section-actions';
 import { api } from '../lib/api';
 import { bracketRounds, bracketRow, bracketSizeSentence, type BracketRound } from '../lib/bracket';
-import { BRACKET_ROUNDS_ACCUSATIVE, MATCHES, plural } from '../lib/plural';
+import { BRACKET_ROUNDS_ACCUSATIVE, MATCHES, QUALIFY, UNPLAYED_GROUP_MATCHES, plural } from '../lib/plural';
+import {
+  bracketDivergence,
+  divergenceSentence,
+  groupTeamsFromTables,
+  seedingFromProposal,
+  type GroupDivergence,
+} from '../lib/qualification';
 import { defaultRound, hasStartedMatches, teamsWithoutMatches } from '../lib/schedule';
-import { scheduleKeys, useStageMatches, useStages } from '../lib/schedule-queries';
+import { scheduleKeys, useBracketSeeding, useStageMatches, useStages } from '../lib/schedule-queries';
+import { useStandings } from '../lib/standings-queries';
 import { teamKeys, useTeams } from '../lib/team-queries';
 import { useTournament } from './tournament-layout';
 
@@ -56,6 +71,12 @@ const GENERATE_FAILED = 'Nie udało się wygenerować drabinki. Spróbuj ponowni
  * meczu otwiera to samo okno meczu co Terminarz ligi, z karnymi i notką przed
  * zapisem (#228). Po zapisie okno odświeża mecze turnieju, więc drużyna
  * podmieniona w meczu zależnym pojawia się na karcie rund.
+ *
+ * W turnieju z fazą grupową (#260, wariant A z #251) drabinka powstaje
+ * z wyjścia z grup: okno startuje z propozycji z tabel, pusty stan mówi
+ * o liczbie wychodzących i nierozegranych meczach grup, a po wygenerowaniu
+ * notka opisuje rozjazd drabinki z tabelami. Drużyny spoza drabinki są wtedy
+ * normalne (nie wyszły z grup), więc notki o nich nie ma.
  */
 export function TournamentBracketPage() {
   const tournament = useTournament();
@@ -71,6 +92,14 @@ export function TournamentBracketPage() {
   const started = hasStartedMatches(matches.data ?? []);
   const selectedMatch = matches.data?.find((match) => match.id === openMatchId);
   const hasBracket = (matches.data?.length ?? 0) > 0;
+
+  const groupStage = stages.data?.find((stage) => stage.type === 'group');
+  const hasComposition = (groupStage?.groups.length ?? 0) > 0;
+  const groupMatches = useStageMatches(tournament.id, groupStage?.id);
+  const unplayed = (groupMatches.data ?? []).filter((match) => match.status !== 'finished').length;
+  // Propozycja jest potrzebna tylko pustemu stanowi, a tabele — notce o rozjeździe.
+  const proposal = useBracketSeeding(tournament.id, cup?.id, hasComposition && matches.data !== undefined && !hasBracket);
+  const tables = useStandings(tournament.id, null, hasComposition && hasBracket);
   const openGenerate = () => setGenerating(true);
   const openDates = () => setDistributing(true);
 
@@ -88,6 +117,12 @@ export function TournamentBracketPage() {
       },
       { replace: true },
     );
+  }
+
+  /** Po wygenerowaniu okno znika, a nowa drabinka zaczyna od rundy 1. */
+  function finishGenerate() {
+    setGenerating(false);
+    forgetRound();
   }
 
   /** Nowa drabinka zaczyna od rundy 1, a nie od rundy zapamiętanej w adresie. */
@@ -136,17 +171,35 @@ export function TournamentBracketPage() {
       </Card>
     );
   } else if (!hasBracket) {
-    content = <EmptyBracket tournamentId={tournament.id} teamsCount={teams.data?.length} onGenerate={openGenerate} />;
+    content = groupStage ? (
+      <EmptyPlayoffBracket
+        tournamentId={tournament.id}
+        hasComposition={hasComposition}
+        proposal={proposal}
+        unplayed={unplayed}
+        onGenerate={openGenerate}
+      />
+    ) : (
+      <EmptyBracket tournamentId={tournament.id} teamsCount={teams.data?.length} onGenerate={openGenerate} />
+    );
   } else {
     const rounds = bracketRounds(matches.data);
     const champion = bracketChampion(matches.data);
     content = (
       <>
-        <OutsideBracketNotice
-          teams={teamsWithoutMatches(teams.data ?? [], matches.data)}
-          started={started}
-          onGenerate={openGenerate}
-        />
+        {groupStage ? (
+          <DivergenceNotice
+            divergences={tables.data ? bracketDivergence(bracketTeamIds(matches.data), tables.data, groupStage.groups) : []}
+            started={started}
+            onGenerate={openGenerate}
+          />
+        ) : (
+          <OutsideBracketNotice
+            teams={teamsWithoutMatches(teams.data ?? [], matches.data)}
+            started={started}
+            onGenerate={openGenerate}
+          />
+        )}
         <WithoutDatesNotice matches={matches.data} onDistribute={openDates} />
         <RoundsView
           rounds={rounds}
@@ -185,19 +238,28 @@ export function TournamentBracketPage() {
         )}
       </SectionActions>
       {content}
-      {generating && cup && teams.data && (
-        <GenerateBracketDialog
-          tournamentId={tournament.id}
-          stage={cup}
-          teams={teams.data}
-          current={matches.data ?? []}
-          onClose={() => setGenerating(false)}
-          onDone={() => {
-            setGenerating(false);
-            forgetRound();
-          }}
-        />
-      )}
+      {generating &&
+        cup &&
+        teams.data &&
+        (groupStage ? (
+          <PlayoffSeedingDialog
+            tournamentId={tournament.id}
+            stage={cup}
+            current={matches.data ?? []}
+            unplayed={unplayed}
+            onClose={() => setGenerating(false)}
+            onDone={finishGenerate}
+          />
+        ) : (
+          <GenerateBracketDialog
+            tournamentId={tournament.id}
+            stage={cup}
+            initialOrder={initialSeeding(teams.data, matches.data ?? [])}
+            current={matches.data ?? []}
+            onClose={() => setGenerating(false)}
+            onDone={finishGenerate}
+          />
+        ))}
       {distributing && cup && matches.data && (
         <DatesDialog
           tournament={tournament}
@@ -267,6 +329,115 @@ function EmptyBracket({
         )
       }
     />
+  );
+}
+
+/**
+ * Pusty stan w turnieju z fazą grupową (#260): drabinka czeka na wyjście
+ * z grup. Z propozycją zdanie mówi, ile drużyn wychodzi i jaka będzie
+ * drabinka; bez składu albo przy odmowie propozycji (grupa mniejsza niż
+ * liczba wychodzących) przycisk jest wyłączony, a obok stoi odnośnik do Grup.
+ * Nierozegrane mecze grup tylko ostrzegają: generować wolno zawsze (#250).
+ */
+function EmptyPlayoffBracket({
+  tournamentId,
+  hasComposition,
+  proposal,
+  unplayed,
+  onGenerate,
+}: {
+  tournamentId: number;
+  hasComposition: boolean;
+  proposal: UseQueryResult<BracketSeed[], Error>;
+  unplayed: number;
+  onGenerate: () => void;
+}) {
+  const blocked = !hasComposition || proposal.isError;
+  let description: string | undefined;
+  if (!hasComposition) {
+    description = 'Drabinka powstaje z wyjścia z grup. Najpierw ustal skład grup w zakładce Grupy.';
+  } else if (proposal.isError) {
+    description = proposal.error.message;
+  } else if (proposal.data) {
+    const count = proposal.data.length;
+    description = `Z grup ${plural(count, QUALIFY)} ${bracketSizeSentence(count)} Rozstawienie startuje z tabel grup.`;
+  }
+  const generate = (
+    <Button disabled={blocked || !proposal.data} onClick={onGenerate}>
+      <RefreshCw className="size-4" /> Rozstaw i wygeneruj
+    </Button>
+  );
+  return (
+    <>
+      {hasComposition && <UnplayedGroupMatchesNotice count={unplayed} className="mb-4" />}
+      <EmptyState
+        icon={<GitFork />}
+        title="Drabinka nie jest jeszcze wygenerowana"
+        description={description}
+        action={
+          blocked ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              {generate}
+              <Button asChild variant="outline">
+                <Link to={`/tournaments/${tournamentId}/groups`}>Przejdź do grup</Link>
+              </Button>
+            </div>
+          ) : (
+            generate
+          )
+        }
+      />
+    </>
+  );
+}
+
+/** Ostrzeżenie, że tabele grup mogą się jeszcze zmienić; nie blokuje generowania (#250). */
+function UnplayedGroupMatchesNotice({ count, className }: { count: number; className?: string }) {
+  if (count === 0) return null;
+  return (
+    <div role="status" className={cn('flex flex-wrap items-center gap-3 rounded-lg border bg-muted/50 p-3 text-sm', className)}>
+      <TriangleAlert aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+      <p className="min-w-0 flex-1">
+        {count} {plural(count, UNPLAYED_GROUP_MATCHES)}. Drabinkę wygenerujesz już teraz, ale tabele mogą się jeszcze
+        zmienić.
+      </p>
+    </div>
+  );
+}
+
+/** Drużyny stojące w drabince: z wszystkich meczów fazy, także z wolnym losem. */
+function bracketTeamIds(matches: AdminMatch[]): Set<number> {
+  return new Set(
+    matches.flatMap((match) => [match.homeTeam?.id, match.awayTeam?.id]).filter((id): id is number => id !== undefined),
+  );
+}
+
+/**
+ * Rozjazd drabinki z tabelami grup (#250): opis neutralny, bo podmiana to
+ * zwykle świadome rozstrzygnięcie remisu na linii. Panel liczy go sam
+ * (`bracketDivergence`) i niczego nie zapisuje. „Wygeneruj ponownie” liczy
+ * propozycję od nowa i jest wyłączone po starcie playoffu, jak w menu „⋯”.
+ */
+function DivergenceNotice({
+  divergences,
+  started,
+  onGenerate,
+}: {
+  divergences: GroupDivergence[];
+  started: boolean;
+  onGenerate: () => void;
+}) {
+  if (divergences.length === 0) return null;
+  return (
+    <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed p-3 text-sm">
+      <Info aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+      <p className="min-w-0 flex-1">
+        {divergenceSentence(divergences)} Wynik meczu grupy wpisany po wygenerowaniu drabinki jej nie rusza.
+      </p>
+      <Button size="sm" variant="outline" disabled={started} onClick={onGenerate}>
+        Wygeneruj ponownie
+      </Button>
+    </div>
   );
 }
 
@@ -380,6 +551,89 @@ function RoundsView({
   );
 }
 
+/** Lista drużyn albo grup zmieniła się między odczytami okna. */
+const SEEDING_OUTDATED = 'Drużyny albo grupy zmieniły się w trakcie wczytywania. Zamknij okno i otwórz je ponownie.';
+
+/**
+ * Okno „Rozstaw i wygeneruj” w turnieju z fazą grupową (#260). Propozycja,
+ * tabele, drużyny i grupy fazy liczą się albo zmieniają poza oknem, więc okno
+ * czeka na odczyt każdego z nich świeższy niż ono samo (także przy „Wygeneruj
+ * ponownie”: propozycja z bieżących tabel, a nie z obecnej drabinki). Nazwy
+ * i litery grup bierze z tych samych świeżych odczytów, żeby pozycja
+ * propozycji nie wypadła z listy po cichu. Do tego czasu stoi szkielet,
+ * a odmowa propozycji (`422`) albo rozjazd odczytów siada w miejscu błędu okna.
+ */
+function PlayoffSeedingDialog({
+  tournamentId,
+  stage,
+  current,
+  unplayed,
+  onClose,
+  onDone,
+}: {
+  tournamentId: number;
+  stage: Stage;
+  current: AdminMatch[];
+  unplayed: number;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const proposal = useBracketSeeding(tournamentId, stage.id);
+  const tables = useStandings(tournamentId);
+  const teams = useTeams(tournamentId);
+  const stages = useStages(tournamentId);
+  const reads = [proposal, tables, teams, stages];
+  const loaded = reads.every((read) => read.isFetchedAfterMount);
+  const readError = reads.find((read) => read.isError)?.error;
+
+  let failed: string | undefined;
+  if (loaded && readError) {
+    failed = readError.message;
+  } else if (loaded && proposal.data && tables.data && teams.data && stages.data) {
+    const groups = stages.data.find((candidate) => candidate.type === 'group')?.groups ?? [];
+    const initialOrder = seedingFromProposal(proposal.data, teams.data, groups);
+    if (initialOrder.length === proposal.data.length) {
+      return (
+        <GenerateBracketDialog
+          tournamentId={tournamentId}
+          stage={stage}
+          initialOrder={initialOrder}
+          groupTeams={groupTeamsFromTables(tables.data, groups)}
+          notice={<UnplayedGroupMatchesNotice count={unplayed} />}
+          current={current}
+          onClose={onClose}
+          onDone={onDone}
+        />
+      );
+    }
+    failed = SEEDING_OUTDATED;
+  }
+
+  const replacing = current.length > 0;
+  return (
+    <FormDialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      onSubmit={(event) => event.preventDefault()}
+      title={replacing ? 'Rozstaw i wygeneruj ponownie' : 'Rozstaw i wygeneruj'}
+      description={stage.name}
+      submitLabel={replacing ? 'Zastąp drabinkę' : 'Wygeneruj'}
+      error={failed}
+      contentClassName="max-h-[92vh] overflow-y-auto sm:max-w-3xl"
+    >
+      {!failed && (
+        <div aria-busy="true" aria-label="Wczytywanie propozycji rozstawienia" className="grid gap-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      )}
+    </FormDialog>
+  );
+}
+
 /**
  * Okno „Rozstaw i wygeneruj” (#217, ustalenia 1–2): lista rozstawienia
  * startująca od kolejności drużyn z listy, obok podgląd par 1. rundy i mecz
@@ -390,21 +644,32 @@ function RoundsView({
  * i przycisk mówią wtedy o zastąpieniu, bez osobnego kroku potwierdzenia, bo
  * API zastępuje bez pytania (#215).
  *
+ * Z `groupTeams` (turniej z fazą grupową, #260) lista ma pochodzenie
+ * i podmianę w obrębie grupy, ale bez blokady i losowania, które
+ * zniszczyłyby rozstawienie krzyżowe; listę startową daje propozycja.
+ *
  * `422` pod `thirdPlaceMatch` siada przy przełączniku, reszta (`teamIds`,
- * `teams`, `stage`) nad przyciskami. Sukces unieważnia mecze i drużyny
+ * `groups`, `teams`, `stage`) nad przyciskami. Sukces unieważnia mecze i drużyny
  * (liczniki meczów zaplanowanych), a okno zamyka się po odświeżeniu listy.
  */
 function GenerateBracketDialog({
   tournamentId,
   stage,
-  teams,
+  initialOrder,
+  groupTeams,
+  notice,
   current,
   onClose,
   onDone,
 }: {
   tournamentId: number;
   stage: Stage;
-  teams: Team[];
+  /** Lista rozstawienia na start okna. */
+  initialOrder: SeedingTeam[];
+  /** Drużyny grup do podmiany; tylko w turnieju z fazą grupową. */
+  groupTeams?: SeedingTeam[];
+  /** Uprzedzenie nad listą, np. o nierozegranych meczach grup. */
+  notice?: ReactNode;
   /** Mecze obecnej drabinki; pusta lista, gdy generujemy pierwszy raz. */
   current: AdminMatch[];
   onClose: () => void;
@@ -413,7 +678,7 @@ function GenerateBracketDialog({
   const queryClient = useQueryClient();
   const currentMatches = current.length;
   const replacing = currentMatches > 0;
-  const [order, setOrder] = useState<SeedingTeam[]>(() => initialSeeding(teams, current));
+  const [order, setOrder] = useState<SeedingTeam[]>(initialOrder);
   const [locked, setLocked] = useState(0);
   const thirdPlaceAllowed = order.length >= 4;
   const [thirdPlace, setThirdPlace] = useState(() =>
@@ -451,7 +716,7 @@ function GenerateBracketDialog({
       if (isValidationError(error)) {
         const { thirdPlaceMatch, ...rest } = firstFieldErrors(error);
         setThirdPlaceError(thirdPlaceMatch);
-        setFormError(rest.teamIds ?? rest.teams ?? rest.stage ?? Object.values(rest)[0]);
+        setFormError(rest.teamIds ?? rest.groups ?? rest.teams ?? rest.stage ?? Object.values(rest)[0]);
       } else {
         setFormError(error.message);
       }
@@ -479,14 +744,19 @@ function GenerateBracketDialog({
       error={formError}
       contentClassName="max-h-[92vh] overflow-y-auto sm:max-w-3xl"
     >
+      {notice}
       <div className="grid gap-4 md:grid-cols-2">
-        <SeedingList
-          value={order}
-          onChange={setOrder}
-          locked={locked}
-          onLockedChange={setLocked}
-          disabled={generate.isPending}
-        />
+        {groupTeams ? (
+          <SeedingList value={order} onChange={setOrder} groupTeams={groupTeams} disabled={generate.isPending} />
+        ) : (
+          <SeedingList
+            value={order}
+            onChange={setOrder}
+            locked={locked}
+            onLockedChange={setLocked}
+            disabled={generate.isPending}
+          />
+        )}
         <div className="grid content-start gap-3">
           <FirstRoundPreview seeding={order} />
           <div data-slot="third-place-field" className="grid gap-1.5">
