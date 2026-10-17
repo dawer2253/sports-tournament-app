@@ -54,7 +54,7 @@ npm run storybook     # design system na :6006
 ```
 
 Mecze mają w kontrakcie trzy przykłady: ligowy (domyślny), pucharowy i
-koszykarski. Żeby mock oddał drabinkę, dołóż do żądania nagłówek
+koszykarski, a publiczne listy meczów także czwarty, grupowy. Żeby mock oddał drabinkę, dołóż do żądania nagłówek
 `Prefer: example=puchar` — obsługują go listy meczów panelu i strony
 publicznej oraz publiczne `/public/t/{slug}`, `/fixtures` i `/results`, więc
 strona publiczna pokazuje wtedy puchar z Drabinką. Ten puchar ma odpowiednik
@@ -65,6 +65,12 @@ z sumami rzutów), a w panelu turniej, terminarz, tabela i zdarzenia meczu
 (`GET /matches/{match}/events`, rzuty za 1, 2 i 3), więc oba widoki
 mówią o tym samym sporcie, a zdobycze nazywają się w nim „Punkty", a nie
 „Bramki". Ten turniej ma odpowiednik w seedzie demo (`liga-koszykowki-2026`).
+Trzeci przełącznik, `Prefer: example=grupy`, oddaje turniej z fazą grupową
+i playoffem — obsługują go publiczne `/public/t/{slug}`, `/standings`,
+`/matches`, `/fixtures` i `/results`, więc strona publiczna pokazuje wtedy
+dwie tabele grup z linią wyjścia i Drabinkę playoffu
+(`/t/grupy-osiedlowe-2026`). Ten turniej ma odpowiednik w seedzie demo
+(`grupy-osiedlowe-2026`).
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.

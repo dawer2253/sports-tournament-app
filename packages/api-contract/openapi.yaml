@@ -2607,13 +2607,16 @@ paths:
       tags: [Public]
       summary: Publiczna strona turnieju
       description: |
-        Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
-        zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
-        ten sam przełącznik obsługuje tabele i klasyfikację, więc wszystkie
-        widoki mocka mówią o tym samym sporcie. Trzeci, po
-        `Prefer: example=puchar`, to puchar piłkarski z jedną fazą `knockout`:
-        ten sam przełącznik daje jego mecze w `/matches`, `/fixtures`
-        i `/results`, więc strona publiczna pokazuje pod mockiem drabinkę.
+        Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+        i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
+        `Prefer: example=koszykowka` — ten sam przełącznik obsługuje tabele
+        i klasyfikację, więc wszystkie widoki mocka mówią o tym samym sporcie.
+        Trzeci, po `Prefer: example=puchar`, to puchar piłkarski z jedną fazą
+        `knockout`: ten sam przełącznik daje jego mecze w `/matches`,
+        `/fixtures` i `/results`, więc strona publiczna pokazuje pod mockiem
+        drabinkę. Czwarty, po `Prefer: example=grupy`, to turniej z fazą
+        `group` i fazą `knockout`: ten sam przełącznik daje jego tabele grup
+        w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
       security: []
       responses:
         '200':
@@ -2678,6 +2681,33 @@ paths:
                         - { code: goals, label: Bramki }
                         - { code: yellowCards, label: Żółte kartki }
                         - { code: redCards, label: Czerwone kartki }
+                grupy:
+                  summary: Grupy z playoffem
+                  description: |
+                    Turniej z fazą `group` (dwie grupy po cztery drużyny, z każdej
+                    wychodzą dwie) i fazą `knockout` o `id: 4`, tym samym co `stageId`
+                    w przykładach `grupy` list meczów. Ma odpowiednik w seedzie demo
+                    (`grupy-osiedlowe-2026`).
+                  value:
+                    data:
+                      name: Grupy Osiedlowe 2026
+                      slug: grupy-osiedlowe-2026
+                      status: active
+                      sport: { id: 1, code: football, name: Piłka nożna, allowsDraw: true }
+                      branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      stages:
+                        - id: 3
+                          type: group
+                          name: Faza grupowa
+                          order: 1
+                          groups:
+                            - { id: 1, name: Grupa A, order: 1, qualifiers: 2 }
+                            - { id: 2, name: Grupa B, order: 2, qualifiers: 2 }
+                        - { id: 4, type: knockout, name: Faza pucharowa, order: 2, groups: [] }
+                      stats:
+                        - { code: goals, label: Bramki }
+                        - { code: yellowCards, label: Żółte kartki }
+                        - { code: redCards, label: Czerwone kartki }
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -2689,12 +2719,14 @@ paths:
       tags: [Public]
       summary: Tabele turnieju
       description: |
-        Przykłady są dwa, po jednym na sport: `pilka` (domyślny, zgodny
-        z seedem demo) i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+        Przykłady są trzy: `pilka` (domyślny, zgodny z seedem demo),
+        `koszykowka` i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
         `Prefer: example=koszykowka` — ten sam przełącznik obsługuje
         `/public/t/{slug}`, więc oba widoki mówią o tym samym sporcie. Drugi
         przykład jest tu po to, żeby dało się sprawdzić, czy widok bierze
-        nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu.
+        nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu. Trzeci, po
+        `Prefer: example=grupy`, to dwie tabele grup turnieju z przykładu
+        `grupy` w `/public/t/{slug}`.
       security: []
       responses:
         '200':
@@ -2752,6 +2784,47 @@ paths:
                         rows:
                           - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4 }
                           - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2 }
+                grupy:
+                  summary: Grupy z playoffem — tabela na grupę
+                  description: |
+                    Turniej z przykładu `grupy` w `GET /public/t/{slug}` i z seedu demo
+                    (`grupy-osiedlowe-2026`) po rozegranej fazie grupowej. Liczby
+                    wychodzących tabela nie niesie: daje ją `Stage.groups[].qualifiers`
+                    turnieju, po `groupId`. Na linii wyjścia nie ma remisu.
+                  value:
+                    data:
+                      - stageId: 3
+                        stageName: Faza grupowa
+                        groupId: 1
+                        groupName: Grupa A
+                        scoreLabel: Bramki
+                        allowsDraw: true
+                        tiebreakers:
+                          - { code: points, label: Punkty w tabeli }
+                          - { code: head_to_head, label: Bezpośredni mecz }
+                          - { code: score_diff, label: Różnica bramek }
+                          - { code: score_for, label: Bramki zdobyte }
+                        rows:
+                          - { position: 1, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 3, won: 2, drawn: 1, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 7 }
+                          - { position: 2, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 3, won: 1, drawn: 2, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 5 }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 3, scoreDifference: 1, points: 4 }
+                          - { position: 4, team: { id: 4, name: Rysie Wola, logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 0, scoreAgainst: 7, scoreDifference: -7, points: 0 }
+                      - stageId: 3
+                        stageName: Faza grupowa
+                        groupId: 2
+                        groupName: Grupa B
+                        scoreLabel: Bramki
+                        allowsDraw: true
+                        tiebreakers:
+                          - { code: points, label: Punkty w tabeli }
+                          - { code: head_to_head, label: Bezpośredni mecz }
+                          - { code: score_diff, label: Różnica bramek }
+                          - { code: score_for, label: Bramki zdobyte }
+                        rows:
+                          - { position: 1, team: { id: 5, name: Żubry Praga, logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 1, scoreDifference: 5, points: 9 }
+                          - { position: 2, team: { id: 7, name: Lwy Ochota, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 4 }
+                          - { position: 3, team: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 4, scoreAgainst: 5, scoreDifference: -1, points: 3 }
+                          - { position: 4, team: { id: 8, name: Jastrzębie Wawer, logoUrl: null }, played: 3, won: 0, drawn: 1, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 1 }
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -2788,8 +2861,9 @@ paths:
         dziewięćdziesiąt, czyli dokładnie ten rozmiar, dla którego panelowy
         odpowiednik ma strony.
 
-        Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
-        wysłaniu nagłówka `Prefer: example=puchar`.
+        Przykłady są trzy: `liga` (domyślny), `puchar` i `grupy`. Mock
+        zwraca drugi po wysłaniu nagłówka `Prefer: example=puchar`, a trzeci
+        po `Prefer: example=grupy`.
       security: []
       responses:
         '200':
@@ -3036,6 +3110,85 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                grupy:
+                  summary: Playoff po fazie grupowej — jeden półfinał rozegrany
+                  description: |
+                    Odpowiedź zawężona przez `stageId=4`, czyli fazę pucharową turnieju
+                    z przykładu `grupy`. Drabinkę wygenerowano z wyjścia z grup, z
+                    propozycji `GET /stages/{stage}/bracket/seeding` i z meczem o 3. miejsce:
+                    w półfinałach grają 1A – 2B i 1B – 2A. Drabinka nie pamięta tych miejsc
+                    („Qualifiers” w `CONTEXT.md`), więc etykiet pochodzenia tu nie ma.
+                    Półfinał 1 jest rozegrany, a półfinał 2, finał i mecz o 3. miejsce czekają.
+                  value:
+                    data:
+                      - id: 411
+                        stageId: 4
+                        groupId: null
+                        round: { id: 41, name: Półfinał, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-10-03T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 421
+                        loserToMatchId: 422
+                        advancesToSlot: home
+                      - id: 412
+                        stageId: 4
+                        groupId: null
+                        round: { id: 41, name: Półfinał, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-03T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 421
+                        loserToMatchId: 422
+                        advancesToSlot: away
+                      - id: 422
+                        stageId: 4
+                        groupId: null
+                        round: { id: 42, name: Finał, order: 2 }
+                        matchNumber: 2
+                        homeTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        awayTeam: null
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-10T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                      - id: 421
+                        stageId: 4
+                        groupId: null
+                        round: { id: 42, name: Finał, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: null
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-10T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
@@ -3072,9 +3225,10 @@ paths:
         Mecz trwający niesie strzelców, którzy dochodzą w trakcie; mecz
         zaplanowany ma `scorers: []` (`PublicMatch`).
 
-        Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
-        zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`,
-        a trzeci po `Prefer: example=puchar`.
+        Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+        i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
+        `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
+        a czwarty po `Prefer: example=grupy`.
       security: []
       responses:
         '200':
@@ -3250,6 +3404,68 @@ paths:
                         loserToMatchId: null
                         advancesToSlot: null
                         scorers: []
+                grupy:
+                  summary: Grupy z playoffem — po fazie grupowej czeka playoff
+                  description: |
+                    Te same mecze co przykład `grupy` w `GET /public/t/{slug}/matches`,
+                    bez zakończonych. Faza grupowa jest rozegrana, więc meczów
+                    z `groupId` tu nie ma.
+                  value:
+                    data:
+                      - id: 412
+                        stageId: 4
+                        groupId: null
+                        round: { id: 41, name: Półfinał, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-03T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 421
+                        loserToMatchId: 422
+                        advancesToSlot: away
+                        scorers: []
+                      - id: 422
+                        stageId: 4
+                        groupId: null
+                        round: { id: 42, name: Finał, order: 2 }
+                        matchNumber: 2
+                        homeTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        awayTeam: null
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-10T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 421
+                        stageId: 4
+                        groupId: null
+                        round: { id: 42, name: Finał, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: null
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        status: scheduled
+                        kickoffAt: '2026-10-10T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -3270,9 +3486,10 @@ paths:
         równym terminie (także między meczami bez terminu) rozstrzyga
         kolejność fazy, kolejki i `matchNumber`, malejąco — tak jak termin.
 
-        Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
-        zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`,
-        a trzeci po `Prefer: example=puchar`.
+        Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+        i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
+        `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
+        a czwarty po `Prefer: example=grupy`.
       security: []
       responses:
         '200':
@@ -3479,6 +3696,249 @@ paths:
                         winnerToMatchId: 201
                         loserToMatchId: null
                         advancesToSlot: away
+                        scorers: []
+                grupy:
+                  summary: Grupy z playoffem — mecze grup z `groupId` i półfinał
+                  description: |
+                    Rozegrana faza grupowa (mecze z `groupId`, kolejki wspólne dla obu
+                    grup) i półfinał 1 z przykładu `grupy` w `GET /public/t/{slug}/matches`,
+                    zgodne z tabelami z przykładu `grupy` w `/standings`. Turniej demo
+                    nie ma zdarzeń, więc `scorers` są puste.
+                  value:
+                    data:
+                      - id: 411
+                        stageId: 4
+                        groupId: null
+                        round: { id: 41, name: Półfinał, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-10-03T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: 421
+                        loserToMatchId: 422
+                        advancesToSlot: home
+                        scorers: []
+                      - id: 334
+                        stageId: 3
+                        groupId: 2
+                        round: { id: 33, name: Kolejka 3, order: 3 }
+                        matchNumber: 4
+                        homeTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        awayTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        homeScore: 0
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-19T16:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 333
+                        stageId: 3
+                        groupId: 2
+                        round: { id: 33, name: Kolejka 3, order: 3 }
+                        matchNumber: 3
+                        homeTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                        awayTeam: { id: 8, name: Jastrzębie Wawer, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-19T14:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 332
+                        stageId: 3
+                        groupId: 1
+                        round: { id: 33, name: Kolejka 3, order: 3 }
+                        matchNumber: 2
+                        homeTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        awayTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-19T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 331
+                        stageId: 3
+                        groupId: 1
+                        round: { id: 33, name: Kolejka 3, order: 3 }
+                        matchNumber: 1
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-19T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 324
+                        stageId: 3
+                        groupId: 2
+                        round: { id: 32, name: Kolejka 2, order: 2 }
+                        matchNumber: 4
+                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-12T16:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 323
+                        stageId: 3
+                        groupId: 2
+                        round: { id: 32, name: Kolejka 2, order: 2 }
+                        matchNumber: 3
+                        homeTeam: { id: 8, name: Jastrzębie Wawer, logoUrl: null }
+                        awayTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-12T14:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 322
+                        stageId: 3
+                        groupId: 1
+                        round: { id: 32, name: Kolejka 2, order: 2 }
+                        matchNumber: 2
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-12T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 321
+                        stageId: 3
+                        groupId: 1
+                        round: { id: 32, name: Kolejka 2, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: 0
+                        awayScore: 2
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-12T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 314
+                        stageId: 3
+                        groupId: 2
+                        round: { id: 31, name: Kolejka 1, order: 1 }
+                        matchNumber: 4
+                        homeTeam: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                        awayTeam: { id: 7, name: Lwy Ochota, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 2
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-05T16:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 313
+                        stageId: 3
+                        groupId: 2
+                        round: { id: 31, name: Kolejka 1, order: 1 }
+                        matchNumber: 3
+                        homeTeam: { id: 5, name: Żubry Praga, logoUrl: null }
+                        awayTeam: { id: 8, name: Jastrzębie Wawer, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-05T14:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 312
+                        stageId: 3
+                        groupId: 1
+                        round: { id: 31, name: Kolejka 1, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 2, name: Sokoły Ursus, logoUrl: null }
+                        awayTeam: { id: 3, name: Orły Bielany, logoUrl: null }
+                        homeScore: 2
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-05T12:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        scorers: []
+                      - id: 311
+                        stageId: 3
+                        groupId: 1
+                        round: { id: 31, name: Kolejka 1, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 1, name: Wilki Bemowo, logoUrl: null }
+                        awayTeam: { id: 4, name: Rysie Wola, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        status: finished
+                        kickoffAt: '2026-09-05T10:00:00+00:00'
+                        venue: { id: 1, name: Boisko Bemowo }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
                         scorers: []
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
