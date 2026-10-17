@@ -5,6 +5,7 @@ import {
   bracketPosition,
   bracketRoundSummaries,
   bracketSeeding,
+  bracketTeamIds,
   bracketTeamsInPlay,
   bracketTree,
   currentRoundOrder,
@@ -192,5 +193,18 @@ describe('drużyny w grze', () => {
 
   it('wolny los liczy się do drużyn fazy, choć nie gra w 1. rundzie', () => {
     expect(bracketTeamsInPlay(demoBracket({ teams: 6 }))).toEqual({ inPlay: 6, total: 6 })
+  })
+})
+
+describe('bracketTeamIds', () => {
+  it('bierze drużyny z wszystkich meczów, także z wolnym losem w 2. rundzie, bez pustych slotów', () => {
+    const team = (id: number) => ({ id })
+    const matches = [
+      { homeTeam: team(2), awayTeam: team(3) },
+      { homeTeam: team(1), awayTeam: null },
+      { homeTeam: null, awayTeam: null },
+    ]
+
+    expect([...bracketTeamIds(matches)].toSorted()).toEqual([1, 2, 3])
   })
 })

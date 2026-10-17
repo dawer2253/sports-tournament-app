@@ -22,18 +22,6 @@ export function withQualifiers<Row extends StandingsTableRow>(rows: readonly Row
   }))
 }
 
-
-/**
- * Drużyny stojące w drabince: z wszystkich meczów fazy pucharowej. To zbiór
- * rozstawionych — generator obsadza 1. rundę i sloty po wolnych losach od
- * razu, a późniejsze rundy dostają już tylko drużyny z wcześniejszych.
- */
-export function bracketTeamIds(
-  matches: readonly { homeTeam: { id: number } | null; awayTeam: { id: number } | null }[],
-): Set<number> {
-  return new Set(matches.flatMap((match) => [match.homeTeam?.id, match.awayTeam?.id]).filter((id) => id !== undefined))
-}
-
 /**
  * Rozjazd drabinki z dzisiejszą tabelą jednej grupy (#250, #260, #268): kto
  * z grupy gra w drabince poza czołówką `qualifiers` (`plays`) i kogo

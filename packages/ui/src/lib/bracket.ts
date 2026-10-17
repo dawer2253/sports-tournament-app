@@ -133,6 +133,17 @@ export function hasGroupStage(stages: readonly { type: string }[]): boolean {
   return stages.some((stage) => stage.type === 'group')
 }
 
+/**
+ * Drużyny stojące w drabince: z wszystkich meczów fazy pucharowej. To zbiór
+ * rozstawionych — generator obsadza 1. rundę i sloty po wolnych losach od
+ * razu, a późniejsze rundy dostają już tylko drużyny z wcześniejszych.
+ */
+export function bracketTeamIds(
+  matches: readonly { homeTeam: { id: number } | null; awayTeam: { id: number } | null }[],
+): Set<number> {
+  return new Set(matches.flatMap((match) => [match.homeTeam?.id, match.awayTeam?.id]).filter((id) => id !== undefined))
+}
+
 export const THIRD_PLACE_LABEL = 'Mecz o 3. miejsce'
 
 /** Mecz o 3. miejsce: prowadzą do niego krawędzie przegranego. Osobnej flagi nie ma. */

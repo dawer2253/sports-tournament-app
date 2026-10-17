@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
-import { bracketTeamIds, qualifiersDivergence, withQualifiers } from './qualifiers'
+import { qualifiersDivergence, withQualifiers } from './qualifiers'
 
 /** Wiersz z samymi polami, które liczą się dla linii wyjścia. */
 function row(position: number, points: number, played = 2): StandingsTableRow {
@@ -74,19 +74,6 @@ describe('withQualifiers', () => {
 /** Wiersze grupy w kolejności miejsc: id drużyny to jej dzisiejsze miejsce. */
 const GROUP = [row(1, 9), row(2, 6), row(3, 3), row(4, 0)]
 const ids = (rows: StandingsTableRow[]) => rows.map((candidate) => candidate.team.id)
-
-describe('bracketTeamIds', () => {
-  it('bierze drużyny z wszystkich meczów, także z wolnym losem w 2. rundzie, bez pustych slotów', () => {
-    const team = (id: number) => ({ id })
-    const matches = [
-      { homeTeam: team(2), awayTeam: team(3) },
-      { homeTeam: team(1), awayTeam: null },
-      { homeTeam: null, awayTeam: null },
-    ]
-
-    expect([...bracketTeamIds(matches)].toSorted()).toEqual([1, 2, 3])
-  })
-})
 
 describe('qualifiersDivergence', () => {
   it('drabinka z czołówki tabeli nie ma rozjazdu', () => {
