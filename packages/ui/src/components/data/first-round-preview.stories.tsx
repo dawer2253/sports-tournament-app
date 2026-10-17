@@ -63,3 +63,21 @@ export const PiecDruzyn: Story = {
     await expect(all).toContain('2Dragons–Wilki')
   },
 }
+
+/**
+ * Z tabel grup (#260): przy nazwie stoi pochodzenie, więc pary 2 × 2 czytają
+ * się „1A – 2B” i „1B – 2A”, jak w propozycji z backendu.
+ */
+export const ZGrup: Story = {
+  args: {
+    seeding: [
+      { ...seeding(1)[0]!, origin: '1A', groupId: 1 },
+      { id: 4, name: 'Dragons', origin: '1B', groupId: 2 },
+      { id: 2, name: 'Sparta', origin: '2A', groupId: 1 },
+      { id: 5, name: 'Wilki', origin: '2B', groupId: 2 },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await expect(rows(canvasElement)).toEqual(['11A FC Górka–2B Wilki', '21B Dragons–2A Sparta'])
+  },
+}

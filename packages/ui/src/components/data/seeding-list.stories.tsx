@@ -7,6 +7,20 @@ import type { SeedingTeam } from './seeding-team'
 
 const six: SeedingTeam[] = teams.slice(0, 6).map(({ id, name }) => ({ id, name }))
 
+/**
+ * Dwie grupy po trzy drużyny, z każdej wychodzą dwie (#260): propozycja
+ * z tabel to 1A, 1B, 2A, 2B, a trzecie miejsca czekają na podmianę.
+ */
+const groupTable: SeedingTeam[] = [
+  { ...six[0]!, origin: '1A', groupId: 1 },
+  { ...six[1]!, origin: '2A', groupId: 1 },
+  { ...six[2]!, origin: '3A', groupId: 1 },
+  { ...six[3]!, origin: '1B', groupId: 2 },
+  { ...six[4]!, origin: '2B', groupId: 2 },
+  { ...six[5]!, origin: '3B', groupId: 2 },
+]
+const fromGroups: SeedingTeam[] = [groupTable[0]!, groupTable[3]!, groupTable[1]!, groupTable[4]!]
+
 /** Nazwy z wywołania `onChange`, żeby asercja czytała się jak lista na ekranie. */
 function names(list: SeedingTeam[]): string[] {
   return list.map((team) => team.name)
@@ -34,7 +48,7 @@ const meta = {
           }}
           onLockedChange={(next) => {
             setLocked(next)
-            args.onLockedChange(next)
+            args.onLockedChange?.(next)
           }}
         />
       </div>
@@ -106,5 +120,53 @@ export const Zapisywanie: Story = {
     for (const button of canvas.getAllByRole('button')) {
       await expect(button).toBeDisabled()
     }
+  },
+}
+
+/**
+ * Rozstawienie z tabel grup (#260): przy pozycji stoi pochodzenie, a remis
+ * na linii rozstrzyga podmiana w obrębie grupy — wybór drugiego miejsca
+ * grupy A ma tylko drużyny tej grupy spoza listy. Blokady i losowania nie
+ * ma, bo zniszczyłyby rozstawienie krzyżowe.
+ */
+export const ZGrup: Story = {
+  args: { value: fromGroups, groupTeams: groupTable },
+  render: function Render(args: SeedingListProps) {
+    const [value, setValue] = useState(args.value)
+    return (
+      <div className="max-w-sm">
+        <SeedingList
+          value={value}
+          groupTeams={args.groupTeams}
+          onChange={(next) => {
+            setValue(next)
+            args.onChange(next)
+          }}
+        />
+      </div>
+    )
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    const list = canvas.getByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' })
+    await expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      '11AFC Górka',
+      '21BDragons',
+      '32ASparta',
+      '42BWilki',
+    ])
+    await expect(canvas.queryByRole('combobox', { name: 'Zablokowane pozycje' })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: /Wylosuj/ })).not.toBeInTheDocument()
+
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Drużyna na pozycji 3' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect((await body.findAllByRole('option')).map((option) => option.textContent)).toEqual([
+      'Sparta (2A)',
+      'Orły (3A)',
+    ])
+    await userEvent.click(body.getByRole('option', { name: 'Orły (3A)' }))
+
+    await expect(args.onChange.mock.lastCall![0].map((team: SeedingTeam) => team.id)).toEqual([1, 4, 3, 5])
+    await expect(within(list).getAllByRole('listitem')[2]).toHaveTextContent('3AOrły')
   },
 }

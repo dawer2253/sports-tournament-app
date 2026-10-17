@@ -14,7 +14,8 @@ export interface FirstRoundPreviewProps {
  * ustalenie 2), według tej samej reguły co generator (`firstRoundPairs`).
  * Numer to pozycja meczu w pełnej drabince, więc przy wolnych losach ma
  * dziury tak jak `matchNumber`. Wolny los to wiersz przerywany „wolny los →
- * 2. runda” zamiast rywala.
+ * 2. runda” zamiast rywala. Drużyna z tabeli grupy (#260) ma przy nazwie
+ * pochodzenie, więc para czyta się „1A Wilki – 2B Orły”.
  */
 export function FirstRoundPreview({ seeding, className }: FirstRoundPreviewProps) {
   const titleId = useId()
@@ -35,16 +36,36 @@ export function FirstRoundPreview({ seeding, className }: FirstRoundPreviewProps
             )}
           >
             <span className="w-5 shrink-0 text-right text-xs tabular-nums text-muted-foreground">{matchNumber}</span>
-            <span className="min-w-0 flex-1 truncate">{home.name}</span>
+            <span className="min-w-0 flex-1 truncate">
+              <Origin team={home} />
+              {home.name}
+            </span>
             <span aria-hidden className="text-xs text-muted-foreground">
               {away ? '–' : '→'}
             </span>
             <span className="min-w-0 flex-1 truncate text-right">
-              {away ? away.name : <span className="text-xs italic">wolny los → 2. runda</span>}
+              {away ? (
+                <>
+                  <Origin team={away} />
+                  {away.name}
+                </>
+              ) : (
+                <span className="text-xs italic">wolny los → 2. runda</span>
+              )}
             </span>
           </li>
         ))}
       </ol>
     </div>
+  )
+}
+
+/** Pochodzenie przed nazwą, ze spacją, żeby czytnik ekranu nie skleił „1AWilki”. */
+function Origin({ team }: { team: SeedingTeam }) {
+  if (!team.origin) return null
+  return (
+    <>
+      <span className="text-xs font-semibold tabular-nums text-primary">{team.origin}</span>{' '}
+    </>
   )
 }
