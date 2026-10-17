@@ -1563,10 +1563,19 @@ export interface paths {
          *     dotychczasową drabinkę fazy, także terminy i obiekty poprawione ręcznie.
          *     Wszystko dzieje się w jednej transakcji.
          *
-         *     - `teamIds` to wszystkie drużyny turnieju, każda dokładnie raz,
-         *       w kolejności rozstawienia: pierwsza jest najwyżej rozstawiona.
-         *       Losowanie to wymieszanie tej listy po stronie klienta. Kolejność
-         *       nie jest przechowywana, zostaje po niej tylko kształt drabinki.
+         *     - `teamIds` to drużyny drabinki w kolejności rozstawienia: pierwsza
+         *       jest najwyżej rozstawiona. Losowanie to wymieszanie tej listy po
+         *       stronie klienta. Kolejność nie jest przechowywana, zostaje po niej
+         *       tylko kształt drabinki.
+         *     - W turnieju bez fazy `group` (sam puchar) lista to wszystkie drużyny
+         *       turnieju, każda dokładnie raz.
+         *     - W turnieju z fazą `group` lista to dokładnie `Group.qualifiers`
+         *       drużyn z każdej grupy fazy, każda raz. Drużyny nie muszą być
+         *       czołówką tabeli grupy: podmiana na niższe miejsce z tej samej grupy
+         *       to rozstrzygnięcie remisu na linii. Propozycję z tabel oddaje
+         *       `GET /stages/{stage}/bracket/seeding`. Generować wolno także przed
+         *       końcem meczów grup, a wynik meczu grupy wpisany później drabinki nie
+         *       rusza.
          *     - Rozmiar drabinki to najbliższa potęga dwójki ≥ liczby drużyn.
          *       Seed trafia na pozycję według standardowej reguły (1–16, 8–9, 4–13…),
          *       więc seedy 1…2^k nie spotkają się, zanim zostanie 2^k drużyn.
@@ -1583,12 +1592,15 @@ export interface paths {
          *       `POST /stages/{stage}/schedule/dates`.
          *
          *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
-         *     faza nie jest `knockout` albo ma mecz `live` lub `finished`; pod
-         *     `teams`, gdy turniej ma mniej niż dwie drużyny; pod `teamIds`, gdy
-         *     lista nie jest dokładnie zbiorem drużyn turnieju; pod
-         *     `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono przy mniej niż
-         *     czterech drużynach. Odmowa niczego nie zmienia. Mecze dociąga się potem
-         *     przez `GET /tournaments/{tournament}/matches?stageId=`.
+         *     faza nie jest `knockout`, ma mecz `live` lub `finished` albo faza
+         *     `group` turnieju nie ma składu grup; pod `teams`, gdy turniej ma mniej
+         *     niż dwie drużyny; pod `groups`, gdy grupa ma mniej żywych drużyn, niż
+         *     z niej wychodzi; pod `teamIds`, gdy lista nie jest dokładnie zbiorem
+         *     drużyn turnieju (sam puchar) albo z którejś grupy ma inną liczbę
+         *     drużyn niż `qualifiers` lub zawiera drużynę bez grupy (turniej z fazą
+         *     `group`); pod `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono przy
+         *     mniej niż czterech drużynach. Odmowa niczego nie zmienia. Mecze
+         *     dociąga się potem przez `GET /tournaments/{tournament}/matches?stageId=`.
          */
         post: {
             parameters: {
@@ -1615,7 +1627,11 @@ export interface paths {
                      *     }
                      */
                     "application/json": {
-                        /** @description Drużyny turnieju w kolejności rozstawienia, od najwyżej rozstawionej. */
+                        /**
+                         * @description Drużyny drabinki w kolejności rozstawienia, od najwyżej
+                         *     rozstawionej: w samym pucharze wszystkie drużyny turnieju,
+                         *     w turnieju z fazą `group` wychodzący z grup.
+                         */
                         teamIds: number[];
                         /** @description Czy dołożyć mecz o 3. miejsce. Bez wartości domyślnej. */
                         thirdPlaceMatch: boolean;
@@ -1659,6 +1675,116 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stages/{stage}/bracket/seeding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage: components["parameters"]["StageId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Propozycja rozstawienia drabinki z tabel grup
+         * @description Propozycja rozstawienia fazy `knockout` w turnieju z fazą `group`,
+         *     liczona przy każdym odczycie z bieżących tabel grup
+         *     (`GET /tournaments/{tournament}/standings`) i z bieżących
+         *     `Group.qualifiers`. Niczego nie zapisuje: to punkt startowy listy
+         *     `teamIds` dla `POST /stages/{stage}/bracket`, którą organizer może
+         *     jeszcze poprawić.
+         *
+         *     Z każdej grupy wchodzi `qualifiers` czołowych drużyn tabeli. Kolejność
+         *     listy to rozstawienie od 1, a powstaje tak:
+         *
+         *     1. Start miejscami, a w obrębie miejsca w kolejności `Group.order`:
+         *        1A, 1B, …, 2A, 2B, … Przy jednej grupie to kolejność tabeli.
+         *     2. Koszt listy to wektor: ile par drużyn z jednej grupy może się
+         *        spotkać najwcześniej w 1. rundzie, ile w 2. itd., porównywany
+         *        leksykograficznie od 1. rundy. Pozycje w drabince są te same co
+         *        w `POST /stages/{stage}/bracket`.
+         *     3. Lista poprawia się zamianami dwóch drużyn z tego samego miejsca
+         *        tabeli: w każdym kroku wygrywa zamiana o najmniejszym koszcie, przy
+         *        remisie ta leżąca najniżej na liście. Koniec, gdy żadna zamiana nie
+         *        obniża kosztu.
+         *
+         *     Dzięki temu `position` nie maleje wzdłuż listy, a przy tych samych
+         *     tabelach dwa odczyty dają tę samą listę. Drużyna bez grupy (dodana po
+         *     zapisie składu) nie trafia do propozycji.
+         *
+         *     Odmowy to `422`: pod `stage`, gdy faza nie jest `knockout`, turniej
+         *     nie ma fazy `group` albo faza `group` nie ma składu grup; pod
+         *     `groups`, gdy grupa ma mniej żywych drużyn, niż z niej wychodzi.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    stage: components["parameters"]["StageId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Propozycja rozstawienia, od najwyżej rozstawionej drużyny */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": [
+                         *         {
+                         *           "teamId": 7,
+                         *           "groupId": 3,
+                         *           "position": 1
+                         *         },
+                         *         {
+                         *           "teamId": 1,
+                         *           "groupId": 4,
+                         *           "position": 1
+                         *         },
+                         *         {
+                         *           "teamId": 9,
+                         *           "groupId": 3,
+                         *           "position": 2
+                         *         },
+                         *         {
+                         *           "teamId": 4,
+                         *           "groupId": 4,
+                         *           "position": 2
+                         *         }
+                         *       ]
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["BracketSeed"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Propozycji nie da się policzyć */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4051,6 +4177,19 @@ export interface components {
              *     drużynę usunięto po zapisie składu.
              */
             qualifiers: number;
+        };
+        /**
+         * @description Pozycja propozycji rozstawienia (`GET /stages/{stage}/bracket/seeding`):
+         *     drużyna, jej grupa i miejsce w tabeli grupy. Klient składa z tego
+         *     etykietę pochodzenia („1A”), której API nie przechowuje.
+         */
+        BracketSeed: {
+            /** Format: int64 */
+            teamId: number;
+            /** Format: int64 */
+            groupId: number;
+            /** @description Miejsce drużyny w bieżącej tabeli grupy (`StandingRow.position`). */
+            position: number;
         };
         Stage: {
             /** Format: int64 */
