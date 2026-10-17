@@ -26,5 +26,12 @@ export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] 
 /** Orzeczenie przed liczbą wychodzących z grupy: „wychodzą 2 drużyny” (#259). */
 export const QUALIFY = ['wychodzi', 'wychodzą', 'wychodzi'] as const;
 
+/** Ostrzeżenie przed drabinką playoffu: „3 mecze fazy grupowej nie są jeszcze rozegrane” (#260). */
+export const UNPLAYED_GROUP_MATCHES = [
+  'mecz fazy grupowej nie jest jeszcze rozegrany',
+  'mecze fazy grupowej nie są jeszcze rozegrane',
+  'meczów fazy grupowej nie jest jeszcze rozegranych',
+] as const;
+
 /** Podgląd kolejności przy tabeli: „2 drużyny zmieniają miejsce” (#173). */
 export const TEAMS_CHANGING_PLACE = ['drużyna zmienia', 'drużyny zmieniają', 'drużyn zmienia'] as const;

@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   firstFieldErrors,
   isValidationError,
@@ -32,37 +32,13 @@ import { UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
 import { plural, QUALIFY, TEAMS, TEAMS_CHANGING_PLACE } from '../lib/plural';
 import { scheduleKeys, useStages } from '../lib/schedule-queries';
+import { useStandings } from '../lib/standings-queries';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
 
 const SAVE_FAILED = 'Nie udało się zapisać kolejności. Spróbuj ponownie.';
 
 const QUALIFIERS_FAILED = 'Nie udało się zmienić liczby wychodzących. Spróbuj ponownie.';
-
-/**
- * Tabele turnieju pod `['tournament', id, 'standings', tiebreakers]`, czyli
- * pod kluczem turnieju: jego odświeżenie po zapisie kolejności odświeża też
- * tabele. `tiebreakers` to lista podglądu albo `null` dla zapisanej.
- *
- * Kolejne podglądy trzymają poprzednie dane do nadejścia nowych
- * (`keepPreviousData`), żeby tabela nie mrugała przy każdym kliknięciu.
- */
-function useStandings(tournamentId: number, tiebreakers: string[] | null) {
-  return useQuery({
-    queryKey: ['tournament', tournamentId, 'standings', tiebreakers],
-    placeholderData: keepPreviousData,
-    queryFn: async () => {
-      const { data, error } = await api.GET('/tournaments/{tournament}/standings', {
-        params: {
-          path: { tournament: tournamentId },
-          query: tiebreakers ? { tiebreakers: tiebreakers as TiebreakerCode[] } : {},
-        },
-      });
-      if (error) throw new Error(error.message);
-      return data.data;
-    },
-  });
-}
 
 /** Miejsca drużyn we wszystkich tabelach, po `team.id`; drużyna jest w jednej tabeli. */
 function positionsOf(tables: StandingTable[]): Map<number, number> {
