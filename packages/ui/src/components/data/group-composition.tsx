@@ -140,7 +140,7 @@ export function GroupCompositionEditor({
                   onValueChange={(next) => replace(index, (current) => ({ ...current, qualifiers: Number(next) }))}
                   disabled={locked}
                 >
-                  <SelectTrigger size="sm" className="w-16" aria-label="Ile drużyn wychodzi z grupy">
+                  <SelectTrigger size="sm" className="w-16" aria-label={`Ile drużyn wychodzi z grupy ${group.name}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
