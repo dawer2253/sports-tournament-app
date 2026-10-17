@@ -52,6 +52,8 @@ describe('Grupy — edytor składu (#258)', () => {
     expect(save).toBeEnabled();
     expect(screen.getByDisplayValue('Grupa A')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Grupa B')).toBeInTheDocument();
+    // Liczba wychodzących ma w nazwie grupę, tak jak przy tabeli (#269).
+    expect(screen.getByRole('combobox', { name: 'Ile drużyn wychodzi z grupy Grupa B' })).toHaveTextContent('1');
 
     await user.click(save);
 
