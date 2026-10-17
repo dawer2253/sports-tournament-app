@@ -4,7 +4,6 @@ import {
   isValidationError,
   type AdminMatch,
   type BracketSeed,
-  type Group,
   type Stage,
   type Team,
 } from '@tournament/api-client';
@@ -246,8 +245,6 @@ export function TournamentBracketPage() {
           <PlayoffSeedingDialog
             tournamentId={tournament.id}
             stage={cup}
-            groups={groupStage.groups}
-            teams={teams.data}
             current={matches.data ?? []}
             unplayed={unplayed}
             onClose={() => setGenerating(false)}
@@ -554,18 +551,21 @@ function RoundsView({
   );
 }
 
+/** Lista drużyn albo grup zmieniła się między odczytami okna. */
+const SEEDING_OUTDATED = 'Drużyny albo grupy zmieniły się w trakcie wczytywania. Zamknij okno i otwórz je ponownie.';
+
 /**
- * Okno „Rozstaw i wygeneruj” w turnieju z fazą grupową (#260). Propozycja
- * i tabele liczą się przy odczycie, więc okno czeka na odczyt świeższy niż
- * ono samo (także przy „Wygeneruj ponownie”: propozycja z bieżących tabel,
- * a nie z obecnej drabinki). Do tego czasu stoi szkielet, a odmowa
- * propozycji (`422`) siada w miejscu błędu okna.
+ * Okno „Rozstaw i wygeneruj” w turnieju z fazą grupową (#260). Propozycja,
+ * tabele, drużyny i grupy fazy liczą się albo zmieniają poza oknem, więc okno
+ * czeka na odczyt każdego z nich świeższy niż ono samo (także przy „Wygeneruj
+ * ponownie”: propozycja z bieżących tabel, a nie z obecnej drabinki). Nazwy
+ * i litery grup bierze z tych samych świeżych odczytów, żeby pozycja
+ * propozycji nie wypadła z listy po cichu. Do tego czasu stoi szkielet,
+ * a odmowa propozycji (`422`) albo rozjazd odczytów siada w miejscu błędu okna.
  */
 function PlayoffSeedingDialog({
   tournamentId,
   stage,
-  groups,
-  teams,
   current,
   unplayed,
   onClose,
@@ -573,8 +573,6 @@ function PlayoffSeedingDialog({
 }: {
   tournamentId: number;
   stage: Stage;
-  groups: Group[];
-  teams: Team[];
   current: AdminMatch[];
   unplayed: number;
   onClose: () => void;
@@ -582,25 +580,36 @@ function PlayoffSeedingDialog({
 }) {
   const proposal = useBracketSeeding(tournamentId, stage.id);
   const tables = useStandings(tournamentId);
-  const fresh = proposal.isFetchedAfterMount && tables.isFetchedAfterMount;
+  const teams = useTeams(tournamentId);
+  const stages = useStages(tournamentId);
+  const reads = [proposal, tables, teams, stages];
+  const loaded = reads.every((read) => read.isFetchedAfterMount);
+  const readError = reads.find((read) => read.isError)?.error;
 
-  if (fresh && proposal.data && tables.data && !proposal.isError && !tables.isError) {
-    return (
-      <GenerateBracketDialog
-        tournamentId={tournamentId}
-        stage={stage}
-        initialOrder={seedingFromProposal(proposal.data, teams, groups)}
-        groupTeams={groupTeamsFromTables(tables.data, groups)}
-        notice={<UnplayedGroupMatchesNotice count={unplayed} />}
-        current={current}
-        onClose={onClose}
-        onDone={onDone}
-      />
-    );
+  let failed: string | undefined;
+  if (loaded && readError) {
+    failed = readError.message;
+  } else if (loaded && proposal.data && tables.data && teams.data && stages.data) {
+    const groups = stages.data.find((candidate) => candidate.type === 'group')?.groups ?? [];
+    const initialOrder = seedingFromProposal(proposal.data, teams.data, groups);
+    if (initialOrder.length === proposal.data.length) {
+      return (
+        <GenerateBracketDialog
+          tournamentId={tournamentId}
+          stage={stage}
+          initialOrder={initialOrder}
+          groupTeams={groupTeamsFromTables(tables.data, groups)}
+          notice={<UnplayedGroupMatchesNotice count={unplayed} />}
+          current={current}
+          onClose={onClose}
+          onDone={onDone}
+        />
+      );
+    }
+    failed = SEEDING_OUTDATED;
   }
 
   const replacing = current.length > 0;
-  const failed = fresh ? (proposal.error ?? tables.error) : null;
   return (
     <FormDialog
       open
@@ -611,7 +620,7 @@ function PlayoffSeedingDialog({
       title={replacing ? 'Rozstaw i wygeneruj ponownie' : 'Rozstaw i wygeneruj'}
       description={stage.name}
       submitLabel={replacing ? 'Zastąp drabinkę' : 'Wygeneruj'}
-      error={failed?.message}
+      error={failed}
       contentClassName="max-h-[92vh] overflow-y-auto sm:max-w-3xl"
     >
       {!failed && (

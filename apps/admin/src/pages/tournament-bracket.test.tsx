@@ -1132,3 +1132,40 @@ describe('Drabinka — playoff z grup (#260)', () => {
     expect(await screen.findByRole('menuitem', { name: 'Wygeneruj ponownie' })).toHaveAttribute('aria-disabled', 'true');
   });
 });
+
+describe('Drabinka — playoff z grup, nieaktualne odczyty (#260)', () => {
+  it('okno dociąga świeżą listę drużyn, zanim ułoży propozycję', async () => {
+    servePlayoff();
+    // Pierwszy odczyt (ekran) nie zna jeszcze Orłów z propozycji, kolejne już tak.
+    let calls = 0;
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () => {
+        calls += 1;
+        return HttpResponse.json({ data: calls === 1 ? GROUP_TEAMS.filter((candidate) => candidate.id !== 2) : GROUP_TEAMS });
+      }),
+    );
+    const { user } = renderBracket();
+
+    const dialog = await openPlayoffGenerate(user);
+    expect(seeding(dialog)).toEqual(['11AOrły Wola', '21BWilki Bemowo', '32ALwy Mokotów', '42BSokoły Ursus']);
+    expect(calls).toBeGreaterThan(1);
+  });
+
+  it('gdy drużyny z propozycji nie ma także w świeżej liście, okno mówi o tym zamiast skracać listę', async () => {
+    servePlayoff();
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}/teams`, () =>
+        HttpResponse.json({ data: GROUP_TEAMS.filter((candidate) => candidate.id !== 2) }),
+      ),
+    );
+    const { user } = renderBracket();
+
+    const dialog = await openGenerate(user);
+    expect(
+      await within(dialog).findByText(
+        'Drużyny albo grupy zmieniły się w trakcie wczytywania. Zamknij okno i otwórz je ponownie.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' })).not.toBeInTheDocument();
+  });
+});

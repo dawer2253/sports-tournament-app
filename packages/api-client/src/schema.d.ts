@@ -1591,16 +1591,18 @@ export interface paths {
          *     - Mecze są `scheduled`, bez `kickoffAt` i bez obiektu. Daty rozkłada
          *       `POST /stages/{stage}/schedule/dates`.
          *
-         *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`, gdy
-         *     faza nie jest `knockout`, ma mecz `live` lub `finished` albo faza
-         *     `group` turnieju nie ma składu grup; pod `teams`, gdy turniej ma mniej
-         *     niż dwie drużyny; pod `groups`, gdy grupa ma mniej żywych drużyn, niż
-         *     z niej wychodzi; pod `teamIds`, gdy lista nie jest dokładnie zbiorem
-         *     drużyn turnieju (sam puchar) albo z którejś grupy ma inną liczbę
-         *     drużyn niż `qualifiers` lub zawiera drużynę bez grupy (turniej z fazą
-         *     `group`); pod `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono przy
-         *     mniej niż czterech drużynach. Odmowa niczego nie zmienia. Mecze
-         *     dociąga się potem przez `GET /tournaments/{tournament}/matches?stageId=`.
+         *     Status turnieju nie ma znaczenia. Odmowy to `422`: pod `stage`,
+         *     gdy faza nie jest `knockout`, ma mecz `live` lub `finished` albo
+         *     faza `group` turnieju nie ma składu grup; pod `teams`, gdy
+         *     turniej ma mniej niż dwie drużyny (sam puchar); pod `groups`,
+         *     gdy grupa ma mniej żywych drużyn, niż z niej wychodzi; pod
+         *     `teamIds`, gdy lista nie jest dokładnie zbiorem drużyn turnieju
+         *     (sam puchar) albo z którejś grupy ma inną liczbę drużyn niż
+         *     `qualifiers` lub zawiera drużynę bez grupy (turniej z fazą
+         *     `group`); pod `thirdPlaceMatch`, gdy mecz o 3. miejsce zamówiono
+         *     przy mniej niż czterech drużynach. Odmowa niczego nie zmienia.
+         *     Mecze dociąga się potem przez
+         *     `GET /tournaments/{tournament}/matches?stageId=`.
          */
         post: {
             parameters: {
