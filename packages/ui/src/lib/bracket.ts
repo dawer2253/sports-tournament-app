@@ -124,6 +124,15 @@ export function isKnockoutOnly(stages: readonly { type: string }[]): boolean {
   return stages.length > 0 && stages.every((stage) => stage.type === 'knockout')
 }
 
+/**
+ * Turniej z fazą `group`, czyli grupy z playoffem (format `groups_playoff`).
+ * Jak przy `isKnockoutOnly`, mówią o tym wyłącznie fazy. W takim turnieju
+ * strona publiczna ma i Tabelę grup, i Drabinkę playoffu (#268).
+ */
+export function hasGroupStage(stages: readonly { type: string }[]): boolean {
+  return stages.some((stage) => stage.type === 'group')
+}
+
 export const THIRD_PLACE_LABEL = 'Mecz o 3. miejsce'
 
 /** Mecz o 3. miejsce: prowadzą do niego krawędzie przegranego. Osobnej flagi nie ma. */

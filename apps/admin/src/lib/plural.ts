@@ -3,7 +3,7 @@
  * źródło (`packages/ui/src/lib/plural.ts`); tu zostają tylko zestawy zdań,
  * których używa panel.
  */
-export { GROUPS, MATCHES, TEAMS, plural } from '@tournament/ui';
+export { GROUPS, MATCHES, QUALIFY, TEAMS, plural } from '@tournament/ui';
 
 /** Mecze `scheduled` w oknach usuwania drużyny i obiektu (#171). */
 export const SCHEDULED_MATCHES = ['zaplanowany mecz', 'zaplanowane mecze', 'zaplanowanych meczów'] as const;
@@ -22,9 +22,6 @@ export const COLLISIONS = ['kolizja', 'kolizje', 'kolizji'] as const;
 
 /** Pusty stan terminarza: „2 drużyny grają każdy z każdym” (#174). */
 export const TEAMS_PLAYING = ['drużyna gra', 'drużyny grają', 'drużyn gra'] as const;
-
-/** Orzeczenie przed liczbą wychodzących z grupy: „wychodzą 2 drużyny” (#259). */
-export const QUALIFY = ['wychodzi', 'wychodzą', 'wychodzi'] as const;
 
 /** Ostrzeżenie przed drabinką playoffu: „3 mecze fazy grupowej nie są jeszcze rozegrane” (#260). */
 export const UNPLAYED_GROUP_MATCHES = [

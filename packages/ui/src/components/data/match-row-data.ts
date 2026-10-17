@@ -33,6 +33,13 @@ export type MatchRowData = {
   awayPenalties?: number | null
   /** Mecz fazy `knockout` (#234); mecz ligi go nie ma. */
   bracket?: MatchRowBracket
+  /**
+   * Nazwa grupy meczu fazy `group` (#268), np. „Grupa B”. Kontrakt niesie
+   * `Match.groupId`, a nazwę dokłada aplikacja z grup fazy. Własne pole, a nie
+   * `bracket.label`, bo mecz grupy nie jest meczem drabinki: nie ma pozycji
+   * ani miejsca na karne.
+   */
+  group?: string
 }
 
 /**

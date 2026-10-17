@@ -551,3 +551,50 @@ export const PucharKoszykowka: Story = {
     await expect(canvasElement.querySelectorAll('[data-slot="match-row"]')[0]!.querySelector('[data-slot="penalties"]')).toBeNull()
   },
 }
+
+// --- Grupy i playoff (#268) ----------------------------------------------------
+
+const groupRows: MatchRowData[] = [
+  { ...finished, id: 931, homeTeam: wilki, awayTeam: sokoly, group: 'Grupa A' },
+  { ...scheduled, id: 932, homeTeam: { id: 5, name: 'Żubry Praga' }, awayTeam: { id: 7, name: 'Lwy Ochota' }, group: 'Grupa B' },
+  cupRow(933, { homeScore: 2, awayScore: 1 }),
+]
+
+/** Etykieta w linii terminu każdego wiersza, w kolejności z DOM-u. */
+function rowLabels(canvasElement: HTMLElement) {
+  return [...canvasElement.querySelectorAll('[data-slot="match-row"]')].map(
+    (row) => row.querySelector('[data-slot="match-label"]')?.textContent ?? null,
+  )
+}
+
+/**
+ * Turniej z grupami (#268, wariant A z #252): mecz grupy niesie nazwę grupy
+ * w tym samym miejscu co etykieta pozycji meczu playoffu, a pole wyniku bez
+ * miejsca na karne, bo mecz grupy nie jest meczem drabinki.
+ */
+export const GrupaIPlayoff: Story = {
+  render: () => (
+    <div className="max-w-3xl space-y-2">
+      {groupRows.map((match) => (
+        <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" />
+      ))}
+    </div>
+  ),
+  globals: { viewport: { value: 'desktop', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    await expect(rowLabels(canvasElement)).toEqual(['Grupa A', 'Grupa B', 'Półfinał 1'])
+    const [group, , playoff] = scoreBoxes(canvasElement)
+    await expect(group!.width).toBeLessThan(playoff!.width)
+    await expectColumns(canvasElement, 6)
+  },
+}
+
+/** To samo na telefonie: etykieta grupy dalej w linii terminu, nad parą. */
+export const GrupaIPlayoffNaTelefonie: Story = {
+  ...GrupaIPlayoff,
+  globals: { viewport: { value: 'mobile2', isRotated: false } },
+  play: async ({ canvasElement }) => {
+    await expect(rowLabels(canvasElement)).toEqual(['Grupa A', 'Grupa B', 'Półfinał 1'])
+    await expectColumns(canvasElement, 3)
+  },
+}

@@ -213,6 +213,8 @@ export function MatchRow({
   const home = teamName(match.homeTeam, match.bracket?.homeSource)
   const away = teamName(match.awayTeam, match.bracket?.awaySource)
   const label = `${home} – ${away}`
+  // Pozycja w drabince albo grupa meczu: obie stoją w linii terminu (#268).
+  const positionLabel = match.bracket?.label ?? match.group
   // Pole wyniku z miejscem na karne: szersza kolumna wyniku (`rowGrid`)
   // i późniejszy próg szerokiego układu (`data-penalty-slot`).
   const penaltySlot = match.bracket?.penaltySlot ?? false
@@ -226,9 +228,12 @@ export function MatchRow({
     <>
       <div className="col-span-2 col-start-1 row-start-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground match-row-wide:col-span-1 match-row-wide:block">
         {/* W szerokim wierszu komórka jest blokiem, więc etykieta dostaje
-            własną linię nad terminem, a w wąskim odstęp daje `gap`. */}
-        {match.bracket && (
-          <span className="shrink-0 font-medium text-foreground match-row-wide:block">{match.bracket.label}</span>
+            własną linię nad terminem, a w wąskim odstęp daje `gap`. Mecz
+            grupy niesie tu nazwę grupy (#268). */}
+        {positionLabel && (
+          <span data-slot="match-label" className="shrink-0 font-medium text-foreground match-row-wide:block">
+            {positionLabel}
+          </span>
         )}
         <span className="shrink-0 tabular-nums">{formatKickoff(match.kickoffAt, { showDate, timeZone })}</span>
         {match.venue && (

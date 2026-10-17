@@ -16,5 +16,11 @@ export const TEAMS = ['drużyna', 'drużyny', 'drużyn'] as const
 /** Liczba grup fazy w komunikatach składu. */
 export const GROUPS = ['grupa', 'grupy', 'grup'] as const
 
+/**
+ * Orzeczenie przed liczbą wychodzących z grupy: „wychodzą 2 drużyny” (#259),
+ * „Wychodzą 2 z 4” w skrócie grupy na Przeglądzie (#268).
+ */
+export const QUALIFY = ['wychodzi', 'wychodzą', 'wychodzi'] as const
+
 /** Mecze kasowane razem ze składem grup. */
 export const MATCHES = ['mecz', 'mecze', 'meczów'] as const

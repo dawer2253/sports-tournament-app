@@ -5,6 +5,7 @@ import { isModifiedClick } from '../../lib/utils'
 import { PublicSection } from '../layout/public-section'
 import { Button } from '../ui/button'
 import { BracketSummary } from './bracket-summary'
+import { GroupStandingsSnippet, type GroupStandings } from './group-standings-snippet'
 import { LeaderboardLeaders } from './leaderboard-leaders'
 import type { Leaderboard } from './leaderboard-data'
 import { LiveMatchTile } from './live-match-tile'
@@ -22,12 +23,20 @@ export interface PublicOverviewProps {
   fixtures?: RoundWithMatches<MatchInRound>[]
   /** `/results` po kolejce, od najnowszej (`groupByRound`, `desc`) — jak Wyniki. */
   results?: RoundWithMatches<MatchInRound>[]
-  /** Wiersze pierwszej tabeli turnieju; bez nich zamiast skrótu stoi `status.standings`. */
+  /** Wiersze tabeli ligi; bez nich i bez `groups` zamiast skrótu stoi `status.standings`. */
   standings?: StandingsTableRow[]
   /**
-   * Puchar (#234): komplet meczów fazy `knockout`. Wtedy w miejscu skrótu
-   * tabeli stoi karta „Drabinka”, a bez meczów — jej pusty stan. Zanim
-   * zapytanie dotrze, w tym miejscu stoi `status.bracket`.
+   * Turniej z fazą grupową (#268): tabele wszystkich grup. Wtedy zamiast
+   * skrótu jednej tabeli stoi karta „Tabele grup (skrót)”, z linią wyjścia
+   * w każdej grupie.
+   */
+  groups?: GroupStandings[]
+  /**
+   * Komplet meczów fazy `knockout`: karta „Drabinka”, a bez meczów — jej
+   * pusty stan. Zanim zapytanie dotrze, w tym miejscu stoi `status.bracket`.
+   * Puchar (#234) ma ją w miejscu skrótu tabeli, a turniej z grupami (#268)
+   * nad skrótem tabel grup, od wygenerowania drabinki — o tym, kiedy ją
+   * podać, decyduje aplikacja.
    */
   bracket?: {
     matches?: readonly (BracketMatch & MatchRowData)[]
@@ -79,6 +88,7 @@ function SectionLink({ link, children }: { link: LinkProps; children: string }) 
  * Przegląd strony publicznej (#206), od góry: Na żywo („Śledź na żywo” na
  * stronę meczu, #210), Najbliższe mecze,
  * Ostatnie wyniki, Tabela (skrót), a w pucharze karta „Drabinka” (#234),
+ * w turnieju z grupami karta „Drabinka” nad „Tabelami grup (skrót)” (#268),
  * i lider klasyfikacji (#207) pod tytułem
  * z etykiety statystyki. Sekcja bez meczów znika, a klasyfikacja przed
  * pierwszym meczem zakończonym ma pusty stan. Kolejki
@@ -89,6 +99,7 @@ export function PublicOverview({
   fixtures = [],
   results = [],
   standings,
+  groups,
   bracket,
   leaderboard,
   timeZone,
@@ -174,8 +185,8 @@ export function PublicOverview({
         </PublicSection>
       )}
       {status.results}
-      {bracket ? (
-        bracket.matches ? (
+      {bracket &&
+        (bracket.matches ? (
           <PublicSection title="Drabinka" icon={<GitFork />} action={<SectionLink link={link('bracket')}>Zobacz drabinkę</SectionLink>}>
             <BracketSummary
               matches={bracket.matches}
@@ -187,7 +198,16 @@ export function PublicOverview({
           </PublicSection>
         ) : (
           status.bracket
-        )
+        ))}
+      {groups ? (
+        <PublicSection title="Tabele grup (skrót)" icon={<ListOrdered />} action={<SectionLink link={link('standings')}>Zobacz tabele</SectionLink>}>
+          {/* Dwie kolumny od `md`, czyli na komputerze; na telefonie grupy idą jedna pod drugą. */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {groups.map((group) => (
+              <GroupStandingsSnippet key={group.id} group={group} />
+            ))}
+          </div>
+        </PublicSection>
       ) : standings ? (
         <PublicSection title="Tabela (skrót)" icon={<ListOrdered />} action={<SectionLink link={link('standings')}>Zobacz pełną tabelę</SectionLink>}>
           <StandingsSnippet rows={standings} />
