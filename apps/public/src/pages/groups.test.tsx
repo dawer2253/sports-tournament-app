@@ -86,6 +86,16 @@ describe('Tabela turnieju z grupami', () => {
     ).toBeInTheDocument();
   });
 
+  it('tabela grupy, której turniej jeszcze nie zna, stoi bez linii zamiast zniknąć', async () => {
+    // Nowy skład zapisany między odpytaniami: tabele już z nową grupą, turniej jeszcze ze starą.
+    publicApi({ data: groupsTournament(), standings: [groupTable(1), { ...groupTable(2), groupId: 9, groupName: 'Grupa C' }] });
+    renderAt(`/t/${SLUG}/tabela`);
+
+    const c = await screen.findByRole('region', { name: 'Grupa C' });
+    expect(qualifying(c)).toEqual([false, false, false, false]);
+    expect(qualifying(screen.getByRole('region', { name: 'Grupa A' }))).toEqual([true, true, false, false]);
+  });
+
   it('liga nie ma linii wyjścia ani zdania o wychodzących', async () => {
     publicApi({ standings: [table()] });
     renderAt(`/t/${SLUG}/tabela`);

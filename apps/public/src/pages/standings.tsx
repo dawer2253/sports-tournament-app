@@ -33,7 +33,7 @@ import { useGroups } from './use-groups';
 export function StandingsPage() {
   const { slug } = useTournament();
   const { cup } = useBracket();
-  const { groupStage, groupTables } = useGroups();
+  const { withGroups } = useGroups();
   const standings = useStandings(slug, !cup);
 
   if (cup) {
@@ -61,20 +61,10 @@ export function StandingsPage() {
     );
   }
 
-  if (groupStage) {
-    return (
-      <div className="space-y-8">
-        {groupTables(standings.data).map(({ table, group }) => (
-          <TableSection key={`${table.stageId}-${group.id}`} table={table} group={group} />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
-      {standings.data.map((table) => (
-        <TableSection key={`${table.stageId}-${table.groupId ?? 'all'}`} table={table} />
+      {withGroups(standings.data).map(({ table, group }) => (
+        <TableSection key={`${table.stageId}-${table.groupId ?? 'all'}`} table={table} group={group} />
       ))}
     </div>
   );
