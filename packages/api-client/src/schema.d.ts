@@ -1720,6 +1720,10 @@ export interface paths {
          *     Odmowy to `422`: pod `stage`, gdy faza nie jest `knockout`, turniej
          *     nie ma fazy `group` albo faza `group` nie ma składu grup; pod
          *     `groups`, gdy grupa ma mniej żywych drużyn, niż z niej wychodzi.
+         *     Odmowa, a nie pusta lista, bo pusta propozycja wyglądałaby jak
+         *     „nikt nie wychodzi z grup”, a klient ma pokazać powód i odesłać do
+         *     składu grup. `422` przy `GET` ma już podgląd tabel
+         *     (`GET /tournaments/{tournament}/standings`).
          */
         get: {
             parameters: {

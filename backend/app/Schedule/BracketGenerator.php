@@ -130,11 +130,11 @@ class BracketGenerator
         $groupOf = Team::query()->whereIn('group_id', $groups->modelKeys())->pluck('group_id', 'id')->all();
         $counts = array_count_values(array_map(fn (int $id): int => $groupOf[$id] ?? 0, $teamIds));
 
-        $matches = count(array_unique($teamIds)) === count($teamIds)
+        $isQualifiersFromEachGroup = count(array_unique($teamIds)) === count($teamIds)
             && ! isset($counts[0])
             && $groups->every(fn (Group $group): bool => ($counts[$group->id] ?? 0) === $group->qualifiers);
 
-        if (! $matches) {
+        if (! $isQualifiersFromEachGroup) {
             throw ValidationException::withMessages(['teamIds' => BracketSeeding::TEAM_IDS_MESSAGE]);
         }
     }

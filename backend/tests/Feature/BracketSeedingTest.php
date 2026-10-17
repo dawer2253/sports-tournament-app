@@ -124,7 +124,11 @@ function seedingFirstRound(array $labels): array
     return array_map(fn (array $pair): string => implode('–', $pair), array_chunk($slots, 2));
 }
 
-/** Mecze fazy `knockout` jako id i drużyny, do porównań „przed/po”. */
+/**
+ * Mecze fazy `knockout` jako id i drużyny, do porównań „przed/po”.
+ *
+ * @return list<array{id: int, home_team_id: ?int, away_team_id: ?int}>
+ */
 function seedingBracket(Stage $stage): array
 {
     return $stage->matches()->orderBy('id')->get(['id', 'home_team_id', 'away_team_id'])->toArray();
@@ -149,6 +153,26 @@ it('oddaje qualifiers czołowych drużyn każdej grupy z miejscem w bieżącej t
         ['teamId' => seedingTeam($stage, 'B 1')->id, 'groupId' => $groupB, 'position' => 1],
         ['teamId' => seedingTeam($stage, 'A 1')->id, 'groupId' => $groupA, 'position' => 2],
     ]);
+});
+
+// Niezmiennik 3 na tabeli innej niż kolejność nazw: przy jednej grupie
+// propozycja to po prostu kolejność bieżącej tabeli.
+it('przy jednej grupie oddaje kolejność bieżącej tabeli', function () {
+    $stage = seedingPlayoff([3], teamsPerGroup: 4);
+    // „A 4” wygrywa z „A 1”, więc tabela to A 4, A 2, A 3, A 1.
+    GameMatch::factory()->for(seedingGroupRound($stage))->finished(1, 0)->create([
+        'group_id' => seedingTeam($stage, 'A 4')->group_id,
+        'home_team_id' => seedingTeam($stage, 'A 4')->id,
+        'away_team_id' => seedingTeam($stage, 'A 1')->id,
+    ]);
+
+    $seeding = seedingOf($stage)->assertValidResponse(200)->json('data');
+
+    expect(array_column($seeding, 'teamId'))->toBe([
+        seedingTeam($stage, 'A 4')->id,
+        seedingTeam($stage, 'A 2')->id,
+        seedingTeam($stage, 'A 3')->id,
+    ])->and(array_column($seeding, 'position'))->toBe([1, 2, 3]);
 });
 
 // Niezmienniki 2, 3 i 4: wyniki z tabeli we wkładzie #250, odtworzone

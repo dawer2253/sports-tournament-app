@@ -120,6 +120,12 @@ export function TournamentBracketPage() {
     );
   }
 
+  /** Po wygenerowaniu okno znika, a nowa drabinka zaczyna od rundy 1. */
+  function finishGenerate() {
+    setGenerating(false);
+    forgetRound();
+  }
+
   /** Nowa drabinka zaczyna od rundy 1, a nie od rundy zapamiętanej w adresie. */
   function forgetRound() {
     setParams(
@@ -245,10 +251,7 @@ export function TournamentBracketPage() {
             current={matches.data ?? []}
             unplayed={unplayed}
             onClose={() => setGenerating(false)}
-            onDone={() => {
-              setGenerating(false);
-              forgetRound();
-            }}
+            onDone={finishGenerate}
           />
         ) : (
           <GenerateBracketDialog
@@ -257,10 +260,7 @@ export function TournamentBracketPage() {
             initialOrder={initialSeeding(teams.data, matches.data ?? [])}
             current={matches.data ?? []}
             onClose={() => setGenerating(false)}
-            onDone={() => {
-              setGenerating(false);
-              forgetRound();
-            }}
+            onDone={finishGenerate}
           />
         ))}
       {distributing && cup && matches.data && (
