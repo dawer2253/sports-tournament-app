@@ -153,7 +153,7 @@ describe('Drabinka turnieju z grupami', () => {
     renderAt(`/t/${SLUG}/drabinka`);
 
     expect(await screen.findByRole('group', { name: 'Rundy' })).toBeInTheDocument();
-    expect(screen.queryByText(/Drabinkę ułożono przed końcem fazy grupowej/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Drabinka różni się od dzisiejszych tabel grup/)).not.toBeInTheDocument();
   });
 
   it('notka o rozjeździe: drużyna z drabinki stoi dziś pod linią, a nad nią stoi inna', async () => {
@@ -163,7 +163,7 @@ describe('Drabinka turnieju z grupami', () => {
 
     expect(
       await screen.findByText(
-        'Drabinkę ułożono przed końcem fazy grupowej: w drabince gra Wilki Bemowo, a w tabeli grupy nad linią stoi dziś Orły Bielany.',
+        'Drabinka różni się od dzisiejszych tabel grup: w drabince gra Wilki Bemowo, a w tabeli grupy nad linią stoi dziś Orły Bielany.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Rundy' })).toBeInTheDocument();

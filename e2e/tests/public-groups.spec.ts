@@ -156,7 +156,7 @@ test('kibic widzi pustą Drabinkę z odnośnikiem do Tabeli, a po wygenerowaniu 
     // Rozstawienie 1A, 1B, 2A, 2B: w półfinale 1 zwycięzca A gra z drugim z B.
     await expect(page.getByRole('link', { name: 'Półfinał 1: Bobry – Jelenie' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Półfinał 2: Gryfy – Dziki' })).toBeVisible();
-    await expect(page.getByText(/Drabinkę ułożono przed końcem fazy grupowej/)).toBeHidden();
+    await expect(page.getByText(/Drabinka różni się od dzisiejszych tabel grup/)).toBeHidden();
   });
 
   await test.step('po zmianie wyniku grupy notka mówi, kto gra w drabince, a kto stoi dziś nad linią', async () => {
@@ -168,7 +168,7 @@ test('kibic widzi pustą Drabinkę z odnośnikiem do Tabeli, a po wygenerowaniu 
     await page.reload();
     await expect(
       page.getByText(
-        'Drabinkę ułożono przed końcem fazy grupowej: w drabince gra Dziki, a w tabeli grupy nad linią stoi dziś Foki.',
+        'Drabinka różni się od dzisiejszych tabel grup: w drabince gra Dziki, a w tabeli grupy nad linią stoi dziś Foki.',
       ),
     ).toBeVisible();
     await expect(page.getByRole('link', { name: 'Półfinał 2: Gryfy – Dziki' })).toBeVisible();
