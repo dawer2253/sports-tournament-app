@@ -124,12 +124,13 @@ function verb(rows: readonly NamedRow[], one: string, many: string) {
 
 /**
  * Notka nad drzewem, gdy drabinka nie idzie za dzisiejszą tabelą którejś grupy
- * (#268, z wariantu B #252): wynik grupy wpisany po wygenerowaniu albo
- * świadoma podmiana przy remisie na linii. Strona liczy ją sama z tabel grup
- * i drużyn drabinki (`qualifiersDivergence`), niczego nie zapisuje, a po
- * ponownym wygenerowaniu drabinki notka znika. Zdanie jest neutralne: kto gra
- * w drabince i kto stoi dziś nad linią, bez oceny. Bez tabel notki nie ma —
- * drzewo nie czeka na nie.
+ * (#268, z wariantu B #252), np. po wyniku grupy wpisanym po wygenerowaniu,
+ * po świadomej podmianie przy remisie na linii albo po zmianie liczby
+ * wychodzących. Strona liczy ją sama z tabel grup i drużyn drabinki
+ * (`qualifiersDivergence`), niczego nie zapisuje, a po ponownym wygenerowaniu
+ * drabinki notka znika. Zdanie jest neutralne: kto gra w drabince i kto stoi
+ * dziś nad linią, bez oceny i bez przyczyny, bo przyczyny strona nie zna
+ * (#272). Bez tabel notki nie ma — drzewo nie czeka na nie.
  */
 function DivergenceNote({ matches }: { matches: Match[] }) {
   const { slug } = useTournament();
@@ -154,7 +155,7 @@ function DivergenceNote({ matches }: { matches: Match[] }) {
   return (
     <div role="status" className="flex items-start gap-2 rounded-lg border border-dashed p-3 text-sm">
       <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <p className="min-w-0">Drabinkę ułożono przed końcem fazy grupowej: {clauses.join('; ')}.</p>
+      <p className="min-w-0">Drabinka różni się od dzisiejszych tabel grup: {clauses.join('; ')}.</p>
     </div>
   );
 }
