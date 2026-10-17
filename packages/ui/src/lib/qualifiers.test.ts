@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
-import { withQualifiers } from './qualifiers'
+import { qualifiersDivergence, withQualifiers } from './qualifiers'
 
 /** Wiersz z samymi polami, które liczą się dla linii wyjścia. */
 function row(position: number, points: number, played = 2): StandingsTableRow {
@@ -68,5 +68,28 @@ describe('withQualifiers', () => {
     withQualifiers(input, 1)
 
     expect(input[0]).not.toHaveProperty('qualifies')
+  })
+})
+
+/** Wiersze grupy w kolejności miejsc: id drużyny to jej dzisiejsze miejsce. */
+const GROUP = [row(1, 9), row(2, 6), row(3, 3), row(4, 0)]
+const ids = (rows: StandingsTableRow[]) => rows.map((candidate) => candidate.team.id)
+
+describe('qualifiersDivergence', () => {
+  it('drabinka z czołówki tabeli nie ma rozjazdu', () => {
+    const { plays, missing } = qualifiersDivergence(GROUP, 2, new Set([1, 2, 99]))
+
+    expect([ids(plays), ids(missing)]).toEqual([[], []])
+  })
+
+  it('drużyna z drabinki pod linią i drużyna nad linią spoza drabinki, w kolejności tabeli', () => {
+    const { plays, missing } = qualifiersDivergence(GROUP, 2, new Set([1, 3]))
+
+    expect([ids(plays), ids(missing)]).toEqual([[3], [2]])
+  })
+
+  it('liczba wychodzących zmieniona po wygenerowaniu daje człon bez pary', () => {
+    expect(ids(qualifiersDivergence(GROUP, 3, new Set([1, 2])).missing)).toEqual([3])
+    expect(ids(qualifiersDivergence(GROUP, 1, new Set([1, 2])).plays)).toEqual([2])
   })
 })

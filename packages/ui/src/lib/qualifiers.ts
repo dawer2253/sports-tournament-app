@@ -21,3 +21,24 @@ export function withQualifiers<Row extends StandingsTableRow>(rows: readonly Row
     tied: tied && (row === last || row === next),
   }))
 }
+
+/**
+ * Rozjazd drabinki z dzisiejszą tabelą jednej grupy (#250, #260, #268): kto
+ * z grupy gra w drabince poza czołówką `qualifiers` (`plays`) i kogo
+ * z czołówki w drabince nie ma (`missing`), oba w kolejności tabeli. Drabinka
+ * nie pamięta, z którego miejsca przyszła drużyna, a wynik grupy wpisany po
+ * jej wygenerowaniu jej nie rusza („Qualifiers” w `CONTEXT.md`), więc rozjazd
+ * liczy się przy odczycie. Daje go wynik wpisany później, świadoma podmiana
+ * przy remisie na linii i zmiana liczby wychodzących. Bez rozjazdu obie listy
+ * są puste.
+ */
+export function qualifiersDivergence<Row extends { position: number; team: { id: number } }>(
+  rows: readonly Row[],
+  qualifiers: number,
+  bracketTeams: ReadonlySet<number>,
+): { plays: Row[]; missing: Row[] } {
+  return {
+    plays: rows.filter((row) => row.position > qualifiers && bracketTeams.has(row.team.id)),
+    missing: rows.filter((row) => row.position <= qualifiers && !bracketTeams.has(row.team.id)),
+  }
+}

@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { matchHref, useTournament } from './tournament-layout';
 import { useBracketRows } from './use-bracket';
+import { useGroups } from './use-groups';
 
 /**
  * Mecze pogrupowane po kolejce w kolejności faz z `stages` turnieju — ta sama
@@ -13,12 +14,18 @@ import { useBracketRows } from './use-bracket';
  */
 export function useRounds(matches: PublicMatch[] | undefined, direction: 'asc' | 'desc') {
   const { stages } = useTournament();
+  const { group } = useGroups();
   // W pucharze wiersze niosą etykietę pozycji, karne i podpisy pustych slotów (#234).
   const rows = useBracketRows(matches);
   return useMemo(() => {
     const stageOrder = new Map(stages.map((stage) => [stage.id, stage.order]));
-    return groupByRound(rows ?? [], { direction, stageOrder: (id) => stageOrder.get(id) ?? id });
-  }, [rows, direction, stages]);
+    // Mecz grupy niesie nazwę grupy w miejscu etykiety pozycji (#268).
+    const labelled = (rows ?? []).map((row) => {
+      const name = group(row.groupId)?.name;
+      return name ? { ...row, group: name } : row;
+    });
+    return groupByRound(labelled, { direction, stageOrder: (id) => stageOrder.get(id) ?? id });
+  }, [rows, direction, stages, group]);
 }
 
 /**

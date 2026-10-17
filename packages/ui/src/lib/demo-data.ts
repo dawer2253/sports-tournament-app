@@ -1,6 +1,7 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
 import type { BracketMatchRowData } from '../components/data/bracket-match-row-data'
+import type { GroupStandings } from '../components/data/group-standings'
 import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchPageData, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
@@ -164,6 +165,33 @@ export const groupStandingsTableRows: StandingsTableRow[] = [
   { position: 2, team: { id: 22, name: 'Sokoły Ursus', logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 4, scoreDifference: 0, points: 4 },
   { position: 3, team: { id: 23, name: 'Orły Bielany', logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 4, scoreDifference: -1, points: 4 },
   { position: 4, team: { id: 24, name: 'Lwy Targówek', logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 2, scoreAgainst: 7, scoreDifference: -5, points: 0 },
+]
+
+// Tabele grup z przykładu `grupy` w kontrakcie (#268): dwie grupy po cztery,
+// z każdej wychodzą dwie, faza grupowa rozegrana.
+export const groupStandings: GroupStandings[] = [
+  {
+    id: 1,
+    name: 'Grupa A',
+    qualifiers: 2,
+    rows: [
+      { position: 1, team: { id: 2, name: 'Sokoły Ursus', logoUrl: null }, played: 3, won: 2, drawn: 1, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 7 },
+      { position: 2, team: { id: 1, name: 'Wilki Bemowo', logoUrl: null }, played: 3, won: 1, drawn: 2, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 5 },
+      { position: 3, team: { id: 3, name: 'Orły Bielany', logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 3, scoreDifference: 1, points: 4 },
+      { position: 4, team: { id: 4, name: 'Rysie Wola', logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 0, scoreAgainst: 7, scoreDifference: -7, points: 0 },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Grupa B',
+    qualifiers: 2,
+    rows: [
+      { position: 1, team: { id: 5, name: 'Żubry Praga', logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 1, scoreDifference: 5, points: 9 },
+      { position: 2, team: { id: 7, name: 'Lwy Ochota', logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 4 },
+      { position: 3, team: { id: 6, name: 'Niedźwiedzie Mokotów', logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 4, scoreAgainst: 5, scoreDifference: -1, points: 3 },
+      { position: 4, team: { id: 8, name: 'Jastrzębie Wawer', logoUrl: null }, played: 3, won: 0, drawn: 1, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 1 },
+    ],
+  },
 ]
 
 export type Scorer = { pos: number; player: string; team: Team; goals: number }

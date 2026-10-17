@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Groups\GroupComposition;
 use App\Matches\Advancement;
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
@@ -13,13 +14,16 @@ use App\Models\Tournament;
 use App\Models\User;
 use App\Models\Venue;
 use App\Schedule\BracketGenerator;
+use App\Schedule\BracketSeeding;
+use App\Schedule\ScheduleGenerator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Seeder;
 
 /**
  * Turniej demo: „Liga Osiedlowa 2026" pod `/t/liga-osiedlowa-2026`, a obok
- * niego, od #176, „Liga Koszykówki 2026" pod `/t/liga-koszykowki-2026` i, od
- * #234, „Puchar Osiedlowy 2026" pod `/t/puchar-osiedlowy-2026`.
+ * niego, od #176, „Liga Koszykówki 2026" pod `/t/liga-koszykowki-2026`, od
+ * #234 „Puchar Osiedlowy 2026" pod `/t/puchar-osiedlowy-2026` i, od #268,
+ * „Grupy Osiedlowe 2026" pod `/t/grupy-osiedlowe-2026`.
  *
  * To te same turnieje, które serwuje mock kontraktu — dane są przepisane
  * z przykładów w `packages/api-contract/openapi.yaml`, żeby `apps/public`
@@ -186,6 +190,59 @@ class DemoTournamentSeeder extends Seeder
     ];
 
     /**
+     * Skład grup turnieju z fazą grupową (#268), jak w przykładzie `grupy`:
+     * nazwa grupy => drużyny. Drużyny powstają w tej kolejności, a terminarz
+     * grupy idzie po ich `id` (`ScheduleGenerator`), więc kolejność wyznacza
+     * pary kolejek. Z każdej grupy wychodzą dwie.
+     */
+    private const GROUPS = [
+        'Grupa A' => ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Rysie Wola'],
+        'Grupa B' => ['Żubry Praga', 'Niedźwiedzie Mokotów', 'Lwy Ochota', 'Jastrzębie Wawer'],
+    ];
+
+    private const GROUP_QUALIFIERS = 2;
+
+    /**
+     * Rozegrana faza grupowa: [kolejka, numer meczu w kolejce, bramki
+     * gospodarza, bramki gościa, termin (UTC)]. Pary układa generator: w każdej
+     * kolejce mecze 1–2 to Grupa A, 3–4 to Grupa B (ADR-0011). Na linii nie ma
+     * remisu, więc propozycja rozstawienia bierze czołówkę obu tabel.
+     */
+    private const GROUP_RESULTS = [
+        [1, 1, 3, 0, '2026-09-05 10:00:00'],
+        [1, 2, 2, 1, '2026-09-05 12:00:00'],
+        [1, 3, 2, 0, '2026-09-05 14:00:00'],
+        [1, 4, 1, 2, '2026-09-05 16:00:00'],
+        [2, 1, 0, 2, '2026-09-12 10:00:00'],
+        [2, 2, 1, 1, '2026-09-12 12:00:00'],
+        [2, 3, 1, 1, '2026-09-12 14:00:00'],
+        [2, 4, 3, 1, '2026-09-12 16:00:00'],
+        [3, 1, 2, 0, '2026-09-19 10:00:00'],
+        [3, 2, 1, 1, '2026-09-19 12:00:00'],
+        [3, 3, 2, 0, '2026-09-19 14:00:00'],
+        [3, 4, 0, 1, '2026-09-19 16:00:00'],
+    ];
+
+    /**
+     * Terminy playoffu (UTC): [runda, numer meczu w rundzie, termin]. Mecz
+     * o 3. miejsce (finał, numer 2) gra przed finałem, jak w pucharze.
+     */
+    private const PLAYOFF_KICKOFFS = [
+        [1, 1, '2026-10-03 10:00:00'],
+        [1, 2, '2026-10-03 12:00:00'],
+        [2, 1, '2026-10-10 12:00:00'],
+        [2, 2, '2026-10-10 10:00:00'],
+    ];
+
+    /**
+     * Rozegrany półfinał 1: [runda, numer, bramki gospodarza, bramki gościa].
+     * Półfinał 2, finał i mecz o 3. miejsce czekają.
+     */
+    private const PLAYOFF_RESULTS = [
+        [1, 1, 2, 1],
+    ];
+
+    /**
      * Składy: drużyna => [nazwisko, numer, pozycja]. Kolejność ma znaczenie —
      * wyznacza id, a te padają w przykładach `GET /teams/{team}/players`
      * i `GET /public/t/{slug}/leaderboard`.
@@ -312,6 +369,101 @@ class DemoTournamentSeeder extends Seeder
 
         $this->seedBasketball($organizer);
         $this->seedCup($organizer);
+        $this->seedGroupsPlayoff($organizer);
+    }
+
+    /**
+     * Czwarty turniej demo: piłkarskie grupy z playoffem (#268), przepisane
+     * z przykładu `grupy` w `GET /public/t/{slug}/matches`. Fazy są te, które
+     * zakłada format `groups_playoff`. Skład, terminarz grup, propozycja
+     * rozstawienia i drabinka idą przez te same klasy co panel
+     * (`GroupComposition`, `ScheduleGenerator`, `BracketSeeding`,
+     * `BracketGenerator`), a wyniki playoffu przez `Advancement`, więc seed
+     * nie układa par ani slotów sam. Składów i zdarzeń turniej nie ma.
+     */
+    private function seedGroupsPlayoff(User $organizer): void
+    {
+        $football = Sport::firstWhere('code', 'football');
+
+        $tournament = Tournament::updateOrCreate(
+            ['slug' => 'grupy-osiedlowe-2026'],
+            [
+                'user_id' => $organizer->id,
+                'sport_id' => $football->id,
+                'name' => 'Grupy Osiedlowe 2026',
+                'logo_path' => null,
+                'primary_color' => '#1F7A45',
+                'points' => $football->defaultPoints(),
+                'tiebreakers' => $football->defaultTiebreakers(),
+                'match_duration' => $football->defaultMatchDuration(),
+                'period_count' => $football->defaultPeriods()['count'],
+                'period_minutes' => $football->defaultPeriods()['minutes'],
+                'status' => 'active',
+            ],
+        );
+
+        // Grupy kasują się kaskadą z fazą, a `teams.group_id` zeruje się
+        // samo (`nullOnDelete`), więc skład niżej zapisuje się od nowa.
+        $tournament->stages()->delete();
+
+        $stages = [];
+        foreach (Tournament::STAGES_BY_FORMAT['groups_playoff'] as $index => [$type, $name]) {
+            $stages[$type] = $tournament->stages()->create(['type' => $type, 'name' => $name, 'order' => $index + 1]);
+        }
+
+        $venue = Venue::updateOrCreate(
+            ['tournament_id' => $tournament->id, 'name' => 'Boisko Bemowo'],
+            ['address' => 'ul. Powstańców Śląskich 1, Warszawa'],
+        );
+
+        $groups = [];
+        foreach (self::GROUPS as $groupName => $teamNames) {
+            $groups[] = [
+                'name' => $groupName,
+                'qualifiers' => self::GROUP_QUALIFIERS,
+                'teamIds' => array_map(
+                    fn (string $name): int => Team::updateOrCreate(
+                        ['tournament_id' => $tournament->id, 'name' => $name],
+                        ['logo_path' => null],
+                    )->id,
+                    $teamNames,
+                ),
+            ];
+        }
+
+        app(GroupComposition::class)->save($stages['group'], $groups);
+        app(ScheduleGenerator::class)->generate($stages['group'], meetings: 1);
+
+        $match = fn (Stage $stage, int $order, int $number): GameMatch => GameMatch::query()
+            ->where('stage_id', $stage->id)
+            ->where('match_number', $number)
+            ->whereHas('round', fn (Builder $round): Builder => $round->where('order', $order))
+            ->firstOrFail();
+
+        foreach (self::GROUP_RESULTS as [$order, $number, $homeScore, $awayScore, $kickoff]) {
+            $match($stages['group'], $order, $number)->update([
+                'status' => 'finished',
+                'home_score' => $homeScore,
+                'away_score' => $awayScore,
+                'kickoff_at' => $kickoff,
+                'venue_id' => $venue->id,
+            ]);
+        }
+
+        $seeding = array_column(app(BracketSeeding::class)->propose($stages['knockout']), 'teamId');
+        app(BracketGenerator::class)->generate($stages['knockout'], $seeding, thirdPlaceMatch: true);
+
+        foreach (self::PLAYOFF_KICKOFFS as [$order, $number, $kickoff]) {
+            $match($stages['knockout'], $order, $number)->update(['kickoff_at' => $kickoff, 'venue_id' => $venue->id]);
+        }
+
+        foreach (self::PLAYOFF_RESULTS as [$order, $number, $homeScore, $awayScore]) {
+            app(Advancement::class)->save($match($stages['knockout'], $order, $number), [
+                'status' => 'finished',
+                'home_score' => $homeScore,
+                'away_score' => $awayScore,
+            ], 'homeScore');
+        }
     }
 
     /**

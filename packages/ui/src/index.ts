@@ -80,6 +80,7 @@ export * from './components/data/seeding-team';
 export * from './components/data/score-inputs';
 export * from './components/data/standings-table';
 export * from './components/data/standings-snippet';
+export * from './components/data/group-standings-snippet';
 export * from './components/data/standings-table-row';
 export * from './components/data/stat-switcher';
 export * from './components/data/team-row';

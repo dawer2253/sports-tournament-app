@@ -214,11 +214,11 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
 
     // Poddrzewo powstaje od nowa pod nowymi id (autoinkrement, patrz docblock
     // seedera), więc pilnujemy, że stare nie zostało obok: po jednej fazie
-    // i po dwa rozegrane mecze na turniej.
+    // na turniej, a w turnieju z grupami dwie (3 + 2 kolejki, 12 + 4 mecze).
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
-        ->and(Stage::query()->count())->toBe(3)
-        ->and(Round::query()->count())->toBe(11)
-        ->and(GameMatch::query()->count())->toBe(14)
+        ->and(Stage::query()->count())->toBe(5)
+        ->and(Round::query()->count())->toBe(16)
+        ->and(GameMatch::query()->count())->toBe(30)
         ->and($demo->matches()->count())->toBe(6);
 });
 
@@ -355,4 +355,114 @@ it('nie dubluje pucharu przy powtórnym seedowaniu', function () {
         ->and($tournament->stages()->count())->toBe(1)
         ->and($tournament->teams()->count())->toBe(6)
         ->and($tournament->matches()->count())->toBe(6);
+});
+
+/**
+ * Przykład `grupy` z kontraktu dla publicznej trasy: `data` odpowiedzi.
+ *
+ * @return array<int|string, mixed>
+ */
+function demoSeedGroupsExample(string $path): array
+{
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+
+    return $spec['paths'][$path]['get']['responses']['200']['content']['application/json']['examples']['grupy']['value']['data'];
+}
+
+/**
+ * Mecze listy (`/fixtures`, `/results`) jako napisy bez id: grupa idzie nazwą
+ * z faz turnieju, a krawędzi drabinki nie ma, bo lista nie niesie meczów, na
+ * które wskazują — te sprawdza test drabinki.
+ *
+ * @param  list<array<string, mixed>>  $matches  `PublicMatch` z kontraktu
+ * @param  list<array<string, mixed>>  $stages  `PublicTournament.stages`
+ * @return list<string>
+ */
+function demoSeedGroupListMatches(array $matches, array $stages): array
+{
+    $groupNames = collect($stages)->flatMap(fn (array $stage): array => $stage['groups'])->pluck('name', 'id');
+
+    return array_map(fn (array $match): string => implode(' | ', [
+        "{$match['round']['name']} {$match['matchNumber']}",
+        $match['groupId'] === null ? 'playoff' : $groupNames[$match['groupId']],
+        ($match['homeTeam']['name'] ?? '–').' – '.($match['awayTeam']['name'] ?? '–'),
+        "{$match['status']} ".json_encode([$match['homeScore'], $match['awayScore']]),
+        (string) $match['kickoffAt'],
+    ]), $matches);
+}
+
+/**
+ * Tabele grup jako napisy bez id drużyn.
+ *
+ * @param  list<array<string, mixed>>  $tables  `StandingTable` z kontraktu
+ * @return list<string>
+ */
+function demoSeedGroupTables(array $tables): array
+{
+    return collect($tables)->flatMap(fn (array $table): array => array_map(
+        fn (array $row): string => sprintf(
+            '%s/%s %d. %s %d %d-%d-%d %d:%d %d',
+            $table['stageName'], $table['groupName'], $row['position'], $row['team']['name'],
+            $row['played'], $row['won'], $row['drawn'], $row['lost'], $row['scoreFor'], $row['scoreAgainst'], $row['points'],
+        ),
+        $table['rows'],
+    ))->all();
+}
+
+it('sieje turniej z grupami i playoffem zgodny z przykładem grupy turnieju', function () {
+    $promised = demoSeedGroupsExample('/public/t/{slug}');
+
+    $actual = $this->getJson('/api/v1/public/t/grupy-osiedlowe-2026')->assertOk()->json('data');
+
+    $shape = fn (array $stages): array => array_map(fn (array $stage): array => [
+        $stage['type'], $stage['name'], $stage['order'],
+        array_map(fn (array $group): array => [$group['name'], $group['order'], $group['qualifiers']], $stage['groups']),
+    ], $stages);
+
+    expect($actual['name'])->toBe('Grupy Osiedlowe 2026')
+        ->and($actual['sport']['code'])->toBe($promised['sport']['code'])
+        ->and($shape($actual['stages']))->toBe($shape($promised['stages']))
+        ->and(Tournament::firstWhere('slug', 'grupy-osiedlowe-2026')->teams()->whereNull('group_id')->count())->toBe(0);
+});
+
+it('sieje dwie tabele grup zgodne z przykładem grupy tabel', function () {
+    $tables = $this->getJson('/api/v1/public/t/grupy-osiedlowe-2026/standings')->assertOk()->json('data');
+    $stages = $this->getJson('/api/v1/public/t/grupy-osiedlowe-2026')->json('data.stages');
+
+    expect(demoSeedGroupTables($tables))->toBe(demoSeedGroupTables(demoSeedGroupsExample('/public/t/{slug}/standings')))
+        ->and(array_column($tables, 'groupId'))->toBe(array_column($stages[0]['groups'], 'id'));
+});
+
+it('sieje mecze grup z groupId i playoff zgodne z przykładami grupy terminarza i wyników', function () {
+    $stages = $this->getJson('/api/v1/public/t/grupy-osiedlowe-2026')->json('data.stages');
+    $fixtures = $this->getJson('/api/v1/public/t/grupy-osiedlowe-2026/fixtures')->assertOk()->json('data');
+    $results = $this->getJson('/api/v1/public/t/grupy-osiedlowe-2026/results')->assertOk()->json('data');
+    $promisedStages = demoSeedGroupsExample('/public/t/{slug}')['stages'];
+
+    expect(demoSeedGroupListMatches($fixtures, $stages))
+        ->toBe(demoSeedGroupListMatches(demoSeedGroupsExample('/public/t/{slug}/fixtures'), $promisedStages))
+        ->and(demoSeedGroupListMatches($results, $stages))
+        ->toBe(demoSeedGroupListMatches(demoSeedGroupsExample('/public/t/{slug}/results'), $promisedStages))
+        ->and(collect($results)->whereNotNull('groupId')->count())->toBe(12);
+});
+
+it('sieje drabinkę playoffu zgodną z przykładem grupy meczów fazy', function () {
+    $stage = Tournament::firstWhere('slug', 'grupy-osiedlowe-2026')->stages()->where('type', 'knockout')->sole();
+
+    $actual = $this->getJson("/api/v1/public/t/grupy-osiedlowe-2026/matches?stageId={$stage->id}")->assertOk()->json('data');
+
+    expect(demoSeedCupMatches($actual))->toBe(demoSeedCupMatches(demoSeedGroupsExample('/public/t/{slug}/matches')));
+});
+
+it('nie dubluje turnieju z grupami przy powtórnym seedowaniu', function () {
+    $this->seed();
+
+    $tournament = Tournament::firstWhere('slug', 'grupy-osiedlowe-2026');
+
+    expect(Tournament::query()->where('slug', 'grupy-osiedlowe-2026')->count())->toBe(1)
+        ->and($tournament->stages()->count())->toBe(2)
+        ->and($tournament->stages()->where('type', 'group')->sole()->groups()->count())->toBe(2)
+        ->and($tournament->teams()->count())->toBe(8)
+        ->and($tournament->teams()->whereNull('group_id')->count())->toBe(0)
+        ->and($tournament->matches()->count())->toBe(16);
 });

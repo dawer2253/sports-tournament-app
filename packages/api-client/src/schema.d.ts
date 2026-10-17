@@ -3188,13 +3188,16 @@ export interface paths {
         };
         /**
          * Publiczna strona turnieju
-         * @description Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
-         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
-         *     ten sam przełącznik obsługuje tabele i klasyfikację, więc wszystkie
-         *     widoki mocka mówią o tym samym sporcie. Trzeci, po
-         *     `Prefer: example=puchar`, to puchar piłkarski z jedną fazą `knockout`:
-         *     ten sam przełącznik daje jego mecze w `/matches`, `/fixtures`
-         *     i `/results`, więc strona publiczna pokazuje pod mockiem drabinkę.
+         * @description Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+         *     i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
+         *     `Prefer: example=koszykowka` — ten sam przełącznik obsługuje tabele
+         *     i klasyfikację, więc wszystkie widoki mocka mówią o tym samym sporcie.
+         *     Trzeci, po `Prefer: example=puchar`, to puchar piłkarski z jedną fazą
+         *     `knockout`: ten sam przełącznik daje jego mecze w `/matches`,
+         *     `/fixtures` i `/results`, więc strona publiczna pokazuje pod mockiem
+         *     drabinkę. Czwarty, po `Prefer: example=grupy`, to turniej z fazą
+         *     `group` i fazą `knockout`: ten sam przełącznik daje jego tabele grup
+         *     w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
          */
         get: {
             parameters: {
@@ -3275,12 +3278,14 @@ export interface paths {
         };
         /**
          * Tabele turnieju
-         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny, zgodny
-         *     z seedem demo) i `koszykowka`. Mock zwraca drugi po wysłaniu nagłówka
+         * @description Przykłady są trzy: `pilka` (domyślny, zgodny z seedem demo),
+         *     `koszykowka` i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
          *     `Prefer: example=koszykowka` — ten sam przełącznik obsługuje
          *     `/public/t/{slug}`, więc oba widoki mówią o tym samym sporcie. Drugi
          *     przykład jest tu po to, żeby dało się sprawdzić, czy widok bierze
-         *     nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu.
+         *     nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu. Trzeci, po
+         *     `Prefer: example=grupy`, to dwie tabele grup turnieju z przykładu
+         *     `grupy` w `/public/t/{slug}`.
          */
         get: {
             parameters: {
@@ -3385,8 +3390,9 @@ export interface paths {
          *     dziewięćdziesiąt, czyli dokładnie ten rozmiar, dla którego panelowy
          *     odpowiednik ma strony.
          *
-         *     Przykłady są dwa: `liga` (domyślny) i `puchar`. Mock zwraca drugi po
-         *     wysłaniu nagłówka `Prefer: example=puchar`.
+         *     Przykłady są trzy: `liga` (domyślny), `puchar` i `grupy`. Mock
+         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=puchar`, a trzeci
+         *     po `Prefer: example=grupy`.
          */
         get: {
             parameters: {
@@ -3510,9 +3516,10 @@ export interface paths {
          *     Mecz trwający niesie strzelców, którzy dochodzą w trakcie; mecz
          *     zaplanowany ma `scorers: []` (`PublicMatch`).
          *
-         *     Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
-         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`,
-         *     a trzeci po `Prefer: example=puchar`.
+         *     Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+         *     i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
+         *     `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
+         *     a czwarty po `Prefer: example=grupy`.
          */
         get: {
             parameters: {
@@ -3602,9 +3609,10 @@ export interface paths {
          *     równym terminie (także między meczami bez terminu) rozstrzyga
          *     kolejność fazy, kolejki i `matchNumber`, malejąco — tak jak termin.
          *
-         *     Przykłady są trzy: `pilka` (domyślny), `koszykowka` i `puchar`. Mock
-         *     zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka`,
-         *     a trzeci po `Prefer: example=puchar`.
+         *     Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+         *     i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
+         *     `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
+         *     a czwarty po `Prefer: example=grupy`.
          */
         get: {
             parameters: {
