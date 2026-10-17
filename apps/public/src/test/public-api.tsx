@@ -289,3 +289,90 @@ export function renderAt(path: string) {
   );
   return { router, client };
 }
+
+/** Faza grupowa i faza pucharowa turnieju z grupami, jak przykład `grupy` w kontrakcie. */
+export const GROUP_STAGE_ID = 3;
+export const PLAYOFF_STAGE_ID = 4;
+
+/**
+ * Turniej z grupami i playoffem (#268): faza `group` o `id: 3` z grupami A
+ * (`id: 1`) i B (`id: 2`), z każdej wychodzą dwie, i faza `knockout` o `id: 4`.
+ */
+export function groupsTournament(overrides: Partial<PublicTournament> = {}): PublicTournament {
+  return tournament({
+    name: 'Grupy Osiedlowe 2026',
+    stages: [
+      {
+        id: GROUP_STAGE_ID,
+        type: 'group',
+        name: 'Faza grupowa',
+        order: 1,
+        groups: [
+          { id: 1, name: 'Grupa A', order: 1, qualifiers: 2 },
+          { id: 2, name: 'Grupa B', order: 2, qualifiers: 2 },
+        ],
+      },
+      { id: PLAYOFF_STAGE_ID, type: 'knockout', name: 'Faza pucharowa', order: 2, groups: [] },
+    ],
+    ...overrides,
+  });
+}
+
+/**
+ * Drużyny grup po miejscach w tabeli. Id 1–4 to rozstawienie drabinki
+ * z `playoffMatches` (1A, 1B, 2A, 2B), więc drabinka z czołówki obu tabel
+ * nie ma rozjazdu.
+ */
+export const GROUP_TEAMS = {
+  1: [
+    { id: 1, name: 'Sokoły Ursus', logoUrl: null },
+    { id: 3, name: 'Wilki Bemowo', logoUrl: null },
+    { id: 5, name: 'Orły Bielany', logoUrl: null },
+    { id: 6, name: 'Rysie Wola', logoUrl: null },
+  ],
+  2: [
+    { id: 2, name: 'Żubry Praga', logoUrl: null },
+    { id: 4, name: 'Lwy Ochota', logoUrl: null },
+    { id: 7, name: 'Niedźwiedzie Mokotów', logoUrl: null },
+    { id: 8, name: 'Jastrzębie Wawer', logoUrl: null },
+  ],
+} as const;
+
+/**
+ * Tabela grupy `groupId` z drużynami `GROUP_TEAMS` w podanej kolejności
+ * (domyślnie tej z `GROUP_TEAMS`); punkty maleją co miejsce, bez remisu na linii.
+ */
+export function groupTable(groupId: 1 | 2, order: readonly number[] = [0, 1, 2, 3]): StandingTable {
+  return table({
+    stageId: GROUP_STAGE_ID,
+    stageName: 'Faza grupowa',
+    groupId,
+    groupName: groupId === 1 ? 'Grupa A' : 'Grupa B',
+    rows: order.map((index, place) =>
+      row({ position: place + 1, team: GROUP_TEAMS[groupId][index]!, played: 3, points: 9 - place * 3 }),
+    ),
+  });
+}
+
+/** Mecz grupy w kolejce `round`, z parą drużyn z `GROUP_TEAMS`. */
+export function groupMatch(id: number, groupId: 1 | 2, round: number, overrides: Partial<PublicMatch> = {}): PublicMatch {
+  const [home, away] = GROUP_TEAMS[groupId];
+  return match(id, round, {
+    stageId: GROUP_STAGE_ID,
+    groupId,
+    round: { id: 30 + round, name: `Kolejka ${round}`, order: round },
+    matchNumber: groupId,
+    homeTeam: home,
+    awayTeam: away,
+    ...overrides,
+  });
+}
+
+/**
+ * Drabinka playoffu na cztery drużyny z wyjścia z grup, w fazie `id: 4`:
+ * rozstawienie 1A, 1B, 2A, 2B, więc półfinały to Sokoły – Lwy i Żubry – Wilki.
+ */
+export function playoffMatches(options: Omit<DemoBracketOptions, 'teams' | 'names'> = {}, overrides: Record<number, Partial<Match>> = {}): Match[] {
+  const names = [GROUP_TEAMS[1][0].name, GROUP_TEAMS[2][0].name, GROUP_TEAMS[1][1].name, GROUP_TEAMS[2][1].name];
+  return cupMatches({ teams: 4, names, ...options }, overrides).map((candidate) => ({ ...candidate, stageId: PLAYOFF_STAGE_ID }));
+}
