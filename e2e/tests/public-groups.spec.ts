@@ -88,26 +88,29 @@ function matchOf(matches: AdminMatch[], a: string, b: string): AdminMatch {
 }
 
 test('kibic widzi tabele grup z linią wyjścia i grupy w Terminarzu', async ({ page, api, groups }) => {
-  const played = await test.step('dwie grupy przez API i rozegrany mecz Bobry – Dziki w Grupie A', async () => {
+  const played = await test.step('dwie grupy przez API i po meczu rozegranym w każdej', async () => {
     const { matches } = await setUpGroups(api, groups);
     const match = matchOf(matches, 'Bobry', 'Dziki');
+    const other = matchOf(matches, 'Gryfy', 'Jelenie');
     await saveResult(api, match, strongerWins(match));
-    return { match, remaining: matches.find((candidate) => candidate.id !== match.id && candidate.groupId !== match.groupId)! };
+    await saveResult(api, other, strongerWins(other));
+    const remaining = matches.find((candidate) => candidate.groupId === other.groupId && candidate.id !== other.id)!;
+    return { match, remaining };
   });
 
   await test.step('Tabela ma obie grupy z punktami, linią wyjścia i zdaniem o wychodzących', async () => {
     await page.goto(`${PUBLIC_URL}/t/${groups.slug}`);
     await page.getByRole('navigation', { name: 'Sekcje turnieju' }).getByRole('link', { name: 'Tabela' }).click();
 
-    for (const name of Object.keys(GROUPS)) {
+    for (const [name, [winner]] of Object.entries(GROUPS)) {
       const region = page.getByRole('region', { name });
       await expect(region.getByRole('heading', { name })).toBeVisible();
       await expect(region.getByText(QUALIFIERS_SENTENCE)).toBeVisible();
       // Wiersz nad linią rozpoznaje się po słowach, które tabela daje czytnikowi ekranu.
       await expect(region.getByText(', wychodzi z grupy')).toHaveCount(2);
+      const leader = region.getByRole('row').filter({ hasText: winner });
+      await expect(leader.getByRole('cell').last(), `punkty ${winner}`).toHaveText('3');
     }
-    const leader = page.getByRole('region', { name: 'Grupa A' }).getByRole('row').filter({ hasText: 'Bobry' });
-    await expect(leader.getByRole('cell').last()).toHaveText('3');
   });
 
   await test.step('Terminarz i Wyniki niosą nazwę grupy przy wierszu meczu', async () => {
