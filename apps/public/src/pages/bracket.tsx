@@ -103,11 +103,23 @@ export function BracketPage() {
   );
 }
 
-/** Nazwy drużyn jako wyliczenie: „Wilki”, „Wilki i Orły”, „Wilki, Orły i Lwy”. */
 const LIST = new Intl.ListFormat('pl', { type: 'conjunction' });
 
-function names(teams: readonly { team: { name: string } }[]) {
-  return LIST.format(teams.map((row) => row.team.name));
+/** Wiersz tabeli w zdaniu notki: tylko nazwa drużyny. */
+type NamedRow = { team: { name: string } };
+
+/** Nazwy drużyn z wierszy tabeli jako wyliczenie: „Wilki”, „Wilki i Orły”, „Wilki, Orły i Lwy”. */
+function teamNames(rows: readonly NamedRow[]) {
+  return LIST.format(rows.map((row) => row.team.name));
+}
+
+/**
+ * Orzeczenie przy wyliczeniu drużyn: liczba pojedyncza dla jednej, mnoga dla
+ * kilku („gra Wilki”, „grają Wilki i Orły”) — zgoda z wyliczeniem, a nie
+ * z liczebnikiem, więc bez `plural`.
+ */
+function verb(rows: readonly NamedRow[], one: string, many: string) {
+  return rows.length === 1 ? one : many;
 }
 
 /**
@@ -127,14 +139,14 @@ function DivergenceNote({ matches }: { matches: Match[] }) {
 
   const clauses = groupTables(standings.data ?? []).flatMap(({ table, group }) => {
     const { plays, missing } = qualifiersDivergence(table.rows, group.qualifiers, bracketTeams);
-    const play = (teams: unknown[]) => (teams.length === 1 ? 'gra' : 'grają');
-    const stand = (teams: unknown[]) => (teams.length === 1 ? 'stoi' : 'stoją');
-    // Człon bez pary zostaje po zmianie liczby wychodzących po wygenerowaniu.
+    const play = (rows: readonly NamedRow[]) => verb(rows, 'gra', 'grają');
+    const stand = (rows: readonly NamedRow[]) => verb(rows, 'stoi', 'stoją');
     if (plays.length && missing.length) {
-      return [`w drabince ${play(plays)} ${names(plays)}, a w tabeli grupy nad linią ${stand(missing)} dziś ${names(missing)}`];
+      return [`w drabince ${play(plays)} ${teamNames(plays)}, a w tabeli grupy nad linią ${stand(missing)} dziś ${teamNames(missing)}`];
     }
-    if (plays.length) return [`w drabince ${play(plays)} ${names(plays)}, choć w tabeli grupy ${stand(plays)} dziś pod linią`];
-    if (missing.length) return [`w tabeli grupy nad linią ${stand(missing)} dziś ${names(missing)}, a w drabince nie ${play(missing)}`];
+    // Człon bez pary zostaje po zmianie liczby wychodzących po wygenerowaniu.
+    if (plays.length) return [`w drabince ${play(plays)} ${teamNames(plays)}, choć w tabeli grupy ${stand(plays)} dziś pod linią`];
+    if (missing.length) return [`w tabeli grupy nad linią ${stand(missing)} dziś ${teamNames(missing)}, a w drabince nie ${play(missing)}`];
     return [];
   });
 
