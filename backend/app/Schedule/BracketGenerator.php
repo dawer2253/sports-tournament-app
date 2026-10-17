@@ -3,8 +3,11 @@
 namespace App\Schedule;
 
 use App\Models\GameMatch;
+use App\Models\Group;
 use App\Models\Round;
 use App\Models\Stage;
+use App\Models\Team;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,10 +23,19 @@ use Illuminate\Validation\ValidationException;
  * generatora kasuje wyłącznie generator (`GuardsStartedMatches`).
  * Rozstawienie przychodzi z żądania, więc losowania tu nie ma: wymieszanie
  * listy to sprawa klienta.
+ *
+ * W turnieju z fazą `group` drabinka powstaje z wyjścia z grup (#250, #260):
+ * lista ma z każdej grupy dokładnie `qualifiers` drużyn, niekoniecznie
+ * czołówkę tabeli (remis na linii rozstrzyga organizer). Tabel generator nie
+ * czyta, więc wolno generować przed końcem meczów grup, a wynik meczu grupy
+ * wpisany później drabinki nie rusza.
  */
 class BracketGenerator
 {
     public const TEAM_IDS_MESSAGE = 'Lista musi zawierać każdą drużynę turnieju dokładnie raz.';
+
+    /** Wspólne z `BracketSeeding`: propozycja też jest tylko dla fazy pucharowej. */
+    public const KNOCKOUT_ONLY_MESSAGE = 'Drabinkę generuje się tylko w fazie pucharowej.';
 
     /**
      * Sprawdzenia i zapis idą w jednej transakcji, z blokadą wiersza fazy,
@@ -31,14 +43,18 @@ class BracketGenerator
      * kasowania pustej fazy i brak ponawiania też stamtąd — powód
      * w docblocku `ScheduleGenerator::generate()`.
      *
-     * @param  list<int>  $teamIds  drużyny turnieju w kolejności rozstawienia
+     * @param  list<int>  $teamIds  drużyny drabinki w kolejności rozstawienia
      * @return array{roundsCount: int, matchesCount: int}
      *
      * @throws ValidationException faza nie jest `knockout` albo ma mecz
-     *                             rozpoczęty, turniej ma mniej niż dwie
-     *                             drużyny, lista nie jest zbiorem drużyn
-     *                             turnieju albo mecz o 3. miejsce zamówiono
-     *                             przy mniej niż czterech drużynach
+     *                             rozpoczęty, w samym pucharze turniej ma
+     *                             mniej niż dwie drużyny albo lista nie jest
+     *                             zbiorem drużyn turnieju, w turnieju z fazą
+     *                             `group` brakuje składu, grupa ma mniej
+     *                             drużyn, niż z niej wychodzi, albo lista nie
+     *                             ma z każdej grupy `qualifiers` drużyn, mecz
+     *                             o 3. miejsce zamówiono przy mniej niż
+     *                             czterech drużynach
      */
     public function generate(Stage $stage, array $teamIds, bool $thirdPlaceMatch): array
     {
@@ -46,14 +62,12 @@ class BracketGenerator
             $stage = Stage::query()->lockForUpdate()->findOrFail($stage->id);
             $this->ensureCanGenerate($stage);
 
-            $tournamentTeamIds = $stage->tournament->teams()->pluck('id')->all();
+            $groupStage = BracketSeeding::groupStageOf($stage->tournament);
 
-            if (count($tournamentTeamIds) < 2) {
-                throw ValidationException::withMessages(['teams' => 'Puchar potrzebuje co najmniej dwóch drużyn.']);
-            }
-
-            if (! $this->isEveryTeamOnce($teamIds, $tournamentTeamIds)) {
-                throw ValidationException::withMessages(['teamIds' => self::TEAM_IDS_MESSAGE]);
+            if ($groupStage !== null) {
+                $this->ensureQualifiersFromEachGroup($teamIds, BracketSeeding::qualifyingGroups($groupStage));
+            } else {
+                $this->ensureEveryTeamOnce($stage, $teamIds);
             }
 
             if ($thirdPlaceMatch && count($teamIds) < 4) {
@@ -73,7 +87,7 @@ class BracketGenerator
     private function ensureCanGenerate(Stage $stage): void
     {
         if ($stage->type !== 'knockout') {
-            throw ValidationException::withMessages(['stage' => 'Drabinkę generuje się tylko w fazie pucharowej.']);
+            throw ValidationException::withMessages(['stage' => self::KNOCKOUT_ONLY_MESSAGE]);
         }
 
         if ($stage->hasStartedMatches()) {
@@ -82,15 +96,47 @@ class BracketGenerator
     }
 
     /**
+     * Sam puchar (#215): w drabince gra każda żywa drużyna turnieju, dokładnie raz.
+     *
      * @param  list<int>  $teamIds  lista z żądania
-     * @param  list<int>  $tournamentTeamIds  żywe drużyny turnieju
      */
-    private function isEveryTeamOnce(array $teamIds, array $tournamentTeamIds): bool
+    private function ensureEveryTeamOnce(Stage $stage, array $teamIds): void
     {
+        $tournamentTeamIds = $stage->tournament->teams()->pluck('id')->all();
+
+        if (count($tournamentTeamIds) < 2) {
+            throw ValidationException::withMessages(['teams' => 'Puchar potrzebuje co najmniej dwóch drużyn.']);
+        }
+
         sort($teamIds);
         sort($tournamentTeamIds);
 
-        return $teamIds === $tournamentTeamIds;
+        if ($teamIds !== $tournamentTeamIds) {
+            throw ValidationException::withMessages(['teamIds' => self::TEAM_IDS_MESSAGE]);
+        }
+    }
+
+    /**
+     * Turniej z fazą `group` (#250): z każdej grupy dokładnie `qualifiers`
+     * żywych drużyn, każda raz. Drużyna bez grupy, obca albo usunięta nie
+     * ma grupy na mapie, więc łamie regułę tak samo jak nadmiar z grupy.
+     *
+     * @param  list<int>  $teamIds  lista z żądania
+     * @param  Collection<int, Group>  $groups  grupy fazy z `BracketSeeding::qualifyingGroups()`
+     */
+    private function ensureQualifiersFromEachGroup(array $teamIds, Collection $groups): void
+    {
+        /** @var array<int, int> $groupOf grupa po id drużyny */
+        $groupOf = Team::query()->whereIn('group_id', $groups->modelKeys())->pluck('group_id', 'id')->all();
+        $counts = array_count_values(array_map(fn (int $id): int => $groupOf[$id] ?? 0, $teamIds));
+
+        $matches = count(array_unique($teamIds)) === count($teamIds)
+            && ! isset($counts[0])
+            && $groups->every(fn (Group $group): bool => ($counts[$group->id] ?? 0) === $group->qualifiers);
+
+        if (! $matches) {
+            throw ValidationException::withMessages(['teamIds' => BracketSeeding::TEAM_IDS_MESSAGE]);
+        }
     }
 
     /**

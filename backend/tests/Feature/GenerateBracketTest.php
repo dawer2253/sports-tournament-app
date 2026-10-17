@@ -322,17 +322,17 @@ it('odrzuca listę, która nie jest zbiorem drużyn turnieju, i nie rusza drabin
 
     expect(bracketMatches($stage)->toArray())->toBe($before);
 })->with([
-    'brakująca' => fn () => fn (Stage $stage): array => array_slice(seedsOf($stage), 1),
-    'obca' => fn () => fn (Stage $stage): array => [...seedsOf($stage), Team::factory()->create()->id],
-    'usunięta' => fn () => function (Stage $stage): array {
+    'brakująca' => fn (Stage $stage): array => array_slice(seedsOf($stage), 1),
+    'obca' => fn (Stage $stage): array => [...seedsOf($stage), Team::factory()->create()->id],
+    'usunięta' => function (Stage $stage): array {
         $removed = Team::factory()->for($stage->tournament)->create();
         $removed->delete();
 
         return [...seedsOf($stage), $removed->id];
     },
-    'powtórzona' => fn () => fn (Stage $stage): array => [...array_slice(seedsOf($stage), 1), seedsOf($stage)[1]],
-    'napisy zamiast liczb' => fn () => fn (Stage $stage): array => array_map(strval(...), seedsOf($stage)),
-    'pusta' => fn () => fn (Stage $stage): array => [],
+    'powtórzona' => fn (Stage $stage): array => [...array_slice(seedsOf($stage), 1), seedsOf($stage)[1]],
+    'napisy zamiast liczb' => fn (Stage $stage): array => array_map(strval(...), seedsOf($stage)),
+    'pusta' => fn (Stage $stage): array => [],
 ]);
 
 // Niezmiennik 8 z #215.
