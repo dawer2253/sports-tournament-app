@@ -57,7 +57,7 @@ const allMatches: ScheduleDemoMatch[] = [...publicResults, ...publicFixtures].to
   (a.kickoffAt ?? '').localeCompare(b.kickoffAt ?? '') || a.id - b.id,
 )
 
-function seasonFor(state: TournamentState): ScheduleDemoMatch[] {
+export function seasonFor(state: TournamentState): ScheduleDemoMatch[] {
   if (state === 'bez-terminarza') return []
   if (state === 'w-trakcie') return allMatches
   if (state === 'przed-startem') {
@@ -70,7 +70,7 @@ function seasonFor(state: TournamentState): ScheduleDemoMatch[] {
   )
 }
 
-function standingsFrom(matches: ScheduleDemoMatch[]): TableRow[] {
+export function standingsFrom(matches: ScheduleDemoMatch[]): TableRow[] {
   const rows = new Map<number, TableRow>()
   for (const team of teams) {
     rows.set(team.id, {
