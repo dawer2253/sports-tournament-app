@@ -83,10 +83,10 @@ export function Crest({ name, className }: { name: string; className?: string })
 
 export function LiveTag({ className }: { className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-2 pub-tab text-base text-brand-text', className)}>
+    <span className={cn('inline-flex items-center gap-2 pub-tab text-base text-destructive', className)}>
       <span aria-hidden className="relative flex size-2.5">
-        <span className="absolute inset-0 animate-ping rounded-full bg-brand-line opacity-60 motion-reduce:animate-none" />
-        <span className="relative size-2.5 rounded-full bg-brand-line" />
+        <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-60 motion-reduce:animate-none" />
+        <span className="relative size-2.5 rounded-full bg-destructive" />
       </span>
       Na żywo
     </span>

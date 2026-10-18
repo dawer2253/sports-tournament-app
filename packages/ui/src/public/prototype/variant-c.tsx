@@ -65,7 +65,7 @@ function MatchBoard({ match, timeZone }: { match: ScheduleDemoMatch; timeZone: s
     <DeadLink
       className={cn(
         'flex min-w-0 flex-col gap-3 rounded-md bg-card p-4 ring-1 ring-inset hover:bg-muted',
-        live ? 'ring-2 ring-brand-line' : 'ring-border',
+        live ? 'ring-destructive/70' : 'ring-border',
       )}
     >
       <span className="flex min-h-6 items-center justify-between gap-3 text-sm text-muted-foreground">
