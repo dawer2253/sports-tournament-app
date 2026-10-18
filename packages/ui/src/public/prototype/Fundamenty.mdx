@@ -1,0 +1,87 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+import { PublicTokens, TypeScale, AccentRule } from './foundations'
+
+<Meta title="Strona publiczna/Fundamenty" />
+
+# Strona publiczna: fundamenty
+
+> **Prototyp S7 ([#287](https://github.com/dawer2253/sports-tournament-app/issues/287)),
+> gałąź `prototype/s7-kierunek`.** Do `main` przenosi to pierwszy ticket wykonawczy
+> po [#289](https://github.com/dawer2253/sports-tournament-app/issues/289).
+
+Kierunek A „Tablica wyników”. Strona turnieju ma czytać się jak tablica na
+boisku: duże, wąskie cyfry, mało ozdób, kolor turnieju tylko tam, gdzie coś
+wskazuje.
+
+## Trzy zasady
+
+1. **Zawsze ciemna.** Korzeń strony ma `.dark .public-site`. Tło, powierzchnie,
+   tekst i stany to tokeny `.dark` bez zmian (grafit). Strona publiczna dokłada
+   tylko trzy płaszczyzny i dwa kroje, opisane niżej.
+2. **Kolor turnieju jest jedynym akcentem.** Aktywna zakładka, odnośnik do
+   pełnego widoku, przycisk „Śledź mecz”, pasek lidera w tabeli, liczba lidera
+   klasyfikacji, logo domyślne. Nic poza tym nie jest kolorowe. Wyjątkiem jest
+   stan „Na żywo” w `--destructive`, bo to stan, a nie akcent.
+3. **Tablica w Barlow Condensed, tekst w Barlow.** Wszystko, co jest liczbą
+   albo nazwą „na tablicy” (wynik, punkty, godzina, nazwa turnieju, nagłówki),
+   idzie krojem wąskim. Tekst do czytania (nazwy w wierszach, meta) idzie
+   zwykłym Barlow tej samej rodziny, więc oba kroje się nie gryzą.
+
+## Tokeny ponad `.dark`
+
+<PublicTokens />
+
+Kolor turnieju ustawia korzeń strony z `brandVars(primaryColor)`:
+
+| Zmienna | Rola | Skąd |
+|---|---|---|
+| `--brand` | wypełnienie: przycisk, logo domyślne, pas mistrza | `branding.primaryColor` bez zmian |
+| `--brand-foreground` | tekst na wypełnieniu | `brandForeground()`, ten sam co dziś |
+| `--brand-line` | linia, kształt, duża liczba na ciemnym tle | `brandOnDark()`, rozjaśniany przy kontraście < 3:1 |
+| `--brand-text` | zwykły tekst na ciemnym tle | `brandOnDark(…, { min: 4.5 })` |
+
+Tailwind: `bg-sunken`, `bg-hairline`/`border-hairline`, `border-rule`,
+`text-brand-text`, `text-brand-line`/`border-brand-line`, `font-display`, `font-body`.
+
+## Kroje
+
+- **Barlow Condensed** 500, 600, 700, 800 (`@fontsource/barlow-condensed`)
+- **Barlow** 400, 500, 600 (`@fontsource/barlow`)
+
+Oba z własnego serwera, bez CDN Google (RODO). Paczki niosą `latin-ext`, więc
+„Ż”, „ś” i „ł” są w kroju, a nie w zastępczym. Panel zostaje przy Inter.
+
+## Skala typografii
+
+Skala 13 / 14 / 16 / 20 / 28 / 40 / 64 / 120. Krok między stopniami rośnie,
+bo wąski krój w małym stopniu czyta się gorzej niż szeroki, więc nagłówki są
+większe, niż byłyby w Barlow. Wersaliki tylko w `pub-title` (nazwa turnieju,
+nazwy drużyn na tablicy), tak jak na prawdziwej tablicy. Nagłówki sekcji
+zdaniem.
+
+<TypeScale />
+
+## Reguła koloru turnieju na ciemnym tle
+
+Kolor organizera gra dwie role i każda ma własną regułę:
+
+- **Wypełnienie** zostaje kolorem organizera. Tekst na nim jest jasny albo
+  ciemny według `brandForeground()` (próg 4,5:1), jak dziś.
+- **Linia, kształt i duża liczba na ciemnym tle** (`--brand-line`) muszą mieć
+  co najmniej **3:1 z kartą** (`--card`, najjaśniejsza powierzchnia pod
+  akcentem; WCAG 1.4.11).
+- **Zwykły tekst na ciemnym tle** (`--brand-text`: odnośnik „Pełna tabela”,
+  etykieta „Mistrz”) musi mieć **4,5:1**. To odstępstwo od mapy #286, która
+  mówiła o jednym progu 3:1: przy nim domyślna zieleń (3,03:1) przechodziła,
+  a odnośnik 14 px był na granicy czytelności.
+
+Gdy kolor nie ma progu, `brandOnDark()` podnosi jasność w OKLCH krokiem 0,01
+przy tej samej barwie, aż przejdzie. Kibic dalej widzi „swój” granat, tylko
+jaśniejszy.
+
+<AccentRule />
+
+**Do decyzji w #289:** granat i bordo jako wypełnienie mają z tłem ok. 1,7:1.
+Napis na przycisku czyta się dobrze, ale sam kształt przycisku i logo domyślne
+ledwo odcinają się od grafitu. Mapa mówi „jako wypełnienie zostaje”. Do wyboru:
+zostawić (przycisk i tak ma napis), albo dać wypełnieniu obrys w `--brand-line`.
