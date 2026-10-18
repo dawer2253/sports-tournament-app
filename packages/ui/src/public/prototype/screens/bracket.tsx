@@ -81,8 +81,8 @@ function Tile({ match, data, className }: { match: ScreenMatch; data: Season; cl
         ) : null}
       </span>
       {(['home', 'away'] as const).map((side) => (
-        <span key={side} className={cn('grid h-7 grid-cols-[minmax(0,1fr)_2.25rem] items-center gap-2 sm:grid-cols-[1.25rem_minmax(0,1fr)_2.25rem]', lost(match, side) ? 'text-muted-foreground' : 'font-semibold')}>
-          {teamOf(match, side) ? <Crest name={teamOf(match, side)!.name} className="hidden size-5 sm:block" /> : <span className="hidden sm:block" />}
+        <span key={side} className={cn('grid h-7 grid-cols-[1.25rem_minmax(0,1fr)_2.25rem] items-center gap-2', lost(match, side) ? 'text-muted-foreground' : 'font-semibold')}>
+          {teamOf(match, side) ? <Crest name={teamOf(match, side)!.name} className="size-5" /> : <span />}
           <span className="flex min-w-0 items-center gap-1.5 text-[0.9375rem]">
             <TeamName match={match} side={side} className={!teamOf(match, side) ? 'text-[0.8125rem]' : undefined} />
             <Penalties match={match} side={side} />
@@ -209,6 +209,21 @@ function RoundHead({ round, slots, className }: { round: Round; slots?: BracketT
   )
 }
 
+/**
+ * Jedna runda na telefonie: bez łączników drzewo nic nie mówi, więc kafle
+ * stoją zwykłą listą; w rundzie finału mistrz nad finałem i 3. miejsce pod nim.
+ */
+function SingleRound({ round, data, final }: { round: Round; data: Season; final: boolean }) {
+  const champion = final ? bracketChampion(data.bracket) : null
+  return (
+    <div className="flex flex-col gap-3">
+      {champion && <ChampionTile name={champion.name} />}
+      {round.slots.map((slot, index) => slot.kind !== 'empty' && <div key={index}>{slotContent(slot, data)}</div>)}
+      {round.third && <Tile match={bracketRow(round.third, data.bracket)} data={data} className="mt-3" />}
+    </div>
+  )
+}
+
 /** Wysokość drzewa: od pierwszej widocznej kolumny, z miejscem na mistrza i 3. miejsce. */
 function treeHeight(firstSlots: number) {
   return Math.max(firstSlots * UNIT, 3 * UNIT + 80)
@@ -217,7 +232,8 @@ function treeHeight(firstSlots: number) {
 function TreeWindow({ data }: { data: Season }) {
   const rounds = bracketTree(data.bracket)
   const [ref, width] = useWidth<HTMLDivElement>()
-  const cols = Math.min(rounds.length, width < 600 ? 2 : width < 860 ? 3 : 4)
+  // Na telefonie jedna runda na ekran: przy dwóch kolumnach nazwy drużyn były ucinane (#288).
+  const cols = Math.min(rounds.length, width < 600 ? 1 : width < 860 ? 3 : 4)
   const current = (currentRoundOrder(data.bracket) ?? 1) - 1
   const [start, setStart] = React.useState<number | null>(null)
   const first = Math.min(Math.max(0, start ?? current), rounds.length - cols)
@@ -227,9 +243,10 @@ function TreeWindow({ data }: { data: Season }) {
   return (
     <div ref={ref} className="flex flex-col gap-5">
       {rounds.length > cols && (
+        // Przełącznik na całą szerokość: pigułki dzielą ją po równo, niezależnie od liczby rund.
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Wcześniejsza runda" disabled={first === 0} onClick={() => setStart(first - 1)} className="grid size-9 place-items-center rounded-md ring-1 ring-inset ring-border disabled:opacity-40">‹</button>
-          <div className="flex gap-1 overflow-x-auto">
+          <button type="button" aria-label="Wcześniejsza runda" disabled={first === 0} onClick={() => setStart(first - 1)} className="grid size-11 shrink-0 place-items-center rounded-md ring-1 ring-inset ring-border disabled:opacity-40">‹</button>
+          <div className="flex flex-1 gap-1">
             {rounds.map((round, index) => (
               <button
                 key={round.id}
@@ -237,7 +254,7 @@ function TreeWindow({ data }: { data: Season }) {
                 aria-pressed={index >= first && index < first + cols}
                 onClick={() => setStart(index)}
                 className={cn(
-                  'min-h-9 rounded-md px-3 pub-tab text-base',
+                  'min-h-11 flex-1 rounded-md px-2 pub-tab text-base',
                   index >= first && index < first + cols ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
@@ -245,19 +262,23 @@ function TreeWindow({ data }: { data: Season }) {
               </button>
             ))}
           </div>
-          <button type="button" aria-label="Dalsza runda" disabled={first + cols >= rounds.length} onClick={() => setStart(first + 1)} className="grid size-9 place-items-center rounded-md ring-1 ring-inset ring-border disabled:opacity-40">›</button>
+          <button type="button" aria-label="Dalsza runda" disabled={first + cols >= rounds.length} onClick={() => setStart(first + 1)} className="grid size-11 shrink-0 place-items-center rounded-md ring-1 ring-inset ring-border disabled:opacity-40">›</button>
         </div>
       )}
       <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, columnGap: CONNECTOR }}>
         {visible.map((round) => <RoundHead key={round.id} round={round} />)}
       </div>
-      <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, columnGap: CONNECTOR }}>
-        {visible.map((round, index) => (
-          <Column key={round.id} slots={round.slots} height={height} data={data} joined={index > 0}>
-            {round.order === rounds.length && <FinalExtras round={round} data={data} height={height} />}
-          </Column>
-        ))}
-      </div>
+      {cols === 1 ? (
+        <SingleRound round={visible[0]!} data={data} final={visible[0]!.order === rounds.length} />
+      ) : (
+        <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, columnGap: CONNECTOR }}>
+          {visible.map((round, index) => (
+            <Column key={round.id} slots={round.slots} height={height} data={data} joined={index > 0}>
+              {round.order === rounds.length && <FinalExtras round={round} data={data} height={height} />}
+            </Column>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

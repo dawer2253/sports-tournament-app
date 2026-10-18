@@ -11,6 +11,7 @@ import { LEAGUE_TABS } from '../../components/layout/public-nav'
 import { cn } from '../../lib/utils'
 import type { ScheduleDemoMatch } from '../../lib/demo-data'
 import type { OverviewData } from './demo'
+import { ShellHeader } from './screens/kit'
 import {
   Crest,
   DeadLink,
@@ -20,27 +21,12 @@ import {
   MiniTable,
   PublicRoot,
   SectionHead,
-  Tabs,
-  TournamentMark,
   day,
   scorerLabel,
   scorersFor,
   time,
 } from './parts'
 
-function Header({ data }: { data: OverviewData }) {
-  return (
-    <header className="border-b border-hairline bg-sunken">
-      <div className="mx-auto flex max-w-6xl flex-col gap-x-10 px-4 pt-4 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:pt-0">
-        <div className="flex min-w-0 items-center gap-3 lg:py-4">
-          <TournamentMark tournament={data.tournament} className="size-10" />
-          <h1 className="pub-title truncate text-2xl">{data.tournament.name}</h1>
-        </div>
-        <Tabs tabs={LEAGUE_TABS} itemClassName="lg:pb-4 lg:pt-5" />
-      </div>
-    </header>
-  )
-}
 
 /** Jedna tablica w pasie kolejki: stan nad parą, dwie linie drużyna–wynik. */
 function MatchBoard({ match, timeZone }: { match: ScheduleDemoMatch; timeZone: string }) {
@@ -170,7 +156,7 @@ export function VariantC({ data, accent }: { data: OverviewData; accent: string 
   const first = data.state === 'przed-startem' ? data.upcoming[0] : undefined
   return (
     <PublicRoot accent={accent}>
-      <Header data={data} />
+      <ShellHeader tournament={data.tournament} tabs={LEAGUE_TABS} active="home" />
       <main className="mx-auto flex max-w-6xl flex-col gap-14 px-4 py-8 sm:px-6 sm:py-10">
         {data.state === 'bez-terminarza' ? (
           <TeamsShowcase data={data} />

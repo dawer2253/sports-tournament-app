@@ -8,7 +8,68 @@ import type { PublicNavKey } from '../../../components/layout/public-nav'
 import type { PublicShellTournament } from '../../../components/layout/public-shell-tournament'
 import { cn } from '../../../lib/utils'
 import { ACCENT_SAMPLES, type AccentKey } from '../accent'
-import { DeadLink, Footer, PublicRoot, Tabs, TournamentMark } from '../parts'
+import { DeadLink, Footer, PublicRoot, TAB_LABELS, Tabs, TournamentMark } from '../parts'
+
+/**
+ * Pasek shella: logo i nazwa, obok zakładki. Na telefonie zakładki się nie
+ * mieściły i były ucinane, więc poniżej `md` chowają się pod przyciskiem menu
+ * i rozwijają listą pod paskiem (#288, po przeglądzie).
+ */
+export function ShellHeader({ tournament, tabs, active }: { tournament: PublicShellTournament; tabs: readonly PublicNavKey[]; active?: PublicNavKey }) {
+  const [open, setOpen] = React.useState(false)
+  const menuId = React.useId()
+
+  React.useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  return (
+    <header className="border-b border-hairline bg-sunken">
+      <div className="mx-auto flex max-w-6xl flex-col gap-x-10 px-4 sm:px-6 md:pt-4 lg:flex-row lg:items-end lg:justify-between lg:pt-0">
+        <div className="flex min-h-16 items-center justify-between gap-3 md:min-h-0">
+          <DeadLink className="flex min-w-0 items-center gap-3 lg:py-4">
+            <TournamentMark tournament={tournament} className="size-10" />
+            <span className="pub-title truncate leading-[1.2] text-2xl">{tournament.name}</span>
+          </DeadLink>
+          <button
+            type="button"
+            aria-label="Menu"
+            aria-expanded={open}
+            aria-controls={menuId}
+            onClick={() => setOpen(!open)}
+            className="grid size-11 shrink-0 place-items-center rounded-md text-foreground ring-1 ring-inset ring-border hover:bg-muted md:hidden"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              {open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            </svg>
+          </button>
+        </div>
+        {/* Bez `active` (strona meczu, 404) nic nie jest podświetlone; `Tabs` z #287 domyślnie podświetla Przegląd. */}
+        <Tabs tabs={tabs} active={active ?? ('' as PublicNavKey)} className="hidden md:flex" itemClassName="lg:pb-4 lg:pt-5" />
+        {open && (
+          <nav id={menuId} aria-label="Sekcje turnieju" className="-mx-4 flex flex-col border-t border-hairline pb-2 md:hidden">
+            {tabs.map((key) => (
+              <DeadLink
+                key={key}
+                aria-current={key === active ? 'page' : undefined}
+                onClick={(event) => { event.preventDefault(); setOpen(false) }}
+                className={cn(
+                  'flex min-h-12 items-center border-l-[3px] px-4 pub-tab text-xl',
+                  key === active ? 'border-brand-line bg-card text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {TAB_LABELS[key]}
+              </DeadLink>
+            ))}
+          </nav>
+        )}
+      </div>
+    </header>
+  )
+}
 
 /** Shell wariantu C: jeden pasek (logo, nazwa, zakładki), pod nim treść ekranu. */
 export function Shell({
@@ -26,16 +87,7 @@ export function Shell({
 }) {
   return (
     <PublicRoot accent={accent}>
-      <header className="border-b border-hairline bg-sunken">
-        <div className="mx-auto flex max-w-6xl flex-col gap-x-10 px-4 pt-4 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:pt-0">
-          <DeadLink className="flex min-w-0 items-center gap-3 lg:py-4">
-            <TournamentMark tournament={tournament} className="size-10" />
-            <span className="pub-title truncate leading-[1.2] text-2xl">{tournament.name}</span>
-          </DeadLink>
-          {/* Bez `active` (strona meczu, 404) nic nie jest podświetlone; `Tabs` z #287 domyślnie podświetla Przegląd. */}
-          <Tabs tabs={tabs} active={active ?? ('' as PublicNavKey)} itemClassName="lg:pb-4 lg:pt-5" />
-        </div>
-      </header>
+      <ShellHeader tournament={tournament} tabs={tabs} active={active} />
       <main className="mx-auto flex max-w-6xl flex-col gap-10 px-4 pb-24 pt-8 sm:px-6 sm:pt-10">{children}</main>
       <Footer tournament={tournament} />
     </PublicRoot>
