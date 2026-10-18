@@ -4,7 +4,7 @@ import { demoRoster, matchInProgress } from '../lib/demo-data'
 import { AdminMatchResult } from './admin-match-result'
 
 const meta = {
-  title: 'Ekrany/Admin · Wynik meczu',
+  title: 'Ekrany/Admin/Wynik meczu',
   component: AdminMatchResult,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminMatchResult>

@@ -9,7 +9,7 @@ import type { BracketMatchRowData } from './bracket-match-row-data'
 const [quarterFinals, semiFinals, finalRound] = cupRounds.map((round) => round.matches)
 
 const meta = {
-  title: 'UI/Wiersz meczu drabinki',
+  title: 'UI/Dane/Wiersz meczu drabinki',
   component: BracketMatchRow,
   parameters: { layout: 'padded' },
   args: { match: quarterFinals![0]!, timeZone: scheduleTimeZone, penaltySlot: true },
@@ -165,7 +165,7 @@ export const ProgUkladu: Story = {
   globals: { viewport: { value: 'desktop', isRotated: false } },
   play: async ({ canvasElement }) => {
     const container = canvasElement.querySelector<HTMLElement>('[data-slot="bracket-match-row"]')!.parentElement!.parentElement!
-    // Bez `expect` w pętli, jak w „UI/Wiersz meczu”: każde trafia do panelu
+    // Bez `expect` w pętli, jak w „UI/Dane/Wiersz meczu”: każde trafia do panelu
     // Interactions, a przy kilkudziesięciu szerokościach story trwa za długo.
     const problems: string[] = []
     // Od 343 px, czyli treści panelu na telefonie 375 px z DoD #239.

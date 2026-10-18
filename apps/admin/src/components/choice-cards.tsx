@@ -32,7 +32,7 @@ export interface ChoiceCardsProps<T extends string | number> {
 }
 
 /**
- * Wybór jednej opcji, pokazany jako kafelki z makiety `Ekrany/Admin · Kreator
+ * Wybór jednej opcji, pokazany jako kafelki z makiety `Ekrany/Admin/Kreator
  * turnieju`.
  *
  * Pod spodem siedzą natywne `input[type=radio]` schowane przez `sr-only`, a nie

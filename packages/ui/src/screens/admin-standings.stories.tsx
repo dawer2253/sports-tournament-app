@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { AdminStandings } from './admin-standings'
 
 const meta = {
-  title: 'Ekrany/Admin · Tabela',
+  title: 'Ekrany/Admin/Tabela',
   component: AdminStandings,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminStandings>

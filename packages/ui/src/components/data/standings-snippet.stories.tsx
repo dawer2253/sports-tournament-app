@@ -4,7 +4,7 @@ import { standingsTableRows } from '../../lib/demo-data'
 import { STANDINGS_SNIPPET_ROWS, StandingsSnippet } from './standings-snippet'
 
 const meta = {
-  title: 'UI/Skrót tabeli',
+  title: 'UI/Dane/Skrót tabeli',
   component: StandingsSnippet,
   parameters: { layout: 'padded' },
   args: { rows: standingsTableRows },

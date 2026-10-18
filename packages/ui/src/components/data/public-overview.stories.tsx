@@ -19,7 +19,7 @@ const longResults = publicResults.map((match) => ({ ...match, homeTeam: withLong
 const goals = leaderboardsBySport.football.goals!
 
 const meta = {
-  title: 'UI/Przegląd strony publicznej',
+  title: 'UI/Dane/Przegląd strony publicznej',
   component: PublicOverview,
   parameters: { layout: 'padded' },
   args: {

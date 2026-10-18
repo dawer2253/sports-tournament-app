@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AdminLogin, AdminRegister } from './admin-login'
 
 const meta = {
-  title: 'Ekrany/Admin · Logowanie',
+  title: 'Ekrany/Admin/Logowanie',
   component: AdminLogin,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminLogin>

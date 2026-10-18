@@ -6,7 +6,7 @@ import { Label } from './label'
 import { Switch } from './switch'
 
 const meta = {
-  title: 'UI/Switch',
+  title: 'UI/Prymitywy/Switch',
   component: Switch,
   tags: ['autodocs'],
 } satisfies Meta<typeof Switch>

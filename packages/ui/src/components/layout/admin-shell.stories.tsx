@@ -22,7 +22,7 @@ const panelHref = (key: AdminNavKey) =>
 const tournamentHref = (id: number) => `/tournaments/${id}`
 
 const meta = {
-  title: 'UI/Shell panelu',
+  title: 'UI/Układ/Shell panelu',
   component: AdminShell,
   parameters: { layout: 'fullscreen' },
   args: {

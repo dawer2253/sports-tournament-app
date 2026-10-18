@@ -20,7 +20,7 @@ function Controlled(props: BrandColorPickerProps) {
 }
 
 const meta = {
-  title: 'UI/Kolor wiodący',
+  title: 'UI/Prymitywy/Kolor wiodący',
   component: BrandColorPicker,
   parameters: { layout: 'padded' },
   args: { value: '#1F7A45', onChange: fn() },

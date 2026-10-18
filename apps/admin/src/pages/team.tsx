@@ -209,7 +209,7 @@ type TeamViewProps = {
   onDeletePlayer: (player: PlayerRow) => void;
 };
 
-/** Nagłówek drużyny z jej akcjami i skład, jak w makiecie „Admin · Skład drużyny”. */
+/** Nagłówek drużyny z jej akcjami i skład, jak w makiecie „Ekrany/Admin/Skład drużyny”. */
 function TeamView({
   team,
   players,

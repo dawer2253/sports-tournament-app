@@ -4,7 +4,7 @@ import { Button } from './button'
 import { EmptyState } from './empty-state'
 
 const meta = {
-  title: 'UI/Stan pusty',
+  title: 'UI/Prymitywy/Stan pusty',
   component: EmptyState,
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof EmptyState>

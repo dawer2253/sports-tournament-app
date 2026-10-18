@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { PublicHome } from './public-home'
 
 const meta = {
-  title: 'Ekrany/Public · Przegląd',
+  title: 'Ekrany/Public/Przegląd',
   component: PublicHome,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof PublicHome>

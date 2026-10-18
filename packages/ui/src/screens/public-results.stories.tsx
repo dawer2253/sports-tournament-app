@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { PublicResults } from './public-results'
 
 const meta = {
-  title: 'Ekrany/Public · Wyniki',
+  title: 'Ekrany/Public/Wyniki',
   component: PublicResults,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof PublicResults>

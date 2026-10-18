@@ -22,7 +22,7 @@ function Brand({ color, children }: { color: string; children: React.ReactNode }
 }
 
 const meta = {
-  title: 'UI/Pas meczu',
+  title: 'UI/Dane/Pas meczu',
   component: MatchHeader,
   parameters: { layout: 'padded' },
   args: { match: matchPageFinished, sport: 'football', brandColor: '#1F7A45', timeZone: scheduleTimeZone },

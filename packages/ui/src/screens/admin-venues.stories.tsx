@@ -4,7 +4,7 @@ import { venueRows } from '../lib/demo-data'
 import { AdminVenues } from './admin-venues'
 
 const meta = {
-  title: 'Ekrany/Admin · Obiekty',
+  title: 'Ekrany/Admin/Obiekty',
   component: AdminVenues,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminVenues>

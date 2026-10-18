@@ -5,7 +5,7 @@ import { Button } from './button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip'
 
 const meta = {
-  title: 'UI/Tooltip',
+  title: 'UI/Prymitywy/Tooltip',
   component: Tooltip,
   render: () => (
     <TooltipProvider>

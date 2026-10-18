@@ -17,7 +17,7 @@ const events: MatchEventRow[] = [
 ]
 
 const meta = {
-  title: 'UI/Oś meczu',
+  title: 'UI/Dane/Oś meczu',
   component: MatchTimeline,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-xl">{Story()}</div>],

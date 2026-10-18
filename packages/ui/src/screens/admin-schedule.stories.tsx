@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { AdminSchedule } from './admin-schedule'
 
 const meta = {
-  title: 'Ekrany/Admin · Terminarz',
+  title: 'Ekrany/Admin/Terminarz',
   component: AdminSchedule,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminSchedule>

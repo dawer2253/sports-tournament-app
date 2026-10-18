@@ -4,7 +4,7 @@ import { rosterTeam, teamPlayers, teamRows } from '../lib/demo-data'
 import { AdminTeam } from './admin-team'
 
 const meta = {
-  title: 'Ekrany/Admin · Skład drużyny',
+  title: 'Ekrany/Admin/Skład drużyny',
   component: AdminTeam,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminTeam>
