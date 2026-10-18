@@ -1,0 +1,49 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-groups.stories'
+
+<Meta of={Stories} />
+
+# Grupy (Admin): specyfikacja
+
+Skład fazy grupowej: nazwy grup, liczba wychodzących i przypisanie drużyn. Ten sam
+ekran stoi w aplikacji pod `/tournaments/{id}/groups`
+(`apps/admin/src/pages/tournament-groups.tsx`).
+
+<Canvas of={Stories.Zapisany} />
+
+## Cel
+Rozdzielić drużyny turnieju na grupy, zanim powstanie terminarz fazy grupowej.
+Skład ustala się raz i zastępuje w całości — nie ma dodawania pojedynczej drużyny.
+
+## Dane (wejście)
+- Drużyny turnieju (`GET /tournaments/{tournament}/teams`) — każda dokładnie raz.
+- Faza `group` z jej grupami (`GET /tournaments/{tournament}/stages`).
+- Mecze fazy (`GET /tournaments/{tournament}/matches`) — z nich ekran wie, czy coś już
+  się zaczęło i ile meczów skasuje zapis.
+
+## Reguły
+- Obowiązują reguły kontraktu: każda drużyna dokładnie raz, co najmniej dwie drużyny
+  w grupie, `qualifiers` między 1 a liczebnością grupy, a suma wychodzących co najmniej 2.
+  Edytor liczy je na bieżąco i blokuje zapis, gdy szkic jest niepoprawny.
+- Wracająca drużyna z „Bez grupy" ląduje w grupie przez `Select`, a nie przeciąganiem.
+- Zapis zastępuje cały skład (`PUT /stages/{stage}/groups`) i kasuje terminarz grup —
+  dlatego przy istniejącym terminarzu nad przyciskami stoi ostrzeżenie z liczbą meczów.
+- Kolejność drużyn w grupie idzie za listą z API, żeby zapis nie przestawił składu.
+- Faza z rozpoczętym meczem zamraża skład: edytor stoi, a zapisu nie ma.
+
+## Stany
+- **Zapisany** (powyżej): dwie grupy po trzy drużyny, pula „Bez grupy" pusta.
+- **Z terminarzem**: ostrzeżenie, ile meczów skasuje zapis (`ZTerminarzem`).
+- **Zamrożony**: komunikat o zamrożeniu, przyciski nieaktywne (`Zamrozony`).
+- **Bez fazy grupowej**: pusty stan „Ten turniej nie ma fazy grupowej" (tylko w panelu).
+- **Mniej niż dwie drużyny**: pusty stan z odnośnikiem do Drużyn (tylko w panelu).
+- **Wczytywanie / błąd**: szkielet i komunikat z ponowieniem (tylko w panelu).
+
+## Zachowanie
+- „Losuj" rozdziela drużyny na zadaną liczbę grup; „Zapisz skład grup" wysyła szkic.
+- Zmiana „Liczba grup" przelicza skład od nowa.
+- Zapis unieważnia fazy, mecze i drużyny, bo wszystkie trzy się zmieniają.
+
+## Otwarte pytania
+- Czy skład grup ma się samoistnie proponować przy wejściu (dziś dostaje szkic
+  z pustymi grupami), czy zawsze startować z zapisanego stanu?

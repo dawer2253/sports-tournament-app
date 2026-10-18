@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
+import { ChoiceCards } from '@tournament/ui';
 import { createRef } from 'react';
 import { describe, expect, it } from 'vitest';
-import { ChoiceCards } from './choice-cards';
 
 const OPTIONS = [
   { value: 'league', label: 'Liga' },

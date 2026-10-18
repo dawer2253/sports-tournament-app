@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CardContent,
+  ChoiceCards,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -22,7 +23,6 @@ import {
 import { CalendarClock, CalendarDays, MoreHorizontal, RefreshCw, Trophy, UserX, Users } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ChoiceCards } from '../components/choice-cards';
 import { DatesDialog } from '../components/dates-dialog';
 import { GroupFilterChips } from '../components/group-filter-chips';
 import { MatchDialog } from '../components/match-dialog';

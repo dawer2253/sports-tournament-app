@@ -5,37 +5,40 @@ import * as Stories from './admin-login.stories'
 
 # Logowanie (Admin): specyfikacja
 
-Pełnoekranowy widok uwierzytelniania organizatora (poza `AdminShell`). Bramka do panelu
-zarządzania rozgrywkami: obejmuje logowanie i rejestrację nowego konta.
+Bramka do panelu organizera: jedna karta z formularzem e-mail i hasło. Ten sam ekran
+stoi w aplikacji pod `/login` (`apps/admin/src/pages/login.tsx`).
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Umożliwić organizatorowi zalogowanie się do panelu lub założenie nowego konta, z czytelnym
-przekazem marketingowym o produkcie.
+Wpuścić organizatora do panelu. Ekran jest krótki z założenia: to nie landing, a
+wejście do narzędzia.
 
 ## Dane (wejście)
-- **Logowanie:** e-mail, hasło.
-- **Rejestracja:** nazwa organizatora, e-mail, hasło, powtórzenie hasła.
-- Panel brandowy: statyczne hasło marketingowe i lista cech produktu (bez danych z API).
+- E-mail i hasło. Pola startują wypełnione wartościami developerskimi, tak jak w
+  panelu; makieta nie wprowadza innych.
+- Token sesji wraca z `POST /login` i ląduje w `localStorage` — to już warstwa
+  aplikacji, nie tego ekranu.
 
 ## Reguły
-- E-mail musi mieć poprawny format; hasło jest wymagane.
-- Rejestracja: oba hasła muszą być identyczne, minimalna długość hasła (TODO: do ustalenia).
-- Link „Nie pamiętasz hasła?" prowadzi do osobnego przepływu resetu (TODO).
+- Panel ma **jedną** drogę uwierzytelnienia: brak rejestracji konta, brak
+  „Nie pamiętasz hasła?" i brak panelu marketingowego. Konta organizera nie zakłada
+  się z UI.
+- Oba pola są wymagane; e-mail jest typu `email`, więc przeglądarka pilnuje formatu.
+- Formularz nie przeładowuje strony — wysyłkę obsługuje panel.
 
 ## Stany
-- **Logowanie**: domyślny (powyżej).
-- **Rejestracja**: formularz zakładania konta (`Rejestracja`).
-- **Błąd / ładowanie / walidacja pól**: TODO (blokada przycisku, `aria-invalid`, komunikat).
+- **Domyślny** (powyżej).
+- **Błąd logowania**: komunikat pod polami, nad przyciskiem (w panelu `error.message`
+  z API); przycisk zostaje czynny.
+- **Wysyłka**: przycisk czyta „Logowanie..." i jest nieaktywny, żeby drugi klik nie
+  wysłał drugiego żądania.
+- **Walidacja pól**: pusta wartość blokuje wysyłkę po stronie przeglądarki.
 
 ## Zachowanie
-- Layout dwukolumnowy na `md+`: lewa kolumna brandowa (`bg-primary`), prawa formularz.
-- Na mobile lewa kolumna jest ukryta; logo pokazywane jest nad formularzem.
-- Przyciski akcji na całą szerokość formularza; formularz nie przeładowuje strony.
-- Przełączanie logowanie ↔ rejestracja linkiem pod formularzem.
+- Sukces zapisuje token i przechodzi na listę turniejów.
+- Responsywność: karta trzyma `max-w-sm` i środek ekranu na każdej szerokości.
 
 ## Otwarte pytania
-- Logowanie przez dostawców zewnętrznych (Google / Apple)?
-- Weryfikacja e-mail po rejestracji: wymagana na MVP?
-- Zapamiętywanie sesji („Zapamiętaj mnie")?
+- Czy panel potrzebuje kiedyś resetu hasła albo logowania przez dostawcę
+  zewnętrznego? Dziś nie ma ani jednego, ani drugiego.

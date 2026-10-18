@@ -373,8 +373,9 @@ export const standingsTablePreviewDraft = ['points', 'score_diff', 'head_to_head
 // Lista turniejów organizera (ekran startowy panelu). Kształt zgodny
 // z `Tournament` z kontraktu, ograniczony do pól, które pokazuje tabela.
 //
-// Dashboard bierze te same turnieje stąd (`screens/admin-dashboard.tsx`
-// dokleja po `id` własne pola prezentacyjne), więc lista jest jedna.
+// Jedno źródło dla tabeli turniejów i dla ekranu Dashboardu
+// (`screens/admin-dashboard.tsx`) oraz dla listy bieżących w sidebarze
+// (`screens/shell-demo.tsx`), więc lista jest jedna.
 export const tournamentList: TournamentRow[] = [
   {
     id: 1,

@@ -13,39 +13,66 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * Liczniki i liczby drużyn asertujemy na kotwicach, nie na podciągu:
- * `toHaveTextContent('16 drużyn')` przechodzi także dla „116 drużyn", czyli
- * przepuszcza dokładnie tę pomyłkę, której ma pilnować.
+ * Ten sam ekran co pod `/` w panelu: nagłówek z „Nowy turniej" i tabela
+ * turniejów. Asercje idą po wierszach tabeli, nie po kaflach — lista, a nie
+ * dashboard z licznikami, jest tym, co wdrożone.
  */
-const licznik = (canvas: ReturnType<typeof within>, label: string) =>
-  // „Drużyny" to także pozycja w sidebarze, więc szukamy etykiety w kaflu.
-  canvas
-    .getAllByText(label)
-    .find((el: HTMLElement) => el.closest('[data-slot="card"]'))?.nextElementSibling
-
 export const Domyslny: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    // Kafle biorą nazwę, sport i liczbę drużyn z `tournamentList` — te same
-    // trzy turnieje co `UI/Dane/Tabela turniejów`, bez ręcznego dublowania wartości.
-    for (const t of tournamentList) {
-      const heading = canvas.getByRole('heading', { level: 3, name: t.name })
-      // `data-slot` to własny uchwyt design systemu (`components/ui/card.tsx`),
-      // stabilniejszy niż struktura znaczników kafla.
-      const tile = heading.closest('[data-slot="card"]')
-      await expect(tile).toHaveTextContent(t.sport.name)
-      await expect(tile).toHaveTextContent(new RegExp(`\\b${t.teamsCount} drużyn`))
+    await expect(canvas.getByRole('heading', { name: 'Twoje turnieje' })).toBeInTheDocument()
+
+    // Wiersze liczymy w tabeli: w sidebarze stoją bieżące turnieje demo, więc
+    // nazwa turnieju nie jest unikalna na całym ekranie.
+    const table = canvas.getByRole('table')
+    await expect(within(table).getAllByRole('row')).toHaveLength(tournamentList.length + 1)
+    for (const tournament of tournamentList) {
+      await expect(within(table).getByText(tournament.name)).toBeInTheDocument()
     }
 
-    await expect(canvas.getAllByRole('heading', { level: 3 })).toHaveLength(tournamentList.length)
+    // Licznik pokazuje się też wtedy, gdy lista nie jest ucięta.
+    await expect(canvas.getByText(`Pokazano ${tournamentList.length} z ${tournamentList.length} turniejów.`))
+      .toBeInTheDocument()
 
-    // Liczniki liczą się z tej samej listy, więc nie mogą jej zaprzeczyć.
-    // Wartości liczone tutaj od nowa: asercja ma być niezależna od ekranu.
-    const aktywne = tournamentList.filter((t) => t.status === 'active').length
-    const druzyny = tournamentList.reduce((sum, t) => sum + t.teamsCount, 0)
+    // Przy niepustej liście wyjście do kreatora stoi w nagłówku (#28).
+    await expect(canvas.getByRole('button', { name: 'Nowy turniej' })).toBeInTheDocument()
+  },
+}
 
-    await expect(licznik(canvas, 'Aktywne turnieje')).toHaveTextContent(new RegExp(`^${aktywne}$`))
-    await expect(licznik(canvas, 'Drużyny')).toHaveTextContent(new RegExp(`^${druzyny}$`))
+/** Pusta lista: stan pusty tabeli niesie własny przycisk, nagłówek go nie dubluje. */
+export const Pusty: Story = {
+  args: { state: 'pusty' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Nie masz jeszcze turniejów')).toBeInTheDocument()
+    await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
+    await expect(canvas.getAllByRole('button', { name: 'Nowy turniej' })).toHaveLength(1)
+  },
+}
+
+/** Trasa czeka na odpowiedź listy: tabela pokazuje szkielet, licznik milczy. */
+export const Wczytuje: Story = {
+  args: { state: 'wczytuje' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('status')).toHaveAccessibleName('Wczytywanie turniejów')
+    await expect(canvas.queryByText(/^Pokazano/)).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'Nowy turniej' })).not.toBeInTheDocument()
+  },
+}
+
+/** Lista padła: komunikat z ponowieniem, bez wyjścia do kreatora. */
+export const Blad: Story = {
+  args: { state: 'blad' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Nie udało się wczytać turniejów')).toBeInTheDocument()
+    await expect(canvas.getByText('Nie udało się pobrać turniejów.')).toBeInTheDocument()
+    await expect(canvas.getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'Nowy turniej' })).not.toBeInTheDocument()
   },
 }
