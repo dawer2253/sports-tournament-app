@@ -21,7 +21,7 @@ import { BackTo, Shell } from './kit'
 import { scorerText } from './match-bits'
 import type { Season } from './screen-demo'
 
-export const MATCH_VARIANTS = { A: 'Tablica', B: 'Oś', C: 'Relacja z panelem' } as const
+export const MATCH_VARIANTS = { A: 'Tablica, wybrana', B: 'Oś', C: 'Relacja z panelem' } as const
 export type MatchVariant = keyof typeof MATCH_VARIANTS
 
 /** Jak `RELATION_COLLAPSE_THRESHOLD` z `match-relation.tsx`; bez importu, bo moduł ciągnie `components/ui`. */

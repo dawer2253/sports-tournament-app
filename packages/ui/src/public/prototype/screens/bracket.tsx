@@ -28,7 +28,7 @@ import { lost, Penalties, scoreOf, shortDay, kickoffTime, TeamName, teamOf } fro
 import { Board, MatchLine } from './rounds'
 import { bracketRow, type Season, type ScreenMatch } from './screen-demo'
 
-export const BRACKET_VARIANTS = { A: 'Drzewo', B: 'Rundy', C: 'Plakat' } as const
+export const BRACKET_VARIANTS = { A: 'Drzewo, wybrane', B: 'Rundy', C: 'Plakat' } as const
 export type BracketVariant = keyof typeof BRACKET_VARIANTS
 
 type Round = BracketTreeRound<DemoBracketMatch>

@@ -14,9 +14,10 @@ function signed(value: number) {
   return value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0'
 }
 
+/** Skrót w nagłówku: rozwinięcie po najechaniu (`title`), bez legendy pod tabelą (#288). */
 function Abbr({ title, children, className }: { title: string; children: string; className?: string }) {
   return (
-    <abbr title={title} className={cn('no-underline', className)}>
+    <abbr title={title} className={cn('cursor-help no-underline', className)}>
       {children}
     </abbr>
   )
@@ -66,9 +67,9 @@ export function FullTable({
         <span role="columnheader" className={cn(wide, 'text-right')}><Abbr title="Wygrane">W</Abbr></span>
         {allowsDraw && <span role="columnheader" className={cn(wide, 'text-right')}><Abbr title="Remisy">R</Abbr></span>}
         <span role="columnheader" className={cn(wide, 'text-right')}><Abbr title="Porażki">P</Abbr></span>
-        {!compact && <span role="columnheader" className={cn(wide, 'text-center')}>{scoreLabel}</span>}
+        {!compact && <span role="columnheader" className={cn(wide, 'text-center')}><Abbr title={`${scoreLabel} zdobyte i stracone`}>{scoreLabel}</Abbr></span>}
         <span role="columnheader" className="text-right"><Abbr title="Bilans">+/−</Abbr></span>
-        {!compact && <span role="columnheader" className={cn(wide, 'pl-4')}>Forma</span>}
+        {!compact && <span role="columnheader" className={cn(wide, 'pl-4')}><Abbr title="Pięć ostatnich meczów, najnowszy z prawej">Forma</Abbr></span>}
         <span role="columnheader" className="text-right text-foreground">Pkt</span>
       </div>
       {rows.map((row, index) => {
@@ -81,7 +82,8 @@ export function FullTable({
             key={row.team.id}
             className={cn('relative min-h-14 border-t', grid, line ? 'border-t-2 border-brand-line' : 'border-hairline')}
           >
-            {leader && <span aria-hidden className="absolute inset-y-2 -left-3 w-1 rounded-full bg-brand-line" />}
+            {/* Pasek w kolorze turnieju: lider ligi albo drużyna, która wychodzi z grupy. */}
+            {(leader || (row.qualifies && anyPlayed)) && <span aria-hidden className="absolute inset-y-2 -left-3 w-1 rounded-full bg-brand-line" />}
             {line && (
               <span aria-hidden className="absolute right-0 top-0 -translate-y-1/2 bg-background pl-2 text-xs font-medium text-brand-text">
                 wyjście z grupy
@@ -119,20 +121,10 @@ export function FullTable({
   )
 }
 
-function Legend({ data, compact }: { data: Season; compact?: boolean }) {
-  const steps = ['punkty w tabeli', ...data.tiebreakers, 'nazwa drużyny (alfabetycznie)']
-  return (
-    <div className="flex flex-col gap-1.5 border-t border-hairline pt-4 text-[0.8125rem] text-muted-foreground">
-      <p className="flex flex-wrap gap-x-5 gap-y-1">
-        <span>M mecze</span>
-        <span>W wygrane</span>
-        {data.allowsDraw && <span>R remisy</span>}
-        <span>P porażki</span>
-        {!compact && <span>Forma: pięć ostatnich meczów, najnowszy z prawej</span>}
-      </p>
-      <p>Przy równej liczbie punktów: {steps.slice(1).join(' → ')}.</p>
-    </div>
-  )
+/** Pod tabelą tylko kolejność przy remisie; skróty kolumn rozwija `title`. */
+function Tiebreakers({ data }: { data: Season }) {
+  const steps = [...data.tiebreakers, 'nazwa drużyny (alfabetycznie)']
+  return <p className="border-t border-hairline pt-4 text-[0.8125rem] text-muted-foreground">Przy równej liczbie punktów: {steps.join(' → ')}.</p>
 }
 
 function ChampionBand({ row, scoreLabel }: { row: TableRow; scoreLabel: string }) {
@@ -166,9 +158,6 @@ function GroupBlock({ group, data }: { group: GroupTable; data: Season }) {
     <section aria-labelledby={`grupa-${group.id}`} className="flex min-w-0 flex-col gap-3">
       <div className="flex items-baseline justify-between gap-4 border-b-2 border-rule pb-2">
         <h2 id={`grupa-${group.id}`} className="pub-h2 text-[2rem]">{group.name}</h2>
-        <span className="text-sm text-muted-foreground">
-          wychodzą <span className="pub-num text-base text-foreground">{group.qualifiers}</span> z {group.rows.length}
-        </span>
       </div>
       <FullTable rows={rows} allowsDraw={data.allowsDraw} scoreLabel={data.scoreLabel} compact label={`Tabela, ${group.name}`} />
     </section>
@@ -205,7 +194,7 @@ export function StandingsScreen({ data, accent }: { data: Season; accent: string
               {data.groups.map((group) => <GroupBlock key={group.id} group={group} data={data} />)}
             </div>
             <div className="flex flex-col gap-4">
-              <Legend data={data} compact />
+              <Tiebreakers data={data} />
               <TextLink className="self-start">
                 {finished ? 'Drabinka playoffu' : 'Drabinka playoffu powstanie po fazie grupowej'}
               </TextLink>
@@ -241,7 +230,7 @@ export function StandingsScreen({ data, accent }: { data: Season; accent: string
         <div className="flex flex-col gap-6">
           {champion && <ChampionBand row={champion} scoreLabel={data.scoreLabel} />}
           <FullTable rows={data.table} allowsDraw={data.allowsDraw} scoreLabel={data.scoreLabel} finished={finished} label="Tabela" />
-          <Legend data={data} />
+          <Tiebreakers data={data} />
         </div>
       )}
     </Shell>

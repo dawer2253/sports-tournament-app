@@ -31,7 +31,7 @@ import {
 } from './match-bits'
 import { allRounds, fixtureRounds, resultRounds, type Season, type ScreenMatch } from './screen-demo'
 
-export const ROUND_VARIANTS = { A: 'Lista', B: 'Tablice', C: 'Szyna' } as const
+export const ROUND_VARIANTS = { A: 'Lista, wybrana', B: 'Tablice', C: 'Szyna' } as const
 export type RoundVariant = keyof typeof ROUND_VARIANTS
 export type RoundsMode = 'fixtures' | 'results'
 
@@ -86,20 +86,36 @@ function SlotCrest({ match, side, className }: { match: ScreenMatch; side: Side;
 // --- A „Lista” ------------------------------------------------------------------
 
 /**
+ * Mecz trwający w wierszu listy: plakietka z kropką zamiast samego napisu,
+ * żeby w wąskiej kolumnie terminu nie łamała się na dwie linie (#288).
+ */
+function LiveBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 self-start rounded-sm bg-destructive/15 px-2 py-1 pub-tab text-sm leading-none text-destructive">
+      <span aria-hidden className="relative flex size-2">
+        <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-60 motion-reduce:animate-none" />
+        <span className="relative size-2 rounded-full bg-destructive" />
+      </span>
+      Na żywo
+    </span>
+  )
+}
+
+/**
  * Wiersz meczu na stałych kolumnach: termin | gospodarz | wynik | gość |
  * pozycja i obiekt. Wynik stoi zawsze w tym samym miejscu (#162). Na
- * telefonie: termin z lewej, dwie linie drużyna–wynik.
+ * telefonie: termin z lewej, dwie linie drużyna–wynik. Bez strzelców:
+ * siedem nazwisk się nie mieści, są na stronie meczu (#288).
  */
 export function MatchLine({ match, data, showDay, mode }: { match: ScreenMatch; data: Season; showDay: boolean; mode: RoundsMode }) {
   const live = match.status === 'live'
   const played = match.status !== 'scheduled'
   const label = positionLabel(match)
-  const scorers = mode === 'results' || live ? [sideScorers(match, 'home', data.sport), sideScorers(match, 'away', data.sport)] : ['', '']
   const name = (side: Side) => cn('flex min-w-0 items-center gap-2.5', lost(match, side) ? 'text-muted-foreground' : 'font-semibold')
   const when = (
     <span className="flex flex-col whitespace-nowrap leading-tight">
       {live ? (
-        <LiveTag className="text-sm" />
+        <LiveBadge />
       ) : mode === 'results' ? (
         <span className="pub-num text-base text-muted-foreground">{shortDay(match, data.timeZone)}</span>
       ) : (
@@ -113,7 +129,7 @@ export function MatchLine({ match, data, showDay, mode }: { match: ScreenMatch; 
   return (
     <DeadLink className={cn('block border-b border-hairline hover:bg-card/60', live && 'bg-destructive/5')}>
       {/* Szeroki układ */}
-      <span className="hidden min-h-16 grid-cols-[5.5rem_minmax(0,1fr)_6rem_minmax(0,1fr)_8.5rem] items-center gap-x-4 py-2.5 sm:grid">
+      <span className="hidden min-h-16 grid-cols-[5.5rem_minmax(0,1fr)_6rem_minmax(0,1fr)_8.5rem] items-center gap-x-4 px-4 py-2.5 sm:grid">
         {when}
         <span className={cn(name('home'), 'justify-end text-right')}>
           <Penalties match={match} side="home" />
@@ -139,17 +155,9 @@ export function MatchLine({ match, data, showDay, mode }: { match: ScreenMatch; 
           {label && <span className="font-medium text-foreground">{label}</span>}
           <span>{match.venue?.name}</span>
         </span>
-        {(scorers[0] || scorers[1]) && (
-          <>
-            <span />
-            <span className="-mt-1.5 text-right text-xs text-muted-foreground">{scorers[0]}</span>
-            <span />
-            <span className="-mt-1.5 text-xs text-muted-foreground">{scorers[1]}</span>
-          </>
-        )}
       </span>
       {/* Telefon */}
-      <span className="grid grid-cols-[4.25rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 py-3 sm:hidden">
+      <span className="grid grid-cols-[4.5rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-3 sm:hidden">
         <span className="row-span-2 self-start pt-0.5">{when}</span>
         {(['home', 'away'] as const).map((side) => (
           <React.Fragment key={side}>
