@@ -70,12 +70,26 @@ Kolejność korzeni: `Wprowadzenie → Fundamenty → UI → Ekrany`
 
 ## Wzorzec ekranu — trójka plików
 
+**Ekran jest odbiciem wdrożonego ekranu.** Ten sam układ, ten sam nagłówek
+i te same wspólne komponenty co w `apps/*`; różni się tylko źródłem danych (demo
+z `../lib/demo-data`) i tym, że akcje są nieaktywne. Zanim narysujesz ekran,
+przeczytaj jego odpowiednik w aplikacji.
+
+- Czego aplikacja nie ma, tego ekran nie rysuje. Makieta funkcji bez endpointu
+  albo bez trasy w aplikacji to fikcja, która rozjeżdża się w pierwszą stronę.
+- Co w aplikacji jest oknem, zostaje oknem i nie dostaje osobnego ekranu.
+- Gdy i aplikacja, i ekran potrzebują tego samego komponentu, komponent idzie
+  do `packages/ui` (tak trafił tu `ChoiceCards`), żeby obie strony miały jedną
+  kopię. Ekran nie kopiuje znaczników z aplikacji.
+- Ekran bez odpowiednika w aplikacji usuwamy razem z jego stories i `.mdx`.
+
 Każdy ekran to trzy pliki o wspólnej nazwie w `src/screens/`
 (`kebab-case`, prefiks `admin-` / `public-`), np. dla `admin-teams`:
 
 1. **`admin-teams.tsx`** — komponent. Eksport nazwany PascalCase
-   (`export function AdminTeams()`), opakowany w `AdminShell`/`PublicShell`,
-   dane z `../lib/demo-data`.
+   (`export function AdminTeams()`), opakowany w `screens/shell-demo.tsx`
+   (`ShellDemo` / `TournamentShellDemo`) albo `PublicShell`, dane
+   z `../lib/demo-data`.
 2. **`admin-teams.stories.tsx`** — story:
    ```tsx
    const meta = {

@@ -1,4 +1,4 @@
-import { CalendarDays, MoreHorizontal, RefreshCw } from 'lucide-react'
+import { CalendarClock, CalendarDays, MoreHorizontal, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { TournamentShellDemo } from './shell-demo'
 import { MatchRow } from '../components/data/match-row'
@@ -71,25 +71,47 @@ function ScheduleWithRounds({ matches }: { matches: ScheduleDemoMatch[] }) {
   const round = rounds.find((candidate) => candidate.id === value)!
   const roundMatches = matches.filter((match) => match.round.id === value)
   const oneDay = matchDays(roundMatches.map((match) => match.kickoffAt), scheduleTimeZone).length === 1
+  // Świeżo wygenerowany terminarz nie ma dat (#158). Ten sam warunek co
+  // w panelu: komunikat tylko wtedy, gdy żaden mecz nie ma terminu.
+  const undated = matches.length > 0 && matches.every((match) => match.kickoffAt === null)
 
   return (
     <TournamentShellDemo
       active="schedule"
       actions={
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="Więcej akcji terminarza">
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem disabled={started}>
-              <RefreshCw /> Wygeneruj ponownie
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <>
+          <Button variant="outline">
+            <CalendarClock className="size-4" /> Rozłóż daty
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label="Więcej akcji terminarza">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled={started}>
+                <RefreshCw /> Wygeneruj ponownie
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
       }
     >
+      {undated && (
+        <div
+          role="status"
+          className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/50 p-3 text-sm"
+        >
+          <CalendarClock aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+          <p className="min-w-0 flex-1">
+            Terminarz nie ma jeszcze dat. Rozłóż je, żeby mecze dostały terminy i obiekty.
+          </p>
+          <Button size="sm" variant="outline">
+            Rozłóż daty
+          </Button>
+        </div>
+      )}
       <div className="grid items-start gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <RoundList rounds={rounds} value={value} onValueChange={setValue} className="lg:sticky lg:top-4" />
         <section aria-labelledby="schedule-round" className="min-w-0 space-y-2">

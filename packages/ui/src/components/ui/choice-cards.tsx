@@ -1,6 +1,7 @@
 import { CheckCircle2 } from 'lucide-react';
-import { Card, CardDescription, CardHeader, CardTitle, cn } from '@tournament/ui';
 import { useId, type ReactNode, type Ref } from 'react';
+import { cn } from '../../lib/utils';
+import { Card, CardDescription, CardHeader, CardTitle } from './card';
 
 export interface ChoiceOption<T extends string | number> {
   value: T;
@@ -32,8 +33,7 @@ export interface ChoiceCardsProps<T extends string | number> {
 }
 
 /**
- * Wybór jednej opcji, pokazany jako kafelki z makiety `Ekrany/Admin/Kreator
- * turnieju`.
+ * Wybór jednej opcji, pokazany jako kafelki.
  *
  * Pod spodem siedzą natywne `input[type=radio]` schowane przez `sr-only`, a nie
  * klikalne `div`-y jak w statycznej makiecie. Dzięki temu strzałki, tabulator,
@@ -51,9 +51,10 @@ export interface ChoiceCardsProps<T extends string | number> {
  * niekonsekwentnie, a opis radia z fokusem — tak. Tak samo zachowuje się pole
  * tekstowe w tym samym formularzu.
  *
- * Komponent jest lokalny dla panelu, a nie w `packages/ui`: to pierwszy taki
- * wybór w projekcie i nie wiadomo jeszcze, czy drugi ekran będzie chciał tego
- * samego. Do design systemu przeniesie się, gdy pojawi się drugi konsument.
+ * Komponent jest w design systemie, a nie w panelu: używa go i kreator turnieju,
+ * i okna panelu (rozkład dat, generowanie terminarza), a ten sam komponent
+ * rysuje ekran `Ekrany/Admin/Kreator turnieju` w Storybooku. Jedna kopia, więc
+ * formularz w Storybooku nie może się rozjechać z tym, co stoi w aplikacji.
  */
 export function ChoiceCards<T extends string | number>({
   legend,

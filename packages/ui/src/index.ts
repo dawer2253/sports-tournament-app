@@ -16,6 +16,7 @@ export * from './components/ui/brand-color-picker';
 export * from './components/ui/button';
 export * from './components/ui/card';
 export * from './components/ui/checkbox';
+export * from './components/ui/choice-cards';
 export * from './components/ui/confirm-delete-dialog';
 export * from './components/ui/dialog';
 export * from './components/ui/dropdown-menu';

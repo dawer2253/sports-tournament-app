@@ -1,224 +1,117 @@
-import type { ElementType } from 'react'
-import {
-  Check, CheckCircle2, ListOrdered, GitFork, Trophy, ArrowRight,
-} from 'lucide-react'
-import { ShellDemo } from './shell-demo'
 import { Button } from '../components/ui/button'
-import {
-  Card, CardHeader, CardTitle, CardDescription, CardContent,
-} from '../components/ui/card'
-import { Switch } from '../components/ui/switch'
+import { Card, CardContent } from '../components/ui/card'
+import { ChoiceCards, type ChoiceOption } from '../components/ui/choice-cards'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { cn } from '../lib/utils'
+import { ShellDemo } from './shell-demo'
 
-type StepState = 'done' | 'active' | 'todo'
+/** Formaty rozgrywek, jakie przyjmuje `POST /tournaments`. */
+type Format = 'league' | 'knockout' | 'groups_playoff'
 
-const STEPS: { n: number; label: string; state: StepState }[] = [
-  { n: 1, label: 'Sport', state: 'done' },
-  { n: 2, label: 'Format', state: 'active' },
-  { n: 3, label: 'Drużyny', state: 'todo' },
-  { n: 4, label: 'Terminarz', state: 'todo' },
+/**
+ * Sporty demo. W panelu lista idzie z `GET /sports`, a ikona z mapy po `code`
+ * (`apps/admin/src/pages/tournament-create.tsx`), bo kontrakt ikony nie niesie.
+ */
+const SPORTS: ChoiceOption<number>[] = [
+  { value: 1, label: 'Piłka nożna', icon: '⚽' },
+  { value: 2, label: 'Koszykówka', icon: '🏀' },
 ]
 
-function Stepper({ current }: { current: number }) {
-  const steps = STEPS.map((s) => ({
-    ...s,
-    state: (s.n < current ? 'done' : s.n === current ? 'active' : 'todo') as StepState,
-  }))
-  return (
-    <ol className="mb-6 flex items-center gap-2">
-      {steps.map((s, i) => (
-        <li key={s.n} className="flex flex-1 items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'grid size-8 shrink-0 place-items-center rounded-full border text-sm font-semibold',
-                s.state === 'done' && 'border-primary bg-primary text-primary-foreground',
-                s.state === 'active' && 'border-primary text-primary ring-2 ring-primary/40',
-                s.state === 'todo' && 'border-border text-muted-foreground',
-              )}
-            >
-              {s.state === 'done' ? <Check className="size-4" /> : s.n}
-            </span>
-            <span
-              className={cn(
-                'hidden text-sm sm:inline',
-                s.state === 'active' ? 'font-medium text-foreground' : 'text-muted-foreground',
-              )}
-            >
-              {s.label}
-            </span>
-          </div>
-          {i < steps.length - 1 && (
-            <span
-              className={cn(
-                'h-px flex-1',
-                s.state === 'done' ? 'bg-primary' : 'bg-border',
-              )}
-            />
-          )}
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-interface FormatOption {
-  key: string
-  title: string
-  description: string
-  icon: ElementType
-  selected?: boolean
-}
-
-const FORMATS: FormatOption[] = [
+/** Formaty demo: te same etykiety i klucze co `TOURNAMENT_FORMATS` w panelu. */
+const FORMATS: ChoiceOption<Format>[] = [
   {
-    key: 'league',
-    title: 'Liga każdy z każdym',
+    value: 'league',
+    label: 'Liga każdy z każdym',
     description: 'Wszystkie drużyny grają ze sobą, o kolejności decyduje tabela punktowa.',
-    icon: ListOrdered,
-    selected: true,
   },
   {
-    key: 'knockout',
-    title: 'Puchar (drabinka)',
-    description: 'System pucharowy — przegrany odpada, wygrany awansuje do kolejnej rundy.',
-    icon: GitFork,
+    value: 'knockout',
+    label: 'Puchar (drabinka)',
+    description: 'Przegrany odpada, wygrany awansuje do kolejnej rundy.',
   },
   {
-    key: 'groups_playoff',
-    title: 'Grupy + playoff',
+    value: 'groups_playoff',
+    label: 'Grupy + playoff',
     description: 'Faza grupowa wyłania najlepszych, potem rozgrywki pucharowe.',
-    icon: Trophy,
   },
 ]
 
-export function AdminTournamentCreate() {
-  return (
-    <ShellDemo
-      active="dashboard"
-      title="Nowy turniej"
-      subtitle="Skonfiguruj rozgrywki w 4 krokach"
-    >
-      <Stepper current={2} />
+/** Warianty ekranu: świeży formularz, wypełniony i po odmowie walidacji z API. */
+export type AdminTournamentCreateState = 'domyslny' | 'wypelniony' | 'blad'
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {FORMATS.map((f) => (
-          <Card
-            key={f.key}
-            className={cn(
-              'relative cursor-pointer transition-shadow hover:shadow-md',
-              f.selected && 'ring-2 ring-primary',
-            )}
-          >
-            {f.selected && (
-              <CheckCircle2 className="absolute right-3 top-3 size-5 text-primary" />
-            )}
-            <CardHeader>
-              <div
-                className={cn(
-                  'mb-2 grid size-10 place-items-center rounded-lg',
-                  f.selected ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
-                )}
-              >
-                <f.icon className="size-5" />
-              </div>
-              <CardTitle>{f.title}</CardTitle>
-              <CardDescription>{f.description}</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-
-      <Card className="mt-6 max-w-2xl">
-        <CardHeader>
-          <CardTitle>Ustawienia ligi</CardTitle>
-          <CardDescription>Zasady punktacji i harmonogramu dla formatu ligowego.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <Label htmlFor="rematch">Mecz i rewanż</Label>
-              <p className="text-sm text-muted-foreground">Każda para gra dwa spotkania (dom i wyjazd).</p>
-            </div>
-            <Switch id="rematch" defaultChecked />
-          </div>
-
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <Label htmlFor="auto-schedule">Auto-harmonogram dat</Label>
-              <p className="text-sm text-muted-foreground">Automatycznie rozłóż mecze na dostępne terminy.</p>
-            </div>
-            <Switch id="auto-schedule" defaultChecked />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="points-win">Punkty za zwycięstwo</Label>
-              <Input id="points-win" type="number" defaultValue={3} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="points-draw">Punkty za remis</Label>
-              <Input id="points-draw" type="number" defaultValue={1} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="mt-8 flex items-center justify-between border-t pt-4">
-        <Button variant="outline">Anuluj</Button>
-        <Button>
-          Dalej: drużyny <ArrowRight className="size-4" />
-        </Button>
-      </div>
-    </ShellDemo>
-  )
+export interface AdminTournamentCreateProps {
+  state?: AdminTournamentCreateState
 }
 
-const SPORTS: { key: string; emoji: string; title: string; description: string; selected?: boolean }[] = [
-  { key: 'football', emoji: '⚽', title: 'Piłka nożna', description: 'Mecze 11 na 11, punktacja 3-1-0, tabela ligowa.', selected: true },
-  { key: 'basketball', emoji: '🏀', title: 'Koszykówka', description: 'Rozgrywki koszykarskie, brak remisów, bilans zwycięstw.' },
-]
+/**
+ * Zakładanie turnieju: nazwa, sport i format. Ten sam ekran co pod
+ * `/tournaments/new` (`apps/admin/src/pages/tournament-create.tsx`).
+ *
+ * Ekran to **jeden krok**, nie kreator: kroki „Drużyny" i „Terminarz" oraz
+ * ustawienia ligi (mecz i rewanż, auto-harmonogram, punktacja) nie mają
+ * endpointów, więc ich nie rysujemy. Drużyny dodaje się po założeniu turnieju,
+ * a terminarz generuje się w jego sekcji.
+ *
+ * Niczego nie zaznaczamy za organizera: domyślnie zaznaczony kafelek wysłałby
+ * ktoś, kto go nie przeczytał.
+ */
+export function AdminTournamentCreate({ state = 'domyslny' }: AdminTournamentCreateProps) {
+  const filled = state !== 'domyslny'
+  const invalid = state === 'blad'
 
-export function AdminTournamentCreateStep1() {
   return (
     <ShellDemo
       active="dashboard"
       title="Nowy turniej"
-      subtitle="Skonfiguruj rozgrywki w 4 krokach"
+      subtitle="Nazwa, sport i format. Drużyny i terminarz dołożysz później."
     >
-      <Stepper current={1} />
+      <form className="max-w-4xl" onSubmit={(event) => event.preventDefault()} noValidate>
+        <Card>
+          <CardContent className="flex flex-col gap-8">
+            <div className="flex max-w-xl flex-col gap-2">
+              <Label htmlFor="name">Nazwa turnieju</Label>
+              <Input
+                id="name"
+                maxLength={160}
+                defaultValue={filled ? 'Liga Osiedlowa 2026' : undefined}
+                aria-invalid={invalid ? true : undefined}
+                aria-describedby={invalid ? 'name-error' : undefined}
+              />
+              {invalid && (
+                <p id="name-error" className="text-sm text-destructive">
+                  Podaj nazwę turnieju.
+                </p>
+              )}
+            </div>
 
-      <div className="grid max-w-2xl gap-4 sm:grid-cols-2">
-        {SPORTS.map((s) => (
-          <Card
-            key={s.key}
-            className={cn(
-              'relative cursor-pointer transition-shadow hover:shadow-md',
-              s.selected && 'ring-2 ring-primary',
-            )}
-          >
-            {s.selected && (
-              <CheckCircle2 className="absolute right-3 top-3 size-5 text-primary" />
-            )}
-            <CardHeader>
-              <div className="mb-2 grid size-10 place-items-center rounded-lg bg-primary/10 text-xl">
-                {s.emoji}
-              </div>
-              <CardTitle>{s.title}</CardTitle>
-              <CardDescription>{s.description}</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
+            <ChoiceCards
+              legend="Sport"
+              name="sportId"
+              options={SPORTS}
+              value={filled ? 1 : undefined}
+              onChange={() => {}}
+              className="lg:grid-cols-2"
+              errorMessage={invalid ? 'Wybierz sport.' : undefined}
+            />
 
-      <div className="mt-8 flex items-center justify-between border-t pt-4">
-        <Button variant="outline">Anuluj</Button>
-        <Button>
-          Dalej: format <ArrowRight className="size-4" />
-        </Button>
-      </div>
+            <ChoiceCards
+              legend="Format rozgrywek"
+              name="format"
+              options={FORMATS}
+              value={filled ? 'league' : undefined}
+              onChange={() => {}}
+              errorMessage={invalid ? 'Wybierz format rozgrywek.' : undefined}
+            />
+          </CardContent>
+        </Card>
+
+        <div className="mt-6 flex items-center justify-between border-t pt-4">
+          <Button type="button" variant="outline">
+            Anuluj
+          </Button>
+          <Button type="submit">Załóż turniej</Button>
+        </div>
+      </form>
     </ShellDemo>
   )
 }

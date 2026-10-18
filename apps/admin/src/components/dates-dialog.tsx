@@ -3,6 +3,7 @@ import { firstFieldErrors, isValidationError, type AdminMatch, type Stage, type 
 import {
   Button,
   Checkbox,
+  ChoiceCards,
   FormDialog,
   Label,
   Select,
@@ -17,7 +18,6 @@ import { api } from '../lib/api';
 import { COLLISIONS, MATCHES, plural } from '../lib/plural';
 import { scheduledWithDates, startedFromRound } from '../lib/schedule';
 import { scheduleKeys, useVenues } from '../lib/schedule-queries';
-import { ChoiceCards } from './choice-cards';
 import { TextField } from './text-field';
 
 const DATES_FAILED = 'Nie udało się rozłożyć dat. Spróbuj ponownie.';

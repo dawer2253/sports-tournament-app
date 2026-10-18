@@ -5,43 +5,44 @@ import * as Stories from './admin-tournament-create.stories'
 
 # Kreator turnieju (Admin): specyfikacja
 
-Kreator zakładania nowego turnieju w panelu administratora: konfiguracja w 4 krokach (Sport → Format → Drużyny → Terminarz).
-
-> **Ten ekran wyprzedza kontrakt.** Panel dowozi dziś (#28) jedną stronę
-> z polami, które przyjmuje `POST /tournaments`: nazwa, sport, format. Kroki
-> „Drużyny" i „Terminarz" oraz ustawienia ligi (mecz i rewanż, auto-harmonogram,
-> punktacja) nie mają endpointów w v0.1 — wchodzą razem z silnikiem rozgrywek
-> w v0.2. Makieta zostaje jako kierunek, nie jako opis tego, co stoi.
-> Implementacja: `apps/admin/src/pages/tournament-create.tsx`.
+Zakładanie turnieju: nazwa, sport i format. Ten sam ekran stoi w aplikacji pod
+`/tournaments/new` (`apps/admin/src/pages/tournament-create.tsx`).
 
 <Canvas of={Stories.Domyslny} />
 
 ## Cel
-Poprowadzić organizatora przez utworzenie turnieju krok po kroku, tak aby nie musiał znać wszystkich pojęć z góry i nie mógł pominąć wymaganej konfiguracji.
+Założyć turniej w jednym kroku, z minimum, które przyjmuje `POST /tournaments`. Resztę
+(drużyny, terminarz) dokłada się już w turnieju, na swoich ekranach.
 
 ## Dane (wejście)
-- Wybrany sport (krok 1): decyduje o dostępnych regułach punktacji (np. koszykówka bez remisów).
-- Wybrany format (krok 2): liga każdy z każdym, puchar (drabinka), grupy + playoff. Klucze jak w kontrakcie (`TournamentFormat`): `league`, `knockout`, `groups_playoff`.
-- Ustawienia ligi: `mecz i rewanż` (bool), `auto-harmonogram dat` (bool), `punkty za zwycięstwo` (liczba, domyślnie 3), `punkty za remis` (liczba, domyślnie 1).
+- Sporty z `GET /sports`; ikona przy sporcie idzie z mapy po `code`, bo kontrakt ikony
+  nie niesie. Sport spoza mapy dostaje kafelek bez ikony, nie pusty prostokąt.
+- Formaty z listy `TOURNAMENT_FORMATS`: `league`, `knockout`, `groups_playoff`.
+- Nazwa turnieju, wymagana, do 160 znaków.
 
 ## Reguły
-- Kroki ukończone mają znacznik Check i pełne tło primary; krok aktywny jest wyróżniony obwódką primary; kroki przyszłe są muted i nieklikalne.
-- Nawigacja tylko w przód potwierdza wybór; powrót do wcześniejszego kroku pozwala go zmienić.
-- Sekcja „Ustawienia ligi" pojawia się tylko dla formatu ligowego (dla pucharu/grup: inny zestaw opcji, TODO).
-- Punkty za remis są nieaktywne, gdy sport nie dopuszcza remisów (TODO).
+- Formularz **niczego nie zaznacza za organizera**. Domyślnie zaznaczony kafelek
+  wysłałby ktoś, kto go nie przeczytał, więc sport i format startują jako niewybrane.
+- Wybór to natywne `input[type=radio]` schowane wizualnie (`ChoiceCards`): strzałki,
+  tabulator, spacja i czytnik ekranu działają bez dopisywania czegokolwiek.
+- Układ jest jednym formularzem. Kroków „Drużyny" i „Terminarz" oraz ustawień ligi
+  (mecz i rewanż, auto-harmonogram, punktacja) **nie ma**: nie mają endpointów, a
+  wchodzą razem z silnikiem rozgrywek.
 
 ## Stany
-- **Format (krok 2)**: domyślny (powyżej); zaznaczona karta „Liga każdy z każdym".
-- **Sport (krok 1)**: wybór dyscypliny (`Krok1Sport`); zaznaczona „Piłka nożna".
-- **Drużyny (krok 3)**: dodawanie/import drużyn (TODO).
-- **Terminarz (krok 4)**: generowanie i podgląd kolejek (TODO).
+- **Domyślny**: pusty formularz (powyżej).
+- **Wypełniony**: wybrane sport i format; przycisk wysyła.
+- **Błąd pól**: `422` z API siada pod nazwą, pod sportem i pod formatem; komunikat
+  nieprzypisany do pola ląduje nad przyciskami (`role="alert"`).
+- **Wczytywanie sportów**: szkielet na miejscu wyboru sportu, przycisk nieaktywny.
+- **Błąd sportów**: cały ekran zastępuje komunikat z „Spróbuj ponownie" — bez listy
+  sportów formularza nie da się wypełnić.
 
 ## Zachowanie
-- Przycisk „Dalej" prowadzi do kolejnego kroku; „Anuluj" porzuca kreator (z potwierdzeniem, TODO).
-- Zmiana formatu przełącza zestaw ustawień poniżej.
-- Responsywność: karty formatów układają się w 1 kolumnę na wąskich ekranach, w 3 od `md`.
+- „Załóż turniej" wysyła formularz i wraca na listę turniejów; „Anuluj" wraca bez zapisu.
+- Nazwa jest pierwszym polem z fokusem.
+- Responsywność: kafle sportu w dwóch kolumnach od `lg`, formaty w trzech od `sm`.
 
 ## Otwarte pytania
-- Czy zapisywać szkic turnieju po każdym kroku (autosave)?
-- Jaki zestaw ustawień dla formatów „Puchar" i „Grupy + playoff"?
-- Czy krok „Terminarz" jest wymagany do publikacji, czy można go wygenerować później?
+- Czy panel wróci do kroków, gdy wejdą endpointy na drużyny i terminarz, czy zostanie
+  przy jednym formularzu?

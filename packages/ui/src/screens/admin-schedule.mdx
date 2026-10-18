@@ -43,7 +43,12 @@ bieżącą, i pozwolić mu wygenerować terminarz albo wygenerować go ponownie.
 - Godziny formatuje `Intl` ze strefą przeglądarki (ADR-0008). Kolejka grana
   jednego dnia pokazuje w wierszach samą godzinę, a datę nad listą.
 - Mecz bez daty pokazuje „Termin do ustalenia”.
-- Wiersze są tylko do odczytu. Okno meczu dochodzi w #176.
+- Nagłówek niesie akcje ekranu: „Rozłóż daty” obok menu „⋯” („Wygeneruj
+  ponownie”). Gdy żaden mecz nie ma terminu, ten sam przycisk stoi też
+  w komunikacie nad listą.
+- Wiersze są tylko do odczytu w makiecie. W panelu kliknięcie wiersza otwiera
+  okno meczu (`FormDialog`), a generowanie i rozkład dat swoje okna — makieta
+  pokazuje akcje, nie otwiera okien.
 - Ekran nie ma zakładek „Tabela” i „Strzelcy”: tabela ma własną kartę.
 
 ## Stany
@@ -51,13 +56,16 @@ bieżącą, i pozwolić mu wygenerować terminarz albo wygenerować go ponownie.
   `finished`, a „Wygeneruj ponownie” w menu „⋯” jest wyłączone, bo faza ma
   mecze rozpoczęte. Kolejka niesie kolizję boiska, więc widać licznik przy
   kolejce i plakietki w wierszach.
-- **Bez dat**: zaraz po wygenerowaniu, mecze bez terminu i obiektu.
+- **Bez dat**: zaraz po wygenerowaniu, mecze bez terminu i obiektu, z komunikatem
+  „Terminarz nie ma jeszcze dat” nad listą.
 - **Pusty**: „Wygeneruj terminarz”, wyłączone przy mniej niż dwóch drużynach.
 - **Telefon**: lista kolejek zwinięta do przycisku z bieżącą kolejką
   i strzałkami ← →.
 - **Turniej bez fazy `league`**: pusty stan bez żadnej akcji (tylko w panelu).
 - **Drużyna bez meczów**: komunikat nad listą z akcją generowania (tylko
   w panelu).
+- **Faza grupowa**: filtr po grupie i plakietka grupy w wierszu (tylko
+  w panelu, #258).
 
 <Canvas of={Stories.BezDat} />
 <Canvas of={Stories.Pusty} />

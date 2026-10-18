@@ -26,10 +26,12 @@ export const Domyslny: Story = {
     await expect(canvas.queryByRole('tab')).not.toBeInTheDocument()
     // Kolizja boiska w kolejce 5: plakietka po obu stronach pary (#175).
     await expect(canvas.getAllByTitle(/^Kolizja boiska:/)).toHaveLength(2)
+    // Akcja nagłówka, ten sam przycisk co w panelu.
+    await expect(canvas.getByRole('button', { name: 'Rozłóż daty' })).toBeInTheDocument()
   },
 }
 
-/** Zaraz po wygenerowaniu: mecze bez terminu i obiektu. */
+/** Zaraz po wygenerowaniu: mecze bez terminu i obiektu, z komunikatem nad listą. */
 export const BezDat: Story = {
   args: { state: 'bez-dat' },
   globals: { viewport: { value: 'desktop', isRotated: false } },
@@ -37,6 +39,12 @@ export const BezDat: Story = {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('heading', { name: 'Kolejka 1' })).toBeInTheDocument()
     await expect(canvas.getAllByText('Termin do ustalenia')).toHaveLength(4)
+
+    // Komunikat niesie ten sam przycisk co nagłówek, więc jest ich dwoje.
+    await expect(
+      canvas.getByText('Terminarz nie ma jeszcze dat. Rozłóż je, żeby mecze dostały terminy i obiekty.'),
+    ).toBeInTheDocument()
+    await expect(canvas.getAllByRole('button', { name: 'Rozłóż daty' })).toHaveLength(2)
   },
 }
 

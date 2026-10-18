@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Sport, TournamentCreate } from '@tournament/api-client';
-import { Button, Card, CardContent, EmptyState, Input, Label, Skeleton } from '@tournament/ui';
+import { Button, Card, CardContent, ChoiceCards, EmptyState, Input, Label, Skeleton } from '@tournament/ui';
 import { AlertTriangle } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { AdminPage } from '../components/admin-page';
-import { ChoiceCards } from '../components/choice-cards';
 import { api } from '../lib/api';
 import { applyApiError } from '../lib/form-errors';
 import {
