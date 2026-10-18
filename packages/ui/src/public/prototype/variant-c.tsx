@@ -65,7 +65,7 @@ function MatchBoard({ match, timeZone }: { match: ScheduleDemoMatch; timeZone: s
     <DeadLink
       className={cn(
         'flex min-w-0 flex-col gap-3 rounded-md bg-card p-4 ring-1 ring-inset hover:bg-muted',
-        live ? 'ring-destructive/70' : 'ring-border',
+        live ? 'ring-2 ring-brand-line' : 'ring-border',
       )}
     >
       <span className="flex min-h-6 items-center justify-between gap-3 text-sm text-muted-foreground">
@@ -101,6 +101,37 @@ function RoundBand({ data }: { data: OverviewData }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {matches.map((match) => <MatchBoard key={match.id} match={match} timeZone={data.timeZone} />)}
       </div>
+    </section>
+  )
+}
+
+/**
+ * Drużyny przed ułożeniem terminarza: zamiast pasa kolejki sama prezentacja
+ * drużyn. Tabela z zerami i pusta klasyfikacja nic by tu nie powiedziały,
+ * więc ich nie ma.
+ */
+function TeamsShowcase({ data }: { data: OverviewData }) {
+  const teams = data.table.map((row) => row.team).toSorted((a, b) => a.name.localeCompare(b.name, 'pl'))
+  return (
+    <section aria-labelledby="c-teams" className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm text-muted-foreground">Kto gra w turnieju</span>
+          <h2 id="c-teams" className="pub-title text-[3rem] sm:text-[4rem]">Drużyny</h2>
+        </div>
+        <span className="text-muted-foreground">
+          <span className="pub-num text-lg text-foreground">{teams.length}</span> drużyn
+        </span>
+      </div>
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {teams.map((team) => (
+          <li key={team.id} className="flex min-w-0 flex-col items-start gap-5 rounded-md bg-card p-5 ring-1 ring-inset ring-border sm:p-6">
+            <Crest name={team.name} className="size-14 sm:size-20" />
+            <span className="w-full truncate pub-title text-2xl sm:text-[1.75rem]">{team.name}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-muted-foreground">Terminarz pojawi się tutaj, gdy organizator go ułoży.</p>
     </section>
   )
 }
@@ -141,21 +172,27 @@ export function VariantC({ data, accent }: { data: OverviewData; accent: string 
     <PublicRoot accent={accent}>
       <Header data={data} />
       <main className="mx-auto flex max-w-6xl flex-col gap-14 px-4 py-8 sm:px-6 sm:py-10">
-        <RoundBand data={data} />
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
-          <section aria-labelledby="c-table" className="flex min-w-0 flex-col gap-4">
-            <SectionHead id="c-table" title="Tabela" link="Pełna tabela" sub={first ? `Startuje ${day(first, data.timeZone)}, ${time(first, data.timeZone)}` : undefined} />
-            {data.state === 'zakonczony' && <ChampionLine data={data} />}
-            <MiniTable rows={data.table} columns="full" />
-          </section>
-          <aside className="flex min-w-0 flex-col gap-12">
-            <NextRound data={data} />
-            <section aria-labelledby="c-leader" className="flex flex-col gap-1">
-              <SectionHead id="c-leader" title={data.leaderboard.label} link="Statystyki" />
-              <LeaderBlock leaderboard={data.leaderboard} compact />
-            </section>
-          </aside>
-        </div>
+        {data.state === 'bez-terminarza' ? (
+          <TeamsShowcase data={data} />
+        ) : (
+          <>
+            <RoundBand data={data} />
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
+              <section aria-labelledby="c-table" className="flex min-w-0 flex-col gap-4">
+                <SectionHead id="c-table" title="Tabela" link="Pełna tabela" sub={first ? `Startuje ${day(first, data.timeZone)}, ${time(first, data.timeZone)}` : undefined} />
+                {data.state === 'zakonczony' && <ChampionLine data={data} />}
+                <MiniTable rows={data.table} columns="full" />
+              </section>
+              <aside className="flex min-w-0 flex-col gap-12">
+                <NextRound data={data} />
+                <section aria-labelledby="c-leader" className="flex flex-col gap-1">
+                  <SectionHead id="c-leader" title={data.leaderboard.label} link="Statystyki" />
+                  <LeaderBlock leaderboard={data.leaderboard} compact />
+                </section>
+              </aside>
+            </div>
+          </>
+        )}
       </main>
       <Footer tournament={data.tournament} />
     </PublicRoot>

@@ -19,9 +19,10 @@ wskazuje.
    tekst i stany to tokeny `.dark` bez zmian (grafit). Strona publiczna dokłada
    tylko trzy płaszczyzny i dwa kroje, opisane niżej.
 2. **Kolor turnieju jest jedynym akcentem.** Aktywna zakładka, odnośnik do
-   pełnego widoku, przycisk „Śledź mecz”, pasek lidera w tabeli, liczba lidera
-   klasyfikacji, logo domyślne. Nic poza tym nie jest kolorowe. Wyjątkiem jest
-   stan „Na żywo” w `--destructive`, bo to stan, a nie akcent.
+   pełnego widoku, stan „Na żywo” (kropka, napis, obrys tablicy meczu), herb
+   zastępczy, zwycięstwo w formie, pasek lidera w tabeli, liczba lidera
+   klasyfikacji, logo domyślne. Czerwieni `--destructive` strona publiczna nie
+   używa: „Na żywo” też mówi kolorem turnieju.
 3. **Tablica w Barlow Condensed, tekst w Barlow.** Wszystko, co jest liczbą
    albo nazwą „na tablicy” (wynik, punkty, godzina, nazwa turnieju, nagłówki),
    idzie krojem wąskim. Tekst do czytania (nazwy w wierszach, meta) idzie
@@ -42,6 +43,16 @@ Kolor turnieju ustawia korzeń strony z `brandVars(primaryColor)`:
 
 Tailwind: `bg-sunken`, `bg-hairline`/`border-hairline`, `border-rule`,
 `text-brand-text`, `text-brand-line`/`border-brand-line`, `font-display`, `font-body`.
+
+## Herb zastępczy i forma
+
+- **Herb zastępczy** należy do turnieju, nie do drużyny, więc niesie kolor
+  turnieju: tarcza z obrysem `--brand-line`, wypełnienie `--brand-line` na
+  15%, skrót w `--brand-text`. Herb wgrany przez organizera (w demo FC Górka)
+  zostaje swoim plikiem. Panel zostaje przy brązowym `--crest`.
+- **Forma**: zwycięstwo „W” na `--brand-line` z tekstem
+  `--brand-line-foreground`, remis „R” na `--muted`, porażka „P” sam obrys.
+  Na telefonie kolumny formy nie ma.
 
 ## Kroje
 

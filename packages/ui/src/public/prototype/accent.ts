@@ -104,7 +104,8 @@ export function brandOnDark(hex: string, { min = MIN_ACCENT_CONTRAST, surface = 
  * Zmienne CSS koloru turnieju na korzeniu strony publicznej: `--brand`
  * (wypełnienie), `--brand-foreground` (tekst na wypełnieniu), `--brand-line`
  * (linia, kształt, duża liczba na ciemnym tle, 3:1) i `--brand-text`
- * (zwykły tekst na ciemnym tle, 4.5:1).
+ * (zwykły tekst na ciemnym tle, 4.5:1), `--brand-line-foreground` (tekst na
+ * wypełnieniu w `--brand-line`).
  */
 export function brandVars(hex: string): React.CSSProperties {
   return {
@@ -112,6 +113,9 @@ export function brandVars(hex: string): React.CSSProperties {
     '--brand-foreground': brandForeground(hex),
     '--brand-line': brandOnDark(hex),
     '--brand-text': brandOnDark(hex, { min: MIN_ACCENT_TEXT_CONTRAST }),
+    // Tekst na wypełnieniu w `--brand-line` (forma „W”): rozjaśniony granat
+    // może potrzebować innego tonu niż oryginał.
+    '--brand-line-foreground': brandForeground(brandOnDark(hex)),
   } as React.CSSProperties
 }
 

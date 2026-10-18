@@ -4,12 +4,12 @@
  * Bez importów z `components/ui` (reguła strony publicznej z #286).
  */
 import type * as React from 'react'
-import { TeamLogo } from '../../components/layout/team-logo'
+import { teamAbbr } from '../../components/layout/team-crest'
 import { LEADERBOARD_EMPTY, leaderboardLeaders, type Leaderboard } from '../../components/data/leaderboard-data'
 import type { MatchScorer } from '../../components/data/match-row-data'
 import { formatKickoff, formatMatchDay } from '../../lib/kickoff'
 import { cn } from '../../lib/utils'
-import type { ScheduleDemoMatch } from '../../lib/demo-data'
+import { teamRows, type ScheduleDemoMatch } from '../../lib/demo-data'
 import type { PublicShellTournament } from '../../components/layout/public-shell-tournament'
 import type { PublicNavKey } from '../../components/layout/public-nav'
 import { brandVars } from './accent'
@@ -42,16 +42,51 @@ export function DeadLink({ className, children, ...props }: React.ComponentProps
   )
 }
 
+/** Herb wgrany przez organizera: w demo tylko FC Górka, reszta to zastępczy. */
+const UPLOADED_LOGOS: Record<string, string> = Object.fromEntries(
+  teamRows.filter((team) => team.logoUrl).map((team) => [team.name, team.logoUrl!]),
+)
+
+/**
+ * Herb drużyny: wgrany plik albo herb zastępczy w kolorze turnieju —
+ * tarcza z obrysem `--brand-line`, delikatnym wypełnieniem i skrótem
+ * w `--brand-text`. Zastępczy herb należy do turnieju, nie do drużyny, więc
+ * niesie akcent turnieju zamiast neutralnego brązu z panelu.
+ */
 export function Crest({ name, className }: { name: string; className?: string }) {
-  return <TeamLogo logoUrl={null} name={name} className={className} />
+  const logo = UPLOADED_LOGOS[name]
+  if (logo) {
+    return <img src={logo} alt="" aria-hidden className={cn('size-6 shrink-0 object-contain', className)} />
+  }
+  const abbr = teamAbbr(name)
+  return (
+    <svg viewBox="0 0 20 24" aria-hidden className={cn('size-6 shrink-0', className)}>
+      <path
+        d="M10 1.2 17.8 3.5v8.8c0 4.6-3.2 7.9-7.8 10.5-4.6-2.6-7.8-5.9-7.8-10.5V3.5L10 1.2Z"
+        className="fill-brand-line/15 stroke-brand-line"
+        strokeWidth="1.4"
+      />
+      <text
+        x="10"
+        y="11.5"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={abbr.length > 2 ? 6 : 8}
+        fontWeight="700"
+        className="fill-brand-text font-display"
+      >
+        {abbr}
+      </text>
+    </svg>
+  )
 }
 
 export function LiveTag({ className }: { className?: string }) {
   return (
-    <span className={cn('inline-flex items-center gap-2 pub-tab text-base text-destructive', className)}>
+    <span className={cn('inline-flex items-center gap-2 pub-tab text-base text-brand-text', className)}>
       <span aria-hidden className="relative flex size-2.5">
-        <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-60 motion-reduce:animate-none" />
-        <span className="relative size-2.5 rounded-full bg-destructive" />
+        <span className="absolute inset-0 animate-ping rounded-full bg-brand-line opacity-60 motion-reduce:animate-none" />
+        <span className="relative size-2.5 rounded-full bg-brand-line" />
       </span>
       Na żywo
     </span>
@@ -148,8 +183,8 @@ export function ResultLine({ match }: { match: ScheduleDemoMatch }) {
 }
 
 const FORM_STYLE: Record<FormResult, string> = {
-  W: 'bg-foreground text-background',
-  R: 'bg-muted-foreground/40 text-foreground',
+  W: 'bg-brand-line text-brand-line-foreground',
+  R: 'bg-muted text-foreground',
   P: 'bg-transparent text-muted-foreground ring-1 ring-inset ring-border',
 }
 

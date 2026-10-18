@@ -11,14 +11,15 @@ import type { TournamentState } from './demo'
 export const VARIANTS = {
   A: 'Tablica',
   B: 'Stadion',
-  C: 'Kolejka',
+  C: 'Kolejka, wybrany',
 } as const
 
 export type VariantKey = keyof typeof VARIANTS
 
 export const STATES: Record<TournamentState, string> = {
-  'w-trakcie': 'W trakcie',
+  'bez-terminarza': 'Bez terminarza',
   'przed-startem': 'Przed startem',
+  'w-trakcie': 'W trakcie',
   zakonczony: 'Zakończony',
 }
 

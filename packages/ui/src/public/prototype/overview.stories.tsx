@@ -17,9 +17,14 @@ function PrototypeOverview({ updateArgs, ...args }: PrototypeArgs & { updateArgs
   const accent = ACCENT_SAMPLES[args.accent].hex
   return (
     <>
-      {args.variant === 'A' && <VariantA data={data} accent={accent} />}
-      {args.variant === 'B' && <VariantB data={data} accent={accent} photo={args.photo} />}
       {args.variant === 'C' && <VariantC data={data} accent={accent} />}
+      {args.variant !== 'C' && args.state === 'bez-terminarza' && (
+        <div className="dark grid min-h-screen place-items-center bg-background p-6 text-center text-muted-foreground">
+          Wariant {args.variant} odpadł w #287. Stan „Bez terminarza” ma tylko C.
+        </div>
+      )}
+      {args.variant === 'A' && args.state !== 'bez-terminarza' && <VariantA data={data} accent={accent} />}
+      {args.variant === 'B' && args.state !== 'bez-terminarza' && <VariantB data={data} accent={accent} photo={args.photo} />}
       {updateArgs && <Switcher args={args} update={updateArgs} />}
     </>
   )
@@ -34,7 +39,7 @@ const meta = {
     const [, updateArgs] = useArgs<PrototypeArgs>()
     return <PrototypeOverview {...args} updateArgs={updateArgs} />
   },
-  args: { variant: 'A', state: 'w-trakcie', accent: 'zielen', photo: true },
+  args: { variant: 'C', state: 'w-trakcie', accent: 'zielen', photo: true },
   argTypes: {
     variant: { control: 'inline-radio', options: Object.keys(VARIANTS), labels: VARIANTS },
     state: { control: 'inline-radio', options: Object.keys(STATES), labels: STATES },

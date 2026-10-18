@@ -25,7 +25,6 @@ const TOKENS = [
   { name: '--border', role: 'Obrys kafla (z `.dark`)', className: 'bg-border' },
   { name: '--pub-rule', role: 'Belka pod nagłówkiem sekcji, pełny kolor tekstu', className: 'bg-rule' },
   { name: '--muted-foreground', role: 'Tekst drugiego planu (z `.dark`)', className: 'bg-muted-foreground' },
-  { name: '--destructive', role: 'Tylko stan „Na żywo” (z `.dark`)', className: 'bg-destructive' },
 ]
 
 export function PublicTokens() {

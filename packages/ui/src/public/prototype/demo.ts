@@ -15,10 +15,16 @@ import {
   publicResults,
   publicTournament,
   scheduleTimeZone,
+  teams,
   type ScheduleDemoMatch,
 } from '../../lib/demo-data'
 
-export type TournamentState = 'w-trakcie' | 'przed-startem' | 'zakonczony'
+/**
+ * `bez-terminarza`: drużyny są, kolejek jeszcze nie ma (organizator nie
+ * ułożył terminarza). Liga oddaje wtedy z `/standings` wszystkie drużyny
+ * z zerami (`TournamentStandings::of` bierze `tournament->teams`).
+ */
+export type TournamentState = 'bez-terminarza' | 'przed-startem' | 'w-trakcie' | 'zakonczony'
 
 export type FormResult = 'W' | 'R' | 'P'
 
@@ -52,6 +58,7 @@ const allMatches: ScheduleDemoMatch[] = [...publicResults, ...publicFixtures].to
 )
 
 function seasonFor(state: TournamentState): ScheduleDemoMatch[] {
+  if (state === 'bez-terminarza') return []
   if (state === 'w-trakcie') return allMatches
   if (state === 'przed-startem') {
     return allMatches.map((match) => ({ ...match, status: 'scheduled' as const, homeScore: null, awayScore: null, scorers: [] }))
@@ -65,17 +72,13 @@ function seasonFor(state: TournamentState): ScheduleDemoMatch[] {
 
 function standingsFrom(matches: ScheduleDemoMatch[]): TableRow[] {
   const rows = new Map<number, TableRow>()
-  for (const match of matches) {
-    for (const team of [match.homeTeam, match.awayTeam]) {
-      if (team && !rows.has(team.id)) {
-        rows.set(team.id, {
-          position: 0,
-          team: { id: team.id, name: team.name, logoUrl: null },
-          played: 0, won: 0, drawn: 0, lost: 0, scoreFor: 0, scoreAgainst: 0, scoreDifference: 0, points: 0,
-          form: [],
-        })
-      }
-    }
+  for (const team of teams) {
+    rows.set(team.id, {
+      position: 0,
+      team: { id: team.id, name: team.name, logoUrl: null },
+      played: 0, won: 0, drawn: 0, lost: 0, scoreFor: 0, scoreAgainst: 0, scoreDifference: 0, points: 0,
+      form: [],
+    })
   }
   for (const match of matches) {
     if (match.status !== 'finished' || !match.homeTeam || !match.awayTeam) continue
@@ -102,7 +105,7 @@ function standingsFrom(matches: ScheduleDemoMatch[]): TableRow[] {
 
 function leaderboardFor(state: TournamentState): Leaderboard {
   const goals = leaderboardsBySport.football.goals!
-  if (state === 'przed-startem') return { ...goals, rows: [] }
+  if (state === 'przed-startem' || state === 'bez-terminarza') return { ...goals, rows: [] }
   if (state === 'w-trakcie') return goals
   return { ...goals, rows: goals.rows.map((row) => ({ ...row, value: Math.round(row.value * 2.6) })) }
 }

@@ -262,6 +262,7 @@
   --color-hairline: var(--pub-hairline);
   --color-brand-line: var(--brand-line);
   --color-brand-text: var(--brand-text);
+  --color-brand-line-foreground: var(--brand-line-foreground);
 
   --radius: 0.375rem;
   --radius-sm: calc(var(--radius) - 4px);
@@ -329,6 +330,7 @@
   --pub-hairline: oklch(0.2650 0.0150 250);
   --brand-line: var(--brand);
   --brand-text: var(--brand);
+  --brand-line-foreground: var(--brand-foreground);
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.5;
