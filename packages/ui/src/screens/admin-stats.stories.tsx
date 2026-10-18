@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AdminStats } from './admin-stats'
 
 const meta = {
-  title: 'Ekrany/Admin · Statystyki',
+  title: 'Ekrany/Admin/Statystyki',
   component: AdminStats,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminStats>

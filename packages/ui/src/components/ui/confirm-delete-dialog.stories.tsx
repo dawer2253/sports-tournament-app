@@ -20,7 +20,7 @@ function Stateful(args: ComponentProps<typeof ConfirmDeleteDialog>) {
 }
 
 const meta = {
-  title: 'UI/Potwierdzenie usunięcia',
+  title: 'UI/Prymitywy/Potwierdzenie usunięcia',
   component: ConfirmDeleteDialog,
   args: {
     open: true,

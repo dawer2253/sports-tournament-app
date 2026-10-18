@@ -25,7 +25,7 @@ function Stateful(args: ComponentProps<typeof FormDialog>) {
 }
 
 const meta = {
-  title: 'UI/Okno formularza',
+  title: 'UI/Prymitywy/Okno formularza',
   component: FormDialog,
   args: {
     open: true,

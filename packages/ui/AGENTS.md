@@ -51,6 +51,23 @@ Storybook na `:6006`), więc podgląd działa bez konfiguracji.
   `expectDarkPortal` w `theme.ts`). Nie myl z `src/test/` w aplikacjach, gdzie
   leży setup msw.
 
+## Tytuły stories i sidebar
+
+Tytuł story (`meta.title`) to ścieżka pliku: sidebar powtarza układ `src/`,
+a separatorem grup jest `/`. Znaku `·` nie używamy — Storybook go nie
+interpretuje i zrobiłby z całej ścieżki jeden liść.
+
+- **Ekrany**: `Ekrany/Admin/Nazwa` lub `Ekrany/Public/Nazwa` (nazwa liścia po
+  polsku, bez zmian).
+- **Komponenty**: `UI/<sekcja>/Nazwa`, gdzie sekcja bierze nazwę z funkcji
+  katalogu: `components/layout` → `Układ`, `components/data` → `Dane`,
+  `components/ui` → `Prymitywy`.
+- **Fundamenty**: `Fundamenty/…` (tytuł strony „Fundamenty/Design system" siedzi
+  w `<Meta>` pliku `.mdx`, nie w stories).
+
+Kolejność korzeni: `Wprowadzenie → Fundamenty → UI → Ekrany`
+(`parameters.options.storySort.order` w `.storybook/preview.tsx`).
+
 ## Wzorzec ekranu — trójka plików
 
 Każdy ekran to trzy pliki o wspólnej nazwie w `src/screens/`
@@ -62,7 +79,7 @@ Każdy ekran to trzy pliki o wspólnej nazwie w `src/screens/`
 2. **`admin-teams.stories.tsx`** — story:
    ```tsx
    const meta = {
-     title: 'Ekrany/Admin · Drużyny',
+     title: 'Ekrany/Admin/Drużyny',
      component: AdminTeams,
      parameters: { layout: 'fullscreen' },
    } satisfies Meta<typeof AdminTeams>
@@ -71,8 +88,8 @@ Każdy ekran to trzy pliki o wspólnej nazwie w `src/screens/`
 3. **`admin-teams.mdx`** — specyfikacja z `<Canvas of={Stories.Domyslny} />`
    i sekcjami: Cel / Dane / Reguły / Stany / Zachowanie / Otwarte pytania.
 
-Tytuły stories po polsku: `Ekrany/Admin · Nazwa` lub `Ekrany/Public · Nazwa`.
-Kolejność w sidebarze: `Wprowadzenie → Fundamenty → UI → Ekrany`.
+Tytuły stories po polsku: `Ekrany/Admin/Nazwa` lub `Ekrany/Public/Nazwa`
+(patrz „Tytuły stories i sidebar").
 
 ## Reguły design systemu (nie łam)
 

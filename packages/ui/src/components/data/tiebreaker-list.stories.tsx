@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { TiebreakerList } from './tiebreaker-list'
 
 const meta = {
-  title: 'UI/Lista tiebreaków',
+  title: 'UI/Dane/Lista tiebreaków',
   component: TiebreakerList,
   parameters: { layout: 'padded' },
   args: {

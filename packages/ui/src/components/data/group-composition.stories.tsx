@@ -14,7 +14,7 @@ const twoGroups: GroupCompositionGroup[] = [
 ]
 
 const meta = {
-  title: 'UI/Skład grup',
+  title: 'UI/Dane/Skład grup',
   component: GroupCompositionEditor,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-4xl">{Story()}</div>],

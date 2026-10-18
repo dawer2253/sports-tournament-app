@@ -13,7 +13,7 @@ const sixLeaders: LeaderboardRow[] = [
 ]
 
 const meta = {
-  title: 'UI/Lider klasyfikacji',
+  title: 'UI/Dane/Lider klasyfikacji',
   component: LeaderboardLeaders,
   parameters: { layout: 'padded' },
   args: { label: goals.label, rows: goals.rows },

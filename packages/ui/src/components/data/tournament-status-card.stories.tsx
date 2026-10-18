@@ -5,7 +5,7 @@ import { TournamentStatusCard } from './tournament-status-card'
 const PUBLIC_URL = 'http://localhost:5174/t/liga-osiedlowa'
 
 const meta = {
-  title: 'UI/Karta statusu turnieju',
+  title: 'UI/Dane/Karta statusu turnieju',
   component: TournamentStatusCard,
   parameters: { layout: 'padded' },
   args: { status: 'draft', onChange: fn(), publicUrl: PUBLIC_URL, pending: false },

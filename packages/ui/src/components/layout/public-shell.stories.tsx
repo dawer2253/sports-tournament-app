@@ -16,7 +16,7 @@ const navHref = (key: PublicNavKey) =>
   ({ home: '/t/liga-osiedlowa', standings: '/t/liga-osiedlowa/tabela', fixtures: '/t/liga-osiedlowa/terminarz', results: '/t/liga-osiedlowa/wyniki', stats: '/t/liga-osiedlowa/statystyki', bracket: '/t/liga-osiedlowa/drabinka' })[key]
 
 const meta = {
-  title: 'UI/Shell strony publicznej',
+  title: 'UI/Układ/Shell strony publicznej',
   component: PublicShell,
   parameters: { layout: 'fullscreen' },
   args: {

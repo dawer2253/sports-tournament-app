@@ -23,7 +23,7 @@ function ControlledSwitcher(props: StatSwitcherProps) {
 }
 
 const meta = {
-  title: 'UI/Przełącznik statystyk',
+  title: 'UI/Dane/Przełącznik statystyk',
   component: StatSwitcher,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-xl">{Story()}</div>],

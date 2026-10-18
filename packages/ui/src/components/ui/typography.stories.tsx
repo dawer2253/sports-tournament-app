@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Heading } from './typography'
 
 const meta = {
-  title: 'UI/Heading',
+  title: 'UI/Prymitywy/Heading',
   component: Heading,
   argTypes: {
     level: { control: 'select', options: ['page', 'section', 'card'] },

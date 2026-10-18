@@ -4,7 +4,7 @@ import { teamRows } from '../../lib/demo-data'
 import { TeamsTable } from './teams-table'
 
 const meta = {
-  title: 'UI/Tabela drużyn',
+  title: 'UI/Dane/Tabela drużyn',
   component: TeamsTable,
   parameters: { layout: 'padded' },
   args: {

@@ -4,7 +4,7 @@ import { tournamentList } from '../lib/demo-data'
 import { AdminDashboard } from './admin-dashboard'
 
 const meta = {
-  title: 'Ekrany/Admin · Dashboard',
+  title: 'Ekrany/Admin/Dashboard',
   component: AdminDashboard,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminDashboard>
@@ -28,7 +28,7 @@ export const Domyslny: Story = {
     const canvas = within(canvasElement)
 
     // Kafle biorą nazwę, sport i liczbę drużyn z `tournamentList` — te same
-    // trzy turnieje co `UI/Tabela turniejów`, bez ręcznego dublowania wartości.
+    // trzy turnieje co `UI/Dane/Tabela turniejów`, bez ręcznego dublowania wartości.
     for (const t of tournamentList) {
       const heading = canvas.getByRole('heading', { level: 3, name: t.name })
       // `data-slot` to własny uchwyt design systemu (`components/ui/card.tsx`),
