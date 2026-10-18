@@ -1,0 +1,20 @@
+# Kontekst budowy obrazu z prototype/prod-stack/Dockerfile to root repo.
+# Odrzucamy to, czego build nie czyta: historię, zainstalowane zależności,
+# lokalne env i rzeczy spoza obrazu. Bez tego kontekst waży gigabajty.
+.git
+.github
+.claude
+docs
+e2e/*
+!e2e/package.json
+node_modules
+**/node_modules
+backend/vendor
+**/vendor
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+opencode.json
+CLAUDE.md
+**/.DS_Store

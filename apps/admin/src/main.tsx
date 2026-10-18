@@ -12,7 +12,10 @@ const queryClient = new QueryClient({
   },
 });
 
-const router = createBrowserRouter(routes);
+// PROTOTYP (#277): panel budowany z `--base=/admin/` stoi pod prefiksem,
+// więc router musi znać ten prefiks. Bez tego trasy `/login` i `/tournaments`
+// działają tylko w korzeniu origin, a `BASE_URL` z Vite to `/` w dev.
+const router = createBrowserRouter(routes, { basename: import.meta.env.BASE_URL });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -1,0 +1,100 @@
+# PROTOTYP (#277): prod-podobny stack lokalnie, jednym `docker compose up`.
+#
+#   edge  (Caddy)  :8080 → app
+#   app   (nginx + php-fpm + oba SPA)  :80 (tylko w sieci compose)
+#   db    (MySQL 8.4)                  bez portu na hoście
+#
+# Wolumeny: baza, storage (uploady + framework) i dane Caddy przeżywają
+# `docker compose down` / restart. `down -v` kasuje wszystko.
+#
+# Sekrety: APP_KEY, hasło bazy, hasło roota bazy. Domyślne wartości są JAWNIE
+# deweloperskie — na serwerze podaje się je z env/sekretów, nie z tego pliku.
+
+name: s6-prod-stack
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-tournament}
+      MYSQL_USER: ${DB_USERNAME:-tournament}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-tajnehaslo}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-roothaslo}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - mysqladmin ping -h 127.0.0.1 -u root -p"$$MYSQL_ROOT_PASSWORD" --silent
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  app:
+    restart: unless-stopped
+    build:
+      context: ../..
+      dockerfile: prototype/prod-stack/Dockerfile
+      args:
+        # Adres API wchodzi do builda frontów (Vite, build-time).
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
+        # Puste = linki panelu do strony publicznej są względne („/t/{slug}").
+        VITE_PUBLIC_URL: ${VITE_PUBLIC_URL:-}
+    environment:
+      APP_NAME: 'Sports Tournament App'
+      APP_ENV: production
+      APP_KEY: ${APP_KEY:-base64:b8VlDNaMdhjsEHkU8wKYg3V/XOQlWLdlpM9Z3UQ/WMQ=}
+      APP_DEBUG: 'false'
+      # Musi być publicznym adresem: HasLogo::logoUrl() składa z niego URL uploadu.
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      APP_LOCALE: pl
+      APP_FALLBACK_LOCALE: en
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: warning
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: '3306'
+      DB_DATABASE: ${DB_DATABASE:-tournament}
+      DB_USERNAME: ${DB_USERNAME:-tournament}
+      DB_PASSWORD: ${DB_PASSWORD:-tajnehaslo}
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      # Uploady i tak idą jawnie na dysk `public` (HasLogo), ale default niech
+      # będzie taki sam jak w dev.
+      FILESYSTEM_DISK: local
+    volumes:
+      # Trwały dysk: storage/app/public (uploady), framework/cache, sessions.
+      - storage-data:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -qO-
+        - http://127.0.0.1/up
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  edge:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '${EDGE_PORT:-8080}:80'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  storage-data:
+  caddy-data:

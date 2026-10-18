@@ -1,0 +1,8 @@
+# PROTOTYP (#277). Edge jak na VPS: Caddy przed aplikacją.
+# Lokalnie tylko HTTP na :8080 (bez własnej domeny nie ma dla kogo wystawiać
+# certyfikatu). Na serwerze ta sama konfiguracja dostaje nazwę domeny i Caddy
+# sam robi HTTPS — to jedyna różnica.
+:80 {
+	encode zstd gzip
+	reverse_proxy app:80
+}
