@@ -323,6 +323,35 @@ i każde zdarzenie turnieju bez podziału nie ma części. Część liczy się p
 odczycie, więc zmiana ustawienia działa wstecz na wszystkie mecze turnieju.
 Z części korzysta relacja na stronie meczu (`PublicMatchDetail`).
 
+Etykieta ma też **dopełniacz**, do przycisku w panelu: „Start 2. połowy”,
+„2. tercji”, „2. kwarty”, „2. części”.
+
+**Bieżąca część** (#297) to część, którą mecz trwający właśnie gra
+(`Match.livePeriod`), ze startem stemplowanym przez serwer
+(`periodStartedAt`). Organizator prowadzi ją w oknie meczu: „Trwa” startuje
+1. część, a dalej jeden przycisk na zmianę, „Przerwa” albo „Start 2. połowy”.
+
+- **Przerwa**: część się skończyła, a następna jeszcze nie ruszyła; zegar stoi
+  i tablica pokazuje „Przerwa”. Turniej bez podziału przerwy nie ma.
+- **Dogrywka** to część po ostatniej (numer `liczba części + 1`), tylko
+  w meczu pucharowym, razem z karnymi: przycisk „Dogrywka / karne”, a w sporcie
+  bez remisu (bez karnych) „Dogrywka”. Tablica pokazuje „Dogrywka” bez minuty.
+- **Stała minuta startu części**: część `n` startuje od minuty
+  `(n − 1) × minuty części + 1`, więc 2. połowa (2 × 45) zawsze od 46′,
+  niezależnie od tego, ile doliczono w 1. Po regulaminowym końcu części
+  zegar pokazuje **doliczony czas** „45+N′” („90+4′”). Znak minuty to „′”.
+- **Zapomniany mecz**: po 30 minutach ponad regulaminowy koniec części zegar
+  znika i zostaje samo „Na żywo”. W turnieju bez podziału regulaminowym końcem
+  jest długość meczu.
+- **Powrót z „Zakończony” do „Trwa”** wraca do ostatniej części bez zegara:
+  samo „Na żywo”, nie „Przerwa”, dopóki organizator nie zacznie następnej.
+- W sporcie bez biegnącego zegara (`SportConfig.runningClock: false`,
+  koszykówka) tablica pokazuje część („3. kwarta”) zamiast minuty.
+
+**Minuta zegara to nie minuta zdarzenia**: zegar liczy przeglądarka z startu
+części, a minutę zdarzenia wpisuje organizator i zapisuje się bez zmian
+(„45+2” → `47`).
+
 ## Collision (kolizja)
 
 Nakładanie się okien dwóch meczów **tego samego turnieju** (także z różnych
