@@ -264,6 +264,7 @@ export interface paths {
                          *           "name": "Piłka nożna",
                          *           "config": {
                          *             "allowsDraw": true,
+                         *             "runningClock": true,
                          *             "defaultPoints": {
                          *               "win": 3,
                          *               "draw": 1,
@@ -342,6 +343,7 @@ export interface paths {
                          *           "name": "Koszykówka",
                          *           "config": {
                          *             "allowsDraw": false,
+                         *             "runningClock": false,
                          *             "defaultPoints": {
                          *               "win": 2,
                          *               "draw": 0,
@@ -4052,6 +4054,13 @@ export interface components {
         SportConfig: {
             /** @description Czy w tym sporcie mecz może zakończyć się remisem. */
             allowsDraw: boolean;
+            /**
+             * @description Czy zegar meczu biegnie w minutach (#297). Piłka nożna `true`:
+             *     tablica pokazuje minutę („67′”). Koszykówka `false`: zegar staje
+             *     przy każdym przerwaniu gry, więc tablica pokazuje część
+             *     („3. kwarta”) zamiast minuty.
+             */
+            runningClock: boolean;
             defaultPoints: components["schemas"]["Points"];
             /**
              * @description Domyślna długość meczu w minutach, razem z przerwą po nim,
@@ -4532,6 +4541,42 @@ export interface components {
              * @enum {string|null}
              */
             advancesToSlot: "home" | "away" | null;
+            /**
+             * @description Bieżąca część meczu `live` (#297), od 1. Wartość
+             *     `Tournament.periods.count + 1` znaczy „Dogrywka / karne”
+             *     i występuje tylko w fazie `knockout`. `null` przy `scheduled`
+             *     i `finished`.
+             *
+             *     Zegar meczu liczy przeglądarka z `livePeriod`, `periodStartedAt`
+             *     i `onBreak` oraz `PublicTournament.periods` i `runningClock`:
+             *
+             *     | `periodStartedAt` | `onBreak` | tablica |
+             *     |---|---|---|
+             *     | chwila | `false` | minuta części („67′”, „45+3′”), w sporcie bez `runningClock` część („3. kwarta”) |
+             *     | `null` | `true` | „Przerwa” po części `livePeriod` |
+             *     | `null` | `false` | samo „Na żywo”: mecz wrócił z `finished` do `live` i część nie biegnie, dopóki organizator nie zacznie następnej |
+             *
+             *     Każda część startuje od stałej minuty
+             *     `(livePeriod − 1) × periods.minutes + 1`, a po regulaminowym końcu
+             *     części idzie czas doliczony. Przy `livePeriod = periods.count + 1`
+             *     tablica pokazuje „Dogrywka” bez minuty. Minuta zegara to nie zapis minuty
+             *     zdarzenia (`MatchEvent.minute` zostaje bez zmian).
+             */
+            livePeriod: number | null;
+            /**
+             * Format: date-time
+             * @description Chwila startu bieżącej części według serwera (stempluje ją serwer,
+             *     klient czasu nie wysyła). `null` w przerwie, po powrocie
+             *     z `finished` do `live` i poza `live`.
+             */
+            periodStartedAt: string | null;
+            /**
+             * @description Przerwa po części `livePeriod`: część się skończyła, a następna
+             *     jeszcze nie ruszyła. Odróżnia przerwę od meczu, który wrócił
+             *     z `finished` do `live` bez zegara (oba mają `periodStartedAt: null`).
+             *     `false` poza `live`.
+             */
+            onBreak: boolean;
         };
         /**
          * @description Częściowa zmiana meczu: wynik, stan, termin i obiekt. Pole nieobecne
@@ -4602,6 +4647,38 @@ export interface components {
          *     - Zmiana wyniku albo karnych bez zmiany zwycięzcy zawsze przechodzi
          *       i niczego dalej nie rusza. Slotu po wolnym losie nic nie dotyka, bo
          *       nie prowadzi do niego żadna krawędź.
+         *
+         *     **Część meczu** (#297). Serwer sam stempluje start części swoim
+         *     czasem (`Match.periodStartedAt`), klient czasu nie wysyła. Zmiana stanu
+         *     ustawia zegar tak:
+         *
+         *     | przejście stanu | `livePeriod` | `periodStartedAt` | `onBreak` |
+         *     |---|---|---|---|
+         *     | `scheduled` → `live` | `1` | teraz | `false` |
+         *     | `finished` → `live` | ostatnia część sprzed zakończenia (`1`, gdy mecz nie trwał) | `null` | `false` |
+         *     | `live` → `live` (ciało ze `status: live` meczu, który trwa) | bez zmian | bez zmian | bez zmian |
+         *     | → `scheduled` | `null` | `null` | `false` |
+         *     | → `finished` | `null` w odpowiedzi; serwer pamięta ostatnią część na wypadek powrotu | `null` | `false` |
+         *
+         *     Powrót z `finished` do `live` (zwykle poprawka pomyłki) to stan różny
+         *     od przerwy: część nie biegnie, a tablica pokazuje samo „Na żywo”, nie
+         *     „Przerwa” i nie minutę od 1′. Zegar rusza dopiero przy starcie
+         *     następnej części.
+         *
+         *     Panel prowadzi części dwoma polami ciała, poza wynikiem:
+         *
+         *     | ciało | skutek |
+         *     |---|---|
+         *     | `periodRunning: false` | przerwa: `periodStartedAt: null`, `onBreak: true`, `livePeriod` zostaje |
+         *     | `livePeriod: N`, `periodRunning: true` | start części `N`: `livePeriod: N`, `periodStartedAt` teraz, `onBreak: false` |
+         *
+         *     Pola części jadą tylko do meczu `live` (po scaleniu ze stanem
+         *     z ciała). Przy innym stanie dają `422` pod `livePeriod`. `livePeriod`
+         *     spoza `1…periods.count`, a w fazie `knockout` spoza
+         *     `1…periods.count + 1` (dogrywka), też daje `422` pod `livePeriod`,
+         *     tak samo `livePeriod` bez `periodRunning: true` i `periodRunning: true`
+         *     bez `livePeriod`. Pola części nadpisują
+         *     zegar ustawiony przejściem stanu z tego samego ciała.
          */
         MatchUpdate: {
             homeScore?: number | null;
@@ -4624,6 +4701,13 @@ export interface components {
              *     Obcy turniejowi albo usunięty obiekt daje `422`.
              */
             venueId?: number | null;
+            /** @description Część meczu, która startuje (razem z `periodRunning` równym `true`). Reguły w opisie `MatchUpdate`. */
+            livePeriod?: number;
+            /**
+             * @description `true` startuje część `livePeriod` teraz, `false` zaczyna przerwę
+             *     po bieżącej części. Reguły w opisie `MatchUpdate`.
+             */
+            periodRunning?: boolean;
         };
         /**
          * @description Rodzaj kolizji terminu. `team` to „Kolizja drużyny” (wspólna drużyna),
@@ -4913,6 +4997,25 @@ export interface components {
              *     a nawigacja potrzebuje nazw statystyk, zanim pobierze klasyfikację.
              */
             stats: components["schemas"]["PublicStat"][];
+            /**
+             * @description Kopia `Tournament.periods` (#297): z niej przeglądarka liczy
+             *     minutę meczu na żywo (`Match.livePeriod`, `periodStartedAt`)
+             *     i etykietę części („3. kwarta”).
+             */
+            periods: components["schemas"]["MatchPeriods"];
+            /**
+             * @description Kopia `Tournament.matchDuration` (#297). W turnieju bez podziału
+             *     (`periods.count: 1`, `periods.minutes: null`) zegar bierze ją jako
+             *     regulaminową długość jedynej części: po niej idzie czas doliczony
+             *     („60+15′”), a po 30 minutach ponad nią zegar znika.
+             */
+            matchDuration: number;
+            /**
+             * @description `SportConfig.runningClock` sportu turnieju (#297). W bazie turnieju
+             *     tego pola nie ma: serwer bierze je z konfiguracji sportu, wzorem
+             *     `stats`, bo strona publiczna nie widzi `GET /sports`.
+             */
+            runningClock: boolean;
         };
     };
     responses: {
