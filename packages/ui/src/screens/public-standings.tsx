@@ -1,4 +1,4 @@
-import { PublicShell } from '../components/layout/public-shell'
+import { Shell } from '../public/shell'
 import { StandingsTable } from '../components/data/standings-table'
 import { TiebreakerSentence } from '../components/data/tiebreaker-editor'
 import { Heading } from '../components/ui/typography'
@@ -21,12 +21,12 @@ export function PublicStandings({ sport = 'football' }: PublicStandingsProps) {
   const tournament = { ...publicTournament, sport: { code: sport, name: settings.name } }
 
   return (
-    <PublicShell tournament={tournament} active="standings">
+    <Shell tournament={tournament} active="standings">
       <section className="space-y-3">
         <Heading level="section">Faza zasadnicza</Heading>
         <StandingsTable rows={ROWS[sport]} scoreLabel={settings.scoreLabel} allowsDraw={settings.allowsDraw} />
         <TiebreakerSentence items={settings.tiebreakers} />
       </section>
-    </PublicShell>
+    </Shell>
   )
 }

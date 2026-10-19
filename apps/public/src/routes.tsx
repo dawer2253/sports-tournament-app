@@ -2,7 +2,7 @@ import type { RouteObject } from 'react-router';
 import { BracketPage } from './pages/bracket';
 import { FixturesPage } from './pages/fixtures';
 import { MatchPage } from './pages/match';
-import { NotFoundPage } from './pages/not-found';
+import { NotFoundPage, SiteNotFoundPage } from './pages/not-found';
 import { OverviewPage } from './pages/overview';
 import { ResultsPage } from './pages/results';
 import { StandalonePage } from './pages/standalone-page';
@@ -18,13 +18,15 @@ export const routes: RouteObject[] = [
   {
     path: '/',
     element: (
-      <main className="p-8 text-muted-foreground">
-        Turniej otwiera się pod adresem <code>/t/{'{slug}'}</code>, na przykład{' '}
-        <a className="underline" href="/t/liga-osiedlowa-2026">
-          /t/liga-osiedlowa-2026
-        </a>
-        .
-      </main>
+      <StandalonePage>
+        <p className="text-muted-foreground">
+          Turniej otwiera się pod adresem <code>/t/{'{slug}'}</code>, na przykład{' '}
+          <a className="text-brand-text underline" href="/t/liga-osiedlowa-2026">
+            /t/liga-osiedlowa-2026
+          </a>
+          .
+        </p>
+      </StandalonePage>
     ),
   },
   {
@@ -46,10 +48,6 @@ export const routes: RouteObject[] = [
   },
   {
     path: '*',
-    element: (
-      <StandalonePage>
-        <NotFoundPage />
-      </StandalonePage>
-    ),
+    element: <SiteNotFoundPage />,
   },
 ];

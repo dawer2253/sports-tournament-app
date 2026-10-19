@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PublicShell } from '../components/layout/public-shell'
+import { Shell } from '../public/shell'
 import { LeaderboardTable } from '../components/data/leaderboard-table'
 import { StatSwitcher } from '../components/data/stat-switcher'
 import { Heading } from '../components/ui/typography'
@@ -24,7 +24,7 @@ export function PublicStats({ sport = 'football', state = 'w-trakcie' }: PublicS
   const tournament = { ...publicTournament, sport: { code: sport, name: sportSettings[sport].name } }
 
   return (
-    <PublicShell tournament={tournament} active="stats">
+    <Shell tournament={tournament} active="stats">
       <StatSwitcher stats={stats} value={stat} onValueChange={setStat}>
         <section className="space-y-3">
           <Heading level="section">{shown.label}</Heading>
@@ -37,6 +37,6 @@ export function PublicStats({ sport = 'football', state = 'w-trakcie' }: PublicS
           )}
         </section>
       </StatSwitcher>
-    </PublicShell>
+    </Shell>
   )
 }

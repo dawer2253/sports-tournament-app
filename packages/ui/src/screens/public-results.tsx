@@ -1,4 +1,4 @@
-import { PublicShell } from '../components/layout/public-shell'
+import { Shell } from '../public/shell'
 import { groupByRound } from '../components/data/round-groups'
 import { RoundSections } from '../components/data/round-sections'
 import { publicResults, publicTournament, scheduleTimeZone } from '../lib/demo-data'
@@ -9,12 +9,12 @@ import { publicResults, publicTournament, scheduleTimeZone } from '../lib/demo-d
  */
 export function PublicResults() {
   return (
-    <PublicShell tournament={publicTournament} active="results">
+    <Shell tournament={publicTournament} active="results">
       <RoundSections
         rounds={groupByRound(publicResults, { direction: 'desc', timeZone: scheduleTimeZone })}
         timeZone={scheduleTimeZone}
         statusDisplay="live"
       />
-    </PublicShell>
+    </Shell>
   )
 }

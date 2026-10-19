@@ -1,11 +1,24 @@
-import { EmptyState } from '@tournament/ui';
+import { PageNotFound, SiteNotFound, publicTabs } from '@tournament/ui/public';
+import { useNavigate } from 'react-router';
+import { tabHref, useTournament } from './tournament-layout';
 
-/** Strona 404 aplikacji: nieznany adres, także nieznana podtrasa turnieju. */
+/**
+ * Nieznana podtrasa turnieju, w shellu: odnośniki do wszystkich zakładek
+ * tego turnieju (puchar bez Tabeli).
+ */
 export function NotFoundPage() {
+  const { slug, stages } = useTournament();
+  const navigate = useNavigate();
   return (
-    <EmptyState
-      title="Nie ma takiej strony"
-      description="Sprawdź adres albo wróć do zakładek turnieju."
+    <PageNotFound
+      tabs={publicTabs(stages)}
+      navHref={(key) => tabHref(slug, key)}
+      onNavigate={(key) => void navigate(tabHref(slug, key))}
     />
   );
+}
+
+/** Adres spoza `/t/:slug`: 404 bez shella turnieju. */
+export function SiteNotFoundPage() {
+  return <SiteNotFound />;
 }

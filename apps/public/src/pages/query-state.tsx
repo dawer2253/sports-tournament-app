@@ -1,4 +1,4 @@
-import { Button, EmptyState, Skeleton } from '@tournament/ui';
+import { LoadError, LoadingScreen } from '@tournament/ui/public';
 
 /**
  * Stan zapytania zakładki, zanim są dane: szkielet albo błąd z ponowieniem.
@@ -11,23 +11,10 @@ export function QueryState({
   onRetry,
 }: {
   error: Error | null;
-  /** Nazwa wczytywanej treści, np. „terminarza”. */
+  /** Nazwa wczytywanej treści w dopełniaczu, np. „terminarza”. */
   label: string;
   onRetry: () => void;
 }) {
-  if (error) {
-    return (
-      <EmptyState
-        variant="error"
-        title={`Nie udało się wczytać ${label}`}
-        description={error.message}
-        action={
-          <Button variant="outline" onClick={onRetry}>
-            Spróbuj ponownie
-          </Button>
-        }
-      />
-    );
-  }
-  return <Skeleton role="status" aria-label={`Wczytywanie ${label}`} className="h-64 w-full" />;
+  if (error) return <LoadError label={label} message={error.message} onRetry={onRetry} />;
+  return <LoadingScreen label={label} />;
 }

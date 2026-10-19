@@ -1,4 +1,4 @@
-import { PublicShell } from '../components/layout/public-shell'
+import { Shell } from '../public/shell'
 import { groupByRound } from '../components/data/round-groups'
 import { RoundSections } from '../components/data/round-sections'
 import { publicFixtures, publicTournament, scheduleTimeZone } from '../lib/demo-data'
@@ -10,12 +10,12 @@ import { publicFixtures, publicTournament, scheduleTimeZone } from '../lib/demo-
  */
 export function PublicFixtures() {
   return (
-    <PublicShell tournament={publicTournament} active="fixtures">
+    <Shell tournament={publicTournament} active="fixtures">
       <RoundSections
         rounds={groupByRound(publicFixtures, { timeZone: scheduleTimeZone })}
         timeZone={scheduleTimeZone}
         statusDisplay="live"
       />
-    </PublicShell>
+    </Shell>
   )
 }

@@ -1,4 +1,4 @@
-import { PublicShell } from '../components/layout/public-shell'
+import { Shell } from '../public/shell'
 import { PublicOverview } from '../components/data/public-overview'
 import { groupByRound } from '../components/data/round-groups'
 import {
@@ -35,7 +35,7 @@ export function PublicHome({ state = 'w-trakcie' }: PublicHomeProps) {
         .map((row, index) => ({ ...row, position: index + 1 }))
 
   return (
-    <PublicShell tournament={publicTournament} active="home">
+    <Shell tournament={publicTournament} active="home">
       <PublicOverview
         fixtures={groupByRound(fixtures, { timeZone: scheduleTimeZone })}
         results={groupByRound(results, { direction: 'desc', timeZone: scheduleTimeZone })}
@@ -43,6 +43,6 @@ export function PublicHome({ state = 'w-trakcie' }: PublicHomeProps) {
         leaderboard={started ? goals : { ...goals, rows: [] }}
         timeZone={scheduleTimeZone}
       />
-    </PublicShell>
+    </Shell>
   )
 }

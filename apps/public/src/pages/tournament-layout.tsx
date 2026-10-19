@@ -1,11 +1,15 @@
 import type { PublicTournament } from '@tournament/api-client';
-import { EmptyState, Skeleton } from '@tournament/ui';
-import { publicTabs } from '@tournament/ui/public';
-import { PublicShell, type PublicNavKey } from '@tournament/ui/components/layout/public-shell.tsx';
+import {
+  Shell,
+  TournamentLoadError,
+  TournamentLoading,
+  TournamentNotFound,
+  publicTabs,
+  type PublicNavKey,
+} from '@tournament/ui/public';
 import { useEffect } from 'react';
 import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
 import { usePublicTournament } from '../lib/queries';
-import { StandalonePage } from './standalone-page';
 
 /** Podtrasa zakładki pod `/t/:slug`, po polsku (#192). */
 const TAB_PATHS: Record<PublicNavKey, string> = {
@@ -65,7 +69,7 @@ export function TournamentLayout() {
   // Zostaje ostatni wczytany turniej, a następne odpytanie spróbuje znowu.
   if (tournament.data) {
     return (
-      <PublicShell
+      <Shell
         tournament={tournament.data}
         // Puchar ma Drabinkę w miejscu Tabeli (#234), a turniej z grupami
         // obie naraz (#268).
@@ -75,37 +79,15 @@ export function TournamentLayout() {
         onNavigate={(key) => void navigate(tabHref(slug, key))}
       >
         <Outlet context={tournament.data} />
-      </PublicShell>
+      </Shell>
     );
   }
 
-  if (notFound) {
-    return (
-      <StandalonePage>
-        <EmptyState
-          title={NOT_FOUND}
-          description="Sprawdź adres. Turniej mógł zostać usunięty albo jeszcze nie jest opublikowany."
-        />
-      </StandalonePage>
-    );
-  }
+  if (notFound) return <TournamentNotFound path={`/t/${slug}`} />;
 
-  if (failed) {
-    return (
-      <StandalonePage>
-        <EmptyState variant="error" title={FAILED} description={tournament.error.message} />
-      </StandalonePage>
-    );
-  }
+  if (failed) return <TournamentLoadError message={tournament.error.message} onRetry={() => void tournament.refetch()} />;
 
-  return (
-    <StandalonePage>
-      <div aria-busy="true" aria-label="Wczytywanie turnieju" className="space-y-3">
-        <Skeleton className="h-8 w-80" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    </StandalonePage>
-  );
+  return <TournamentLoading />;
 }
 
 /** Turniej wczytany przez `TournamentLayout`, dla ekranów zakładek. */

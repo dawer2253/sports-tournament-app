@@ -1,5 +1,6 @@
-import { BackLink, EmptyState, MatchRelation } from '@tournament/ui';
+import { BackLink, MatchRelation } from '@tournament/ui';
 import { MatchHeader } from '@tournament/ui/components/data/match-header.tsx';
+import { MatchNotFound } from '@tournament/ui/public';
 import { useNavigate, useParams } from 'react-router';
 import { usePublicMatch } from '../lib/queries';
 import { QueryState } from './query-state';
@@ -26,12 +27,8 @@ export function MatchPage() {
   // Adres z nie-liczbą nie trafi w żaden mecz: 404 od razu, nie po odpowiedzi
   // API (zapytanie i tak idzie, bo hooka nie da się wołać warunkowo).
   if (!Number.isInteger(id) || id < 1 || match.data === null) {
-    return (
-      <EmptyState
-        title="Nie ma takiego meczu"
-        description="Sprawdź adres. Mecz mógł zostać usunięty albo należy do innego turnieju."
-      />
-    );
+    const fixtures = tabHref(slug, 'fixtures');
+    return <MatchNotFound fixturesHref={fixtures} onNavigate={() => void navigate(fixtures)} />;
   }
 
   if (!match.data) {
