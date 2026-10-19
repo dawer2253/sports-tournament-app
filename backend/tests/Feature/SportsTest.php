@@ -51,6 +51,15 @@ it('oddaje value przy każdym typie zdarzenia, a kosz nie ma już typu points', 
         ->toBe(['free_throw' => 1, 'two_pointer' => 2, 'three_pointer' => 3, 'foul' => 1]);
 });
 
+// #297: zegar w minutach ma piłka, a kosz pokazuje kwartę. Sprawdzone
+// niezależnie od przykładu, jak `value` wyżej.
+it('oddaje runningClock: piłka true, kosz false', function () {
+    $sports = actingAsOrganizer()->getJson('/api/v1/sports')->assertValidResponse(200)->collect('data')->keyBy('code');
+
+    expect($sports['football']['config']['runningClock'])->toBeTrue()
+        ->and($sports['basketball']['config']['runningClock'])->toBeFalse();
+});
+
 // #190, niezmiennik 9: etykieta dla każdej statystyki sportu i żadnej ponad
 // nie — klasyfikacja i `PublicTournament.stats` biorą etykietę po kodzie.
 it('oddaje statLabels z kluczami dokładnie z availableStats każdego sportu', function () {

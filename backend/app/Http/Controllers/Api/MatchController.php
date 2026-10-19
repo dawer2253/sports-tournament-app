@@ -7,6 +7,7 @@ use App\Http\Requests\Matches\IndexMatchesRequest;
 use App\Http\Requests\Matches\UpdateMatchRequest;
 use App\Http\Resources\AdminMatchResource;
 use App\Matches\Advancement;
+use App\Matches\LiveClock;
 use App\Models\GameMatch;
 use App\Models\Tournament;
 use App\Rules\Iso8601WithOffset;
@@ -69,7 +70,7 @@ class MatchController extends Controller
     }
 
     /**
-     * Zapis meczu (#159, #158, #216): wynik, karne i stan idą przez
+     * Zapis meczu (#159, #158, #216, #297): wynik, karne, stan i część meczu idą przez
      * `UpdateMatchRequest`, który po scaleniu ciała z zapisanym wierszem pilnuje
      * ich spójności, a termin i obiekt przyjmuje przy każdym stanie. Zmiana
      * wyniku nie dotyka tabeli jawnie — jest liczona przy odczycie. W drabince
@@ -109,6 +110,9 @@ class MatchController extends Controller
         if (array_key_exists('venueId', $data)) {
             $changes['venue_id'] = $data['venueId'];
         }
+
+        // Zegar meczu (#297) idzie w tej samej transakcji co wynik i awans.
+        $changes = [...$changes, ...LiveClock::changes($match, $data, now())];
 
         $match = $advancement->save($match, $changes, $request->advancementErrorKey());
         $match->load(['round', 'homeTeam', 'awayTeam', 'venue']);

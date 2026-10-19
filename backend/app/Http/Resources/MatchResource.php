@@ -49,6 +49,24 @@ class MatchResource extends JsonResource
             'winnerToMatchId' => $this->winner_to_match_id,
             'loserToMatchId' => $this->loser_to_match_id,
             'advancesToSlot' => $this->advances_to_slot,
+            ...$this->clock(),
+        ];
+    }
+
+    /**
+     * Zegar meczu (#297) tylko przy `live`. Po zakończeniu baza pamięta
+     * ostatnią część na wypadek powrotu do `live`, ale API jej nie pokazuje.
+     *
+     * @return array{livePeriod: ?int, periodStartedAt: ?string, onBreak: bool}
+     */
+    private function clock(): array
+    {
+        $live = $this->status === 'live';
+
+        return [
+            'livePeriod' => $live ? $this->live_period : null,
+            'periodStartedAt' => $live ? $this->formatDate($this->period_started_at) : null,
+            'onBreak' => $live && $this->on_break,
         ];
     }
 

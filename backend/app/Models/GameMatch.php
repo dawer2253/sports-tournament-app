@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'round_id', 'stage_id', 'group_id', 'match_number',
     'home_team_id', 'away_team_id',
     'home_score', 'away_score', 'home_penalties', 'away_penalties',
-    'status', 'kickoff_at', 'venue_id',
+    'status', 'live_period', 'period_started_at', 'on_break', 'kickoff_at', 'venue_id',
     'winner_to_match_id', 'loser_to_match_id', 'advances_to_slot',
 ])]
 #[Table('matches')]
@@ -66,7 +66,12 @@ class GameMatch extends Model
 
     protected function casts(): array
     {
-        return ['kickoff_at' => 'datetime'];
+        return [
+            'kickoff_at' => 'datetime',
+            'live_period' => 'integer',
+            'period_started_at' => 'datetime',
+            'on_break' => 'boolean',
+        ];
     }
 
     public function round(): BelongsTo

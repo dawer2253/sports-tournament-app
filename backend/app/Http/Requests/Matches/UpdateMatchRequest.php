@@ -39,6 +39,8 @@ class UpdateMatchRequest extends FormRequest
             'status' => ['sometimes', 'string', Rule::in(GameMatch::STATUSES)],
             'kickoffAt' => ['sometimes', 'nullable', 'string', new Iso8601WithOffset],
             'venueId' => ['sometimes', 'nullable', 'integer:strict'],
+            'livePeriod' => ['sometimes', 'integer:strict', 'min:1'],
+            'periodRunning' => ['sometimes', 'boolean:strict'],
         ];
     }
 
@@ -53,6 +55,7 @@ class UpdateMatchRequest extends FormRequest
             $this->checkPenalties(...),
             $this->checkTeamsBeforeStart(...),
             $this->checkEventsBeforeScheduled(...),
+            $this->checkLivePeriod(...),
         ];
     }
 
@@ -126,6 +129,37 @@ class UpdateMatchRequest extends FormRequest
 
         if ($message !== null) {
             $validator->errors()->add('homePenalties', $message);
+        }
+    }
+
+    /**
+     * Pola części meczu (#297): tylko w meczu `live` po scaleniu stanu z ciała,
+     * start części razem z jej numerem, a numer w `1…count` ustawień
+     * turnieju, w fazie `knockout` także `count + 1` (dogrywka). Wszystkie
+     * błędy idą pod `livePeriod`, bo organizator klika jeden przycisk części.
+     */
+    private function checkLivePeriod(Validator $validator): void
+    {
+        if (! $this->hasAny(['livePeriod', 'periodRunning']) || $validator->errors()->hasAny(['status', 'livePeriod', 'periodRunning'])) {
+            return;
+        }
+
+        $match = $this->match();
+        $running = $this->input('periodRunning');
+        $period = $this->input('livePeriod');
+        $count = $match->stage->tournament->period_count;
+        $last = $match->stage->type === 'knockout' ? $count + 1 : $count;
+
+        $message = match (true) {
+            $this->input('status', $match->status) !== 'live' => 'Część meczu prowadzi się tylko w meczu trwającym.',
+            $period !== null && $running !== true => 'Część meczu startuje razem z periodRunning: true.',
+            $period === null && $running === true => 'Podaj część meczu, która startuje.',
+            $period !== null && $period > $last => "Ten mecz nie ma {$period}. części.",
+            default => null,
+        };
+
+        if ($message !== null) {
+            $validator->errors()->add('livePeriod', $message);
         }
     }
 
@@ -223,6 +257,9 @@ class UpdateMatchRequest extends FormRequest
             'awayPenalties.max' => 'Karne mogą mieć najwyżej 99.',
             'status.in' => 'Nieznany stan meczu. Dozwolone: scheduled, live, finished.',
             'venueId.integer' => 'Wybierz obiekt z listy.',
+            'livePeriod.integer' => 'Część meczu podaj liczbą całkowitą.',
+            'livePeriod.min' => 'Części meczu liczą się od 1.',
+            'periodRunning.boolean' => 'periodRunning to true albo false.',
         ];
     }
 

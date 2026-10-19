@@ -624,6 +624,65 @@ it('liczba zapytań przy liście meczów nie rośnie z liczbą meczów', functio
         ->and($queries())->toBe($single);
 });
 
+// --- zegar meczu (#297) -----------------------------------------------------------
+
+it('turniej niesie podział meczu, długość meczu i runningClock sportu', function (string $sport, bool $running) {
+    $tournament = publicPageTournament(sport: $sport);
+    $tournament->update(['period_count' => 2, 'period_minutes' => 30, 'match_duration' => 75]);
+
+    publicPageGet($tournament->slug)
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.periods', ['count' => 2, 'minutes' => 30])
+        ->assertJsonPath('data.matchDuration', 75)
+        ->assertJsonPath('data.runningClock', $running);
+})->with([
+    'piłka' => ['football', true],
+    'kosz' => ['basketball', false],
+]);
+
+it('terminarz, mecze fazy i strona meczu niosą część i start meczu trwającego', function () {
+    $tournament = publicPageTournament();
+    $match = publicPageMatch($tournament, 1, [
+        'status' => 'live', 'home_score' => 1, 'away_score' => 0,
+        'live_period' => 2, 'period_started_at' => '2026-09-27 10:55:00', 'on_break' => false,
+    ]);
+    $stageId = $tournament->stages()->value('id');
+
+    $clock = ['livePeriod' => 2, 'periodStartedAt' => '2026-09-27T10:55:00+00:00', 'onBreak' => false];
+    $pick = fn (array $row): array => array_intersect_key($row, $clock);
+
+    expect($pick(publicPageGet($tournament->slug, '/fixtures')->assertValidResponse(200)->json('data.0')))->toBe($clock)
+        ->and($pick(publicPageGet($tournament->slug, "/matches?stageId={$stageId}")->assertValidResponse(200)->json('data.0')))->toBe($clock)
+        ->and($pick(publicPageGet($tournament->slug, "/matches/{$match->id}")->assertValidResponse(200)->json('data')))->toBe($clock);
+});
+
+it('mecz zakończony nie pokazuje części, którą baza pamięta na wypadek powrotu', function () {
+    $tournament = publicPageTournament();
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 1, 'away_score' => 0, 'live_period' => 2]);
+
+    publicPageGet($tournament->slug, "/matches/{$match->id}")
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.livePeriod', null)
+        ->assertJsonPath('data.periodStartedAt', null);
+});
+
+it('przerwa zmienia ETag: dawny If-None-Match dostaje 200, nie 304', function () {
+    $tournament = publicPageTournament();
+    $match = publicPageMatch($tournament, 1);
+    actingAsOrganizer($tournament->user)
+        ->patchJson("/api/v1/matches/{$match->id}", ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])
+        ->assertOk();
+    $etag = publicPageGet($tournament->slug, '/fixtures')->assertOk()->headers->get('ETag');
+
+    actingAsOrganizer($tournament->user)
+        ->patchJson("/api/v1/matches/{$match->id}", ['periodRunning' => false])
+        ->assertOk();
+
+    publicPageGet($tournament->slug, '/fixtures', ['If-None-Match' => $etag])
+        ->assertOk()
+        ->assertJsonPath('data.0.onBreak', true);
+});
+
 // --- drużyny (#296) ------------------------------------------------------------
 
 /** Nazwy drużyn z `/teams` w kolejności z odpowiedzi. */
