@@ -58,14 +58,15 @@ export function OverviewPage() {
   const { groupStage, groupTables } = useGroups();
   const fixtures = useFixtures(slug);
   const results = useResults(slug);
-  const standings = useStandings(slug, !cup);
-  const leaderboard = useLeaderboard(slug);
-  const fixtureRounds = useRounds(fixtures.data, 'asc');
-  const resultRounds = useRounds(results.data, 'desc');
-
   // Grupy czekają na mecze playoffu: dopiero one mówią, czy drabinka już jest.
   const bracketKnown = (!cup && !groupStage) || knockout.data !== undefined || knockout.error !== null;
   const playoff = groupStage && (knockout.data?.length ?? 0) > 0;
+  // Tabela tylko w lidze i w fazie grupowej: w pucharze i playoffie ekran jej
+  // nie pokazuje, więc grupy pytają o nią dopiero po meczach playoffu.
+  const standings = useStandings(slug, !cup && bracketKnown && !playoff);
+  const leaderboard = useLeaderboard(slug);
+  const fixtureRounds = useRounds(fixtures.data, 'asc');
+  const resultRounds = useRounds(results.data, 'desc');
   const mode: OverviewMode = cup ? 'knockout' : playoff ? 'playoff' : groupStage ? 'groups' : 'league';
   const fromBracket = mode === 'knockout' || mode === 'playoff';
   const listsKnown = (fixtures.data !== undefined || fixtures.error !== null) && (results.data !== undefined || results.error !== null);
@@ -95,6 +96,7 @@ export function OverviewPage() {
     }
     if (!fixtures.data || !results.data) return { status: 'loading' };
     const rounds = overviewRounds(fixtureRounds, resultRounds);
+    // `stage` jest tu zawsze: obie listy puste to „Bez terminarza” wyżej, a niepusta lista daje kolejkę.
     return { status: 'ready', data: { stage: rounds.stage!, next: rounds.next, roundsTotal: rounds.roundsTotal, startsAt: rounds.startsAt } };
   }
 

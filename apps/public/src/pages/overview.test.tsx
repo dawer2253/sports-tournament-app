@@ -175,7 +175,7 @@ describe('Przegląd: w miejscu tabeli', () => {
 
   it('grupy po wygenerowaniu drabinki: drabinka i odnośnik do tabel grup zamiast tabel, a w pasie runda playoffu', async () => {
     const playoff = playoffMatches();
-    publicApi({
+    const requests = publicApi({
       data: groupsTournament(),
       standings: [groupTable(1), groupTable(2)],
       stageMatches: playoff,
@@ -188,6 +188,8 @@ describe('Przegląd: w miejscu tabeli', () => {
     expect(await screen.findByRole('region', { name: 'Drabinka' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tabele grup' })).toHaveAttribute('href', `/t/${SLUG}/tabela`);
     expect(screen.queryByRole('region', { name: 'Grupa A' })).not.toBeInTheDocument();
+    // Tabel grup ekran w playoffie nie pokazuje, więc o nie nie pyta.
+    expect(requests.standings).toBe(0);
   });
 });
 
