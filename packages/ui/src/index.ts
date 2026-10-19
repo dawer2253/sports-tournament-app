@@ -74,7 +74,6 @@ export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/round-list';
 export * from './components/data/round-groups';
-export * from './components/data/round-sections';
 export * from './components/data/public-overview';
 export * from './components/data/round-summary';
 export * from './components/data/round-tabs';
