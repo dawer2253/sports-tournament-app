@@ -73,19 +73,19 @@ function EventRow({ event, teams }: { event: MatchRelationEvent; teams: Relation
       data-side={home ? 'home' : 'away'}
       className="grid min-h-14 grid-cols-[3rem_1.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-hairline py-2"
     >
-      <span className="pub-num text-lg text-muted-foreground">{formatEventMinute(event.minute)}</span>
+      <span className="pub-num text-pub-20 text-muted-foreground">{formatEventMinute(event.minute)}</span>
       <EventIcon type={event.type} />
       <span className="flex min-w-0 items-center gap-3">
         <Crest name={event.team.name} logoUrl={logoUrl} className="size-5" />
         <span className="flex min-w-0 flex-col leading-tight">
           <span className={cn('wrap-break-word', event.scoreAfter ? 'font-semibold' : 'font-medium')}>{event.player?.name ?? event.team.name}</span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-pub-13 text-muted-foreground">
             {event.typeLabel}
             {event.type === OWN_GOAL && ` (${event.team.name})`}
           </span>
         </span>
       </span>
-      <span data-slot="score-after" className={cn('min-w-12 rounded-sm px-2 py-1 text-center pub-num text-lg', event.scoreAfter && 'bg-sunken')}>
+      <span data-slot="score-after" className={cn('min-w-12 rounded-sm px-2 py-1 text-center pub-num text-pub-20', event.scoreAfter && 'bg-sunken')}>
         {event.scoreAfter && `${event.scoreAfter.home}:${event.scoreAfter.away}`}
       </span>
     </li>
@@ -113,9 +113,9 @@ function GroupBlock({ group, open, onToggle, teams }: { group: RelationGroup; op
           onClick={onToggle}
           className="flex min-h-11 w-full items-baseline gap-4 border-b-2 border-rule py-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line"
         >
-          <span className="pub-h3 text-[1.375rem]">{group.label}</span>
-          {group.score && <span className="pub-num text-lg text-muted-foreground">{group.score}</span>}
-          <span className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="pub-h3 text-pub-20">{group.label}</span>
+          {group.score && <span className="pub-num text-pub-20 text-muted-foreground">{group.score}</span>}
+          <span className="ml-auto flex items-center gap-2 text-pub-14 text-muted-foreground">
             {group.events.length} {plural(group.events.length, EVENTS)}
             <span aria-hidden className={cn('transition-transform', open && 'rotate-180')}>
               ▾

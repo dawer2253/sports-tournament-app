@@ -41,7 +41,7 @@ export function StatTabs({ stats, value, onValueChange, children, className }: S
             key={stat.code}
             value={stat.code}
             className={cn(
-              '-mb-px shrink-0 border-b-[3px] pt-1 pb-2.5 pub-tab text-xl transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-line',
+              '-mb-px shrink-0 border-b-[3px] pt-1 pb-2.5 pub-tab text-pub-20 transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-line',
               'border-transparent text-muted-foreground hover:text-foreground data-[state=active]:border-brand-line data-[state=active]:text-foreground',
             )}
           >
@@ -78,16 +78,16 @@ export function StatLeaders({ leaderboard, compact = false }: { leaderboard: Lea
           className="flex items-end justify-between gap-4 rounded-md bg-card px-5 py-5 ring-1 ring-border ring-inset sm:gap-6 sm:px-7"
         >
           <div className="flex min-w-0 flex-col gap-2">
-            <span className="text-sm text-muted-foreground">{shared ? 'Liderzy ex aequo' : 'Lider'}</span>
-            <span className={cn('pub-title wrap-break-word', small ? 'text-[2rem]' : 'text-[2.25rem] sm:text-[3rem]')}>{row.player.name}</span>
+            <span className="text-pub-14 text-muted-foreground">{shared ? 'Liderzy ex aequo' : 'Lider'}</span>
+            <span className={cn('pub-h2 wrap-break-word', small ? 'text-pub-28' : 'text-pub-40')}>{row.player.name}</span>
             <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
               <Crest name={row.team.name} logoUrl={row.team.logoUrl} className="size-5" />
               <span className="min-w-0 wrap-break-word">{row.team.name}</span>
             </span>
           </div>
           <span className="flex shrink-0 flex-col items-end">
-            <span className={cn('pub-score text-brand-line', small ? 'text-[4.5rem]' : 'text-[5.5rem] sm:text-[7rem]')}>{row.value}</span>
-            <span className="text-xs text-muted-foreground">{leaderboard.label.toLocaleLowerCase('pl')}</span>
+            <span className={cn('pub-score text-pub-64 text-brand-line', !small && 'sm:text-pub-120')}>{row.value}</span>
+            <span className="text-pub-13 text-muted-foreground">{leaderboard.label.toLocaleLowerCase('pl')}</span>
           </span>
         </div>
       ))}
@@ -110,7 +110,7 @@ export function StatRanking({ leaderboard }: { leaderboard: Leaderboard }) {
   const max = Math.max(...rows.map((row) => row.value))
   return (
     <div role="table" aria-label={`Klasyfikacja: ${label}`}>
-      <div role="row" className={cn(RANKING_COLUMNS, 'pb-2 text-xs text-muted-foreground')}>
+      <div role="row" className={cn(RANKING_COLUMNS, 'pb-2 text-pub-13 text-muted-foreground')}>
         <span role="columnheader" className="text-center">
           #
         </span>
@@ -125,13 +125,13 @@ export function StatRanking({ leaderboard }: { leaderboard: Leaderboard }) {
         const leader = row.position === 1
         return (
           <div role="row" key={row.player.id} className={cn(RANKING_COLUMNS, 'min-h-14 items-center border-t border-hairline')}>
-            <span role="cell" className={cn('pub-num text-center text-xl', leader ? 'text-foreground' : 'text-muted-foreground')}>
+            <span role="cell" className={cn('pub-num text-center text-pub-20', leader ? 'text-foreground' : 'text-muted-foreground')}>
               {sharedPlace ? <span className="sr-only">{row.position}</span> : row.position}
             </span>
             {/* Zawodnik i drużyna to hierarchia: niesie ją układ i kontrast, nie znak między nimi. */}
             <span role="cell" className="flex min-w-0 flex-col py-2 leading-tight sm:flex-row sm:items-center sm:gap-4">
               <span className="min-w-0 wrap-break-word font-semibold">{row.player.name}</span>
-              <span className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+              <span className="flex min-w-0 items-center gap-2 text-pub-14 text-muted-foreground">
                 <Crest name={row.team.name} logoUrl={row.team.logoUrl} className="size-4" />
                 <span className="min-w-0 wrap-break-word">{row.team.name}</span>
               </span>
@@ -143,7 +143,7 @@ export function StatRanking({ leaderboard }: { leaderboard: Leaderboard }) {
                 style={{ width: `${max > 0 ? (row.value / max) * 100 : 0}%` }}
               />
             </span>
-            <span role="cell" className="pub-num text-right text-2xl">
+            <span role="cell" className="pub-num text-right text-pub-28">
               {row.value}
             </span>
           </div>
@@ -212,7 +212,7 @@ export function OtherStatLeaders({ stats, value, boards, statHref, onValueChange
                 />
               )}
               {board.status === 'ready' && board.leaderboard.rows.length === 0 && (
-                <p className="py-3 text-sm text-muted-foreground">Jeszcze nikt.</p>
+                <p className="py-3 text-pub-14 text-muted-foreground">Jeszcze nikt.</p>
               )}
               {board.status === 'ready' && board.leaderboard.rows.length > 0 && (
                 <ol>
@@ -222,7 +222,7 @@ export function OtherStatLeaders({ stats, value, boards, statHref, onValueChange
                         <span className="w-5 shrink-0 pub-num text-center text-muted-foreground">{row.position}</span>
                         <span className="min-w-0 wrap-break-word font-medium">{row.player.name}</span>
                       </span>
-                      <span className="pub-num text-lg">{row.value}</span>
+                      <span className="pub-num text-pub-20">{row.value}</span>
                     </li>
                   ))}
                 </ol>

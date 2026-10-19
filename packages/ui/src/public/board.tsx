@@ -20,7 +20,7 @@ export interface EmptyBoardProps {
 export function EmptyBoard({ title, children, action, className }: EmptyBoardProps) {
   return (
     <div data-slot="empty-board" className={cn('flex flex-col items-start gap-3 rounded-md bg-sunken px-6 py-10 sm:px-10 sm:py-14', className)}>
-      <h2 className="pub-h2 sm:text-[2.5rem]">{title}</h2>
+      <h2 className="pub-h2 sm:text-pub-40">{title}</h2>
       <p className="max-w-xl text-muted-foreground">{children}</p>
       {action && <div className="pt-2">{action}</div>}
     </div>

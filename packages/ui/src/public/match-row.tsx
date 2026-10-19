@@ -51,7 +51,7 @@ function TeamCell({ match, side, className }: { match: MatchRowData; side: Side;
         {sideName(match, side)}
       </span>
       {penalties !== null && (
-        <span data-slot="penalties" className="shrink-0 text-sm font-normal text-muted-foreground">
+        <span data-slot="penalties" className="shrink-0 text-pub-14 font-normal text-muted-foreground">
           ({penalties})<span className="sr-only"> w karnych</span>
         </span>
       )}
@@ -67,17 +67,17 @@ function When({ match, mode, showDay, timeZone }: { match: MatchRowData; mode: M
     return (
       <span className="flex flex-col items-start gap-1">
         <LiveBadge />
-        <LiveClock clock={match} className="text-base leading-tight" />
+        <LiveClock clock={match} className="text-pub-16 leading-tight" />
       </span>
     )
   }
   const day = formatShortDay(match.kickoffAt, timeZone)
-  if (day === null) return <span className="text-xs leading-tight text-muted-foreground">{formatKickoff(null)}</span>
-  if (mode === 'results') return <span className="pub-num text-base whitespace-nowrap text-muted-foreground">{day}</span>
+  if (day === null) return <span className="text-pub-13 leading-tight text-muted-foreground">{formatKickoff(null)}</span>
+  if (mode === 'results') return <span className="pub-num text-pub-16 whitespace-nowrap text-muted-foreground">{day}</span>
   return (
     <span className="flex flex-col whitespace-nowrap">
-      <span className="pub-num text-xl leading-tight">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
-      {showDay && <span className="text-xs text-muted-foreground">{day}</span>}
+      <span className="pub-num text-pub-20 leading-tight">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
+      {showDay && <span className="text-pub-13 text-muted-foreground">{day}</span>}
     </span>
   )
 }
@@ -114,7 +114,7 @@ export function MatchRow({ match, mode, showDay = false, timeZone, href, onNavig
     <ScoreCell
       value={played ? scoreOf(match, side) : null}
       dim={!played || lostMatch(match, side)}
-      className={cn('w-12 min-w-0 px-1 text-xl leading-8 lg:text-2xl lg:leading-9', 'col-start-3', row, 'lg:col-auto lg:row-auto')}
+      className={cn('w-12 min-w-0 px-1 text-pub-20 leading-8 lg:text-pub-28 lg:leading-9', 'col-start-3', row, 'lg:col-auto lg:row-auto')}
     />
   )
 
@@ -144,9 +144,9 @@ export function MatchRow({ match, mode, showDay = false, timeZone, href, onNavig
       {/* Na telefonie pod drużynami stoi sama pozycja; obiekt dopiero w szerokim układzie. */}
       <span
         className={cn(
-          'col-span-2 col-start-2 row-start-3 gap-x-3 text-xs leading-tight text-muted-foreground',
+          'col-span-2 col-start-2 row-start-3 gap-x-3 text-pub-13 leading-tight text-muted-foreground',
           label ? 'flex' : 'hidden lg:flex',
-          'lg:col-span-1 lg:col-start-5 lg:row-start-1 lg:flex-col lg:items-end lg:text-right lg:text-sm',
+          'lg:col-span-1 lg:col-start-5 lg:row-start-1 lg:flex-col lg:items-end lg:text-right lg:text-pub-14',
         )}
       >
         {label && (

@@ -111,7 +111,7 @@ export function BracketScreen<M extends PublicBracketMatch>({
       {head}
       <div className="flex flex-col gap-6">
         {divergence && (
-          <p role="status" data-slot="bracket-divergence" className="rounded-md border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+          <p role="status" data-slot="bracket-divergence" className="rounded-md border border-dashed border-border px-4 py-3 text-pub-14 text-muted-foreground">
             {divergence}
           </p>
         )}

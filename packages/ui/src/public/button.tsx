@@ -3,7 +3,7 @@ import { cn } from '../lib/utils'
 import { Anchor, type AnchorProps } from './anchor'
 
 const BUTTON =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-card px-5 pub-tab text-base text-foreground ring-1 ring-inset ring-border transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line'
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-card px-5 pub-tab text-pub-16 text-foreground ring-1 ring-inset ring-border transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line'
 
 /**
  * Przycisk strony publicznej: obrys na karcie, krój zakładek, cel dotyku
@@ -38,7 +38,7 @@ export function BackTo({ className, children, ...props }: AnchorProps) {
   return (
     <Anchor
       data-slot="back-to"
-      className={cn('inline-flex min-h-11 items-center gap-2 self-start pub-tab text-base text-muted-foreground hover:text-foreground', className)}
+      className={cn('inline-flex min-h-11 items-center gap-2 self-start pub-tab text-pub-16 text-muted-foreground hover:text-foreground', className)}
       {...props}
     >
       <span aria-hidden>←</span>

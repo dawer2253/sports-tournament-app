@@ -94,10 +94,10 @@ export function BracketTile({ match, matches, href, onNavigate, timeZone, classN
 
   const content = (
     <>
-      <span className="flex min-w-0 items-center justify-between gap-2 text-xs text-muted-foreground">
+      <span className="flex min-w-0 items-center justify-between gap-1.5 text-pub-13 text-muted-foreground">
         <span className="truncate">{label}</span>
         {live ? (
-          <LiveTag clock={match} compact className="shrink-0 text-xs" />
+          <LiveTag clock={match} compact className="shrink-0 text-pub-13" />
         ) : kickoff ? (
           <span className="shrink-0 pub-num">
             {kickoff.day} {kickoff.time}
@@ -118,19 +118,19 @@ export function BracketTile({ match, matches, href, onNavigate, timeZone, classN
           >
             {team ? <Crest name={team.name} logoUrl={team.logoUrl} className="size-5" /> : <span />}
             <span className="flex min-w-0 items-center gap-1.5">
-              <span data-slot="bracket-tile-name" className={cn('truncate leading-7', team ? 'text-[0.9375rem]' : 'text-[0.8125rem] font-normal text-muted-foreground italic')}>
+              <span data-slot="bracket-tile-name" className={cn('truncate leading-7', team ? 'text-pub-16' : 'text-pub-13 font-normal text-muted-foreground italic')}>
                 {slotText(match, side, matches)}
               </span>
               {penalties !== null && (
                 <>
-                  <span data-slot="bracket-tile-penalties" className="shrink-0 text-sm font-normal text-muted-foreground">
+                  <span data-slot="bracket-tile-penalties" className="shrink-0 text-pub-14 font-normal text-muted-foreground">
                     ({penalties})
                   </span>
                   <span className="sr-only"> w karnych</span>
                 </>
               )}
             </span>
-            <span data-slot="bracket-tile-score" className="grid h-7 place-items-center rounded-sm bg-sunken pub-num text-lg">
+            <span data-slot="bracket-tile-score" className="grid h-7 place-items-center rounded-sm bg-sunken pub-num text-pub-20">
               {match.status === 'scheduled' ? '' : score ?? '–'}
             </span>
           </span>
@@ -182,7 +182,7 @@ export function ByeTile({ team, className, style }: { team: PublicBracketTeam; c
       className={cn('flex min-w-0 flex-col justify-center gap-1.5 rounded-md border border-dashed border-border px-3', className)}
       style={{ height: BRACKET_TILE, ...style }}
     >
-      <span className="text-xs text-muted-foreground">Wolny los</span>
+      <span className="text-pub-13 text-muted-foreground">Wolny los</span>
       <span className="flex min-w-0 items-center gap-2 font-medium">
         <Crest name={team.name} logoUrl={team.logoUrl} className="size-5" />
         <span className="truncate leading-7">{team.name}</span>
@@ -207,8 +207,8 @@ export function ChampionTile({ team, className, style }: { team: PublicBracketTe
     >
       <Crest name={team.name} logoUrl={team.logoUrl} onFill className="size-9" />
       <span className="flex min-w-0 flex-col">
-        <span className="text-xs opacity-85">Mistrz</span>
-        <span data-slot="bracket-champion-name" className="line-clamp-2 pub-title text-[1.375rem] leading-[1.2] wrap-break-word">
+        <span className="text-pub-13 opacity-85">Mistrz</span>
+        <span data-slot="bracket-champion-name" className="line-clamp-2 pub-title text-pub-20 leading-[1.2] wrap-break-word">
           {team.name}
         </span>
       </span>
@@ -430,7 +430,7 @@ function RoundSwitcher<M extends PublicBracketMatch>({
   onShift: (index: number) => void
 }) {
   const arrow =
-    'grid size-11 shrink-0 place-items-center rounded-md pub-tab text-xl ring-1 ring-border ring-inset hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line'
+    'grid size-11 shrink-0 place-items-center rounded-md pub-tab text-pub-20 ring-1 ring-border ring-inset hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line'
   return (
     <div data-slot="bracket-switcher" className="flex items-center gap-2">
       <button type="button" aria-label="Wcześniejsza runda" disabled={startIndex === 0} onClick={() => onShift(startIndex - 1)} className={arrow}>
@@ -447,7 +447,7 @@ function RoundSwitcher<M extends PublicBracketMatch>({
               aria-current={inWindow ? 'true' : undefined}
               onClick={() => onShift(index)}
               className={cn(
-                'relative min-h-11 min-w-0 rounded-md px-1 pub-tab text-base transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line',
+                'relative min-h-11 min-w-0 rounded-md px-1 pub-tab text-pub-16 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-line',
                 inWindow ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -476,11 +476,11 @@ function RoundSwitcher<M extends PublicBracketMatch>({
 function RoundHead<M extends PublicBracketMatch>({ round }: { round: Round<M> }) {
   return (
     <div data-slot="bracket-round-head" className="flex min-w-0 flex-col gap-0.5 border-b-2 border-rule pb-2">
-      <span data-slot="bracket-round-name" className="truncate pub-tab text-lg">
+      <span data-slot="bracket-round-name" className="truncate pub-tab text-pub-20">
         {round.name}
       </span>
-      <span className="text-xs text-muted-foreground">
-        {round.live ? <LiveTag className="text-xs" /> : `${round.finished} z ${round.total} rozegrane`}
+      <span className="text-pub-13 text-muted-foreground">
+        {round.live ? <LiveTag className="text-pub-13" /> : `${round.finished} z ${round.total} rozegrane`}
       </span>
     </div>
   )

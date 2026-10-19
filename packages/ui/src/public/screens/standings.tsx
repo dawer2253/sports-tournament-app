@@ -144,7 +144,7 @@ export function StandingsScreen({ format, stageName, tables, status, schedule, o
               Drabinka playoffu
             </TextLink>
           ) : (
-            <p className="text-sm text-muted-foreground">Drabinka playoffu powstanie po fazie grupowej</p>
+            <p className="text-pub-14 text-muted-foreground">Drabinka playoffu powstanie po fazie grupowej</p>
           )}
         </div>
       </>

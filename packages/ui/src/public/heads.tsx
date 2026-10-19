@@ -12,8 +12,8 @@ export function PageHead({ eyebrow, title, meta, id }: { eyebrow?: React.ReactNo
   return (
     <div data-slot="page-head" className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
       <div className="flex min-w-0 flex-col gap-1">
-        {eyebrow && <span className="text-sm text-muted-foreground">{eyebrow}</span>}
-        <h2 id={id} className="pub-title wrap-break-word sm:text-[4rem]">
+        {eyebrow && <span className="text-pub-14 text-muted-foreground">{eyebrow}</span>}
+        <h2 id={id} className="pub-title wrap-break-word sm:text-pub-64">
           {title}
         </h2>
       </div>
@@ -26,7 +26,7 @@ export function PageHead({ eyebrow, title, meta, id }: { eyebrow?: React.ReactNo
 export function Fact({ value, children }: { value?: React.ReactNode; children: React.ReactNode }) {
   return (
     <span data-slot="fact">
-      {value !== undefined && <span className="pub-num text-lg text-foreground">{value}</span>} {children}
+      {value !== undefined && <span className="pub-num text-pub-20 text-foreground">{value}</span>} {children}
     </span>
   )
 }
@@ -55,14 +55,14 @@ export function SectionHead({
         </h3>
         {link && <SectionLink {...link} />}
       </div>
-      {sub && <div className="text-sm text-muted-foreground">{sub}</div>}
+      {sub && <div className="text-pub-14 text-muted-foreground">{sub}</div>}
     </div>
   )
 }
 
 function SectionLink({ label, className, ...props }: AnchorProps & { label: string }) {
   return (
-    <TextLink className={cn('shrink-0 text-sm', className)} {...props}>
+    <TextLink className={cn('shrink-0 text-pub-14', className)} {...props}>
       {label}
     </TextLink>
   )

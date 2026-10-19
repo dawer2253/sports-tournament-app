@@ -42,7 +42,7 @@ export function StatsScreen({ stats, value, leaderboard, boards, statHref, onVal
             <div className="flex min-w-0 flex-col gap-8">
               <StatLeaders leaderboard={leaderboard} />
               <StatRanking leaderboard={leaderboard} />
-              <p className="text-[0.8125rem] text-muted-foreground">
+              <p className="text-pub-13 text-muted-foreground">
                 Klasyfikacja obejmuje mecze zakończone ze wszystkich faz turnieju. Zawodnicy z równą wartością dzielą miejsce.
               </p>
             </div>

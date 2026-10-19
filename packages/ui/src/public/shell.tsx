@@ -82,7 +82,7 @@ function ShellHeader({ tournament, tabs, active, navHref, onNavigate, open, setO
             className="flex min-w-0 items-center gap-3 lg:py-4"
           >
             <TournamentLogo logoUrl={tournament.branding.logoUrl} className="size-10" />
-            <h1 className="pub-title truncate text-2xl leading-[1.2]">{tournament.name}</h1>
+            <h1 className="pub-title truncate text-pub-28 leading-[1.2]">{tournament.name}</h1>
           </Anchor>
           <button
             type="button"
@@ -123,7 +123,7 @@ function ShellHeader({ tournament, tabs, active, navHref, onNavigate, open, setO
                 onNavigate={onNavigate}
                 onChoose={() => setOpen(false)}
                 className={cn(
-                  'flex min-h-12 items-center border-l-[3px] px-4 pub-tab text-xl sm:px-6',
+                  'flex min-h-12 items-center border-l-[3px] px-4 pub-tab text-pub-20 sm:px-6',
                   tab === active ? 'border-brand-line bg-card text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
                 )}
               />
@@ -139,7 +139,7 @@ function ShellHeader({ tournament, tabs, active, navHref, onNavigate, open, setO
 function Footer({ slug }: { slug: string }) {
   return (
     <footer className="border-t border-hairline">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-6 text-[0.8125rem] text-muted-foreground sm:px-6">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-6 text-pub-13 text-muted-foreground sm:px-6">
         <span>Prowadzone w TournamentApp</span>
         <span>/t/{slug}</span>
       </div>
@@ -201,7 +201,7 @@ export function StandaloneShell({ primaryColor, children }: { primaryColor: stri
     <SiteRoot primaryColor={primaryColor}>
       <header className="border-b border-hairline bg-sunken">
         <div className="mx-auto flex max-w-6xl items-center px-4 py-4 sm:px-6">
-          <span className="pub-tab text-lg text-muted-foreground">TournamentApp</span>
+          <span className="pub-tab text-pub-20 text-muted-foreground">TournamentApp</span>
         </div>
       </header>
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-6 px-4 py-16 sm:px-6">{children}</main>

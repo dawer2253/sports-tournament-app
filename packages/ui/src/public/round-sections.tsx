@@ -57,7 +57,7 @@ function RoundSection({ round, mode, timeZone, matchHref, onMatchNavigate }: Omi
     <section aria-labelledby={headingId} data-slot="round" className="flex flex-col">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b-2 border-rule pb-2">
         <span className="flex flex-wrap items-baseline gap-x-4">
-          <h2 id={headingId} className="pub-h2 text-[1.75rem] sm:text-[2rem]">
+          <h2 id={headingId} className="pub-h2 text-pub-28">
             {round.summary.name}
           </h2>
           <span data-slot="round-dates" className="text-muted-foreground">
@@ -65,7 +65,7 @@ function RoundSection({ round, mode, timeZone, matchHref, onMatchNavigate }: Omi
           </span>
         </span>
         {mode === 'fixtures' && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-pub-14 text-muted-foreground">
             <Fact value={round.summary.finished}>z {round.summary.total} rozegrane</Fact>
           </span>
         )}

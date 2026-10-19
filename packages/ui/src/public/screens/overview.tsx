@@ -148,17 +148,17 @@ function NextMatchLine<M extends OverviewMatch>({
     >
       <span className="flex flex-col leading-tight">
         {match.kickoffAt === null ? (
-          <span className="text-xs text-muted-foreground">{formatKickoff(null)}</span>
+          <span className="text-pub-13 text-muted-foreground">{formatKickoff(null)}</span>
         ) : (
           <>
-            <span className="pub-num text-lg">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
-            {showDay && <span className="text-xs text-muted-foreground">{formatShortDay(match.kickoffAt, timeZone)}</span>}
+            <span className="pub-num text-pub-20">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
+            {showDay && <span className="text-pub-13 text-muted-foreground">{formatShortDay(match.kickoffAt, timeZone)}</span>}
           </>
         )}
       </span>
       <span className="flex min-w-0 flex-col">
         <span className="font-medium wrap-break-word">{matchPairLabel(match)}</span>
-        {label && <span className="text-xs text-muted-foreground">{label}</span>}
+        {label && <span className="text-pub-13 text-muted-foreground">{label}</span>}
       </span>
     </Anchor>
   )
@@ -216,7 +216,7 @@ function Leader({ state, tab }: { state: Loadable<Leaderboard>; tab: TabLink }) 
       <Section state={state} label="klasyfikacji" rows={2}>
         {(leaderboard) =>
           leaderboard.rows.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">{LEADERBOARD_EMPTY}.</p>
+            <p className="py-2 text-pub-14 text-muted-foreground">{LEADERBOARD_EMPTY}.</p>
           ) : (
             <StatLeaders leaderboard={leaderboard} compact />
           )

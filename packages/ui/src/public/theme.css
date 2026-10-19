@@ -32,6 +32,17 @@
   --color-brand-line: var(--brand-line);
   --color-brand-text: var(--brand-text);
   --color-brand-line-foreground: var(--brand-line-foreground);
+  /* Skala typografii: jedyne rozmiary tekstu strony (`text-pub-13` … `text-pub-120`).
+     Bez własnej interlinii, jak dowolna wartość w nawiasie: tę daje `leading-*`
+     albo narzędzie `pub-*`. `cn()` zna je z `PUBLIC_TEXT_SCALE` (`lib/utils.ts`). */
+  --text-pub-13: 0.8125rem;
+  --text-pub-14: 0.875rem;
+  --text-pub-16: 1rem;
+  --text-pub-20: 1.25rem;
+  --text-pub-28: 1.75rem;
+  --text-pub-40: 2.5rem;
+  --text-pub-64: 4rem;
+  --text-pub-120: 7.5rem;
 }
 
 .public-site {
@@ -51,7 +62,8 @@
   line-height: 1.5;
 }
 
-/* Skala: 13 / 14 / 16 / 20 / 28 / 40 / 64 / 120 px. Wersaliki tylko
+/* Skala: 13 / 14 / 16 / 20 / 28 / 40 / 64 / 120 px (`text-pub-*` wyżej), bez
+   rozmiarów spoza niej, także w narzędziach niżej. Wersaliki tylko
    w `pub-title` (nazwa turnieju w pasku, nazwy drużyn na tablicy, tytuł
    nagłówka ekranu); nagłówki sekcji i belki są zdaniem. */
 @utility pub-score {
@@ -89,7 +101,7 @@
 @utility pub-tab {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   letter-spacing: 0.02em;
 }
 

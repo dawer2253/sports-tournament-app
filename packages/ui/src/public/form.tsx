@@ -31,7 +31,7 @@ export function Form({ results, className }: { results: readonly FormResult[]; c
           key={index}
           aria-hidden
           data-result={result}
-          className={cn('grid size-5 place-items-center rounded-[3px] pub-num text-xs', FORM_STYLE[result])}
+          className={cn('grid size-5 place-items-center rounded-[3px] pub-num text-pub-13', FORM_STYLE[result])}
         >
           {FORM_LETTERS[result]}
         </span>

@@ -18,12 +18,12 @@ import type { StagePosition } from './overview-stage'
 
 /** Stan nad parą: „Na żywo”, „Koniec” albo godzina (z dniem, gdy etap trwa kilka dni). */
 function BoardState({ match, showDay, timeZone }: { match: MatchRowData; showDay: boolean; timeZone?: string }) {
-  if (match.status === 'live') return <LiveTag clock={match} className="text-sm" />
+  if (match.status === 'live') return <LiveTag clock={match} className="text-pub-14" />
   if (match.status === 'finished') return <span>Koniec</span>
   if (match.kickoffAt === null) return <span>{formatKickoff(null)}</span>
   return (
     <span data-slot="stage-board-kickoff" className="flex items-baseline gap-2">
-      <span className="pub-num text-base text-foreground">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
+      <span className="pub-num text-pub-16 text-foreground">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
       {showDay && <span>{formatShortDay(match.kickoffAt, timeZone)}</span>}
     </span>
   )
@@ -48,13 +48,13 @@ function BoardLine({ match, side, dim }: { match: MatchRowData; side: Side; dim:
           {sideName(match, side)}
         </span>
         {penalties !== null && (
-          <span data-slot="penalties" className="shrink-0 text-sm font-normal text-muted-foreground">
+          <span data-slot="penalties" className="shrink-0 text-pub-14 font-normal text-muted-foreground">
             ({penalties})<span className="sr-only"> w karnych</span>
           </span>
         )}
       </span>
       {/* Bez wyniku okienko zostaje puste, żeby wysokość tablic się nie zmieniała. */}
-      <span data-slot="stage-board-score" className={cn('pub-score min-w-[1ch] text-right text-[2.25rem] leading-none', !played && 'invisible')}>
+      <span data-slot="stage-board-score" className={cn('pub-score min-w-[1ch] text-right text-pub-40 leading-none', !played && 'invisible')}>
         {played ? score : 0}
       </span>
     </span>
@@ -94,7 +94,7 @@ export function StageMatchBoard({ match, showDay = false, timeZone, href, onNavi
         live ? 'ring-destructive/70' : 'ring-border',
       )}
     >
-      <span className="flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      <span className="flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-pub-14 text-muted-foreground">
         <BoardState match={match} showDay={showDay} timeZone={timeZone} />
         {(match.bracket?.label ?? match.group ?? match.venue) && (
           <span className="flex min-w-0 flex-wrap justify-end gap-x-3 text-right">
@@ -106,7 +106,7 @@ export function StageMatchBoard({ match, showDay = false, timeZone, href, onNavi
       <BoardLine match={match} side="home" dim={winner === 'away'} />
       <BoardLine match={match} side="away" dim={winner === 'home'} />
       {scorerLine && scorerLine.length > 0 && (
-        <span data-slot="stage-board-scorers" className="text-xs leading-snug text-muted-foreground">
+        <span data-slot="stage-board-scorers" className="text-pub-13 leading-snug text-muted-foreground">
           {scorerLine.join(', ')}
         </span>
       )}

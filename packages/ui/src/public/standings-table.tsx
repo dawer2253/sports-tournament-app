@@ -84,8 +84,8 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
   const anyPlayed = rows.some((row) => row.played > 0)
 
   return (
-    <div role="table" aria-label={label} data-slot="standings-table" className="@container text-[0.9375rem]">
-      <div role="row" className={cn(grid, 'pb-2 text-xs text-muted-foreground')}>
+    <div role="table" aria-label={label} data-slot="standings-table" className="@container text-pub-16">
+      <div role="row" className={cn(grid, 'pb-2 text-pub-13 text-muted-foreground')}>
         <span role="columnheader" className="text-center">
           <Abbr title="Miejsce">#</Abbr>
         </span>
@@ -139,12 +139,12 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
               <span
                 aria-hidden
                 data-slot="qualifiers-line"
-                className="absolute top-0 right-0 -translate-y-1/2 bg-background pl-2 text-xs font-medium text-brand-text"
+                className="absolute top-0 right-0 -translate-y-1/2 bg-background pl-2 text-pub-13 font-medium text-brand-text"
               >
                 wyjście z grupy
               </span>
             )}
-            <span role="cell" className={cn('pub-num text-center text-xl', !strong && 'text-muted-foreground')}>
+            <span role="cell" className={cn('pub-num text-center text-pub-20', !strong && 'text-muted-foreground')}>
               {row.position}
               {row.qualifies && <span className="sr-only">, wychodzi z grupy</span>}
             </span>
@@ -152,10 +152,10 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
               <Crest name={row.team.name} logoUrl={row.team.logoUrl} className="size-7" />
               {/* Dopisek idzie pod nazwę, nie obok: w wąskiej tabeli grupy obcinał ją (#288). */}
               <span className="flex min-w-0 flex-col leading-snug">
-                <span data-slot="team-name" className={strong ? 'font-semibold' : 'font-medium'}>
+                <span data-slot="team-name" className={cn(strong ? 'font-semibold' : 'font-medium')}>
                   {row.team.name}
                 </span>
-                {row.tied && <span className="text-xs text-muted-foreground">remis na linii</span>}
+                {row.tied && <span className="text-pub-13 text-muted-foreground">remis na linii</span>}
               </span>
             </span>
             <span role="cell" className={NUM}>
@@ -185,7 +185,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
                 <Form results={row.form} />
               </span>
             )}
-            <span role="cell" className="pub-num text-right text-2xl">
+            <span role="cell" className="pub-num text-right text-pub-28">
               {row.points}
             </span>
           </div>
@@ -213,7 +213,7 @@ export function TiebreakSentence({ tiebreakers, className }: { tiebreakers: read
     'nazwa drużyny (alfabetycznie)',
   ]
   return (
-    <p data-slot="tiebreak-sentence" className={cn('border-t border-hairline pt-4 text-[0.8125rem] text-muted-foreground', className)}>
+    <p data-slot="tiebreak-sentence" className={cn('border-t border-hairline pt-4 text-pub-13 text-muted-foreground', className)}>
       Przy równej liczbie punktów: {steps.join(' → ')}.
     </p>
   )
@@ -242,18 +242,18 @@ export function ChampionBand(props: ChampionBandProps) {
     <section aria-label="Mistrz" data-slot="champion-band" className="pub-brand-fill flex items-center gap-4 rounded-md px-5 py-4 sm:gap-6 sm:px-7 sm:py-5">
       <Crest name={team.name} logoUrl={team.logoUrl} onFill className="size-12 sm:size-14" />
       <span className="flex min-w-0 flex-col">
-        <span className="text-sm">Mistrz</span>
-        <span className="pub-title text-3xl leading-[1.2] wrap-break-word sm:text-[2.5rem]">{team.name}</span>
+        <span className="text-pub-14">Mistrz</span>
+        <span className="pub-title text-pub-28 leading-[1.2] wrap-break-word sm:text-pub-40">{team.name}</span>
       </span>
       {league && (
         <>
-          <span className="ml-auto hidden text-right text-sm sm:block">
+          <span className="ml-auto hidden text-right text-pub-14 sm:block">
             {league.row.won} {plural(league.row.won, ['wygrana', 'wygrane', 'wygranych'])}, {league.scoreLabel.toLocaleLowerCase('pl')}{' '}
             {league.row.scoreFor}:{league.row.scoreAgainst}
           </span>
           <span className="ml-auto flex flex-col items-end sm:ml-0">
-            <span className="pub-score text-5xl">{league.row.points}</span>
-            <span className="text-xs">pkt</span>
+            <span className="pub-score text-pub-40">{league.row.points}</span>
+            <span className="text-pub-13">pkt</span>
           </span>
         </>
       )}

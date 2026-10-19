@@ -9,7 +9,7 @@ export function ScoreCell({ value, dim = false, className }: { value: number | n
   return (
     <span
       data-slot="score-cell"
-      className={cn('grid min-w-9 place-items-center rounded-sm bg-sunken px-1.5 pub-num text-2xl leading-9', dim && 'text-muted-foreground', className)}
+      className={cn('grid min-w-9 place-items-center rounded-sm bg-sunken px-1.5 pub-num text-pub-28 leading-9', dim && 'text-muted-foreground', className)}
     >
       {value ?? '–'}
     </span>

@@ -52,8 +52,8 @@ export function PublicTokens() {
           <li key={token.name} className="flex items-center gap-4">
             <span className={cn('size-10 shrink-0 rounded-md ring-1 ring-white/15', token.className)} />
             <span className="flex flex-col">
-              <code className="text-sm">{token.name}</code>
-              <span className="text-sm text-muted-foreground">{token.role}</span>
+              <code className="text-pub-14">{token.name}</code>
+              <span className="text-pub-14 text-muted-foreground">{token.role}</span>
             </span>
           </li>
         ))}
@@ -63,14 +63,14 @@ export function PublicTokens() {
 }
 
 const SCALE = [
-  { token: 'pub-score', size: '120 / 64', use: 'Wynik na tablicy, liczba lidera, „404”', sample: <span className="pub-score text-[7.5rem]">3:1</span> },
-  { token: 'pub-title', size: '40 (64 od sm)', use: 'Nazwa turnieju w pasku, nazwy drużyn na tablicy, tytuł nagłówka ekranu. Jedyne wersaliki', sample: <span className="pub-title">Liga Żółtych Łąk 2026</span> },
+  { token: 'pub-score', size: '120 / 64 / 40', use: 'Wynik na tablicy, liczba lidera, „404”', sample: <span className="pub-score text-pub-120">3:1</span> },
+  { token: 'pub-title', size: '40 (64 od sm)', use: 'Nazwa turnieju w pasku, nazwy drużyn na tablicy meczu, nazwa mistrza, kafle prezentacji drużyn, tytuł nagłówka ekranu. Jedyne wersaliki', sample: <span className="pub-title">Liga Żółtych Łąk 2026</span> },
   { token: 'pub-h2', size: '28', use: 'Belka sekcji, stan pusty. Zdaniem, nie wersalikami', sample: <span className="pub-h2">Najbliższe mecze</span> },
   { token: 'pub-h3', size: '20', use: 'Podtytuł w sekcji', sample: <span className="pub-h3">Kolejka 6</span> },
-  { token: 'pub-tab', size: '18', use: 'Zakładki, przyciski, „Na żywo”', sample: <span className="pub-tab">Terminarz</span> },
-  { token: 'pub-num', size: '20 / 18', use: 'Godzina, punkty, pozycja. Cyfry tabelaryczne', sample: <span className="pub-num text-xl">12:00 13 +8</span> },
+  { token: 'pub-tab', size: '20 (16 w przycisku)', use: 'Zakładki, przyciski, „Na żywo”', sample: <span className="pub-tab">Terminarz</span> },
+  { token: 'pub-num', size: '28 / 20 / 16', use: 'Godzina, punkty, pozycja. Cyfry tabelaryczne', sample: <span className="pub-num text-pub-20">12:00 13 +8</span> },
   { token: 'Barlow 400–600', size: '16', use: 'Tekst, nazwy drużyn w wierszach', sample: <span>FC Górka – Sparta</span> },
-  { token: 'Barlow 400', size: '14 / 13', use: 'Meta (obiekt, kolejka), stopka', sample: <span className="text-sm text-muted-foreground">Boisko A, sob., 3 paź</span> },
+  { token: 'Barlow 400', size: '14 / 13', use: 'Meta (obiekt, kolejka), stopka', sample: <span className="text-pub-14 text-muted-foreground">Boisko A, sob., 3 paź</span> },
 ]
 
 export function TypeScale() {
@@ -78,11 +78,11 @@ export function TypeScale() {
     <Dark className="flex flex-col">
       {SCALE.map((row) => (
         <div key={row.token} className="grid grid-cols-[minmax(0,1fr)] items-baseline gap-2 border-b border-hairline py-4 sm:grid-cols-[10rem_7rem_minmax(0,1fr)] sm:gap-6">
-          <code className="text-sm">{row.token}</code>
-          <span className="text-sm text-muted-foreground">{row.size}</span>
+          <code className="text-pub-14">{row.token}</code>
+          <span className="text-pub-14 text-muted-foreground">{row.size}</span>
           <div className="flex min-w-0 flex-col gap-1">
             <div className="truncate">{row.sample}</div>
-            <span className="text-sm text-muted-foreground">{row.use}</span>
+            <span className="text-pub-14 text-muted-foreground">{row.use}</span>
           </div>
         </div>
       ))}
@@ -105,12 +105,12 @@ export function BrandRule() {
           <Dark key={sample.hex} color={sample.hex} className="flex flex-col gap-5">
             <div className="flex items-baseline justify-between gap-4">
               <span className="pub-h3">{sample.label}</span>
-              <code className="text-sm text-muted-foreground">{sample.hex}</code>
+              <code className="text-pub-14 text-muted-foreground">{sample.hex}</code>
             </div>
 
             <div className="flex items-center gap-4">
               <TournamentLogo logoUrl={null} className="size-12" />
-              <span className="text-sm text-muted-foreground">
+              <span className="text-pub-14 text-muted-foreground">
                 wypełnienie: napis {ratio(sample.hex, onFill)}:1, kształt z tłem {ratio(sample.hex, DARK_SURFACES.background)}:1
                 {same(line) ? ', obrys zlewa się z wypełnieniem' : ', obrys w --brand-line daje krawędź'}
               </span>
@@ -121,9 +121,9 @@ export function BrandRule() {
                 <span className="border-b-[3px] border-brand-line pb-2 pub-tab">Przegląd</span>
                 <span className="border-b-[3px] border-transparent pb-2 pub-tab text-muted-foreground">Tabela</span>
                 <Crest name="Wilki Bemowo" className="mb-2 size-7" />
-                <span className="ml-auto pb-2.5 text-sm font-medium text-brand-text">Pełna tabela</span>
+                <span className="ml-auto pb-2.5 text-pub-14 font-medium text-brand-text">Pełna tabela</span>
               </div>
-              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-pub-14">
                 <dt>
                   <code>--brand-line</code>
                 </dt>
@@ -154,7 +154,7 @@ export function FillSample() {
           <div className="pub-brand-fill flex items-center gap-4 rounded-md px-5 py-4">
             <Crest name="Wilki Bemowo" onFill className="size-10" />
             <span className="pub-h3">Mistrz</span>
-            <span className="ml-auto text-sm">{sample.label}</span>
+            <span className="ml-auto text-pub-14">{sample.label}</span>
           </div>
         </Dark>
       ))}

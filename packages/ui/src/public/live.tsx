@@ -58,7 +58,7 @@ export function LiveClock({ clock, className }: ClockProp & { className?: string
 export function LiveTag({ clock, compact = false, className }: ClockProp & { compact?: boolean; className?: string }) {
   const short = useMatchClock(clock) !== null && compact
   return (
-    <span data-slot="live-tag" className={cn('inline-flex items-center gap-2 pub-tab text-base whitespace-nowrap text-destructive', className)}>
+    <span data-slot="live-tag" className={cn('inline-flex items-center gap-2 pub-tab text-pub-16 whitespace-nowrap text-destructive', short && 'gap-1', className)}>
       <LiveDot />
       {short ? <span className="sr-only">Na żywo</span> : 'Na żywo'}
       <LiveClock clock={clock} />
@@ -76,7 +76,7 @@ export function LiveBadge({ className }: { className?: string }) {
     <span
       data-slot="live-badge"
       className={cn(
-        'inline-flex items-center gap-1 self-start rounded-sm bg-destructive/15 px-1.5 py-1 pub-tab text-sm leading-none whitespace-nowrap text-destructive',
+        'inline-flex items-center gap-1 self-start rounded-sm bg-destructive/15 px-1.5 py-1 pub-tab text-pub-14 leading-none whitespace-nowrap text-destructive',
         className,
       )}
     >

@@ -26,11 +26,11 @@ export const TOURNAMENT_NOT_FOUND = 'Nie ma takiego turnieju'
 export function TournamentNotFound({ path }: { path: string }) {
   return (
     <StandaloneShell primaryColor={DEFAULT_BRAND_COLOR}>
-      <span aria-hidden className="pub-score text-[6rem] text-muted-foreground/40 sm:text-[7.5rem]">
+      <span aria-hidden className="pub-score text-pub-120 text-muted-foreground/40">
         404
       </span>
-      <h1 className="pub-title sm:text-[4rem]">{TOURNAMENT_NOT_FOUND}</h1>
-      <p className="max-w-xl text-lg text-muted-foreground">
+      <h1 className="pub-title sm:text-pub-64">{TOURNAMENT_NOT_FOUND}</h1>
+      <p className="max-w-xl text-pub-20 text-muted-foreground">
         Sprawdź adres <span className="break-all text-foreground">{path}</span>. Turniej mógł zostać usunięty albo jeszcze nie jest opublikowany.
       </p>
     </StandaloneShell>

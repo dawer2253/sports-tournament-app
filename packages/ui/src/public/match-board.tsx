@@ -27,7 +27,7 @@ function dimProps(dim: boolean, side: Side) {
 /** Fakty nad tablicą bez kropek: pozycja w pucharze albo kolejka, termin, obiekt. */
 function Facts({ match, timeZone }: { match: MatchPageMatch; timeZone?: string }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-center gap-x-6 gap-y-1 text-center text-sm text-muted-foreground">
+    <div className="flex flex-wrap items-baseline justify-center gap-x-6 gap-y-1 text-center text-pub-14 text-muted-foreground">
       {/* W pucharze etykieta pozycji: mecz o 3. miejsce gra w rundzie „Finał” (#234). */}
       <span className="font-medium text-foreground">{match.bracket?.label ?? match.round.name}</span>
       <span>{formatKickoff(match.kickoffAt, { timeZone })}</span>
@@ -44,7 +44,7 @@ function Team({ team, side, dim }: { team: MatchPageTeam | null; side: Side; dim
       className={cn('flex min-w-0 flex-col items-center gap-3 text-center', dim && 'text-muted-foreground')}
     >
       <Crest name={teamName(team)} logoUrl={team?.logoUrl ?? null} className="size-12 sm:size-24" />
-      <span className="w-full pub-title text-sm leading-tight text-balance wrap-break-word sm:text-[2.5rem]">{teamName(team)}</span>
+      <span className="w-full pub-title text-pub-14 leading-tight text-balance wrap-break-word sm:text-pub-40">{teamName(team)}</span>
     </div>
   )
 }
@@ -56,7 +56,7 @@ function ScoreWindow({ value, side, dim }: { value: number | null; side: Side; d
       data-slot="score-window"
       {...dimProps(dim, side)}
       className={cn(
-        'grid min-w-14 place-items-center rounded-md bg-sunken px-2 py-2 pub-score text-[2.75rem] leading-none sm:min-w-[7.5rem] sm:px-3 sm:py-3 sm:text-[6.5rem]',
+        'grid min-w-14 place-items-center rounded-md bg-sunken px-2 py-2 pub-score text-pub-40 leading-none sm:min-w-[7.5rem] sm:px-3 sm:py-3 sm:text-pub-120',
         dim && 'text-muted-foreground',
       )}
     >
@@ -74,7 +74,7 @@ function ScoreWindow({ value, side, dim }: { value: number | null; side: Side; d
 function Score({ match, loser, timeZone }: { match: MatchPageMatch; loser: Side | null; timeZone?: string }) {
   if (match.status === 'scheduled') {
     return (
-      <p data-slot="match-board-kickoff" className="pub-score text-[2.5rem] leading-none sm:text-[5rem]">
+      <p data-slot="match-board-kickoff" className="pub-score text-pub-40 leading-none sm:text-pub-64">
         {match.kickoffAt ? formatKickoff(match.kickoffAt, { showDate: false, timeZone }) : '–'}
       </p>
     )
@@ -83,7 +83,7 @@ function Score({ match, loser, timeZone }: { match: MatchPageMatch; loser: Side 
   const penalties = match.homePenalties != null && match.awayPenalties != null
   const winner = bracketWinnerSide(match)
   const label = penalties ? `Wynik ${score}, karne ${match.homePenalties} : ${match.awayPenalties}` : `Wynik ${score}`
-  const pens = 'pub-num text-base sm:text-xl'
+  const pens = 'pub-num text-pub-16 sm:text-pub-20'
   return (
     <div role="img" aria-label={label} className="flex items-center gap-1 sm:gap-2">
       {penalties && <Penalties value={match.homePenalties} won={winner === 'home'} className={pens} />}
@@ -97,7 +97,7 @@ function Score({ match, loser, timeZone }: { match: MatchPageMatch; loser: Side 
 function Scorers({ lines, team }: { lines: ScorerLine[]; team: string }) {
   if (lines.length === 0) return <span />
   return (
-    <ul aria-label={`Strzelcy: ${team}`} className="flex min-w-0 flex-col items-center gap-1 text-center text-sm text-muted-foreground">
+    <ul aria-label={`Strzelcy: ${team}`} className="flex min-w-0 flex-col items-center gap-1 text-center text-pub-14 text-muted-foreground">
       {lines.map((line) => (
         <li key={line.key} className="wrap-break-word">
           {line.name}{' '}
@@ -146,11 +146,11 @@ export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
           {match.status === 'live' && (
             // Na telefonie zegar pod „Na żywo”: obok poszerzałby środek tablicy kosztem nazw drużyn.
             <span className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
-              <LiveTag className="text-lg" />
-              <LiveClock clock={match} className="pub-tab text-lg" />
+              <LiveTag className="text-pub-20" />
+              <LiveClock clock={match} className="pub-tab text-pub-20" />
             </span>
           )}
-          {match.status === 'finished' && <span className="pub-tab text-lg text-muted-foreground">Koniec</span>}
+          {match.status === 'finished' && <span className="pub-tab text-pub-20 text-muted-foreground">Koniec</span>}
         </div>
         <Team team={match.awayTeam} side="away" dim={loser === 'away'} />
       </div>

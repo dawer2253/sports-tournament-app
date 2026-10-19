@@ -197,7 +197,9 @@ pkt 8 zastępuje tu trójkę plików panelu.
   a klocek piszemy w `src/public/`. `components/data` wolno.
 - **Motyw** w `src/public/theme.css`: tokeny `--pub-sunken`, `--pub-hairline`,
   `--pub-rule`, kroje `--font-display`/`--font-body`, skala 13 / 14 / 16 /
-  20 / 28 / 40 / 64 / 120 i narzędzia `pub-score`, `pub-title`, `pub-h2`,
+  20 / 28 / 40 / 64 / 120 jako `text-pub-13` … `text-pub-120` (jedyne
+  rozmiary tekstu strony; `cn()` zna je z `PUBLIC_TEXT_SCALE` w
+  `lib/utils.ts`) i narzędzia `pub-score`, `pub-title`, `pub-h2`,
   `pub-h3`, `pub-num`, `pub-tab`, `pub-brand-fill`. Tokeny `.dark` w
   `src/index.css` zostają bez zmian. Storybook ładuje oba arkusze w jednym
   przebiegu Tailwinda (`.storybook/preview.css`).
@@ -208,7 +210,9 @@ pkt 8 zastępuje tu trójkę plików panelu.
   Wypełnienie kolorem turnieju zawsze przez `pub-brand-fill` (obrys w
   `--brand-line`). „Na żywo” zawsze w `--destructive`.
 - **Wersaliki** tylko w nazwie turnieju w pasku, nazwach drużyn na tablicach
-  i tytule nagłówka ekranu. Nagłówki sekcji i belki zdaniem. Barlow
+  (tablica meczu, nazwa mistrza w pasie „Mistrz” i w kaflu mistrza Drabinki,
+  kafle prezentacji drużyn) i tytule nagłówka ekranu. Nagłówki sekcji, belki
+  i nazwisko lidera Statystyk zdaniem. Barlow
   Condensed na wyniki, liczby, godziny, nagłówki i zakładki, Barlow na tekst.
 - **Nagłówki**: nazwa turnieju w pasku to `h1`, nagłówek ekranu (`PageHead`)
   `h2`, belka sekcji (`SectionHead`) i stan pusty `h2`/`h3`. Klocki strony

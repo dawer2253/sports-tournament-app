@@ -37,7 +37,7 @@ export function Crest({ name, logoUrl = null, onFill = false, className }: Crest
           <path
             data-slot="crest-shield"
             d="M10 1.2 17.8 3.5v8.8c0 4.6-3.2 7.9-7.8 10.5-4.6-2.6-7.8-5.9-7.8-10.5V3.5L10 1.2Z"
-            className={onFill ? 'fill-brand-foreground/15 stroke-brand-foreground' : 'fill-brand-line/15 stroke-brand-line'}
+            className={cn(onFill ? 'fill-brand-foreground/15 stroke-brand-foreground' : 'fill-brand-line/15 stroke-brand-line')}
             strokeWidth="1.4"
           />
           {/* Tarcza zwęża się ku dołowi, więc trzyznakowy skrót dostaje mniejszy stopień. */}

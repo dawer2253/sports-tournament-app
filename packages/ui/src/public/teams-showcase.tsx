@@ -29,7 +29,7 @@ export function TeamsShowcase({ teams }: { teams: readonly ShowcaseTeam[] }) {
               className="flex min-w-0 flex-col items-start gap-5 rounded-md bg-card p-5 ring-1 ring-border ring-inset sm:p-6"
             >
               <Crest name={team.name} logoUrl={team.logoUrl} className="size-14 sm:size-20" />
-              <span data-slot="showcase-team-name" className="w-full pub-title text-2xl leading-tight wrap-break-word sm:text-[1.75rem]">{team.name}</span>
+              <span data-slot="showcase-team-name" className="w-full pub-title text-pub-28 leading-tight wrap-break-word">{team.name}</span>
             </li>
           ))}
         </ul>
