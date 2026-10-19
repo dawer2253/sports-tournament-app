@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/addon-docs/blocks'
 import { Palette, RadiusScale } from './palette'
 
-<Meta title="Fundamenty/Design system" />
+<Meta title="Panel/Fundamenty/Design system" />
 
 <div className="font-sans">
 
@@ -97,7 +97,7 @@ export function AdminExample() {
 ```
 
 Zasady kciuka:
-- **Admin** → `AdminShell`, **Public** → `PublicShell`. Nie budujemy własnych ramek.
+- **Admin** → `AdminShell`, **Public** → `Shell` z `@tournament/ui/public`. Nie budujemy własnych ramek.
 - Treść układamy w `Card` i siatce `grid gap-4`: jeden rytm odstępów na wszystkich ekranach.
 - Dane bierzemy z `src/lib/demo-data` (spójne między ekranami).
 - Obok `*.stories.tsx` twórz spec `*.mdx`: **Cel → Dane → Reguły → Stany → Zachowanie → Otwarte pytania**.

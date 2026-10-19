@@ -12,7 +12,7 @@ import { phone375 } from '../test/viewport'
 import { PublicBracket } from './public-bracket'
 
 const meta = {
-  title: 'Ekrany/Public/Drabinka',
+  title: 'Strona publiczna/Do przepisania/Ekrany/Drabinka',
   component: PublicBracket,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof PublicBracket>

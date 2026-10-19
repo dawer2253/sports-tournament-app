@@ -52,7 +52,7 @@ export interface PublicOverviewProps {
   timeZone?: string
   /** Adres pełnego widoku. Bez niego odnośniki są dekoracją (Storybook). */
   linkHref?: (key: PublicOverviewLink) => string | undefined
-  /** Przejęcie kliknięcia w odnośnik, np. przez router — wzorem `PublicShell.onNavigate`. */
+  /** Przejęcie kliknięcia w odnośnik, np. przez router — wzorem `Shell.onNavigate` strony publicznej. */
   onNavigate?: (key: PublicOverviewLink) => void
   /**
    * Adres strony meczu (#210): każdy mecz Przeglądu jest wtedy całym

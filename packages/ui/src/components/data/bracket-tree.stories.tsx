@@ -7,7 +7,7 @@ import { BracketTree } from './bracket-tree'
 const live = demoBracket({ teams: 16, progress: { round: 2, finished: 2, live: 1 } })
 
 const meta = {
-  title: 'UI/Dane/Drzewo drabinki',
+  title: 'Strona publiczna/Do przepisania/Drzewo drabinki',
   component: BracketTree,
   parameters: { layout: 'padded' },
   args: { matches: live, penaltySlot: true, timeZone: scheduleTimeZone },

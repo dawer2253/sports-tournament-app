@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { PublicStandings } from './public-standings'
 
 const meta = {
-  title: 'Ekrany/Public/Tabela',
+  title: 'Strona publiczna/Do przepisania/Ekrany/Tabela',
   component: PublicStandings,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof PublicStandings>

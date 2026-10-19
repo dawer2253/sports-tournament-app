@@ -10,7 +10,7 @@ const LOGO_URL =
   )
 
 const meta = {
-  title: 'UI/Układ/Logo turnieju',
+  title: 'Panel/UI/Układ/Logo turnieju',
   component: TournamentLogo,
   parameters: { layout: 'padded' },
   args: { logoUrl: null, color: '#1F7A45', onError: fn(), className: 'size-16' },

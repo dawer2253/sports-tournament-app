@@ -4,7 +4,7 @@ import { eventTypesBySport, scoringStatBySport } from '../../lib/demo-data'
 import { EventTypeButtons } from './event-type-buttons'
 
 const meta = {
-  title: 'UI/Dane/Przyciski typów zdarzeń',
+  title: 'Panel/UI/Dane/Przyciski typów zdarzeń',
   component: EventTypeButtons,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-xs">{Story()}</div>],

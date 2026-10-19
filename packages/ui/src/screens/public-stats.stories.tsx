@@ -3,7 +3,7 @@ import { expect, userEvent, within } from 'storybook/test'
 import { PublicStats } from './public-stats'
 
 const meta = {
-  title: 'Ekrany/Public/Statystyki',
+  title: 'Strona publiczna/Do przepisania/Ekrany/Statystyki',
   component: PublicStats,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof PublicStats>

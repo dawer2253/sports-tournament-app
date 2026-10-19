@@ -4,7 +4,7 @@ import { matchPageBasketball, matchPageFinished, matchPageLive } from '../../lib
 import { MatchRelation, RELATION_COLLAPSE_THRESHOLD } from './match-relation'
 
 const meta = {
-  title: 'UI/Dane/Relacja meczu',
+  title: 'Strona publiczna/Do przepisania/Relacja meczu',
   component: MatchRelation,
   parameters: { layout: 'padded' },
   args: {

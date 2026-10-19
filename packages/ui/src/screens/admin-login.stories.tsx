@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { AdminLogin } from './admin-login'
 
 const meta = {
-  title: 'Ekrany/Admin/Logowanie',
+  title: 'Panel/Ekrany/Admin/Logowanie',
   component: AdminLogin,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminLogin>

@@ -30,7 +30,7 @@ function Controlled(props: ImageFileFieldProps) {
 }
 
 const meta = {
-  title: 'UI/Prymitywy/Pole obrazu',
+  title: 'Panel/UI/Prymitywy/Pole obrazu',
   component: ImageFileField,
   parameters: { layout: 'padded' },
   args: {

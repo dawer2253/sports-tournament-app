@@ -12,7 +12,7 @@ import { withQualifiers } from '../../lib/qualifiers'
 import { StandingsTable } from './standings-table'
 
 const meta = {
-  title: 'UI/Dane/Tabela ligi',
+  title: 'Panel/UI/Dane/Tabela ligi',
   component: StandingsTable,
   parameters: { layout: 'padded' },
   args: {

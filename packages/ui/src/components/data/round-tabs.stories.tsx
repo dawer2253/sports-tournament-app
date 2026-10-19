@@ -5,7 +5,7 @@ import { cupRounds } from '../../lib/demo-data'
 import { RoundTabs, type RoundTabsProps } from './round-tabs'
 
 const meta = {
-  title: 'UI/Dane/Karty rund',
+  title: 'Panel/UI/Dane/Karty rund',
   component: RoundTabs,
   parameters: { layout: 'padded' },
   args: { rounds: cupRounds.map((round) => round.summary), value: cupRounds[1]!.summary.id, onValueChange: fn() },

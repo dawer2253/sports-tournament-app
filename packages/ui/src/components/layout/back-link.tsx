@@ -4,7 +4,7 @@ import { cn, isModifiedClick } from '../../lib/utils'
 
 export interface BackLinkProps {
   href: string
-  /** Przejęcie kliknięcia, np. przez router — wzorem `PublicShell.onNavigate`. */
+  /** Przejęcie kliknięcia, np. przez router — wzorem `Shell.onNavigate` strony publicznej. */
   onNavigate?: () => void
   children: React.ReactNode
   className?: string

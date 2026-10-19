@@ -11,7 +11,7 @@ const LOGO_URL =
   )
 
 const meta = {
-  title: 'UI/Układ/Herb drużyny',
+  title: 'Panel/UI/Układ/Herb drużyny',
   component: TeamLogo,
   parameters: { layout: 'padded' },
   args: { name: 'Wilki Bemowo', logoUrl: null, className: 'size-10' },

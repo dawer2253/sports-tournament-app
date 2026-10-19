@@ -4,7 +4,7 @@ import { tournamentList } from '../lib/demo-data'
 import { AdminDashboard } from './admin-dashboard'
 
 const meta = {
-  title: 'Ekrany/Admin/Dashboard',
+  title: 'Panel/Ekrany/Admin/Dashboard',
   component: AdminDashboard,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminDashboard>

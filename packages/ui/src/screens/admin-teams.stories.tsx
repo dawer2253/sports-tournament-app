@@ -4,7 +4,7 @@ import { teamRows } from '../lib/demo-data'
 import { AdminTeams } from './admin-teams'
 
 const meta = {
-  title: 'Ekrany/Admin/Drużyny',
+  title: 'Panel/Ekrany/Admin/Drużyny',
   component: AdminTeams,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminTeams>

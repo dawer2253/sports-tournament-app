@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { PublicMatch } from './public-match'
 
 const meta = {
-  title: 'Ekrany/Public/Mecz',
+  title: 'Strona publiczna/Do przepisania/Ekrany/Mecz',
   component: PublicMatch,
   parameters: { layout: 'fullscreen' },
   argTypes: {

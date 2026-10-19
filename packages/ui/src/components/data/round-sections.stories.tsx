@@ -5,7 +5,7 @@ import { groupByRound } from './round-groups'
 import { ROUNDS_PER_PAGE, RoundSections } from './round-sections'
 
 const meta = {
-  title: 'UI/Dane/Mecze po kolejce',
+  title: 'Strona publiczna/Do przepisania/Mecze po kolejce',
   component: RoundSections,
   parameters: { layout: 'padded' },
   args: {

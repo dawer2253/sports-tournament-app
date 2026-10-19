@@ -51,7 +51,7 @@ function DestructiveSamples() {
 }
 
 const meta = {
-  title: 'Fundamenty/Kontrast stanu destructive',
+  title: 'Panel/Fundamenty/Kontrast stanu destructive',
   component: DestructiveSamples,
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof DestructiveSamples>

@@ -3,7 +3,7 @@ import { expect } from 'storybook/test'
 import { Avatar, AvatarFallback } from './avatar'
 
 const meta = {
-  title: 'UI/Prymitywy/Avatar',
+  title: 'Panel/UI/Prymitywy/Avatar',
   component: Avatar,
   tags: ['autodocs'],
   args: { shape: 'circle' },

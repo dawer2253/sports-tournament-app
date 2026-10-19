@@ -27,7 +27,7 @@ function names(list: SeedingTeam[]): string[] {
 }
 
 const meta = {
-  title: 'UI/Dane/Rozstawienie',
+  title: 'Panel/UI/Dane/Rozstawienie',
   component: SeedingList,
   parameters: { layout: 'padded' },
   args: { value: six, locked: 0, onChange: fn(), onLockedChange: fn() },

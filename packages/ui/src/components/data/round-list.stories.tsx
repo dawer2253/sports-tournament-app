@@ -10,7 +10,7 @@ import { RoundList, type RoundListProps } from './round-list'
 const rounds = scheduleRounds(scheduleInProgress)
 
 const meta = {
-  title: 'UI/Dane/Lista kolejek',
+  title: 'Panel/UI/Dane/Lista kolejek',
   component: RoundList,
   parameters: { layout: 'padded' },
   args: { rounds, value: 5, onValueChange: fn() },

@@ -3,7 +3,7 @@ import { expect, userEvent, within } from 'storybook/test'
 import { AdminBracket } from './admin-bracket'
 
 const meta = {
-  title: 'Ekrany/Admin/Drabinka',
+  title: 'Panel/Ekrany/Admin/Drabinka',
   component: AdminBracket,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminBracket>

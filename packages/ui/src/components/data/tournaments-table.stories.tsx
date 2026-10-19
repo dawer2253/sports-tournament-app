@@ -4,7 +4,7 @@ import { tournamentList } from '../../lib/demo-data'
 import { TournamentsTable } from './tournaments-table'
 
 const meta = {
-  title: 'UI/Dane/Tabela turniejów',
+  title: 'Panel/UI/Dane/Tabela turniejów',
   component: TournamentsTable,
   parameters: { layout: 'padded' },
   args: { tournaments: tournamentList, total: tournamentList.length, onOpen: fn() },

@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { AdminGroups } from './admin-groups'
 
 const meta = {
-  title: 'Ekrany/Admin/Grupy',
+  title: 'Panel/Ekrany/Admin/Grupy',
   component: AdminGroups,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminGroups>

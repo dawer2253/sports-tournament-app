@@ -8,7 +8,7 @@ import { MatchRow } from './match-row'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
 const meta = {
-  title: 'UI/Dane/Wiersz meczu',
+  title: 'Panel/UI/Dane/Wiersz meczu',
   component: MatchRow,
   parameters: { layout: 'padded' },
   args: { match: scheduleInProgress[0], timeZone: scheduleTimeZone },

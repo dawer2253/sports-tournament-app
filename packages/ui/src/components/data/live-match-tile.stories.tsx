@@ -5,7 +5,7 @@ import { matchInProgress, publicFixtures } from '../../lib/demo-data'
 import { LiveMatchTile } from './live-match-tile'
 
 const meta = {
-  title: 'UI/Dane/Kafel meczu na żywo',
+  title: 'Strona publiczna/Do przepisania/Kafel meczu na żywo',
   component: LiveMatchTile,
   parameters: { layout: 'padded' },
   args: { match: matchInProgress },

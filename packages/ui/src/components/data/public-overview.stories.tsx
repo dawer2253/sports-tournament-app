@@ -19,7 +19,7 @@ const longResults = publicResults.map((match) => ({ ...match, homeTeam: withLong
 const goals = leaderboardsBySport.football.goals!
 
 const meta = {
-  title: 'UI/Dane/Przegląd strony publicznej',
+  title: 'Strona publiczna/Do przepisania/Przegląd strony publicznej',
   component: PublicOverview,
   parameters: { layout: 'padded' },
   args: {
@@ -43,7 +43,7 @@ export const Domyslny: Story = {}
  * bez kolumny `minmax(0,1fr)` rosła do pełnej długości nazwy w skrócie tabeli
  * i strona przewijała się w bok, ucinając kafel „Na żywo” i odnośniki sekcji.
  *
- * 343 px to treść `PublicShell` na telefonie 375 px: `main` ma `px-4`.
+ * 343 px to treść shella strony publicznej na telefonie 375 px: `main` ma `px-4`.
  */
 export const DlugaNazwaNaTelefonie: Story = {
   args: {
