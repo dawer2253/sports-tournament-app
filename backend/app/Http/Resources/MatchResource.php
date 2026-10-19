@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\Concerns\FormatsDates;
 use App\Models\GameMatch;
-use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,8 +36,8 @@ class MatchResource extends JsonResource
                 'order' => $this->round->order,
             ],
             'matchNumber' => $this->match_number,
-            'homeTeam' => $this->teamSummary($this->homeTeam),
-            'awayTeam' => $this->teamSummary($this->awayTeam),
+            'homeTeam' => $this->homeTeam?->summary(),
+            'awayTeam' => $this->awayTeam?->summary(),
             'homeScore' => $this->home_score,
             'awayScore' => $this->away_score,
             'homePenalties' => $this->home_penalties,
@@ -68,15 +67,5 @@ class MatchResource extends JsonResource
             'periodStartedAt' => $live ? $this->formatDate($this->period_started_at) : null,
             'onBreak' => $live && $this->on_break,
         ];
-    }
-
-    /**
-     * `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte.
-     *
-     * @return array{id: int, name: string, logoUrl: ?string}|null
-     */
-    private function teamSummary(?Team $team): ?array
-    {
-        return $team === null ? null : ['id' => $team->id, 'name' => $team->name, 'logoUrl' => $team->logoUrl()];
     }
 }

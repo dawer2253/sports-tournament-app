@@ -6,6 +6,7 @@ use App\Models\GameMatch;
 use App\Models\Team;
 use Closure;
 use Collator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -51,8 +52,10 @@ final readonly class StandingsCalculator
      */
     public function calculate(Collection $teams, Collection $matches): array
     {
-        $finished = $matches
-            ->filter(fn (GameMatch $match): bool => $match->isFinished())
+        // Kolejność rozegrania idzie po kolejce: `loadMissing` dociąga ją jednym
+        // zapytaniem, gdy wywołujący nie wczytał `matches.round`.
+        $finished = EloquentCollection::make($matches->filter(fn (GameMatch $match): bool => $match->isFinished())->all())
+            ->loadMissing('round')
             ->sortBy([
                 fn (GameMatch $a, GameMatch $b): int => $a->round->order <=> $b->round->order,
                 fn (GameMatch $a, GameMatch $b): int => $a->match_number <=> $b->match_number,

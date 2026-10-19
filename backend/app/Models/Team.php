@@ -195,4 +195,15 @@ class Team extends Model
     {
         return "drużyna „{$this->name}”";
     }
+
+    /**
+     * Drużyna w kształcie `TeamSummary` kontraktu: jedno miejsce dla zasobów
+     * meczu, zdarzenia, strzelców i listy drużyn strony publicznej.
+     *
+     * @return array{id: int, name: string, logoUrl: ?string}
+     */
+    public function summary(): array
+    {
+        return ['id' => $this->id, 'name' => $this->name, 'logoUrl' => $this->logoUrl()];
+    }
 }

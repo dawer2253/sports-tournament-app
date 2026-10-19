@@ -31,7 +31,7 @@ class MatchEventResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'team' => ['id' => $this->team->id, 'name' => $this->team->name, 'logoUrl' => $this->team->logoUrl()],
+            'team' => $this->team->summary(),
             'player' => $this->player === null ? null : ['id' => $this->player->id, 'name' => $this->player->name],
             'type' => $this->type,
             'typeLabel' => $this->sport->eventType($this->type)['label'] ?? $this->type,

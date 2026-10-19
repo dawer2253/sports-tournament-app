@@ -123,7 +123,7 @@ class PublicTournamentController extends Controller
         $teams = Tournament::findPublishedBySlug($slug)->teams()->orderBy('id')->get();
 
         return response()->json([
-            'data' => $teams->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name, 'logoUrl' => $team->logoUrl()])->all(),
+            'data' => $teams->map(fn (Team $team): array => $team->summary())->all(),
         ]);
     }
 
