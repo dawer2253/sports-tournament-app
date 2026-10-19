@@ -3,7 +3,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from '../lib/api';
-import { SLUG, asPublic, cup, cupMatches, publicApi, renderAt, tournament } from '../test/public-api';
+import { SLUG, asPublic, cup, cupMatches, finished, publicApi, renderAt, tournament } from '../test/public-api';
 
 /** Drabinka pucharu na stronie publicznej (#234, DoD „Vitest (`apps/public`)”). */
 
@@ -335,7 +335,7 @@ describe('Terminarz i Wyniki pucharu', () => {
     expect(screen.getByText('Przegrany: Półfinał 2')).toBeInTheDocument();
   });
 
-  it('w Wynikach remis z karnymi pokazuje karne obu drużyn, pogrubione u zwycięzcy', async () => {
+  it('w Wynikach remis z karnymi pokazuje karne przy nazwach obu drużyn, a przegrany po karnych jest przygaszony', async () => {
     const matches = cupMatches(
       { teams: 4, progress: { round: 1, finished: 1 } },
       { 1001: { homeScore: 1, awayScore: 1, homePenalties: 4, awayPenalties: 3 } },
@@ -346,15 +346,20 @@ describe('Terminarz i Wyniki pucharu', () => {
     await waitFor(() => expect(rows()).toHaveLength(1));
     const row = within(rows()[0]!);
     expect(await row.findByText('Półfinał 1')).toBeInTheDocument();
-    expect(row.getByText('(4)')).toHaveClass('font-bold');
-    expect(row.getByText('(3)')).not.toHaveClass('font-bold');
+    // Karne stoją przy nazwie, z „w karnych” dla czytnika ekranu (#292).
+    expect(row.getByText('(4)')).toHaveTextContent('(4) w karnych');
+    const [winner, loser] = [row.getByText('(4)').parentElement!, row.getByText('(3)').parentElement!];
+    expect(winner).toHaveClass('font-semibold');
+    expect(winner).not.toHaveClass('text-muted-foreground');
+    expect(loser).toHaveClass('text-muted-foreground');
   });
 
   it('liga nie dostaje etykiet pozycji ani miejsca na karne', async () => {
-    publicApi({ data: tournament() });
+    publicApi({ data: tournament(), results: [finished(1, 1, { homeScore: 1, awayScore: 1 })] });
     renderAt(`/t/${SLUG}/wyniki`);
 
-    expect(await screen.findByText('Brak rozegranych meczów')).toBeInTheDocument();
+    await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' });
+    expect(document.querySelector('[data-slot="match-label"]')).toBeNull();
     expect(document.querySelector('[data-slot="penalties"]')).toBeNull();
   });
 });
