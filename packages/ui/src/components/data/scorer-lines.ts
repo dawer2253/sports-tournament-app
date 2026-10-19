@@ -2,7 +2,8 @@ import type { MatchRowData, MatchScorer } from './match-row-data'
 
 // Układ strzelców pod wynikiem (#208): po której stronie stoi wiersz, w jakim
 // formacie i ile ich widać. Osobno od `scorer-list.tsx`, bo to funkcje, a nie
-// komponent — korzystają z nich `MatchRow` i `LiveMatchTile`.
+// komponent — korzystają z nich `MatchRow`, tablica pasa etapu Przeglądu
+// (`StageMatchBoard`) i tablica strony meczu (`MatchBoard`).
 
 /** Ile wierszy w formacie sumy widać na drużynę w wierszu meczu; tablica strony meczu pokazuje wszystkie (#210, #295). */
 export const SUM_LINES_LIMIT = 3

@@ -13,24 +13,8 @@ import { Anchor } from './anchor'
 import { Crest } from './crest'
 import { Fact, PageHead } from './heads'
 import { LiveTag } from './live'
+import { matchPairLabel, sideName, teamOf, type Side } from './match-sides'
 import type { StagePosition } from './overview-stage'
-
-type Side = 'home' | 'away'
-
-function teamOf(match: MatchRowData, side: Side) {
-  return side === 'home' ? match.homeTeam : match.awayTeam
-}
-
-/** Nazwa strony meczu: drużyna, a w pustym slocie pucharu źródło albo „Do ustalenia”, jak w wierszu meczu. */
-function sideName(match: MatchRowData, side: Side): string {
-  const source = side === 'home' ? match.bracket?.homeSource : match.bracket?.awaySource
-  return teamOf(match, side)?.name ?? source ?? 'Do ustalenia'
-}
-
-/** Nazwa odnośnika tablicy i wiersza meczu: „Gospodarz – Gość”, jak w wierszu z #292. */
-export function matchPairLabel(match: MatchRowData): string {
-  return `${sideName(match, 'home')} – ${sideName(match, 'away')}`
-}
 
 /** Stan nad parą: „Na żywo”, „Koniec” albo godzina (z dniem, gdy etap trwa kilka dni). */
 function BoardState({ match, showDay, timeZone }: { match: MatchRowData; showDay: boolean; timeZone?: string }) {

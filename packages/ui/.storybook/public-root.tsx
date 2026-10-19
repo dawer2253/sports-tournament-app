@@ -10,7 +10,7 @@ export const PUBLIC_ROOT = 'Strona publiczna/'
  * `.public-site` story, także na korzeniu shella, który ustawia zmienne
  * inline z `tournament.branding.primaryColor`. Stąd `!important`: deklaracja
  * w arkuszu z `!important` wygrywa z inline bez niego. Tylko w Storybooku,
- * żeby jeden przełącznik przestawiał shell, klocki i „Do przepisania” naraz
+ * żeby jeden przełącznik przestawiał shell, klocki i ekrany naraz
  * bez przepisywania danych demo w każdej story.
  */
 function overrideCss(sample: BrandColorSample): string {

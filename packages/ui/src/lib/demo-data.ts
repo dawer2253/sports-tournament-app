@@ -1,7 +1,6 @@
 // Spójne dane demo dla wszystkich ekranów (mock, docelowo z API).
 
 import type { BracketMatchRowData } from '../components/data/bracket-match-row-data'
-import type { GroupStandings } from '../components/data/group-standings'
 import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchPageData, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
@@ -171,6 +170,14 @@ export const groupStandingsTableRows: StandingsTableRow[] = [
 
 // Tabele grup z przykładu `grupy` w kontrakcie (#268): dwie grupy po cztery,
 // z każdej wychodzą dwie, faza grupowa rozegrana.
+/** Tabela grupy demo: nazwa, liczba wychodzących (`Group.qualifiers`) i wiersze z `/standings`. */
+export type GroupStandings = {
+  id: number
+  name: string
+  qualifiers: number
+  rows: StandingsTableRow[]
+}
+
 export const groupStandings: GroupStandings[] = [
   {
     id: 1,

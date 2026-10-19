@@ -77,15 +77,13 @@ Sidebar ma **dwa korzenie**: `Panel/…` i `Strona publiczna/…`.
 - `Strona publiczna/Wprowadzenie` i `Strona publiczna/Fundamenty` (`.mdx`
   w `src/public/`).
 - `Strona publiczna/Komponenty/Nazwa` — shell i klocki z `src/public/`.
-- `Strona publiczna/Ekrany/Nazwa` — ekrany z `src/public/screens/`.
-- `Strona publiczna/Do przepisania/…` — dzisiejsze ekrany `screens/public-*`
-  (`…/Do przepisania/Ekrany/Nazwa`) i komponenty tylko-publiczne z
-  `components/data`. Ticket ekranu S7 usuwa stąd swoje pozycje; na kamieniu
-  #298 gałąź jest pusta.
+- `Strona publiczna/Ekrany/Nazwa` — ekrany z `src/public/screens/`; ekran
+  z kilkoma formatami dostaje podgałąź z plikiem na format
+  (`Strona publiczna/Ekrany/Przegląd/Puchar`).
 
 Kolejność: `Panel` (`Wprowadzenie → Fundamenty → UI → Ekrany`), potem
-`Strona publiczna` (`Wprowadzenie → Fundamenty → Komponenty → Ekrany → Do
-przepisania`); `parameters.options.storySort.order` w `.storybook/preview.tsx`.
+`Strona publiczna` (`Wprowadzenie → Fundamenty → Komponenty → Ekrany`);
+`parameters.options.storySort.order` w `.storybook/preview.tsx`.
 
 ## Wzorzec ekranu panelu — trójka plików
 
@@ -103,8 +101,8 @@ przeczytaj jego odpowiednik w aplikacji.
 - Ekran bez odpowiednika w aplikacji usuwamy razem z jego stories i `.mdx`.
 
 Każdy ekran to trzy pliki o wspólnej nazwie w `src/screens/`
-(`kebab-case`, prefiks `admin-`; stare `public-*` czekają w „Do przepisania”
-na tickety S7), np. dla `admin-teams`:
+(`kebab-case`, prefiks `admin-`; ekrany strony publicznej mają własny
+wzorzec, sekcja „Strona publiczna” niżej), np. dla `admin-teams`:
 
 1. **`admin-teams.tsx`** — komponent. Eksport nazwany PascalCase
    (`export function AdminTeams()`), opakowany w `screens/shell-demo.tsx`
@@ -180,10 +178,13 @@ pkt 8 zastępuje tu trójkę plików panelu.
   `win`/`draw`/`loss`, litery mapuje tylko `form.tsx`), Drabinka
   (`bracket.tsx`: kafle i drzewo w oknie rund; zdania notki o rozjeździe
   i wychodzących z grup w `bracket-notes.ts`), zakładki
-  (`public-nav.ts`), typ turnieju w pasku (`public-shell-tournament.ts`)
-  i ekrany w `screens/`. Panelowy `MatchRow` z `components/data` zostaje dla
-  panelu i dzisiejszego Przeglądu, a `BracketMatchTile` dla karty
-  „Drabinka” Przeglądu (do #296).
+  (`public-nav.ts`), typ turnieju w pasku (`public-shell-tournament.ts`),
+  Statystyki (`stats.tsx`: zakładki, lider, klasyfikacja i liderzy
+  pozostałych), strona meczu (`match-board.tsx`, `match-relation.tsx`),
+  Przegląd (`stage-band.tsx`: pas etapu z tablicami meczów,
+  `teams-showcase.tsx`: prezentacja drużyn przed terminarzem; wybór etapu
+  w `overview-stage.ts`) i ekrany w `screens/`. Panelowy `MatchRow`
+  z `components/data` zostaje dla panelu.
 - **Barrel** `src/public/index.ts`, import `@tournament/ui/public`, nazwy bez
   przedrostka. Re-eksportuje logikę, której strona potrzebuje (`brandVars`,
   `groupByRound`, `formatKickoff`…); ta logika zostaje tam, gdzie jest.

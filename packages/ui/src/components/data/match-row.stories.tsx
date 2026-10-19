@@ -3,7 +3,6 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleTimeZone, scheduleUndated } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
 import { expectTextFits, phone375, textFitProblems } from '../../test/viewport'
-import { PublicSection } from '../layout/public-section'
 import { MatchRow } from './match-row'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
@@ -480,33 +479,9 @@ export const PucharDlugieNazwyNaTelefonie: Story = {
 }
 
 /**
- * Przegląd na telefonie 375 px (#239): te same wiersze w prawdziwej karcie
- * sekcji, której padding zjada nazwom miejsce. Zmiana paddingu karty albo
- * wiersza, przez którą nazwy z DoD znów się nie mieszczą, wywraca to story.
- */
-export const PucharWKarciePrzegladuNaTelefonie: Story = {
-  ...phone375,
-  // Szerokość treści strony publicznej przy 375 px, także w Vitest bez marginesu `padded`.
-  render: () => (
-    <div className="w-[343px] max-w-full">
-      <PublicSection title="Najbliższe mecze">
-        {longCupRows.map((match) => (
-          <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" href={`/t/puchar/mecze/${match.id}`} />
-        ))}
-      </PublicSection>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    await expect(window.innerWidth).toBe(375)
-    await expectColumns(canvasElement, 3)
-    await expectTextFits([...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-team"]')])
-  },
-}
-
-/**
- * Te same wiersze w każdej szerokości od karty Przeglądu na telefonie
- * (319 px: 375 bez marginesów strony i paddingu karty `PublicSection`) po
- * szeroki Terminarz (#239). Nazwy mieszczą się w dwóch liniach bez łamania
+ * Te same wiersze w każdej szerokości od 319 px (dawna karta Przeglądu na
+ * telefonie: 375 bez marginesów strony i paddingu karty) po szeroki
+ * Terminarz (#239). Nazwy mieszczą się w dwóch liniach bez łamania
  * słów, a górna linia (etykieta, termin, „Na żywo”, strzałka) nie wystaje.
  * „Próg układu” wyżej pilnuje tylko szerokości nazw w lidze; tu liczy się
  * to, czy tekst się mieści, bo karne i strzałka zabierają nazwom miejsce.

@@ -16,7 +16,7 @@ const preview: Preview = {
           'Panel',
           ['Wprowadzenie', 'Fundamenty', 'UI', ['Prymitywy', 'Dane', 'Układ'], 'Ekrany'],
           'Strona publiczna',
-          ['Wprowadzenie', 'Fundamenty', 'Komponenty', 'Ekrany', 'Do przepisania'],
+          ['Wprowadzenie', 'Fundamenty', 'Komponenty', 'Ekrany'],
         ],
       },
     },
