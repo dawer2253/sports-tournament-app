@@ -183,7 +183,9 @@ pkt 8 zastępuje tu trójkę plików panelu.
   pozostałych), strona meczu (`match-board.tsx`, `match-relation.tsx`),
   Przegląd (`stage-band.tsx`: pas etapu z tablicami meczów,
   `teams-showcase.tsx`: prezentacja drużyn przed terminarzem; wybór etapu
-  w `overview-stage.ts`) i ekrany w `screens/`. Panelowy `MatchRow`
+  w `overview-stage.ts`), zegar meczu na żywo (#297: `MatchClockProvider`
+  i `LiveClock` w `live.tsx`, kontekst w `match-clock-context.ts`, reguły
+  w `lib/match-clock.ts`) i ekrany w `screens/`. Panelowy `MatchRow`
   z `components/data` zostaje dla panelu.
 - **Barrel** `src/public/index.ts`, import `@tournament/ui/public`, nazwy bez
   przedrostka. Re-eksportuje logikę, której strona potrzebuje (`brandVars`,
@@ -218,7 +220,10 @@ pkt 8 zastępuje tu trójkę plików panelu.
 - **Stories** pod „Strona publiczna” są zawsze ciemne (dekorator w
   `.storybook/preview.tsx` + `public-root.tsx`) i owinięte w `.public-site`.
   Globalny przełącznik **„Kolor turnieju”** (próbki `BRAND_COLOR_SAMPLES`)
-  nadpisuje kolor każdego `.public-site`, także korzenia shella. Story, które
+  nadpisuje kolor każdego `.public-site`, także korzenia shella. Dekorator
+  podaje też zegar meczów demo (piłka, stała chwila `DEMO_CLOCK_NOW`), więc
+  mecz trwający z demo ma minutę; story z innym sportem owija się we własny
+  `MatchClockProvider`. Story, które
   trzyma kolor z danych albo pokazuje kilka próbek naraz, ustawia
   `parameters: ownBrand` (`src/test/brand.ts`). Format i stan to osobne
   stories, bez pływających przełączników.

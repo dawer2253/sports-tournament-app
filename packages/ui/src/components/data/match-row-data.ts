@@ -40,6 +40,14 @@ export type MatchRowData = {
    * ani miejsca na karne.
    */
   group?: string
+  /**
+   * Zegar meczu trwającego (`Match.livePeriod`, `periodStartedAt`, `onBreak`,
+   * #297): z niego strona publiczna liczy minutę przy „Na żywo”. Brak pól to
+   * samo „Na żywo”; panel ich nie pokazuje.
+   */
+  livePeriod?: number | null
+  periodStartedAt?: string | null
+  onBreak?: boolean
 }
 
 /**

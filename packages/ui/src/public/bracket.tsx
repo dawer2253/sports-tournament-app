@@ -20,6 +20,7 @@ import {
   type BracketTreeSlot,
 } from '../lib/bracket'
 import { formatKickoffParts } from '../lib/kickoff'
+import type { MatchClockState } from '../lib/match-clock'
 import { cn } from '../lib/utils'
 import { Anchor } from './anchor'
 import { Crest } from './crest'
@@ -33,7 +34,7 @@ export type PublicBracketTeam = BracketTeam & { logoUrl: string | null }
  * z kontraktu pasuje do niego wprost (strażnik w `apps/public`), a
  * `BracketMatch` panelu zostaje bez zmian.
  */
-export type PublicBracketMatch = Omit<BracketMatch, 'homeTeam' | 'awayTeam'> & {
+export type PublicBracketMatch = Omit<BracketMatch, 'homeTeam' | 'awayTeam'> & Partial<MatchClockState> & {
   homeTeam: PublicBracketTeam | null
   awayTeam: PublicBracketTeam | null
 }
@@ -97,7 +98,7 @@ export function BracketTile({ match, matches, href, onNavigate, timeZone, classN
       <span className="flex min-w-0 items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="truncate">{label}</span>
         {live ? (
-          <LiveTag className="shrink-0 text-xs" />
+          <LiveTag clock={match} compact className="shrink-0 text-xs" />
         ) : kickoff ? (
           <span className="shrink-0 pub-num">
             {kickoff.day} {kickoff.time}

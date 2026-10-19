@@ -3,7 +3,7 @@ import { formatKickoff, formatShortDay } from '../lib/kickoff'
 import { cn } from '../lib/utils'
 import { Anchor } from './anchor'
 import { Crest } from './crest'
-import { LiveBadge } from './live'
+import { LiveBadge, LiveClock } from './live'
 import { ScoreCell } from './score-cell'
 
 /** Lista, w której stoi wiersz: Terminarz pokazuje godzinę, Wyniki krótki dzień. */
@@ -79,8 +79,16 @@ function TeamCell({ match, side, className }: { match: MatchRowData; side: Side;
 
 /** Termin w kolumnie z lewej: plakietka meczu trwającego, godzina w Terminarzu albo krótki dzień w Wynikach. */
 function When({ match, mode, showDay, timeZone }: { match: MatchRowData; mode: MatchListMode; showDay: boolean; timeZone?: string }) {
-  // Plakietka nie łamie się i zostawia w kolumnie miejsce na minutę (#297).
-  if (match.status === 'live') return <LiveBadge />
+  // Plakietka nie łamie się, a zegar (#297) stoi pod nią, bo „90+4′” obok
+  // plakietki nie mieści się w kolumnie terminu telefonu.
+  if (match.status === 'live') {
+    return (
+      <span className="flex flex-col items-start gap-1">
+        <LiveBadge />
+        <LiveClock clock={match} className="text-base leading-tight" />
+      </span>
+    )
+  }
   const day = formatShortDay(match.kickoffAt, timeZone)
   if (day === null) return <span className="text-xs leading-tight text-muted-foreground">{formatKickoff(null)}</span>
   if (mode === 'results') return <span className="pub-num text-base whitespace-nowrap text-muted-foreground">{day}</span>

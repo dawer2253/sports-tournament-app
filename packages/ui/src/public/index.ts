@@ -56,6 +56,7 @@ export { bracketPosition, bracketTeamIds, currentRoundOrder, hasGroupStage, isKn
 export { plural } from '../lib/plural'
 export { withQualifiers } from '../lib/qualifiers'
 export { formatKickoff, formatMatchDay } from '../lib/kickoff'
+export { matchClock, type MatchClockSettings, type MatchClockState } from '../lib/match-clock'
 export type { MatchPageData } from '../components/data/match-page-data'
 export type { MatchRowBracket } from '../components/data/match-row-data'
 export type { Leaderboard, StatOption } from '../components/data/leaderboard-data'

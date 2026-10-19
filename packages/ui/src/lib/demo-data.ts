@@ -18,6 +18,7 @@ import type { ScheduleProgress } from '../public/schedule-progress'
 import type { StandingsTableRow as PublicStandingsTableRow } from '../public/standings-table-row'
 import { bracketPosition, bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch } from './bracket'
 import { formatRoundDates } from './kickoff'
+import { periodLabel, type MatchClockSettings } from './match-clock'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
@@ -479,6 +480,16 @@ export const scheduleUndated: ScheduleDemoMatch[] = bergerPairs(teams.length).fl
   })),
 )
 
+/** Start 2. połowy meczu trwającego demo: 55 minut po rozpoczęciu (45 gry i 10 przerwy). */
+const demoLiveHalfStart = Date.parse(demoKickoff(5, 2)) + 55 * 60_000
+
+/**
+ * „Teraz” zegara meczów demo (#297): 20 minut po starcie 2. połowy, więc mecz
+ * trwający pokazuje 66′. Stała chwila, żeby obraz stories się nie zmieniał;
+ * podaje ją `MatchClockProvider` w dekoratorze stories strony publicznej.
+ */
+export const DEMO_CLOCK_NOW = new Date(demoLiveHalfStart + 20 * 60_000)
+
 /**
  * Sezon w trakcie: cztery kolejki rozegrane, w piątej dwa mecze zakończone,
  * jeden trwa, jeden przed nami. Wyniki są deterministyczne. Do tego dwie
@@ -499,7 +510,8 @@ function scheduleSeason(): ScheduleDemoMatch[] {
       return { ...dated, status: 'finished' as const, homeScore: (match.id * 7) % 4, awayScore: (match.id * 3) % 3 }
     }
     if (order === 5 && matchNumber === 2) {
-      return { ...dated, status: 'live' as const, homeScore: 1, awayScore: 0 }
+      const clock = { livePeriod: 2, periodStartedAt: new Date(demoLiveHalfStart).toISOString().replace('.000Z', '+00:00'), onBreak: false }
+      return { ...dated, status: 'live' as const, homeScore: 1, awayScore: 0, ...clock }
     }
     return dated
   })
@@ -1038,8 +1050,6 @@ const PAGE_EVENT_TYPES: Record<string, { label: string; value: number }> = {
 /** Zdarzenie demo: minuta, strona drużyny zdarzenia, zawodnik (indeks w składzie) i typ. */
 type PageEventSpec = [minute: number | null, side: 'home' | 'away', player: number, type: string]
 
-const PERIOD_NOUNS: Record<number, string> = { 2: 'połowa', 3: 'tercja', 4: 'kwarta' }
-
 /**
  * Strona meczu tak, jak składa ją serwer (`MatchRelation`): kolejność osi,
  * część z minuty i podziału turnieju, wynik po zdarzeniu, wyniki części
@@ -1087,7 +1097,7 @@ function demoMatchPage(
     .toSorted(([a], [b]) => a - b)
     .map(([number, [homeScore, awayScore]]) => ({
       number,
-      label: `${number}. ${PERIOD_NOUNS[periods.count] ?? 'część'}`,
+      label: periodLabel(number, periods.count),
       homeScore,
       awayScore,
     }))
@@ -1114,6 +1124,12 @@ export const demoPeriods = {
   football: { count: 2, minutes: 45 },
   basketball: { count: 4, minutes: 10 },
 } as const
+
+/** Ustawienia zegara demo (#297): podział meczu, długość i `runningClock` sportu, jak w `PublicTournament`. */
+export const demoClockSettings = {
+  football: { periods: demoPeriods.football, matchDuration: 60, runningClock: true },
+  basketball: { periods: demoPeriods.basketball, matchDuration: 40, runningClock: false },
+} satisfies Record<string, MatchClockSettings>
 
 /**
  * Piłka po meczu: bramki obu drużyn, samobój gościa, kartki i kartka bez

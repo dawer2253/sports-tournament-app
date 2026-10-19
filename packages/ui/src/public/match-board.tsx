@@ -5,7 +5,7 @@ import { bracketWinnerSide } from '../lib/bracket'
 import { formatKickoff } from '../lib/kickoff'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
-import { LiveTag } from './live'
+import { LiveClock, LiveTag } from './live'
 
 type Side = 'home' | 'away'
 
@@ -149,7 +149,13 @@ export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
         <Team team={match.homeTeam} side="home" dim={loser === 'home'} />
         <div data-slot="match-board-score" className="flex flex-col items-center gap-3">
           <Score match={match} loser={loser} timeZone={timeZone} />
-          {match.status === 'live' && <LiveTag className="text-lg" />}
+          {match.status === 'live' && (
+            // Na telefonie zegar pod „Na żywo”: obok poszerzałby środek tablicy kosztem nazw drużyn.
+            <span className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
+              <LiveTag className="text-lg" />
+              <LiveClock clock={match} className="pub-tab text-lg" />
+            </span>
+          )}
           {match.status === 'finished' && <span className="pub-tab text-lg text-muted-foreground">Koniec</span>}
         </div>
         <Team team={match.awayTeam} side="away" dim={loser === 'away'} />

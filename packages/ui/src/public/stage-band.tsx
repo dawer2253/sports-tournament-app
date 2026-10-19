@@ -18,7 +18,7 @@ import type { StagePosition } from './overview-stage'
 
 /** Stan nad parą: „Na żywo”, „Koniec” albo godzina (z dniem, gdy etap trwa kilka dni). */
 function BoardState({ match, showDay, timeZone }: { match: MatchRowData; showDay: boolean; timeZone?: string }) {
-  if (match.status === 'live') return <LiveTag className="text-sm" />
+  if (match.status === 'live') return <LiveTag clock={match} className="text-sm" />
   if (match.status === 'finished') return <span>Koniec</span>
   if (match.kickoffAt === null) return <span>{formatKickoff(null)}</span>
   return (

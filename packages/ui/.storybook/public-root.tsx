@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { BRAND_COLOR_SAMPLES, brandVars, type BrandColorSample } from '../src/lib/brand-on-dark'
+import { DEMO_CLOCK_NOW, demoClockSettings } from '../src/lib/demo-data'
+import { MatchClockProvider } from '../src/public/live'
 import { ThemeRoot } from './theme-root'
 
 /** Korzeń drzewa stories strony publicznej. */
@@ -31,7 +33,10 @@ export function PublicRoot({ sample, override, children }: { sample: BrandColorS
     <ThemeRoot theme="dark">
       {override && <style data-story-brand={sample}>{overrideCss(sample)}</style>}
       <div className="public-site bg-background text-foreground" style={brandVars(BRAND_COLOR_SAMPLES[sample].hex)}>
-        {children}
+        {/* Zegar meczów demo (#297) stoi w miejscu: piłka, „teraz” z danych demo. Story z innym sportem podaje własny. */}
+        <MatchClockProvider settings={demoClockSettings.football} now={DEMO_CLOCK_NOW}>
+          {children}
+        </MatchClockProvider>
       </div>
     </ThemeRoot>
   )

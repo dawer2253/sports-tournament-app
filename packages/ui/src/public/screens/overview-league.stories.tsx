@@ -88,7 +88,8 @@ export const WTrakcie: Story = {
     const band = within(canvas.getByRole('region', { name: 'Kolejka 5' }))
     await expect(band.getByText('Bieżąca kolejka')).toBeInTheDocument()
     await expect(stageFacts(canvasElement)).toEqual(['sob., 3 paź', '1 z 4 rozegrane', 'z 14 kolejek'])
-    await expect(boardStateText(canvasElement, 'live')).toBe('Na żywo')
+    // Zegar demo (#297): 2. połowa 20 minut po starcie, więc 66′ przy „Na żywo”.
+    await expect(boardStateText(canvasElement, 'live')).toBe('Na żywo66′')
     await expect(boardStateText(canvasElement, 'finished')).toBe('Koniec')
     await expect(boardStateText(canvasElement, 'scheduled')).toMatch(/^\d{2}:\d{2}$/)
     // Każda tablica prowadzi na stronę meczu.
