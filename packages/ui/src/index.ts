@@ -9,6 +9,8 @@ export * from './lib/kickoff';
 export * from './lib/match-band';
 export * from './lib/plural';
 export * from './lib/qualifiers';
+export * from './lib/team-abbr';
+export * from './lib/image-fallback';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
@@ -101,9 +103,7 @@ export * from './components/layout/back-link';
 export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
 export * from './components/layout/photo-panel';
-export * from './components/layout/public-nav';
 export * from './components/layout/public-section';
-export * from './components/layout/public-shell-tournament';
 export * from './components/layout/team-crest';
 export * from './components/layout/team-logo';
 export * from './components/layout/tournament-logo';

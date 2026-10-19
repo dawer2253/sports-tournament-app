@@ -1,5 +1,6 @@
 import type { PublicTournament } from '@tournament/api-client';
-import { EmptyState, Skeleton, publicTabs } from '@tournament/ui';
+import { EmptyState, Skeleton } from '@tournament/ui';
+import { publicTabs } from '@tournament/ui/public';
 import { PublicShell, type PublicNavKey } from '@tournament/ui/components/layout/public-shell.tsx';
 import { useEffect } from 'react';
 import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';

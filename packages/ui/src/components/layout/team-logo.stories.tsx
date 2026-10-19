@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { teamAbbr } from './team-crest'
+import { teamAbbr } from '../../lib/team-abbr'
 import { TeamLogo } from './team-logo'
 
 // Małe SVG w adresie `data:`, żeby story z logo nie zależało od sieci.

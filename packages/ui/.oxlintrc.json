@@ -4,5 +4,23 @@
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/public/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/components/ui/**", "**/components/layout/**"],
+                "message": "Strona publiczna (src/public/) nie importuje komponentów panelu z components/ui ani components/layout. Klocek przepisz w src/public/, logikę przenieś do lib/ (mapa S7, #286, decyzja #289)."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

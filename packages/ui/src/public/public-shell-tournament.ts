@@ -3,8 +3,8 @@
  * z kontraktu, przepisany ręcznie, bo pakiet UI nie zna klienta API —
  * zgodność pilnuje `apps/public/src/lib/contract-guard.ts`.
  *
- * Typ mieszka osobno z tego samego powodu co `TournamentRow`: żeby
- * `lib/demo-data.ts` mogło go użyć bez importowania shella i jego zdjęć.
+ * Typ mieszka osobno od shella, żeby `lib/demo-data.ts` mogło go użyć bez
+ * importowania komponentów strony publicznej.
  */
 export type PublicShellTournament = {
   name: string

@@ -13,7 +13,7 @@ import type { TeamRow } from '../components/data/team-row'
 import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
-import type { PublicShellTournament } from '../components/layout/public-shell-tournament'
+import type { PublicShellTournament } from '../public/public-shell-tournament'
 import { bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch } from './bracket'
 import { formatRoundDates } from './kickoff'
 

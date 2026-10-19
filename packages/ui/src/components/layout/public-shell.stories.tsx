@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { publicTournament } from '../../lib/demo-data'
-import { CUP_TABS } from './public-nav'
+import { CUP_TABS } from '../../public/public-nav'
 import { PublicShell, type PublicNavKey } from './public-shell'
 
 // Małe SVG w adresie `data:`, żeby story z logo nie zależało od sieci.

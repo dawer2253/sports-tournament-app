@@ -1,5 +1,5 @@
 import { BracketTree } from '../components/data/bracket-tree'
-import { CUP_TABS } from '../components/layout/public-nav'
+import { CUP_TABS } from '../public/public-nav'
 import { PublicShell, type PublicShellTournament } from '../components/layout/public-shell'
 import { demoBracket, publicCupTournament, scheduleTimeZone, type DemoBracketMatch } from '../lib/demo-data'
 

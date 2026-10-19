@@ -1,4 +1,5 @@
-import { Button, isModifiedClick, type PublicNavKey } from '@tournament/ui';
+import { Button, isModifiedClick } from '@tournament/ui';
+import type { PublicNavKey } from '@tournament/ui/public';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { tabHref, useTournament } from './tournament-layout';

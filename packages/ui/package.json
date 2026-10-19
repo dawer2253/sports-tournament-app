@@ -13,6 +13,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/index.css",
+    "./public": "./src/public/index.ts",
     "./*": "./src/*"
   },
   "scripts": {

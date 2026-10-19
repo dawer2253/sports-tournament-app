@@ -12,11 +12,10 @@ import type {
   Leaderboard,
   MatchInRound,
   MatchPageData,
-  PublicShellTournament,
-  SportCode,
   StandingsTableRow,
   StatOption,
 } from '@tournament/ui';
+import type { PublicShellTournament, SportCode } from '@tournament/ui/public';
 
 /**
  * Strażnik zgodności typów z design systemu z kontraktem, jak
@@ -25,12 +24,12 @@ import type {
  * `npm run typecheck`, zamiast rozjechać ekran po cichu.
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni typ
- * w `packages/ui` (`public-shell-tournament.ts`, `round-groups.ts`,
+ * w `packages/ui` (`src/public/public-shell-tournament.ts`, `round-groups.ts`,
  * `match-row-data.ts`, `match-page-data.ts`, `standings-table-row.ts`,
  * `leaderboard-data.ts`).
  */
 
-/** Turniej z kontraktu daje się pokazać w nagłówku `PublicShell`. */
+/** Turniej z kontraktu daje się pokazać w nagłówku shella strony publicznej (`Shell`). */
 type ContractFitsShell = PublicTournament extends PublicShellTournament ? true : never;
 
 export const contractFitsShell: ContractFitsShell = true;

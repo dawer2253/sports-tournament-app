@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useImageFallback } from '../../lib/image-fallback'
 import { cn } from '../../lib/utils'
 
 export interface ImageWithFallbackProps {
@@ -19,21 +20,10 @@ export interface ImageWithFallbackProps {
  * coś obok — nazwa drużyny, etykieta pola, nagłówek karty.
  */
 export function ImageWithFallback({ src, fallback, onError, className }: ImageWithFallbackProps) {
-  // Pamiętamy adres, który zawiódł, a nie samą flagę: po zmianie `src` (nowy
-  // upload) nowy adres dostaje szansę bez efektu, który by flagę zerował.
-  const [failedUrl, setFailedUrl] = React.useState<string | null>(null)
-  const showImage = src !== null && src !== failedUrl
+  const image = useImageFallback(src, onError)
 
-  return showImage ? (
-    <img
-      src={src}
-      alt=""
-      className={cn('size-full object-contain', className)}
-      onError={() => {
-        setFailedUrl(src)
-        onError?.()
-      }}
-    />
+  return image.src ? (
+    <img src={image.src} alt="" className={cn('size-full object-contain', className)} onError={image.onError} />
   ) : (
     fallback
   )

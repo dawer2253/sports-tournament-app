@@ -1,11 +1,18 @@
-/**
- * Zakładki strony publicznej. Osobno od `public-shell.tsx`, żeby aplikacja
- * mogła wziąć zestaw zakładek z barrel-a bez zdjęć hero, które ciągnie shell.
- */
-import { hasGroupStage, isKnockoutOnly } from '../../lib/bracket'
+/** Zakładki strony publicznej: klucze, zestawy per format i ich podpisy. */
+import { hasGroupStage, isKnockoutOnly } from '../lib/bracket'
 
 /** Zakładka strony publicznej. */
 export type PublicNavKey = 'home' | 'standings' | 'bracket' | 'fixtures' | 'results' | 'stats'
+
+/** Podpis zakładki w pasku, w menu i w odnośnikach „Nie ma takiej strony”. */
+export const TAB_LABELS: Record<PublicNavKey, string> = {
+  home: 'Przegląd',
+  standings: 'Tabela',
+  bracket: 'Drabinka',
+  fixtures: 'Terminarz',
+  results: 'Wyniki',
+  stats: 'Statystyki',
+}
 
 /** Zakładki ligi: Tabela zaraz po Przeglądzie. */
 export const LEAGUE_TABS: readonly PublicNavKey[] = ['home', 'standings', 'fixtures', 'results', 'stats']
