@@ -10,7 +10,7 @@ const meta = {
   title: 'Strona publiczna/Komponenty/Forma',
   component: Form,
   parameters: { layout: 'padded' },
-  args: { results: ['W', 'W', 'R', 'P', 'W'] },
+  args: { results: ['win', 'win', 'draw', 'loss', 'win'] },
 } satisfies Meta<typeof Form>
 
 export default meta
@@ -33,7 +33,7 @@ export const Probki: Story = {
   parameters: ownBrand,
   render: (args) => <EachSample>{() => <Form {...args} />}</EachSample>,
   play: async ({ canvasElement }) => {
-    const wins = [...canvasElement.querySelectorAll<HTMLElement>('[data-result="W"]')]
+    const wins = [...canvasElement.querySelectorAll<HTMLElement>('[data-result="win"]')]
     await expect(wins.length).toBe(12)
     for (const win of wins) {
       const style = getComputedStyle(win)
