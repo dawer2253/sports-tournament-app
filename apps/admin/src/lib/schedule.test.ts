@@ -21,6 +21,9 @@ function match(id: number, order: number, matchNumber: number, overrides: Partia
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     collisions: [],
     ...overrides,
   };
