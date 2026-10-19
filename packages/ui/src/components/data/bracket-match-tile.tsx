@@ -1,5 +1,4 @@
 import { cva } from 'class-variance-authority'
-import { Trophy } from 'lucide-react'
 import type * as React from 'react'
 import { bracketWinnerSide, type BracketMatch, type BracketTeam } from '../../lib/bracket'
 import { formatKickoffParts } from '../../lib/kickoff'
@@ -189,50 +188,5 @@ export function BracketMatchTile({ match, label, penaltySlot, href, onNavigate, 
     >
       {content}
     </a>
-  )
-}
-
-/**
- * Wolny los (#215): przerywany kafel z nazwą drużyny w miejscu meczu
- * 1. rundy, którego nie ma. Drużyna stoi od razu w 2. rundzie.
- */
-export function BracketByeTile({ team, className, style }: { team: BracketTeam; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div
-      data-slot="bracket-bye"
-      role="group"
-      aria-label={`Wolny los: ${team.name}`}
-      className={cn('flex flex-col justify-center rounded-lg border border-dashed px-2.5 text-[13px] text-muted-foreground', className)}
-      style={{ height: BRACKET_TILE_HEIGHT, ...style }}
-    >
-      <span className="block h-5 truncate leading-5">{team.name}</span>
-      <span className="block h-5 text-[11px] leading-5 italic">wolny los</span>
-    </div>
-  )
-}
-
-/**
- * Mistrz pod finałem w drzewie: karta na akcencie marki, wysoka jak kafel.
- * Puchar stoi małą ikoną przy podpisie, a nie w osobnym kwadracie, bo przy
- * dwóch kolumnach na telefonie kwadrat zjadał jedną trzecią szerokości i ucinał
- * nazwę mistrza już przy 15 znakach. Nazwa łamie się na dwie linie, zanim
- * dostanie wielokropek: 2 × 18 px nazwy i 14 px podpisu mieszczą się w 52 px.
- */
-export function BracketChampionTile({ team, className, style }: { team: BracketTeam; className?: string; style?: React.CSSProperties }) {
-  return (
-    <div
-      role="status"
-      data-slot="bracket-champion"
-      className={cn('flex flex-col justify-center rounded-lg bg-brand px-2.5 text-brand-foreground', className)}
-      style={{ height: BRACKET_TILE_HEIGHT, ...style }}
-    >
-      <span data-slot="bracket-champion-name" className="line-clamp-2 text-sm leading-[18px] font-bold break-words">
-        {team.name}
-      </span>
-      <span className="flex items-center gap-1 text-[11px] leading-[14px] text-brand-foreground/80">
-        <Trophy aria-hidden className="size-3 shrink-0" />
-        Zwycięzca pucharu
-      </span>
-    </div>
   )
 }

@@ -49,7 +49,6 @@ export * from './components/data/bracket-match-row';
 export * from './components/data/bracket-match-row-data';
 export * from './components/data/bracket-match-tile';
 export * from './components/data/bracket-summary';
-export * from './components/data/bracket-tree';
 export * from './components/data/data-table';
 export * from './components/data/first-round-preview';
 export * from './components/data/group-composition';
