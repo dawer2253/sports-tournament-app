@@ -13,7 +13,7 @@ import {
 import { useNavigate } from 'react-router';
 import { useFixtures, useLeaderboard, useResults, useStandings, useTeams } from '../lib/queries';
 import { useRounds } from './match-rounds';
-import { matchHref, tabHref, useTournament } from './tournament-layout';
+import { matchHref, useTabNav, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 import { useGroups } from './use-groups';
 
@@ -53,6 +53,7 @@ export function OverviewPage() {
   const tournament = useTournament();
   const { slug } = tournament;
   const navigate = useNavigate();
+  const tabNav = useTabNav(slug);
   const { cup, matches: knockout, withBracket } = useBracket();
   const { groupStage, groupTables } = useGroups();
   const fixtures = useFixtures(slug);
@@ -138,8 +139,7 @@ export function OverviewPage() {
       leaderboard={loadable(leaderboard, (board) => board)}
       matchHref={(match) => matchHref(slug, match.id)}
       onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
-      navHref={(key) => tabHref(slug, key)}
-      onNavigate={(key) => void navigate(tabHref(slug, key))}
+      {...tabNav}
     />
   );
 }

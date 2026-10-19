@@ -1,6 +1,5 @@
 import { PageNotFound, SiteNotFound, publicTabs } from '@tournament/ui/public';
-import { useNavigate } from 'react-router';
-import { tabHref, useTournament } from './tournament-layout';
+import { useTabNav, useTournament } from './tournament-layout';
 
 /**
  * Nieznana podtrasa turnieju, w shellu: odnośniki do wszystkich zakładek
@@ -8,14 +7,8 @@ import { tabHref, useTournament } from './tournament-layout';
  */
 export function NotFoundPage() {
   const { slug, stages } = useTournament();
-  const navigate = useNavigate();
-  return (
-    <PageNotFound
-      tabs={publicTabs(stages)}
-      navHref={(key) => tabHref(slug, key)}
-      onNavigate={(key) => void navigate(tabHref(slug, key))}
-    />
-  );
+  const tabNav = useTabNav(slug);
+  return <PageNotFound tabs={publicTabs(stages)} {...tabNav} />;
 }
 
 /** Adres spoza `/t/:slug`: 404 bez shella turnieju. */

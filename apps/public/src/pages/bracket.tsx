@@ -10,7 +10,7 @@ import {
 import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useStandings } from '../lib/queries';
-import { matchHref, tabHref, useTournament } from './tournament-layout';
+import { matchHref, useTabNav, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 import { useGroups } from './use-groups';
 
@@ -72,10 +72,7 @@ export function BracketPage() {
     [groupStage, matches.data, standings.data, groupTables],
   );
 
-  const links = {
-    navHref: (key: Parameters<typeof tabHref>[1]) => tabHref(slug, key),
-    onNavigate: (key: Parameters<typeof tabHref>[1]) => void navigate(tabHref(slug, key)),
-  };
+  const links = useTabNav(slug);
 
   if (!stage) return <BracketScreen format="league" matches={[]} {...links} />;
 

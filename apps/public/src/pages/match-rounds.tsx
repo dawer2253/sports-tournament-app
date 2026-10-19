@@ -3,7 +3,7 @@ import { FixturesScreen, groupByRound, LoadError, MatchListLoading, ResultsScree
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useFixtures, useResults } from '../lib/queries';
-import { matchHref, tabHref, useTournament } from './tournament-layout';
+import { matchHref, useTabNav, useTournament } from './tournament-layout';
 import { useBracketRows } from './use-bracket';
 import { useGroups } from './use-groups';
 
@@ -41,6 +41,7 @@ const LABELS = { fixtures: 'terminarza', results: 'wyników' };
 export function MatchRounds({ mode }: { mode: 'fixtures' | 'results' }) {
   const { slug } = useTournament();
   const navigate = useNavigate();
+  const tabNav = useTabNav(slug);
   const fixtures = useFixtures(slug);
   const results = useResults(slug);
   const fixtureRounds = useRounds(fixtures.data, 'asc');
@@ -72,8 +73,7 @@ export function MatchRounds({ mode }: { mode: 'fixtures' | 'results' }) {
       results={resultRounds}
       matchHref={(match) => matchHref(slug, match.id)}
       onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
-      navHref={(key) => tabHref(slug, key)}
-      onNavigate={(key) => void navigate(tabHref(slug, key))}
+      {...tabNav}
     />
   );
 }

@@ -15,6 +15,9 @@ import { TAB_LABELS, type PublicNavKey } from '../public-nav'
 import { StandaloneShell } from '../shell'
 import { Loading } from '../skeleton'
 
+/** Tytuł ekranu braku turnieju; aplikacja bierze go też do tytułu karty. */
+export const TOURNAMENT_NOT_FOUND = 'Nie ma takiego turnieju'
+
 /**
  * Brak turnieju: bez shella, z samym „TournamentApp” w pasku, na domyślnej
  * zieleni, bo turnieju i jego koloru nie ma. `path` to adres, pod który wszedł
@@ -26,7 +29,7 @@ export function TournamentNotFound({ path }: { path: string }) {
       <span aria-hidden className="pub-score text-[6rem] text-muted-foreground/40 sm:text-[7.5rem]">
         404
       </span>
-      <h1 className="pub-title sm:text-[4rem]">Nie ma takiego turnieju</h1>
+      <h1 className="pub-title sm:text-[4rem]">{TOURNAMENT_NOT_FOUND}</h1>
       <p className="max-w-xl text-lg text-muted-foreground">
         Sprawdź adres <span className="break-all text-foreground">{path}</span>. Turniej mógł zostać usunięty albo jeszcze nie jest opublikowany.
       </p>

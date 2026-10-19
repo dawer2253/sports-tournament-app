@@ -5,6 +5,7 @@ import {
   TournamentLoadError,
   TournamentLoading,
   TournamentNotFound,
+  TOURNAMENT_NOT_FOUND,
   publicTabs,
   type MatchClockSettings,
   type PublicNavKey,
@@ -28,12 +29,20 @@ export function tabHref(slug: string, key: PublicNavKey): string {
   return TAB_PATHS[key] ? `/t/${slug}/${TAB_PATHS[key]}` : `/t/${slug}`;
 }
 
+/**
+ * Nawigacja zakładek turnieju dla shella i ekranów: adres zakładki
+ * i przejście routerem (`navHref` + `onNavigate`).
+ */
+export function useTabNav(slug: string): { navHref: (key: PublicNavKey) => string; onNavigate: (key: PublicNavKey) => void } {
+  const navigate = useNavigate();
+  return { navHref: (key) => tabHref(slug, key), onNavigate: (key) => void navigate(tabHref(slug, key)) };
+}
+
 /** Adres strony meczu (#210). */
 export function matchHref(slug: string, matchId: number): string {
   return `/t/${slug}/mecze/${matchId}`;
 }
 
-const NOT_FOUND = 'Nie ma takiego turnieju';
 const FAILED = 'Nie udało się wczytać turnieju';
 
 /** `handle` trasy zakładki: którą zakładkę podświetla shell. */
@@ -54,12 +63,12 @@ function useActiveTab(): PublicNavKey | undefined {
  */
 export function TournamentLayout() {
   const { slug = '' } = useParams();
-  const navigate = useNavigate();
+  const tabNav = useTabNav(slug);
   const active = useActiveTab();
   const tournament = usePublicTournament(slug);
   const notFound = tournament.data === null;
   const failed = tournament.data === undefined && tournament.isError;
-  const title = tournament.data?.name ?? (notFound ? NOT_FOUND : failed ? FAILED : undefined);
+  const title = tournament.data?.name ?? (notFound ? TOURNAMENT_NOT_FOUND : failed ? FAILED : undefined);
 
   // Tytuł karty idzie za tym, co widać: nazwa turnieju, a bez niego stan
   // ekranu — inaczej po wejściu z innego turnieju została by jego nazwa.
@@ -79,8 +88,7 @@ export function TournamentLayout() {
         // obie naraz (#268).
         tabs={publicTabs(tournament.data.stages)}
         active={active}
-        navHref={(key) => tabHref(slug, key)}
-        onNavigate={(key) => void navigate(tabHref(slug, key))}
+        {...tabNav}
       >
         {/* Zegar meczów na żywo (#297) liczy przeglądarka z ustawień turnieju, co 30 s, bez nowych zapytań. */}
         <MatchClockProvider settings={clock}>
