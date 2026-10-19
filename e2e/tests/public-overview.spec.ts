@@ -1,8 +1,5 @@
-import { PUBLIC_URL } from './env';
+import { ONE_POLL, PUBLIC_URL } from './env';
 import { expect, test } from './fixtures';
-
-/** Odpytywanie strony publicznej (`POLL_INTERVAL_MS`, 15 s) z zapasem na odpowiedź Laravela. */
-const ONE_POLL = 20_000;
 
 /**
  * Przegląd pucharu (#296): przed drabinką kibic widzi prezentację drużyn
