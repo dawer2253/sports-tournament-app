@@ -15,7 +15,7 @@ import { useBracket } from './use-bracket';
  * etykietą pozycji i pokazuje karne (#234). Odpytuje jak pozostałe trasy.
  */
 export function MatchPage() {
-  const { slug, sport, branding } = useTournament();
+  const { slug, branding } = useTournament();
   const { matchId = '' } = useParams();
   const navigate = useNavigate();
   const id = Number(matchId);
@@ -42,11 +42,7 @@ export function MatchPage() {
       <BackLink href={tabHref(slug, back)} onNavigate={() => void navigate(tabHref(slug, back))}>
         {back === 'fixtures' ? 'Terminarz' : 'Wyniki'}
       </BackLink>
-      <MatchHeader
-        match={bracket.withBracket(match.data)}
-        sport={sport.code}
-        brandColor={branding.primaryColor}
-      />
+      <MatchHeader match={bracket.withBracket(match.data)} brandColor={branding.primaryColor} />
       <MatchRelation
         status={match.data.status}
         homeTeamId={match.data.homeTeam?.id ?? null}

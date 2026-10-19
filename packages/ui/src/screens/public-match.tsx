@@ -43,7 +43,7 @@ export function PublicMatch({ variant = 'pilka', color = '#1F7A45' }: PublicMatc
     <Shell tournament={tournament}>
       <div className="flex flex-col gap-3">
         <BackLink href="#">{back}</BackLink>
-        <MatchHeader match={match} sport={tournament.sport.code} brandColor={color} timeZone={scheduleTimeZone} />
+        <MatchHeader match={match} brandColor={color} timeZone={scheduleTimeZone} />
         <MatchRelation
           status={match.status}
           homeTeamId={match.homeTeam?.id ?? null}

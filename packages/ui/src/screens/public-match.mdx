@@ -32,14 +32,13 @@ z gradientem, relacja podzielona na części meczu, powrót nad pasem.
   nazwy ani strzelcy nie przesuwają wyniku. Strzelcy **bez limitu**, samobój
   po stronie przeciwnika z „(sam.)”. Pod kreską termin i obiekt (`MetaList`),
   na telefonie jeden pod drugim, bez kresek.
-- **Tło pasa per sport**: piłka murawa, kosz boisko z liniami (kadr zdjęcia
-  hero), inny sport płaski kolor turnieju.
-- **Kontrast w pasie** ≥ 4.5:1 dla tekstu i ≥ 3:1 dla wyniku, wobec
-  najgorszego piksela zdjęcia (czarnego i białego) pod nakładką. Gradient
-  idzie za tonem tekstu: ciemny pod białym, jasny pod ciemnym. Warstwy
-  i rachunek są w `lib/match-band.ts`, a pilnuje ich story „UI/Dane/Pas meczu ›
-  Kontrast” dla obu zdjęć, płaskiego koloru, `#FFD400`, `#1F7A45` i obu
-  motywów.
+- **Tło pasa**: płaski kolor turnieju dla każdego sportu (zdjęcia sportu
+  zniknęły w #290; pas zastąpi tablica meczu w #295).
+- **Kontrast w pasie** ≥ 4.5:1 dla tekstu i ≥ 3:1 dla wyniku na kolorze
+  turnieju pod gradientem. Gradient idzie za tonem tekstu: ciemny pod białym,
+  jasny pod ciemnym. Warstwy i rachunek są w `lib/match-band.ts`, a pilnuje
+  ich story „Strona publiczna/Do przepisania/Pas meczu › Kontrast” dla
+  `#FFD400` i `#1F7A45`.
 - **Relacja** (`MatchRelation`): po częściach z wynikiem części i liczbą
   zdarzeń, zdarzenia bez minuty na końcu w „Bez minuty”. Turniej bez podziału
   ma jedną płaską listę. Gospodarz z lewej, gość z prawej, zdarzenie

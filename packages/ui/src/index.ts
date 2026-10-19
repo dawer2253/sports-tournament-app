@@ -102,17 +102,8 @@ export * from './components/layout/admin-shell';
 export * from './components/layout/back-link';
 export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
-export * from './components/layout/photo-panel';
 export * from './components/layout/public-section';
 export * from './components/layout/team-crest';
 export * from './components/layout/team-logo';
 export * from './components/layout/tournament-logo';
 
-// PublicShell celowo poza barrel-em: importuje zdjęcia hero, a Vite emituje
-// zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby
-// ponad 500 kB grafiki, której nigdy nie użyje. Strona publiczna bierze go ze ścieżki:
-// import { PublicShell } from '@tournament/ui/components/layout/public-shell.tsx';
-
-// MatchHeader (pas strony meczu) z tego samego powodu: importuje zdjęcia
-// sportów. Strona publiczna bierze go ze ścieżki:
-// import { MatchHeader } from '@tournament/ui/components/data/match-header.tsx';

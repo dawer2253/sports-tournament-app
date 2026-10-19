@@ -3,15 +3,15 @@ import type * as React from 'react'
 import { expect, within } from 'storybook/test'
 import { brandForeground, MIN_LARGE_TEXT_CONTRAST, MIN_TEXT_CONTRAST } from '../../lib/contrast'
 import { matchPageBasketball, matchPageFinished, matchPageLive, matchPageScheduled, scheduleTimeZone } from '../../lib/demo-data'
-import { MATCH_BAND_OVERLAY, matchBandContrast, type MatchBandBackdrop, type MatchBandRegion } from '../../lib/match-band'
-import { cssAlpha, cssHex } from '../../test/theme'
+import { matchBandContrast, type MatchBandRegion } from '../../lib/match-band'
+import { cssHex } from '../../test/theme'
 import { MatchHeader } from './match-header'
 import type { MatchPageData } from './match-page-data'
 
 /** Kolory turnieju ze stories #206: jasny (ciemny tekst) i ciemny (biały tekst). */
 const COLORS = ['#FFD400', '#1F7A45'] as const
 
-/** Zmienne koloru turnieju, które na stronie stawia `PublicShell`. */
+/** Zmienne koloru turnieju, które na stronie stawia shell (`brandVars()`). */
 function Brand({ color, children }: { color: string; children: React.ReactNode }) {
   const style = { '--brand': color, '--brand-foreground': brandForeground(color) } as React.CSSProperties
   return (
@@ -22,10 +22,10 @@ function Brand({ color, children }: { color: string; children: React.ReactNode }
 }
 
 const meta = {
-  title: 'UI/Dane/Pas meczu',
+  title: 'Strona publiczna/Do przepisania/Pas meczu',
   component: MatchHeader,
   parameters: { layout: 'padded' },
-  args: { match: matchPageFinished, sport: 'football', brandColor: '#1F7A45', timeZone: scheduleTimeZone },
+  args: { match: matchPageFinished, brandColor: '#1F7A45', timeZone: scheduleTimeZone },
   decorators: [
     (Story, { args }) => (
       <Brand color={args.brandColor}>
@@ -101,16 +101,13 @@ export const Zaplanowany: Story = {
 
 /** Kosz: wszyscy zawodnicy z punktami, nie trzech jak w wierszu meczu (#192). */
 export const Kosz: Story = {
-  args: { match: matchPageBasketball, sport: 'basketball' },
+  args: { match: matchPageBasketball },
   play: async ({ canvasElement }) => {
     const lists = within(canvasElement).getAllByRole('listitem')
     await expect(lists).toHaveLength(matchPageBasketball.scorers!.length)
     await expect(matchPageBasketball.scorers!.length).toBeGreaterThan(6)
   },
 }
-
-/** Sport bez zdjęcia: płaski kolor turnieju. */
-export const InnySport: Story = { args: { sport: 'volleyball' } }
 
 const longNames: MatchPageData = {
   ...matchPageFinished,
@@ -127,65 +124,47 @@ export const DlugieNazwy: Story = {
   },
 }
 
-/** Pasy do kontroli kontrastu: zdjęcie piłki, zdjęcie kosza i płaski kolor, w obu kolorach turnieju. */
+/** Pasy do kontroli kontrastu: mecz trwający, kosz i zakończony, w obu kolorach turnieju. */
 const CONTRAST_CASES = COLORS.flatMap((color) =>
   [
-    { sport: 'football', match: matchPageLive },
-    { sport: 'basketball', match: matchPageBasketball },
-    { sport: 'volleyball', match: matchPageFinished },
+    { key: 'live', match: matchPageLive },
+    { key: 'basketball', match: matchPageBasketball },
+    { key: 'finished', match: matchPageFinished },
   ].map((band) => ({ ...band, color })),
 )
 
 /**
- * Każdy tekst w pasie ma kontrast ≥ 4.5:1, a wynik ≥ 3:1, wobec najgorszego
- * piksela zdjęcia pod nakładką (#210). Kolor tekstu idzie z przeglądarki
- * w jasnym i ciemnym motywie, warstwy ze stałych `lib/match-band.ts`, a krycie
- * nakładki jest sprawdzane na wyrenderowanym pasie, żeby klasa nie rozjechała
- * się ze stałą.
+ * Każdy tekst w pasie ma kontrast ≥ 4.5:1, a wynik ≥ 3:1 (#210). Od #290 pas
+ * ma płaski kolor turnieju dla każdego sportu, bez zdjęcia. Kolor tekstu idzie
+ * z przeglądarki (strona publiczna jest zawsze ciemna), warstwy ze stałych
+ * `lib/match-band.ts`.
  */
 export const Kontrast: Story = {
   render: () => (
     <div className="grid gap-4">
-      {CONTRAST_CASES.map(({ sport, match, color }) => (
-        <Brand key={`${sport}-${color}`} color={color}>
-          <MatchHeader match={match} sport={sport} brandColor={color} timeZone={scheduleTimeZone} />
+      {CONTRAST_CASES.map(({ key, match, color }) => (
+        <Brand key={`${key}-${color}`} color={color}>
+          <MatchHeader match={match} brandColor={color} timeZone={scheduleTimeZone} />
         </Brand>
       ))}
     </div>
   ),
   play: async ({ canvasElement }) => {
-    const root = document.documentElement
-    const wasDark = root.classList.contains('dark')
-    try {
-      for (const dark of [false, true]) {
-        root.classList.toggle('dark', dark)
-        const bands = [...canvasElement.querySelectorAll<HTMLElement>('[data-backdrop]')]
-        await expect(bands).toHaveLength(CONTRAST_CASES.length)
-        for (const band of bands) {
-          const brandColor = band.closest<HTMLElement>('[data-brand]')!.dataset.brand!
-          const backdrop = band.dataset.backdrop as MatchBandBackdrop
-          if (backdrop === 'photo') {
-            const overlay = band.querySelector<HTMLElement>('[data-slot="photo-overlay"]')!
-            await expect(cssAlpha(getComputedStyle(overlay).backgroundColor)).toBeCloseTo(MATCH_BAND_OVERLAY, 2)
-          }
-          const texts = [...band.querySelectorAll<HTMLElement>('[data-band-text]')]
-          await expect(texts.length).toBeGreaterThanOrEqual(7)
-          for (const text of texts) {
-            const ratio = matchBandContrast({
-              brandColor,
-              backdrop,
-              text: cssHex(getComputedStyle(text).color),
-              region: text.dataset.bandText as MatchBandRegion,
-            })
-            const minimum = text.hasAttribute('data-band-large') ? MIN_LARGE_TEXT_CONTRAST : MIN_TEXT_CONTRAST
-            await expect({ text: text.textContent, brandColor, backdrop, dark, ok: ratio >= minimum }).toEqual(
-              expect.objectContaining({ ok: true }),
-            )
-          }
-        }
+    const bands = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-band"]')]
+    await expect(bands).toHaveLength(CONTRAST_CASES.length)
+    for (const band of bands) {
+      const brandColor = band.closest<HTMLElement>('[data-brand]')!.dataset.brand!
+      const texts = [...band.querySelectorAll<HTMLElement>('[data-band-text]')]
+      await expect(texts.length).toBeGreaterThanOrEqual(7)
+      for (const text of texts) {
+        const ratio = matchBandContrast({
+          brandColor,
+          text: cssHex(getComputedStyle(text).color),
+          region: text.dataset.bandText as MatchBandRegion,
+        })
+        const minimum = text.hasAttribute('data-band-large') ? MIN_LARGE_TEXT_CONTRAST : MIN_TEXT_CONTRAST
+        await expect({ text: text.textContent, brandColor, ok: ratio >= minimum }).toEqual(expect.objectContaining({ ok: true }))
       }
-    } finally {
-      root.classList.toggle('dark', wasDark)
     }
   },
 }

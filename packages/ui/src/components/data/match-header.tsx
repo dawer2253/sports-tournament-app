@@ -1,41 +1,19 @@
 import { CalendarClock, MapPin } from 'lucide-react'
 import type * as React from 'react'
-import fieldPhoto from '../../assets/public/field.webp'
-import basketballPhoto from '../../assets/public/hero-basketball.webp'
 import { bracketWinnerSide } from '../../lib/bracket'
 import { formatKickoff } from '../../lib/kickoff'
-import { matchBandScrim, type MatchBandBackdrop } from '../../lib/match-band'
+import { matchBandScrim } from '../../lib/match-band'
 import { cn } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { MetaList } from '../layout/meta-list'
-import { PhotoPanel } from '../layout/photo-panel'
-import type { SportCode } from '../../public/public-shell-tournament'
 import { TeamLogo } from '../layout/team-logo'
 import type { MatchPageMatch, MatchPageTeam } from './match-page-data'
 import { MATCH_STATUS_LABELS } from './match-row-data'
 import { Penalties } from './penalties'
 import { scorerSides, type ScorerLine } from './scorer-lines'
 
-/** Zdjęcie pod pasem i jego kadr (`PhotoPanel.focus`). */
-type BandPhoto = { src: string; focus: string }
-
-/**
- * Tło pasa per sport. Pas ma ok. 300 px wysokości i ciągnie się przez całą
- * szerokość treści, więc kadr celuje w fakturę nawierzchni, a nie w obiekt,
- * który poszatkowałby się na plaster i stał jasną plamą pod tekstem: piłka
- * bierze dół zdjęcia z samą murawą, z dala od piłki, a kosz dół zdjęcia hero
- * z liniami boiska (#210). Sport bez wpisu ma płaski kolor turnieju, jak hero
- * w `PublicShell`.
- */
-const PHOTO_BY_SPORT: Readonly<Record<string, BandPhoto | undefined>> = {
-  football: { src: fieldPhoto, focus: '90% 100%' },
-  basketball: { src: basketballPhoto, focus: '40% 100%' },
-} satisfies Partial<Record<SportCode, BandPhoto>>
-
 export interface MatchHeaderProps {
   match: MatchPageMatch
-  /** Kod sportu turnieju: wybiera zdjęcie pod pasem. */
-  sport: string
   /**
    * Kolor turnieju (`branding.primaryColor`). Pas bierze go ze zmiennej
    * `--brand` shella, a tu wyznacza kierunek gradientu pod tekstem.
@@ -102,27 +80,12 @@ function BandScorers({ lines, team, side }: { lines: ScorerLine[]; team: string;
   )
 }
 
-/** Tło pasa: zdjęcie sportu pod nakładką (`PhotoPanel`) albo płaski kolor turnieju. */
-function Band({ sport, className, children }: { sport: string; className?: string; children: React.ReactNode }) {
-  const photo = PHOTO_BY_SPORT[sport]
-  if (photo) {
-    return (
-      <PhotoPanel
-        src={photo.src}
-        focus={photo.focus}
-        overlay="band"
-        data-backdrop={'photo' satisfies MatchBandBackdrop}
-        className={className}
-      >
-        {children}
-      </PhotoPanel>
-    )
-  }
-  return (
-    <div data-backdrop={'flat' satisfies MatchBandBackdrop} className={cn('relative isolate overflow-hidden bg-brand text-brand-foreground', className)}>
-      {children}
-    </div>
-  )
+/**
+ * Tło pasa: płaski kolor turnieju dla każdego sportu. Zdjęcia sportu zniknęły
+ * z wariantem C strony publicznej (#290); pas zastąpi tablica meczu w #295.
+ */
+function Band({ className, children }: { className?: string; children: React.ReactNode }) {
+  return <div className={cn('relative isolate overflow-hidden bg-brand text-brand-foreground', className)}>{children}</div>
 }
 
 /**
@@ -135,13 +98,13 @@ function Band({ sport, className, children }: { sport: string; className?: strin
  *   (`scorerSides`). Mecz zaplanowany ma „– : –” i nie ma strzelców.
  * - Na telefonie fakty stoją jeden pod drugim, bez kresek, a kolumny
  *   strzelców zajmują całą szerokość.
- * - Każdy tekst ma kontrast ≥ 4.5:1, a wynik ≥ 3:1, wobec najgorszego
- *   piksela zdjęcia: warstwy i rachunek są w `lib/match-band.ts`.
+ * - Każdy tekst ma kontrast ≥ 4.5:1, a wynik ≥ 3:1 na kolorze turnieju
+ *   pod gradientem: warstwy i rachunek są w `lib/match-band.ts`.
  *
  * Kolor turnieju bierze ze zmiennych `--brand` i `--brand-foreground`, które
- * stawia `PublicShell`.
+ * stawia shell strony publicznej (`brandVars()`).
  */
-export function MatchHeader({ match, sport, brandColor, timeZone, className }: MatchHeaderProps) {
+export function MatchHeader({ match, brandColor, timeZone, className }: MatchHeaderProps) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
   const scheduled = match.status === 'scheduled'
@@ -154,7 +117,7 @@ export function MatchHeader({ match, sport, brandColor, timeZone, className }: M
   const scoreLabel = penalties ? `Wynik ${score}, karne ${match.homePenalties} : ${match.awayPenalties}` : `Wynik ${score}`
 
   return (
-    <Band sport={sport} className={cn('rounded-xl px-4 pt-4 pb-5 sm:px-8', className)}>
+    <Band className={cn('rounded-xl px-4 pt-4 pb-5 sm:px-8', className)}>
       <div aria-hidden className="absolute inset-0 -z-10" style={{ background: matchBandScrim(brandColor) }} />
       <section aria-label={`Mecz: ${home} – ${away}`} data-slot="match-band" className="text-sm">
         <div className="mb-3 flex items-center justify-between gap-2 font-medium">
