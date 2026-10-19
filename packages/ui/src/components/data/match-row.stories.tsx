@@ -26,8 +26,8 @@ const colliding = scheduleInProgress.find((match) => (match.collisions?.length ?
 const longNames: MatchRowData = {
   ...scheduled,
   id: 999,
-  homeTeam: { id: 901, name: 'Międzyszkolny Klub Sportowy Huragan Bemowo' },
-  awayTeam: { id: 902, name: 'Orły' },
+  homeTeam: { id: 901, name: 'Międzyszkolny Klub Sportowy Huragan Bemowo', logoUrl: null },
+  awayTeam: { id: 902, name: 'Orły', logoUrl: null },
 }
 
 const undated: MatchRowData = { ...scheduleUndated[0], id: 998 }
@@ -193,10 +193,10 @@ export const Odnosnik: Story = {
 
 // --- Strzelcy pod wynikiem (#208) ---------------------------------------------
 
-const wilki = { id: 1, name: 'Wilki Bemowo' }
-const sokoly = { id: 2, name: 'Sokoły Ursus' }
-const zubry = { id: 4, name: 'Żubry Wola' }
-const rysie = { id: 5, name: 'Rysie Mokotów' }
+const wilki = { id: 1, name: 'Wilki Bemowo', logoUrl: null }
+const sokoly = { id: 2, name: 'Sokoły Ursus', logoUrl: null }
+const zubry = { id: 4, name: 'Żubry Wola', logoUrl: null }
+const rysie = { id: 5, name: 'Rysie Mokotów', logoUrl: null }
 
 function scorer(team: MatchScorer['team'], id: number, name: string, value: number, minutes: number[], ownGoal = false): MatchScorer {
   return { team, player: { id, name }, value, minutes, ownGoal }
@@ -414,8 +414,8 @@ export const PucharNaTelefonie: Story = {
 /** Wiersze pucharu z nazwami do 20 znaków i podpisami pustych slotów (#239), także trwający. */
 const longCupRows: MatchRowData[] = [
   cupRow(921, {
-    homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów' },
-    awayTeam: { id: 32, name: 'Jastrzębie Białołęka' },
+    homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów', logoUrl: null },
+    awayTeam: { id: 32, name: 'Jastrzębie Białołęka', logoUrl: null },
     homeScore: 1,
     awayScore: 1,
     homePenalties: 4,
@@ -424,8 +424,8 @@ const longCupRows: MatchRowData[] = [
   cupRow(922, {
     ...live,
     id: 922,
-    homeTeam: { id: 33, name: 'Gepardy Śródmieście' },
-    awayTeam: { id: 34, name: 'Nosorożce Targówek' },
+    homeTeam: { id: 33, name: 'Gepardy Śródmieście', logoUrl: null },
+    awayTeam: { id: 34, name: 'Nosorożce Targówek', logoUrl: null },
     bracket: { label: 'Półfinał 2', penaltySlot: true },
   }),
   cupRow(923, {
@@ -556,7 +556,7 @@ export const PucharKoszykowka: Story = {
 
 const groupRows: MatchRowData[] = [
   { ...finished, id: 931, homeTeam: wilki, awayTeam: sokoly, group: 'Grupa A' },
-  { ...scheduled, id: 932, homeTeam: { id: 5, name: 'Żubry Praga' }, awayTeam: { id: 7, name: 'Lwy Ochota' }, group: 'Grupa B' },
+  { ...scheduled, id: 932, homeTeam: { id: 5, name: 'Żubry Praga', logoUrl: null }, awayTeam: { id: 7, name: 'Lwy Ochota', logoUrl: null }, group: 'Grupa B' },
   cupRow(933, { homeScore: 2, awayScore: 1 }),
 ]
 

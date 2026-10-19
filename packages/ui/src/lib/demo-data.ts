@@ -5,7 +5,7 @@ import type { GroupStandings } from '../components/data/group-standings'
 import type { Leaderboard, LeaderboardRow, StatOption } from '../components/data/leaderboard-data'
 import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components/data/match-event-data'
 import type { MatchPageData, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
-import type { MatchCollision, MatchRowData, MatchScorer } from '../components/data/match-row-data'
+import type { MatchCollision, MatchRowData, MatchRowTeam, MatchScorer } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
 import type { RoundSummary } from '../components/data/round-summary'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
@@ -449,13 +449,19 @@ const scheduleVenues = [
 /** Obiekty makiet terminarza i okna meczu, eksportowane dla ekranów demo. */
 export { scheduleVenues }
 
+/** Drużyna meczu makiety: herb ma tylko FC Górka, jak w `teamRows`. */
+function scheduleTeam(seat: number): MatchRowTeam {
+  const { id, name } = teams[seat - 1]
+  return { id, name, logoUrl: id === 1 ? demoTeamLogoUrl : null }
+}
+
 /** Cały sezon bez dat i obiektów, tak jak oddaje go generator (#157). */
 export const scheduleUndated: ScheduleDemoMatch[] = bergerPairs(teams.length).flatMap((pairs, index) =>
   pairs.map(([home, away], position) => ({
     id: index * 10 + position + 1,
     round: { id: index + 1, name: `Kolejka ${index + 1}`, order: index + 1 },
-    homeTeam: { id: teams[home - 1].id, name: teams[home - 1].name },
-    awayTeam: { id: teams[away - 1].id, name: teams[away - 1].name },
+    homeTeam: scheduleTeam(home),
+    awayTeam: scheduleTeam(away),
     homeScore: null,
     awayScore: null,
     status: 'scheduled' as const,
@@ -1067,7 +1073,10 @@ export const cupExampleTeams = ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany'
  * Mecz pucharu demo w kształcie `Match` z kontraktu: pasuje i do reguł
  * drabinki (`BracketMatch`), i do wierszy Terminarza (`MatchInRound`).
  */
-export type DemoBracketMatch = BracketMatch & {
+export type DemoBracketMatch = Omit<BracketMatch, 'homeTeam' | 'awayTeam'> & {
+  /** Drużyna z herbem jak `TeamSummary` z kontraktu; herb ma tylko rozstawiony z numerem 1. */
+  homeTeam: MatchRowTeam | null
+  awayTeam: MatchRowTeam | null
   stageId: number
   venue: { id: number; name: string } | null
 }
@@ -1142,7 +1151,7 @@ export function demoBracket({
     const nick = BRACKET_NICKS[index % 16]!
     const place = BRACKET_PLACES[(index * 5 + Math.floor(index / 16)) % 16]!
     const name = names?.[index] ?? (longNames ? `Uczniowski Klub Sportowy ${nick} ${place} Warszawa` : `${nick} ${place}`)
-    return { id: index + 1, name }
+    return { id: index + 1, name, logoUrl: index === 0 ? demoTeamLogoUrl : null }
   })
 
   const blank = (order: number, matchNumber: number): DemoBracketMatch => ({
