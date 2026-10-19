@@ -10,6 +10,8 @@ export * from './public-shell-tournament'
 
 // Shell i klocki.
 export * from './anchor'
+export * from './bracket'
+export * from './bracket-notes'
 export * from './board'
 export * from './button'
 export * from './crest'
@@ -22,6 +24,7 @@ export * from './skeleton'
 export * from './tournament-logo'
 
 // Ekrany (dane w propsach).
+export * from './screens/bracket'
 export * from './screens/system'
 
 // Logika, której potrzebuje strona (re-eksport, kod zostaje na miejscu).
@@ -33,7 +36,7 @@ export {
 } from '../lib/brand-on-dark'
 export { isModifiedClick } from '../lib/utils'
 export { groupByRound } from '../components/data/round-groups'
-export { bracketPosition } from '../lib/bracket'
+export { bracketPosition, bracketTeamIds, currentRoundOrder, hasGroupStage, isKnockoutOnly } from '../lib/bracket'
 export { plural } from '../lib/plural'
 export { withQualifiers } from '../lib/qualifiers'
 export { formatKickoff, formatMatchDay } from '../lib/kickoff'

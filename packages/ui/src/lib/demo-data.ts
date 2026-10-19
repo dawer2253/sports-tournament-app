@@ -14,7 +14,7 @@ import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
 import type { PublicShellTournament } from '../public/public-shell-tournament'
-import { bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch } from './bracket'
+import { bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch, type BracketTeam } from './bracket'
 import { formatRoundDates } from './kickoff'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
@@ -1063,11 +1063,17 @@ export const publicBasketballCupTournament: PublicShellTournament = {
 /** Drużyny przykładu `puchar` w kolejności rozstawienia (seedy 1–6). */
 export const cupExampleTeams = ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Rysie Wola', 'Żubry Praga', 'Niedźwiedzie Mokotów'] as const
 
+/** Drużyna pucharu demo: `BracketTeam` z herbem (`logoUrl`), jak `TeamSummary` w kontrakcie. */
+export type DemoBracketTeam = BracketTeam & { logoUrl: string | null }
+
 /**
  * Mecz pucharu demo w kształcie `Match` z kontraktu: pasuje i do reguł
  * drabinki (`BracketMatch`), i do wierszy Terminarza (`MatchInRound`).
  */
-export type DemoBracketMatch = BracketMatch & {
+export type DemoBracketMatch = Omit<BracketMatch, 'homeTeam' | 'awayTeam'> & {
+  /** Drużyny z herbem, jak `TeamSummary` w kontrakcie; demo herbów nie wgrało. */
+  homeTeam: DemoBracketTeam | null
+  awayTeam: DemoBracketTeam | null
   stageId: number
   venue: { id: number; name: string } | null
 }
@@ -1142,7 +1148,7 @@ export function demoBracket({
     const nick = BRACKET_NICKS[index % 16]!
     const place = BRACKET_PLACES[(index * 5 + Math.floor(index / 16)) % 16]!
     const name = names?.[index] ?? (longNames ? `Uczniowski Klub Sportowy ${nick} ${place} Warszawa` : `${nick} ${place}`)
-    return { id: index + 1, name }
+    return { id: index + 1, name, logoUrl: null }
   })
 
   const blank = (order: number, matchNumber: number): DemoBracketMatch => ({
