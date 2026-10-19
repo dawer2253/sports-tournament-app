@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { POLL_INTERVAL_MS, api } from './api';
 import { ApiError, isNotFound } from './api-error';
 
@@ -88,11 +88,27 @@ export const useResults = (slug: string) =>
  * Klasyfikacja według `stat`, a bez niego według pierwszej statystyki sportu
  * — wtedy żądanie idzie bez parametru i domyślną wybiera serwer (#190).
  */
-export const useLeaderboard = (slug: string, stat?: string) =>
-  usePublicQuery(['public', slug, 'leaderboard', stat ?? null], () =>
-    unwrap(
-      api.GET('/public/t/{slug}/leaderboard', {
-        params: { path: { slug }, query: stat ? { stat } : {} },
-      }),
-    ),
-  );
+export const useLeaderboard = (slug: string, stat?: string) => useQuery(leaderboardQuery(slug, stat));
+
+function leaderboardQuery(slug: string, stat?: string) {
+  return {
+    queryKey: ['public', slug, 'leaderboard', stat ?? null],
+    queryFn: () =>
+      unwrap(
+        api.GET('/public/t/{slug}/leaderboard', {
+          params: { path: { slug }, query: stat ? { stat } : {} },
+        }),
+      ),
+    refetchInterval: POLL_INTERVAL_MS,
+  };
+}
+
+/**
+ * Klasyfikacje wszystkich statystyk turnieju naraz, w kolejności `codes`
+ * (`PublicTournament.stats`), każda osobnym zapytaniem (#294). Pierwsza idzie
+ * bez parametru, więc dzieli klucz i pamięć podręczną z `useLeaderboard(slug)`
+ * na Przeglądzie. Zapytania stoją stale, więc zmiana wybranej statystyki
+ * nie montuje nowego obserwatora i nie wysyła żądania.
+ */
+export const useLeaderboards = (slug: string, codes: readonly string[]) =>
+  useQueries({ queries: codes.map((code, index) => leaderboardQuery(slug, index === 0 ? undefined : code)) });

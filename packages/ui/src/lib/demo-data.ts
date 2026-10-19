@@ -910,7 +910,7 @@ const PERIOD_NOUNS: Record<number, string> = { 2: 'połowa', 3: 'tercja', 4: 'kw
 /**
  * Strona meczu tak, jak składa ją serwer (`MatchRelation`): kolejność osi,
  * część z minuty i podziału turnieju, wynik po zdarzeniu, wyniki części
- * i strzelcy. Wynik meczu to suma zdarzeń, więc demo jest zgodne z nagłówkiem.
+ * i strzelcy. Wynik meczu to suma zdarzeń, więc demo jest zgodne z tablicą.
  */
 function demoMatchPage(
   base: Omit<MatchPageData, 'events' | 'periods' | 'scorers' | 'homeScore' | 'awayScore'>,
@@ -1014,7 +1014,7 @@ export const matchPageLive: MatchPageData = demoMatchPage(
   demoPeriods.football,
 )
 
-/** Mecz zaplanowany: „– : –”, bez strzelców i bez relacji. */
+/** Mecz zaplanowany: godzina w miejscu wyniku, bez strzelców i bez relacji. */
 export const matchPageScheduled: MatchPageData = {
   ...demoMatchPage(pageBase(publicFixtures.find((match) => match.status === 'scheduled')!, 'scheduled'), [], demoPeriods.football),
   homeScore: null,
@@ -1031,7 +1031,7 @@ export const publicBasketballTournament: PublicShellTournament = {
 
 /**
  * Kosz po meczu: 32 zdarzenia w czterech kwartach, więc kwarty startują
- * zwinięte (#210), a w pasie stoją wszyscy zawodnicy z punktami.
+ * zwinięte (#210), a na tablicy stoją wszyscy zawodnicy z punktami.
  */
 export const matchPageBasketball: MatchPageData = demoMatchPage(
   {
