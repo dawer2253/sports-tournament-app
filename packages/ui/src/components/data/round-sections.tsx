@@ -4,10 +4,7 @@ import { Button } from '../ui/button'
 import { Heading } from '../ui/typography'
 import { MatchRow, type MatchRowProps } from './match-row'
 import type { MatchRowData } from './match-row-data'
-import type { RoundWithMatches } from './round-groups'
-
-/** Ile kolejek pokazuje pierwsza porcja i ile dokłada każde „Pokaż więcej”. */
-export const ROUNDS_PER_PAGE = 3
+import { ROUNDS_PER_PAGE, type RoundWithMatches } from './round-groups'
 
 export interface RoundSectionsProps {
   /** Kolejki w kolejności listy (`groupByRound`). */

@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { publicFixtures, publicResults, scheduleTimeZone } from '../../lib/demo-data'
 import { groupByRound } from './round-groups'
-import { ROUNDS_PER_PAGE, RoundSections } from './round-sections'
+import { RoundSections } from './round-sections'
+import { ROUNDS_PER_PAGE } from './round-groups'
 
 const meta = {
   title: 'Strona publiczna/Do przepisania/Mecze po kolejce',
