@@ -10,10 +10,10 @@ import type { MatchRowData } from './match-row-data'
  * `lib/demo-data.ts` mogło go użyć bez importowania komponentów.
  */
 
-/** Drużyna w pasie meczu: z herbem, gdy klub go wgrał. */
+/** Drużyna na tablicy meczu: z herbem, gdy klub go wgrał. */
 export type MatchPageTeam = { id: number; name: string; logoUrl: string | null }
 
-/** Mecz w pasie strony meczu (`MatchHeader`): wiersz meczu z kolejką i herbami. */
+/** Mecz na tablicy strony meczu (`MatchBoard` z `src/public`): wiersz meczu z kolejką i herbami. */
 export type MatchPageMatch = Omit<MatchRowData, 'homeTeam' | 'awayTeam' | 'collisions'> & {
   homeTeam: MatchPageTeam | null
   awayTeam: MatchPageTeam | null
@@ -40,7 +40,7 @@ export type MatchRelationPeriod = {
   awayScore: number | null
 }
 
-/** Strona meczu w całości: pas i relacja. */
+/** Strona meczu w całości: tablica i relacja (`MatchScreen`). */
 export type MatchPageData = MatchPageMatch & {
   events: MatchRelationEvent[]
   periods: MatchRelationPeriod[]

@@ -49,7 +49,7 @@ type ContractFitsPublicMatch = PublicMatch extends MatchInRound ? true : never;
 
 export const contractFitsPublicMatch: ContractFitsPublicMatch = true;
 
-/** Strona meczu z kontraktu daje się pokazać w `MatchHeader` i `MatchRelation` (#210). */
+/** Strona meczu z kontraktu daje się pokazać w `MatchScreen` (`MatchBoard` i `MatchRelation` z `@tournament/ui/public`, #295). */
 type ContractFitsMatchPage = PublicMatchDetail extends MatchPageData ? true : never;
 
 export const contractFitsMatchPage: ContractFitsMatchPage = true;

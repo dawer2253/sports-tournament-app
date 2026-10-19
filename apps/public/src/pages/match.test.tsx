@@ -17,7 +17,7 @@ import {
   tournament,
 } from '../test/public-api';
 
-/** Relacja meczu: sekcja pod pasem z nagłówkiem „Przebieg meczu” albo „Relacja na żywo”. */
+/** Relacja meczu: sekcja pod tablicą z nagłówkiem „Przebieg meczu” albo „Relacja na żywo”. */
 function relation(name: 'Przebieg meczu' | 'Relacja na żywo') {
   return within(screen.getByRole('region', { name }));
 }
@@ -30,7 +30,7 @@ function relationRows(name: 'Przebieg meczu' | 'Relacja na żywo') {
 }
 
 /**
- * Odnośnik powrotu nad pasem. Zakładki shella mają te same nazwy
+ * Odnośnik powrotu nad tablicą. Zakładki shella mają te same nazwy
  * („Terminarz”, „Wyniki”), więc powrót to odnośnik spoza nawigacji.
  */
 async function backLink(name: 'Terminarz' | 'Wyniki') {
@@ -38,9 +38,15 @@ async function backLink(name: 'Terminarz' | 'Wyniki') {
   return screen.getAllByRole('link', { name }).find((link) => !link.closest('nav'))!;
 }
 
-/** Pas meczu: sekcja z nazwą „Mecz: gospodarz – gość”. */
+/** Tablica meczu: sekcja z nazwą „Mecz: gospodarz – gość”. */
 function band(id: number) {
   return within(screen.getByRole('region', { name: `Mecz: Gospodarz ${id} – Gość ${id}` }));
+}
+
+/** Wpisy listy strzelców drużyny na tablicy, w kolejności z DOM-u; pusta, gdy listy nie ma. */
+function scorersOf(team: string) {
+  const list = screen.queryByRole('list', { name: `Strzelcy: ${team}` });
+  return list ? within(list).getAllByRole('listitem').map((item) => item.textContent) : [];
 }
 
 afterEach(() => {
@@ -81,8 +87,8 @@ describe('powrót według stanu meczu', () => {
     renderAt(`/t/${SLUG}/mecze/1`);
 
     expect(await backLink('Terminarz')).toHaveAttribute('href', `/t/${SLUG}/terminarz`);
-    expect(screen.getByText('Mecz jeszcze się nie zaczął.')).toBeInTheDocument();
-    expect(band(1).getByText('– : –')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Mecz jeszcze się nie zaczął' })).toBeInTheDocument();
+    expect(band(1).queryByLabelText(/^Wynik/)).not.toBeInTheDocument();
   });
 
   it.each(['live', 'finished'] as const)('mecz %s wraca do Wyników', async (status) => {
@@ -178,7 +184,7 @@ describe('relacja', () => {
     expect(groups.map((group) => group.textContent)).toEqual([
       expect.stringMatching(/^1\. połowa/),
       expect.stringMatching(/^2\. połowa/),
-      'Bez minuty1 zdarzenie',
+      expect.stringMatching(/^Bez minuty1 zdarzenie/),
     ]);
     expect(relationRows('Przebieg meczu').at(-1)).toContain('Bez Minuty');
   });
@@ -201,7 +207,17 @@ describe('relacja', () => {
   });
 });
 
-describe('pas meczu', () => {
+describe('tablica meczu', () => {
+  it('herb z homeTeam.logoUrl odpowiedzi trafia na tablicę', async () => {
+    const logoUrl = 'https://example.test/herb-gospodarza.png';
+    publicApi({ matches: [detail(1, { homeTeam: { id: 1, name: 'Gospodarz 1', logoUrl } })] });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    const region = await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(region.querySelectorAll('img')).toHaveLength(1);
+    expect(region.querySelector('img')).toHaveAttribute('src', logoUrl);
+  });
+
   it('samobój stoi wśród strzelców po stronie przeciwnika, z „(sam.)”', async () => {
     publicApi({
       matches: [
@@ -239,6 +255,133 @@ describe('pas meczu', () => {
       'Zawodnik 2 12',
       'Zawodnik 1 11',
     ]);
+  });
+});
+
+describe('strzelcy na tablicy (reguły z wierszy meczu, #208)', () => {
+  it('samobój stoi po stronie przeciwnika drużyny strzelca, z dopiskiem „(sam.)”', async () => {
+    publicApi({
+      matches: [
+        detail(1, {
+          homeScore: 1,
+          awayScore: 1,
+          scorers: [
+            scorer(1, 'away', 7, { player: { id: 7, name: 'Jan Lis' }, minutes: [30], ownGoal: true }),
+            scorer(1, 'away', 8, { player: { id: 8, name: 'Adam Zieliński' }, minutes: [70] }),
+          ],
+        }),
+      ],
+    });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(scorersOf('Gospodarz 1')).toEqual(["Jan Lis 30' (sam.)"]);
+    expect(scorersOf('Gość 1')).toEqual(["Adam Zieliński 70'"]);
+  });
+
+  it('wiersz z kompletem minut pokazuje minuty, a bramka bez minuty przełącza wiersz na sumę', async () => {
+    publicApi({
+      matches: [
+        detail(1, {
+          homeScore: 2,
+          awayScore: 2,
+          scorers: [
+            scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, value: 2, minutes: [23, 67] }),
+            scorer(1, 'away', 2, { player: { id: 2, name: 'Rafał Duda' }, value: 2, minutes: [23] }),
+          ],
+        }),
+      ],
+    });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(scorersOf('Gospodarz 1')).toEqual(["Marek Nowak 23' 67'"]);
+    expect(scorersOf('Gość 1')).toEqual(['Rafał Duda 2']);
+  });
+
+  it('format sumy stoi za minutami, malejąco po value i bez limitu; minuty w kolejności z API', async () => {
+    const sum = (id: number, name: string, value: number) => scorer(1, 'home', id, { player: { id, name }, value, minutes: [] });
+    const goal = (id: number, minute: number) => scorer(1, 'home', id, { player: { id, name: `Strzelec ${id}` }, minutes: [minute] });
+    publicApi({
+      matches: [
+        detail(1, {
+          homeScore: 92,
+          awayScore: 0,
+          // Kolejność z API: minuty nie po kolei, sumy po id zawodnika.
+          scorers: [goal(11, 40), sum(1, 'Igor Kowal', 12), goal(12, 5), sum(2, 'Kacper Lipa', 28), sum(3, 'Oskar Dąb', 31), sum(4, 'Bruno Klon', 19)],
+        }),
+      ],
+    });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(scorersOf('Gospodarz 1')).toEqual([
+      "Strzelec 11 40'",
+      "Strzelec 12 5'",
+      'Oskar Dąb 31',
+      'Kacper Lipa 28',
+      'Bruno Klon 19',
+      'Igor Kowal 12',
+    ]);
+  });
+
+  it('na tablicy są tylko zdobycze: bez kartek, a drużyna bez strzelców nie ma listy', async () => {
+    publicApi({
+      matches: [
+        detail(1, {
+          homeScore: 1,
+          awayScore: 0,
+          scorers: [scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, minutes: [23] })],
+          events: [
+            matchEvent(1, 'home', 1, { minute: 23, type: 'goal', typeLabel: 'Bramka', player: { id: 1, name: 'Marek Nowak' }, scoreAfter: { home: 1, away: 0 } }),
+            matchEvent(1, 'away', 2, { minute: 50, player: { id: 2, name: 'Kartkowicz' } }),
+          ],
+        }),
+      ],
+    });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(scorersOf('Gospodarz 1')).toEqual(["Marek Nowak 23'"]);
+    expect(screen.queryByRole('list', { name: 'Strzelcy: Gość 1' })).not.toBeInTheDocument();
+    expect(band(1).queryByText(/Kartkowicz/)).not.toBeInTheDocument();
+  });
+
+  it('mecz trwający ma strzelców na tablicy', async () => {
+    publicApi({
+      matches: [
+        detail(1, {
+          status: 'live',
+          homeScore: 0,
+          awayScore: 1,
+          scorers: [scorer(1, 'away', 4, { player: { id: 4, name: 'Tomasz Lis' }, minutes: [12] })],
+        }),
+      ],
+    });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(scorersOf('Gość 1')).toEqual(["Tomasz Lis 12'"]);
+  });
+
+  it('mecz zaplanowany nie ma żadnej listy strzelców', async () => {
+    publicApi({
+      matches: [detail(2, { ...match(2, 1), scorers: [scorer(2, 'away', 4, { player: { id: 4, name: 'Tomasz Lis' }, minutes: [12] })] })],
+    });
+    renderAt(`/t/${SLUG}/mecze/2`);
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 2 – Gość 2' });
+    expect(screen.queryByRole('list', { name: /^Strzelcy/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('wczytywanie', () => {
+  it('przy pierwszym wczytaniu stoi szkielet meczu, a po danych znika', async () => {
+    publicApi({ matches: [detail(1)] });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    expect(await screen.findByRole('status', { name: 'Wczytywanie meczu' })).toBeInTheDocument();
+    await screen.findByRole('region', { name: 'Mecz: Gospodarz 1 – Gość 1' });
+    expect(screen.queryByRole('status', { name: 'Wczytywanie meczu' })).not.toBeInTheDocument();
   });
 });
 
