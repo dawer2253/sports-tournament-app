@@ -3198,6 +3198,8 @@ export interface paths {
          *     drabinkę. Czwarty, po `Prefer: example=grupy`, to turniej z fazą
          *     `group` i fazą `knockout`: ten sam przełącznik daje jego tabele grup
          *     w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
+         *     Wszystkie cztery przełączniki obsługuje też `/teams`: drużyny tych
+         *     samych turniejów.
          */
         get: {
             parameters: {
@@ -3324,6 +3326,98 @@ export interface paths {
                     content: {
                         "application/json": {
                             data: components["schemas"]["StandingTable"][];
+                        };
+                    };
+                };
+                304: components["responses"]["NotModified"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/t/{slug}/teams": {
+        parameters: {
+            query?: never;
+            header?: {
+                /**
+                 * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                 *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                 *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                 *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                 *     podręcznej: testy kontraktowe i integracje.
+                 * @example "9f2b1c4e"
+                 */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
+                slug: components["parameters"]["Slug"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Drużyny turnieju
+         * @description Wszystkie drużyny turnieju bez usuniętych, także te bez grupy i spoza
+         *     drabinki. Strona publiczna pokazuje z nich prezentację drużyn na
+         *     Przeglądzie, zanim powstanie terminarz (#296). Turniej bez drużyn daje
+         *     puste `data`, a szkic i nieznany slug `404`, jak `/public/t/{slug}`.
+         *
+         *     Kolejność: rosnąco po `id`, czyli w kolejności dopisania do turnieju.
+         *     Ekran układa drużyny sam (alfabetycznie), więc na kolejność z API nie
+         *     należy liczyć.
+         *
+         *     Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+         *     i `grupy`, z tymi samymi drużynami co przykłady tych przełączników
+         *     w pozostałych endpointach `/public/t/{slug}/*`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /**
+                     * @description Walidator z poprzedniej odpowiedzi. Zgodny daje `304` z pustym ciałem
+                     *     zamiast pełnego JSON-a. Przeglądarka wysyła ten nagłówek sama, ze swojej
+                     *     pamięci podręcznej, i sama zamienia `304` z powrotem na `200` — kod
+                     *     frontendu go nie ustawia. Jawnie ustawia go klient bez pamięci
+                     *     podręcznej: testy kontraktowe i integracje.
+                     * @example "9f2b1c4e"
+                     */
+                    "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+                };
+                path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
+                    slug: components["parameters"]["Slug"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Drużyny */
+                200: {
+                    headers: {
+                        ETag: components["headers"]["ETag"];
+                        "Cache-Control": components["headers"]["CacheControl"];
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["TeamSummary"][];
                         };
                     };
                 };
