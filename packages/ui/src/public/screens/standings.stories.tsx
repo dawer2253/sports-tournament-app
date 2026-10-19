@@ -135,6 +135,26 @@ export const Grupy: Story = {
   },
 }
 
+/**
+ * Grupa, której turniej nie zna jeszcze liczby wychodzących ani nazwy: tabela
+ * stoi bez linii i bez paska (także przy pierwszym miejscu, które w lidze
+ * dostałoby pasek lidera), a belka bierze nazwę fazy.
+ */
+export const GrupaBezLiczbyWychodzacych: Story = {
+  name: 'Grupa bez liczby wychodzących',
+  args: {
+    ...Grupy.args,
+    tables: [{ ...groupTables[0]!, groupName: null, qualifiers: null }],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('region', { name: 'Faza grupowa' })).toBeInTheDocument()
+    await expect(canvas.queryByText(/^Grupa \d/)).not.toBeInTheDocument()
+    await expect(canvasElement.querySelector('[data-slot="standings-bar"]')).toBeNull()
+    await expect(canvasElement.querySelector('[data-slot="qualifiers-line"]')).toBeNull()
+  },
+}
+
 /** Grupy przed wygenerowaniem drabinki: zdanie, kiedy powstanie, bez odnośnika. */
 export const GrupyPrzedDrabinka: Story = {
   name: 'Grupy przed drabinką',

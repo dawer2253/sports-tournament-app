@@ -134,7 +134,7 @@ export function StandingsScreen({ format, stageName, tables, status, schedule, o
         />
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-14">
           {tables.map((table, index) => (
-            <GroupTable key={table.groupId ?? `bez-id-${index}`} table={table} index={index} />
+            <GroupTable key={table.groupId ?? `bez-id-${index}`} table={{ ...table, stageName }} index={index} />
           ))}
         </div>
         <div className="flex flex-col gap-4">

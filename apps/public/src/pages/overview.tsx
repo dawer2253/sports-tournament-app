@@ -125,6 +125,7 @@ export function OverviewPage() {
               groupTables(tables).map(({ table, group }) => ({
                 groupId: table.groupId,
                 groupName: table.groupName,
+                stageName: table.stageName,
                 rows: table.rows,
                 qualifiers: group.qualifiers,
                 scoreLabel: table.scoreLabel,

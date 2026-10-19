@@ -9,7 +9,7 @@ import { OverviewDemo } from './overview-demo'
 const groupsTournament: PublicShellTournament = { ...publicTournament, name: 'Grupy Osiedlowe 2026', slug: 'grupy-osiedlowe-2026' }
 
 const groups = (moment: typeof publicGroupsSeason.inProgress) =>
-  moment.tables.map((group) => ({ ...group, scoreLabel: 'Bramki', allowsDraw: true }))
+  moment.tables.map((group) => ({ ...group, stageName: 'Faza grupowa', scoreLabel: 'Bramki', allowsDraw: true }))
 
 /**
  * Przegląd turnieju z grupami w fazie grupowej (#296): w miejscu tabeli

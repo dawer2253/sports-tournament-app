@@ -54,8 +54,13 @@ export interface StandingsTableProps {
   scoreLabel: string
   /** `StandingTable.allowsDraw`: kolumna `R` tylko w sporcie z remisami. */
   allowsDraw: boolean
-  /** Tabela grupy: bez zdobyczy i formy, z linią wyjścia z `qualifies`. */
+  /** Wąska tabela: bez zdobyczy i formy (grupy w dwóch kolumnach). */
   compact?: boolean
+  /**
+   * Tabela grupy: pasek i linia wyjścia idą wyłącznie z `qualifies`, bez
+   * paska lidera. Grupa bez liczby wychodzących stoi więc bez linii i paska.
+   */
+  group?: boolean
   /** Nazwa tabeli dla czytnika ekranu, np. „Tabela, Grupa A”. */
   label: string
 }
@@ -73,10 +78,9 @@ export interface StandingsTableProps {
  *   niewychodzącym, a „remis na linii” pod nazwą drużyny. Czytnik słyszy
  *   „, wychodzi z grupy” przy miejscu.
  */
-export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, label }: StandingsTableProps) {
+export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, group = false, label }: StandingsTableProps) {
   const grid = gridColumns(compact, allowsDraw)
   const wide = wideCell(compact)
-  const grouped = rows.some((row) => row.qualifies !== undefined)
   const anyPlayed = rows.some((row) => row.played > 0)
 
   return (
@@ -118,8 +122,8 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
         </span>
       </div>
       {rows.map((row, index) => {
-        const leader = !grouped && row.position === 1
-        const line = grouped && row.qualifies === false && rows[index - 1]?.qualifies === true
+        const leader = !group && row.position === 1
+        const line = group && row.qualifies === false && rows[index - 1]?.qualifies === true
         const strong = leader || row.qualifies === true
         const bar = anyPlayed && strong
         return (
@@ -261,6 +265,8 @@ export function ChampionBand(props: ChampionBandProps) {
 export interface GroupTableData {
   groupId: number | null
   groupName: string | null
+  /** `StandingTable.stageName`: nazwa belki, gdy grupa nie ma nazwy. */
+  stageName: string
   rows: readonly StandingsTableRow[]
   /** `Group.qualifiers` po `groupId`; `null`, gdy turniej grupy jeszcze nie zna: tabela bez linii. */
   qualifiers: number | null
@@ -273,13 +279,13 @@ export interface GroupTableData {
  * z linią wyjścia. Tabela i Przegląd (#296) stawiają grupy w dwóch kolumnach.
  */
 export function GroupTable({ table, index }: { table: GroupTableData; index: number }) {
-  const name = table.groupName ?? `Grupa ${index + 1}`
+  const name = table.groupName ?? table.stageName
   const id = `tabela-grupy-${table.groupId ?? index}`
   const rows = table.qualifiers === null ? table.rows : withQualifiers(table.rows, table.qualifiers)
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-3">
       <SectionHead id={id} title={name} />
-      <StandingsTable rows={rows} scoreLabel={table.scoreLabel} allowsDraw={table.allowsDraw} compact label={`Tabela, ${name}`} />
+      <StandingsTable rows={rows} scoreLabel={table.scoreLabel} allowsDraw={table.allowsDraw} compact group label={`Tabela, ${name}`} />
     </section>
   )
 }

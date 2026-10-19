@@ -100,7 +100,7 @@ const groupA = publicGroupStandings[0]!
  * a linia stoi między ostatnią wychodzącą a pierwszą niewychodzącą.
  */
 export const Grupa: Story = {
-  args: { rows: withQualifiers(groupA.rows, groupA.qualifiers), compact: true, label: `Tabela, ${groupA.name}` },
+  args: { rows: withQualifiers(groupA.rows, groupA.qualifiers), compact: true, group: true, label: `Tabela, ${groupA.name}` },
   play: async ({ canvasElement }) => {
     const rows = bodyRows(canvasElement)
     await expect(rows.map(hasBar)).toEqual([true, true, false, false])
