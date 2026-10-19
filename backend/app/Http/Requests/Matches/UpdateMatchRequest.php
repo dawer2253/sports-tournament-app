@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Matches;
 
+use App\Matches\LiveClock;
 use App\Models\GameMatch;
 use App\Rules\Iso8601WithOffset;
 use Illuminate\Foundation\Http\FormRequest;
@@ -135,7 +136,11 @@ class UpdateMatchRequest extends FormRequest
     /**
      * Pola części meczu (#297): tylko w meczu `live` po scaleniu stanu z ciała,
      * start części razem z jej numerem, a numer w `1…count` ustawień
-     * turnieju, w fazie `knockout` także `count + 1` (dogrywka). Wszystkie
+     * turnieju, w fazie `knockout` także `count + 1` (dogrywka). Start
+     * przyjmuje wyłącznie następną część (bieżąca + 1), a przerwa wchodzi
+     * tylko po części, która trwa i nie jest ostatnią — turniej bez podziału
+     * (`count: 1`) przerwy więc nie ma, dogrywka też nie. Bieżąca część to ta
+     * po przejściu stanu z tego samego ciała (`LiveClock::changes`). Wszystkie
      * błędy idą pod `livePeriod`, bo organizator klika jeden przycisk części.
      */
     private function checkLivePeriod(Validator $validator): void
@@ -149,12 +154,25 @@ class UpdateMatchRequest extends FormRequest
         $period = $this->input('livePeriod');
         $count = $match->stage->tournament->period_count;
         $last = $match->stage->type === 'knockout' ? $count + 1 : $count;
+        $status = $this->input('status', $match->status);
+
+        // Zegar po samym przejściu stanu, bez pól części z ciała.
+        $clock = [
+            'live_period' => $match->live_period,
+            'period_started_at' => $match->period_started_at,
+            ...LiveClock::changes($match, ['status' => $status], now()),
+        ];
+        $current = $clock['live_period'] ?? 0;
+        $next = $current + 1;
+        $partRunning = $clock['period_started_at'] !== null;
 
         $message = match (true) {
-            $this->input('status', $match->status) !== 'live' => 'Część meczu prowadzi się tylko w meczu trwającym.',
+            $status !== 'live' => 'Część meczu prowadzi się tylko w meczu trwającym.',
             $period !== null && $running !== true => 'Część meczu startuje razem z periodRunning: true.',
             $period === null && $running === true => 'Podaj część meczu, która startuje.',
             $period !== null && $period > $last => "Ten mecz nie ma {$period}. części.",
+            $period !== null && $period !== $next => "Następna część tego meczu to {$next}.",
+            $running === false && (! $partRunning || $current >= $count) => 'Przerwa jest tylko po części, która trwa i nie jest ostatnią.',
             default => null,
         };
 

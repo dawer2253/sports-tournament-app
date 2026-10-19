@@ -432,6 +432,63 @@ it('pola części przy meczu innym niż live dają 422 pod livePeriod', function
 it('liczy zakres części z ustawień turnieju: 4. kwarta przechodzi, 5. daje 422', function () {
     $match = updateMatchLiveAt(updateMatchLeague('basketball'), '2026-09-27 10:00:00');
 
-    updateMatch($match, ['livePeriod' => 4, 'periodRunning' => true])->assertValidResponse(200)->assertJsonPath('data.livePeriod', 4);
+    foreach ([2, 3, 4] as $period) {
+        updateMatch($match, ['livePeriod' => $period, 'periodRunning' => true])->assertValidResponse(200)->assertJsonPath('data.livePeriod', $period);
+    }
     updateMatch($match, ['livePeriod' => 5, 'periodRunning' => true])->assertValidResponse(422)->assertJsonValidationErrors('livePeriod');
+});
+
+it('start części przyjmuje tylko następny numer: ani przeskok, ani powtórka bieżącej czy wcześniejszej', function (int $period) {
+    $match = updateMatchLiveAt(updateMatchLeague('basketball'), '2026-09-27 10:00:00');
+    updateMatch($match, ['livePeriod' => 2, 'periodRunning' => true])->assertValidResponse(200);
+    $this->travelTo('2026-09-27 10:30:00');
+
+    updateMatch($match, ['livePeriod' => $period, 'periodRunning' => true])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.livePeriod.0', 'Następna część tego meczu to 3.');
+
+    $match->refresh();
+    expect($match->live_period)->toBe(2)
+        ->and($match->period_started_at->toIso8601String())->toBe('2026-09-27T10:00:00+00:00');
+})->with(['przeskok' => 4, 'powtórka bieżącej' => 2, 'wcześniejsza' => 1]);
+
+it('w turnieju bez podziału mecz ma jedną część: bez przerwy i bez 2. części w lidze', function (array $body) {
+    $match = updateMatchLiveAt(updateMatchLeague(attributes: ['period_count' => 1, 'period_minutes' => null]), '2026-09-27 10:00:00');
+
+    updateMatch($match, $body)
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('livePeriod');
+
+    expect($match->refresh()->on_break)->toBeFalse();
+})->with([
+    'przerwa' => [['periodRunning' => false]],
+    '2. część' => [['livePeriod' => 2, 'periodRunning' => true]],
+]);
+
+it('przerwa po ostatniej części ligi daje 422: po niej mecz się kończy', function () {
+    $match = updateMatchLiveAt(updateMatchLeague(), '2026-09-27 10:00:00');
+    updateMatch($match, ['livePeriod' => 2, 'periodRunning' => true])->assertValidResponse(200);
+
+    updateMatch($match, ['periodRunning' => false])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.livePeriod.0', 'Przerwa jest tylko po części, która trwa i nie jest ostatnią.');
+});
+
+it('przerwa w trakcie przerwy albo po powrocie z finished daje 422, a start następnej części przechodzi', function () {
+    $match = updateMatchLiveAt(updateMatchLeague('basketball'), '2026-09-27 10:00:00');
+    updateMatch($match, ['periodRunning' => false])->assertValidResponse(200);
+
+    updateMatch($match, ['periodRunning' => false])->assertValidResponse(422)->assertJsonValidationErrors('livePeriod');
+
+    updateMatch($match, ['livePeriod' => 2, 'periodRunning' => true])->assertValidResponse(200);
+    updateMatch($match, ['status' => 'finished', 'homeScore' => 40, 'awayScore' => 38])->assertValidResponse(200);
+    updateMatch($match, ['status' => 'live'])->assertValidResponse(200)->assertJsonPath('data.livePeriod', 2);
+
+    updateMatch($match, ['periodRunning' => false])->assertValidResponse(422)->assertJsonValidationErrors('livePeriod');
+    expect($match->refresh()->on_break)->toBeFalse();
+
+    updateMatch($match, ['livePeriod' => 3, 'periodRunning' => true])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.livePeriod', 3)
+        ->assertJsonPath('data.onBreak', false);
 });
