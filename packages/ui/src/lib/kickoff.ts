@@ -69,3 +69,14 @@ export function formatRoundDates(kickoffs: readonly (string | null)[], timeZone?
   const undated = kickoffs.filter((iso) => iso === null).length
   return undated > 0 ? `${range} · ${undated} bez terminu` : range
 }
+
+/**
+ * Krótki dzień do kolumny terminu w wierszu meczu strony publicznej
+ * (#292): „sob. 5.09”. `null` bez terminu.
+ */
+export function formatShortDay(iso: string | null, timeZone?: string): string | null {
+  if (iso === null) return null
+  return new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: '2-digit', timeZone })
+    .format(new Date(iso))
+    .replace(',', '')
+}

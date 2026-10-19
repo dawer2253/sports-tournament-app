@@ -172,8 +172,15 @@ pkt 8 zastępuje tu trójkę plików panelu.
 
 - **Kod**: shell (`shell.tsx`), klocki (`crest.tsx`, `tournament-logo.tsx`,
   `form.tsx`, `score-cell.tsx`, `live.tsx`, `button.tsx`, `board.tsx`,
-  `skeleton.tsx`, `heads.tsx`, `anchor.tsx`), zakładki (`public-nav.ts`), typ
-  turnieju w pasku (`public-shell-tournament.ts`) i ekrany w `screens/`.
+  `skeleton.tsx`, `heads.tsx`, `anchor.tsx`), wiersz meczu i lista kolejek
+  Terminarza i Wyników (`match-row.tsx`, `round-sections.tsx`; porcje liczy
+  `roundsPage` w `components/data/round-groups.ts`), Drabinka (`bracket.tsx`:
+  kafle i drzewo w oknie rund; zdania notki o rozjeździe i wychodzących
+  z grup w `bracket-notes.ts`), zakładki
+  (`public-nav.ts`), typ turnieju w pasku (`public-shell-tournament.ts`)
+  i ekrany w `screens/`. Panelowy `MatchRow` z `components/data` zostaje dla
+  panelu i dzisiejszego Przeglądu, a `BracketMatchTile` dla karty
+  „Drabinka” Przeglądu (do #296).
 - **Barrel** `src/public/index.ts`, import `@tournament/ui/public`, nazwy bez
   przedrostka. Re-eksportuje logikę, której strona potrzebuje (`brandVars`,
   `groupByRound`, `formatKickoff`…); ta logika zostaje tam, gdzie jest.

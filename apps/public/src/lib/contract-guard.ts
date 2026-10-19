@@ -54,7 +54,7 @@ type ContractFitsPublicMatch = PublicMatch extends MatchInRound ? true : never;
 
 export const contractFitsPublicMatch: ContractFitsPublicMatch = true;
 
-/** Strona meczu z kontraktu daje się pokazać w `MatchHeader` i `MatchRelation` (#210). */
+/** Strona meczu z kontraktu daje się pokazać w `MatchScreen` (`MatchBoard` i `MatchRelation` z `@tournament/ui/public`, #295). */
 type ContractFitsMatchPage = PublicMatchDetail extends MatchPageData ? true : never;
 
 export const contractFitsMatchPage: ContractFitsMatchPage = true;
@@ -64,12 +64,12 @@ type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : n
 
 export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
 
-/** Klasyfikacja z kontraktu daje się pokazać w `LeaderboardTable` i `LeaderboardLeaders`. */
+/** Klasyfikacja z kontraktu daje się pokazać w `StatRanking`, `StatLeaders`, `OtherStatLeaders` (`@tournament/ui/public`) i `LeaderboardLeaders`. */
 type ContractFitsLeaderboard = StatLeaderboard extends Leaderboard ? true : never;
 
 export const contractFitsLeaderboard: ContractFitsLeaderboard = true;
 
-/** Statystyka turnieju z kontraktu daje się podać do `StatSwitcher`. */
+/** Statystyka turnieju z kontraktu daje się podać do `StatTabs` i `StatsScreen` (`@tournament/ui/public`). */
 type ContractFitsStatOption = PublicStat extends StatOption ? true : never;
 
 export const contractFitsStatOption: ContractFitsStatOption = true;

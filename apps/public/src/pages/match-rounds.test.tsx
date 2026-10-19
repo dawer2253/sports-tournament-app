@@ -1,14 +1,14 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse, http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from '../lib/api';
 import { API_URL as API, server } from '../test/server';
-import { SLUG, finished, match, publicApi, renderAt } from '../test/public-api';
+import { SLUG, finished, match, publicApi, renderAt, scorer } from '../test/public-api';
 
-/** Nazwy pokazanych kolejek, w kolejności z DOM-u (nagłówek sekcji kolejki to h2). */
+/** Nazwy pokazanych kolejek, w kolejności z DOM-u (kolejka to sekcja nazwana nagłówkiem). */
 function shownRounds() {
-  return screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent);
+  return screen.queryAllByRole('region').map((region) => region.getAttribute('aria-label') ?? within(region).getAllByRole('heading')[0]!.textContent);
 }
 
 /** Po jednym meczu w kolejkach `from`..`to` (włącznie), mecz o id równym numerowi kolejki. */
@@ -120,11 +120,117 @@ describe('Terminarz', () => {
     expect(screen.getByRole('button', { name: 'Pokaż więcej' })).toBeInTheDocument();
   });
 
-  it('bez meczów mówi o tym wprost', async () => {
-    publicApi({ fixtures: [] });
+  it('postęp kolejki liczy się z całej kolejki, także z meczów, które są już w Wynikach', async () => {
+    publicApi({ fixtures: [match(2, 1), match(3, 1), match(4, 1)], results: [finished(1, 1)] });
     renderAt(`/t/${SLUG}/terminarz`);
 
-    expect(await screen.findByText('Brak zaplanowanych meczów')).toBeInTheDocument();
+    const round = await screen.findByRole('region', { name: 'Kolejka 1' });
+    expect(round).toHaveTextContent('1 z 4 rozegrane');
+    expect(round).not.toHaveTextContent('0 z 3');
+  });
+
+  it('wszystko rozegrane: Terminarz mówi o tym i prowadzi do Wyników', async () => {
+    publicApi({ fixtures: [], results: [finished(1, 1)] });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    expect(await screen.findByRole('heading', { name: 'Wszystkie mecze rozegrane' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zobacz wyniki' })).toHaveAttribute('href', `/t/${SLUG}/wyniki`);
+  });
+
+  it('bez terminarza obie zakładki mówią, że nie jest ułożony, i prowadzą do Przeglądu', async () => {
+    publicApi({ fixtures: [], results: [] });
+    const { router } = renderAt(`/t/${SLUG}/terminarz`);
+
+    expect(await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zobacz drużyny na Przeglądzie' })).toHaveAttribute('href', `/t/${SLUG}`);
+
+    await act(() => router.navigate(`/t/${SLUG}/wyniki`));
+    expect(await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' })).toBeInTheDocument();
+  });
+});
+
+describe('Terminarz i Wyniki: wiersz meczu', () => {
+  it('herb z API stoi przy drużynie, a bez herbu stoi herb zastępczy, po obu stronach', async () => {
+    publicApi({
+      fixtures: [
+        match(1, 1, {
+          homeTeam: { id: 1, name: 'Gospodarz 1', logoUrl: 'https://cdn.example/herb-1.png' },
+          awayTeam: { id: 2, name: 'Gość 1', logoUrl: 'https://cdn.example/herb-2.png' },
+        }),
+        match(2, 1),
+      ],
+    });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    const withLogo = await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' });
+    expect([...withLogo.querySelectorAll('[data-slot="crest"] img')].map((img) => img.getAttribute('src'))).toEqual([
+      'https://cdn.example/herb-1.png',
+      'https://cdn.example/herb-2.png',
+    ]);
+    const without = screen.getByRole('link', { name: 'Gospodarz 2 – Gość 2' });
+    expect(without.querySelectorAll('[data-slot="crest"] img')).toHaveLength(0);
+    expect(without.querySelectorAll('[data-slot="crest-fallback"]')).toHaveLength(2);
+  });
+
+  it('nie pokazuje strzelców z odpowiedzi ani w Wynikach, ani w Terminarzu', async () => {
+    const scorers = [scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, minutes: [23] })];
+    publicApi({
+      fixtures: [match(2, 2, { status: 'live', homeScore: 1, awayScore: 0, scorers: [scorer(2, 'home', 3, { player: { id: 3, name: 'Tomasz Lis' } })] })],
+      results: [finished(1, 1, { scorers })],
+    });
+    const { router } = renderAt(`/t/${SLUG}/wyniki`);
+
+    await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' });
+    expect(screen.queryByText(/Nowak/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: /^Strzelcy/ })).not.toBeInTheDocument();
+
+    await act(() => router.navigate(`/t/${SLUG}/terminarz`));
+    await screen.findByRole('link', { name: 'Gospodarz 2 – Gość 2' });
+    expect(screen.queryByText(/Lis/)).not.toBeInTheDocument();
+  });
+
+  it('wiersz prowadzi na stronę meczu, a klik z Ctrl zostaje przeglądarce', async () => {
+    publicApi({ fixtures: [match(7, 1)] });
+    const user = userEvent.setup();
+    const { router } = renderAt(`/t/${SLUG}/terminarz`);
+
+    const row = await screen.findByRole('link', { name: 'Gospodarz 7 – Gość 7' });
+    expect(row).toHaveAttribute('href', `/t/${SLUG}/mecze/7`);
+    // `fireEvent` oddaje `false`, gdy ktoś wywołał `preventDefault()`.
+    expect(fireEvent.click(row, { ctrlKey: true })).toBe(true);
+    expect(router.state.location.pathname).toBe(`/t/${SLUG}/terminarz`);
+
+    await user.click(row);
+    expect(router.state.location.pathname).toBe(`/t/${SLUG}/mecze/7`);
+  });
+
+  it.each([
+    [1, '1 mecz przed nami', '1 mecz zakończony'],
+    [3, '3 mecze przed nami', '3 mecze zakończone'],
+    [5, '5 meczów przed nami', '5 meczów zakończonych'],
+    [12, '12 meczów przed nami', '12 meczów zakończonych'],
+    [22, '22 mecze przed nami', '22 mecze zakończone'],
+  ])('fakt w nagłówku odmienia %i mecz(e/ów)', async (count, fixturesFact, resultsFact) => {
+    const ids = Array.from({ length: count }, (_, index) => index + 1);
+    publicApi({ fixtures: ids.map((id) => match(id, 1)), results: ids.map((id) => finished(100 + id, 1)) });
+    const { router } = renderAt(`/t/${SLUG}/terminarz`);
+
+    const fact = () => document.querySelector('[data-slot="page-head"] [data-slot="fact"]')?.textContent;
+    await screen.findByRole('heading', { name: 'Terminarz' });
+    expect(fact()).toBe(fixturesFact);
+
+    await act(() => router.navigate(`/t/${SLUG}/wyniki`));
+    await screen.findByRole('heading', { name: 'Wyniki' });
+    expect(fact()).toBe(resultsFact);
+  });
+
+  it('przy pierwszym wczytaniu stoi szkielet listy, a po danych znika', async () => {
+    publicApi({ fixtures: [match(1, 1)] });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    expect(await screen.findByRole('status', { name: 'Wczytywanie terminarza' })).toBeInTheDocument();
+    await screen.findByRole('region', { name: 'Kolejka 1' });
+    expect(screen.queryByRole('status', { name: 'Wczytywanie terminarza' })).not.toBeInTheDocument();
   });
 });
 
@@ -184,10 +290,19 @@ describe('Wyniki', () => {
     expect(shownRounds()).toEqual(['Kolejka 8', 'Kolejka 7', 'Kolejka 6', 'Kolejka 5']);
   });
 
-  it('bez rozegranych meczów mówi o tym wprost', async () => {
-    publicApi({ results: [] });
+  it('kolejka w Wynikach nie ma postępu', async () => {
+    publicApi({ fixtures: [match(2, 1)], results: [finished(1, 1)] });
     renderAt(`/t/${SLUG}/wyniki`);
 
-    expect(await screen.findByText('Brak rozegranych meczów')).toBeInTheDocument();
+    const round = await screen.findByRole('region', { name: 'Kolejka 1' });
+    expect(round).not.toHaveTextContent(/rozegrane/);
+  });
+
+  it('bez wyników mówi, że ich jeszcze nie ma, i prowadzi do Terminarza', async () => {
+    publicApi({ fixtures: [match(1, 1)], results: [] });
+    renderAt(`/t/${SLUG}/wyniki`);
+
+    expect(await screen.findByRole('heading', { name: 'Jeszcze nie ma wyników' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zobacz terminarz' })).toHaveAttribute('href', `/t/${SLUG}/terminarz`);
   });
 });

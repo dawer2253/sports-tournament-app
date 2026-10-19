@@ -11,8 +11,8 @@ import { textContrast } from '../test/theme'
 /** Mecz trwający z wynikiem: jego wynik stoi na `bg-destructive`. */
 const LIVE_MATCH: MatchRowData & { round: { name: string } } = {
   id: 1,
-  homeTeam: { id: 1, name: 'Rysie Mokotów' },
-  awayTeam: { id: 2, name: 'Żubry Wola' },
+  homeTeam: { id: 1, name: 'Rysie Mokotów', logoUrl: null },
+  awayTeam: { id: 2, name: 'Żubry Wola', logoUrl: null },
   homeScore: 75,
   awayScore: 75,
   status: 'live',
