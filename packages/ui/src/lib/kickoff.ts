@@ -67,7 +67,8 @@ export function formatRoundDates(kickoffs: readonly (string | null)[], timeZone?
   if (days.length === 0) return 'bez terminu'
   const range = days.length === 1 ? days[0] : `${days[0]} – ${days[days.length - 1]}`
   const undated = kickoffs.filter((iso) => iso === null).length
-  return undated > 0 ? `${range} · ${undated} bez terminu` : range
+  // Przecinek, nie „·”: kropka między faktami to zasada, której UI nie łamie.
+  return undated > 0 ? `${range}, ${undated} bez terminu` : range
 }
 
 /**

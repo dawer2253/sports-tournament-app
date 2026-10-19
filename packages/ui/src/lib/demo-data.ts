@@ -756,11 +756,15 @@ export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
  * punktach, bilansie i zdobyczach, na końcu po nazwie. Dzięki temu forma,
  * liczby wiersza i fakty w nagłówku zgadzają się z Wynikami demo.
  */
-function demoLeagueTable(matches: readonly ScheduleDemoMatch[]): PublicStandingsTableRow[] {
+function demoLeagueTable(
+  matches: readonly ScheduleDemoMatch[],
+  entrants: readonly MatchRowTeam[] = teamRows,
+  points: Record<FormResult, number> = { win: 3, draw: 1, loss: 0 },
+): PublicStandingsTableRow[] {
   const finished = matches
     .filter((match) => match.status === 'finished')
     .toSorted((a, b) => a.round.order - b.round.order || a.id - b.id)
-  const rows = teamRows.map((team) => ({
+  const rows = entrants.map((team) => ({
     team: { id: team.id, name: team.name, logoUrl: team.logoUrl },
     played: 0, won: 0, drawn: 0, lost: 0, scoreFor: 0, scoreAgainst: 0, points: 0,
     results: [] as FormResult[],
@@ -774,7 +778,7 @@ function demoLeagueTable(matches: readonly ScheduleDemoMatch[]): PublicStandings
     row.scoreFor += scored
     row.scoreAgainst += conceded
     row[result === 'win' ? 'won' : result === 'loss' ? 'lost' : 'drawn']++
-    row.points += { win: 3, draw: 1, loss: 0 }[result]
+    row.points += points[result]
     row.results.push(result)
   }
   for (const match of finished) {
@@ -1535,3 +1539,153 @@ export const publicFinishedLists: PublicMatchLists = {
     .map(({ collisions: _collisions, ...match }) => match)
     .toSorted((a, b) => byKickoff(b, a)),
 }
+
+// --- Przegląd strony publicznej (#296) ----------------------------------------
+//
+// Jeden turniej na format w czterech chwilach: przed terminarzem (same
+// drużyny), przed startem, w trakcie i po końcu. Listy meczów, tabele
+// i drabinki każdego formatu biorą się z tych samych meczów, więc pas etapu,
+// tabela i drabinka mówią to samo.
+
+/** Drużyna prezentacji (`TeamSummary` z kontraktu). */
+export type PublicTeam = MatchRowTeam
+
+/** Drużyny z meczów w kolejności pierwszego wystąpienia, bez pustych slotów. */
+function teamsOf(matches: readonly { homeTeam: MatchRowTeam | null; awayTeam: MatchRowTeam | null }[]): PublicTeam[] {
+  const byId = new Map<number, PublicTeam>()
+  for (const match of matches) {
+    for (const team of [match.homeTeam, match.awayTeam]) if (team && !byId.has(team.id)) byId.set(team.id, team)
+  }
+  return [...byId.values()]
+}
+
+/** Mecze sezonu jako `/fixtures` i `/results`: strzelcy jak w API, rosnąco po terminie przed podziałem. */
+function seasonLists(matches: readonly ScheduleDemoMatch[]): PublicMatchLists {
+  return splitLists(matches.map(asPublicMatch).toSorted(byKickoff))
+}
+
+/** Chwila turnieju na Przeglądzie: listy meczów i tabela ligi. */
+export type PublicLeagueMoment = { lists: PublicMatchLists; rows: PublicStandingsTableRow[] }
+
+/** Liga piłkarska demo (`teams`): drużyny i trzy chwile sezonu. */
+export const publicLeagueSeason = {
+  teams: teamRows.map(({ id, name, logoUrl }): PublicTeam => ({ id, name, logoUrl })),
+  beforeStart: { lists: seasonLists(scheduleBeforeStart), rows: publicStandingsRows.beforeStart },
+  inProgress: { lists: publicLeagueLists, rows: publicStandingsRows.inProgress },
+  finished: { lists: seasonLists(scheduleFinished), rows: publicStandingsRows.finished },
+} satisfies Record<string, PublicLeagueMoment | PublicTeam[]>
+
+/** Wszystkie mecze ligi koszykówki demo (`publicBasketballLists`) rosnąco po terminie. */
+const basketballSeason: ScheduleDemoMatch[] = [...publicBasketballLists.fixtures, ...publicBasketballLists.results].toSorted(byKickoff)
+const basketballTeams = basketballStandingsTableRows.map((row) => row.team)
+/** Koszykówka: 2 punkty za wygraną, 1 za porażkę, bez remisów. */
+const BASKETBALL_POINTS = { win: 2, draw: 0, loss: 1 }
+
+/** Liga koszykówki demo: te same mecze przed startem, w trakcie i po końcu, tabela z nich. */
+export const publicBasketballSeason = (() => {
+  const beforeStart = basketballSeason.map((match) => ({ ...match, status: 'scheduled' as const, homeScore: null, awayScore: null }))
+  const finished = basketballSeason.map((match, index) =>
+    match.status === 'finished' ? match : { ...match, status: 'finished' as const, homeScore: 80 + ((index * 7) % 25), awayScore: 76 + ((index * 11) % 23) },
+  )
+  const moment = (matches: ScheduleDemoMatch[]): PublicLeagueMoment => ({
+    lists: splitLists(matches),
+    rows: demoLeagueTable(matches, basketballTeams, BASKETBALL_POINTS),
+  })
+  return {
+    teams: basketballTeams,
+    beforeStart: moment(beforeStart),
+    inProgress: moment(basketballSeason),
+    finished: moment(finished),
+  }
+})()
+
+/** Chwila pucharu: komplet meczów drabinki (`/matches`) i listy z pozycją w drabince. */
+export type PublicCupMoment = { matches: DemoBracketMatch[]; lists: PublicMatchLists }
+
+function cupMoment(matches: DemoBracketMatch[]): PublicCupMoment {
+  return { matches, lists: splitLists(withDemoPositions(matches, true).toSorted(byKickoff)) }
+}
+
+/**
+ * Puchar ośmiu drużyn demo: przed startem, w półfinałach (pierwszy
+ * zakończony, drugi trwa) i po finale rozstrzygniętym karnymi.
+ */
+export const publicCupSeason = (() => {
+  const before = demoBracket({ teams: 8 })
+  const finished = demoBracket({ teams: 8, progress: 'done' })
+  // Finał 2:2, karne 5:4 dla gospodarza: mistrz wychodzi z karnych.
+  const final = finished.find((match) => match.round.order === 3 && match.matchNumber === 1)!
+  Object.assign(final, { homeScore: 2, awayScore: 2, homePenalties: 5, awayPenalties: 4 })
+  return {
+    teams: teamsOf(before),
+    beforeStart: cupMoment(before),
+    inProgress: cupMoment(demoBracket({ teams: 8, progress: { round: 2, finished: 1, live: 1 } })),
+    finished: cupMoment(finished),
+  }
+})()
+
+/** Chwila fazy grupowej: listy meczów grup i tabele obu grup z nich. */
+export type PublicGroupMoment = {
+  lists: PublicMatchLists
+  tables: { groupId: number; groupName: string; qualifiers: number; rows: PublicStandingsTableRow[] }[]
+}
+
+/** Mecze grup z `publicGroupLists` (bez playoffu), rosnąco po terminie. */
+const groupSeason: PublicListMatch[] = [...publicGroupLists.fixtures, ...publicGroupLists.results]
+  .filter((match) => match.stageId === 3)
+  .toSorted(byKickoff)
+
+function groupMoment(matches: PublicListMatch[]): PublicGroupMoment {
+  return {
+    lists: splitLists(matches),
+    tables: groupStandings.map((group) => ({
+      groupId: group.id,
+      groupName: group.name,
+      qualifiers: group.qualifiers,
+      rows: demoLeagueTable(
+        matches.filter((match) => match.group === group.name),
+        group.rows.map((row) => row.team),
+      ),
+    })),
+  }
+}
+
+/** Playoff po grupach: drabinka na czterech z czołówki grup, w fazie `id: 4`. */
+function demoPlayoff(progress: DemoBracketProgress): DemoBracketMatch[] {
+  const [a, b] = [groupStandings[0]!.rows, groupStandings[1]!.rows]
+  const seeds = [a[0]!.team, b[0]!.team, a[1]!.team, b[1]!.team]
+  const byName = new Map(seeds.map((team) => [team.name, team]))
+  const ownTeam = (team: MatchRowTeam | null) => team && (byName.get(team.name) ?? team)
+  return demoBracket({ teams: 4, thirdPlace: false, progress, names: seeds.map((team) => team.name) }).map((match) => ({
+    ...match,
+    stageId: 4,
+    homeTeam: ownTeam(match.homeTeam),
+    awayTeam: ownTeam(match.awayTeam),
+    round: { ...match.round, id: match.round.id + 100, order: match.round.order + 3 },
+    kickoffAt: demoKickoff(match.round.order + 3, match.matchNumber),
+  }))
+}
+
+/**
+ * Grupy z playoffem demo (drużyny z przykładu `grupy`): faza grupowa przed
+ * startem i w trzeciej kolejce, a po niej playoff w półfinałach i po finale.
+ */
+export const publicGroupsSeason = (() => {
+  const finishedGroups = groupSeason.map((match) =>
+    match.status === 'finished' ? match : { ...match, status: 'finished' as const, homeScore: match.id % 3, awayScore: (match.id + 1) % 2 },
+  )
+  const playoffLists = (progress: DemoBracketProgress): PublicCupMoment => {
+    const matches = demoPlayoff(progress)
+    return { matches, lists: splitLists([...finishedGroups, ...withDemoPositions(matches, true)].toSorted(byKickoff)) }
+  }
+  return {
+    teams: teamsOf(groupSeason),
+    beforeStart: groupMoment(groupSeason.map((match) => ({ ...match, status: 'scheduled' as const, homeScore: null, awayScore: null }))),
+    inProgress: groupMoment(groupSeason),
+    playoff: playoffLists({ round: 1, finished: 1, live: 1 }),
+    playoffFinished: playoffLists('done'),
+  }
+})()
+
+/** Klasyfikacja przed pierwszym zakończonym meczem: pusta. */
+export const emptyLeaderboard = (stat: string, label: string): Leaderboard => ({ stat, label, rows: [] })

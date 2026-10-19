@@ -61,12 +61,16 @@ export function StatTabs({ stats, value, onValueChange, children, className }: S
  * kilku — karty obok siebie od `sm` z „Liderzy ex aequo”. Nazwisko i wartość
  * jak na tablicy, wartość w `--brand-line`, pod nią `label` odpowiedzi
  * małymi literami.
+ *
+ * `compact` to boczna kolumna Przeglądu (#296): karty zawsze jedna pod drugą
+ * i mniejsze cyfry, bo kolumna ma 20 rem także na szerokim ekranie.
  */
-export function StatLeaders({ leaderboard }: { leaderboard: Leaderboard }) {
+export function StatLeaders({ leaderboard, compact = false }: { leaderboard: Leaderboard; compact?: boolean }) {
   const leaders = leaderboard.rows.filter((row) => row.position === 1)
   const shared = leaders.length > 1
+  const small = shared || compact
   return (
-    <div className={cn('grid gap-3', shared && 'sm:grid-cols-2')}>
+    <div className={cn('grid gap-3', shared && !compact && 'sm:grid-cols-2')}>
       {leaders.map((row) => (
         <div
           key={row.player.id}
@@ -75,14 +79,14 @@ export function StatLeaders({ leaderboard }: { leaderboard: Leaderboard }) {
         >
           <div className="flex min-w-0 flex-col gap-2">
             <span className="text-sm text-muted-foreground">{shared ? 'Liderzy ex aequo' : 'Lider'}</span>
-            <span className={cn('pub-title wrap-break-word', shared ? 'text-[2rem]' : 'text-[2.25rem] sm:text-[3rem]')}>{row.player.name}</span>
+            <span className={cn('pub-title wrap-break-word', small ? 'text-[2rem]' : 'text-[2.25rem] sm:text-[3rem]')}>{row.player.name}</span>
             <span className="flex min-w-0 items-center gap-2 text-muted-foreground">
               <Crest name={row.team.name} logoUrl={row.team.logoUrl} className="size-5" />
               <span className="min-w-0 wrap-break-word">{row.team.name}</span>
             </span>
           </div>
           <span className="flex shrink-0 flex-col items-end">
-            <span className={cn('pub-score text-brand-line', shared ? 'text-[4.5rem]' : 'text-[5.5rem] sm:text-[7rem]')}>{row.value}</span>
+            <span className={cn('pub-score text-brand-line', small ? 'text-[4.5rem]' : 'text-[5.5rem] sm:text-[7rem]')}>{row.value}</span>
             <span className="text-xs text-muted-foreground">{leaderboard.label.toLocaleLowerCase('pl')}</span>
           </span>
         </div>

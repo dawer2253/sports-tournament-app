@@ -5,14 +5,13 @@
  * i wybiera stan (wczytywanie, błąd, puchar).
  */
 import { plural, GROUPS } from '../../lib/plural'
-import { withQualifiers } from '../../lib/qualifiers'
 import type { AnchorProps } from '../anchor'
 import { EmptyBoard } from '../board'
 import { TextLink } from '../button'
-import { Fact, PageHead, SectionHead } from '../heads'
+import { Fact, PageHead } from '../heads'
 import type { ScheduleProgress } from '../schedule-progress'
 import { Loading, SkeletonBlock, SkeletonHead } from '../skeleton'
-import { ChampionBand, StandingsTable, TiebreakSentence, type StandingsTiebreaker } from '../standings-table'
+import { ChampionBand, GroupTable, StandingsTable, TiebreakSentence, type StandingsTiebreaker } from '../standings-table'
 import type { StandingsTableRow } from '../standings-table-row'
 
 /** Jedna tabela z odpowiedzi `/standings` z grupą turnieju, gdy ją ma. */
@@ -85,18 +84,6 @@ function NotYet({ title, overview, children }: { title: string; overview: Anchor
   )
 }
 
-function GroupBlock({ table, index }: { table: StandingsScreenTable; index: number }) {
-  const name = table.groupName ?? `Grupa ${index + 1}`
-  const id = `tabela-grupy-${table.groupId ?? index}`
-  const rows = table.qualifiers === null ? table.rows : withQualifiers(table.rows, table.qualifiers)
-  return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-3">
-      <SectionHead id={id} title={name} />
-      <StandingsTable rows={rows} scoreLabel={table.scoreLabel} allowsDraw={table.allowsDraw} compact label={`Tabela, ${name}`} />
-    </section>
-  )
-}
-
 /**
  * Tabela: nagłówek ekranu z podpisem fazy i faktami, pod nim tabela ligi
  * (z pasem „Mistrz” po końcu sezonu) albo tabele grup w dwóch kolumnach od
@@ -147,7 +134,7 @@ export function StandingsScreen({ format, stageName, tables, status, schedule, o
         />
         <div className="grid gap-12 lg:grid-cols-2 lg:gap-14">
           {tables.map((table, index) => (
-            <GroupBlock key={table.groupId ?? `bez-id-${index}`} table={table} index={index} />
+            <GroupTable key={table.groupId ?? `bez-id-${index}`} table={table} index={index} />
           ))}
         </div>
         <div className="flex flex-col gap-4">

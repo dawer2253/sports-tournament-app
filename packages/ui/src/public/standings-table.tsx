@@ -1,7 +1,9 @@
 import { plural } from '../lib/plural'
+import { withQualifiers } from '../lib/qualifiers'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
 import { Form } from './form'
+import { SectionHead } from './heads'
 import type { StandingsTableRow } from './standings-table-row'
 
 /** Bilans ze znakiem: „+4”, „−3” (minus typograficzny), „0”. */
@@ -18,8 +20,15 @@ function Abbr({ title, children }: { title: string; children: string }) {
   )
 }
 
-/** Komórka widoczna od `sm`: na telefonie zostają #, drużyna, M, +/− i Pkt. */
-const WIDE = 'hidden sm:block'
+/**
+ * Komórka widoczna dopiero w szerokiej tabeli: w wąskiej zostają #, drużyna,
+ * M, +/− i Pkt. Próg liczy szerokość tabeli (`@container`), nie ekranu, bo
+ * ta sama tabela stoi na całą szerokość Tabeli i w głównej kolumnie
+ * Przeglądu obok bocznej (#296). Pełna tabela potrzebuje 45 rem (nazwa dostaje wtedy 7 rem), grupa 28.
+ */
+function wideCell(compact: boolean) {
+  return compact ? 'hidden @md:block' : 'hidden @min-[45rem]:block'
+}
 
 const NUM = 'text-right tabular-nums text-muted-foreground'
 
@@ -30,11 +39,11 @@ const NUM = 'text-right tabular-nums text-muted-foreground'
 function gridColumns(compact: boolean, allowsDraw: boolean) {
   const desktop = compact
     ? allowsDraw
-      ? 'sm:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_3rem]'
-      : 'sm:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3rem_3rem]'
+      ? '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_3rem]'
+      : '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3rem_3rem]'
     : allowsDraw
-      ? 'sm:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_2.75rem_5.5rem_3.5rem_8rem_3.5rem]'
-      : 'sm:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_6.5rem_3.5rem_6rem_3.5rem]'
+      ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_2.75rem_5.5rem_3.5rem_8rem_3.5rem]'
+      : '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_6.5rem_3.5rem_6rem_3.5rem]'
   return cn('grid grid-cols-[2rem_minmax(0,1fr)_2rem_3rem_3rem] items-center gap-x-2', desktop)
 }
 
@@ -66,11 +75,12 @@ export interface StandingsTableProps {
  */
 export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, label }: StandingsTableProps) {
   const grid = gridColumns(compact, allowsDraw)
+  const wide = wideCell(compact)
   const grouped = rows.some((row) => row.qualifies !== undefined)
   const anyPlayed = rows.some((row) => row.played > 0)
 
   return (
-    <div role="table" aria-label={label} data-slot="standings-table" className="text-[0.9375rem]">
+    <div role="table" aria-label={label} data-slot="standings-table" className="@container text-[0.9375rem]">
       <div role="row" className={cn(grid, 'pb-2 text-xs text-muted-foreground')}>
         <span role="columnheader" className="text-center">
           <Abbr title="Miejsce">#</Abbr>
@@ -79,19 +89,19 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
         <span role="columnheader" className="text-right">
           <Abbr title="Mecze">M</Abbr>
         </span>
-        <span role="columnheader" className={cn(WIDE, 'text-right')}>
+        <span role="columnheader" className={cn(wide, 'text-right')}>
           <Abbr title="Wygrane">W</Abbr>
         </span>
         {allowsDraw && (
-          <span role="columnheader" className={cn(WIDE, 'text-right')}>
+          <span role="columnheader" className={cn(wide, 'text-right')}>
             <Abbr title="Remisy">R</Abbr>
           </span>
         )}
-        <span role="columnheader" className={cn(WIDE, 'text-right')}>
+        <span role="columnheader" className={cn(wide, 'text-right')}>
           <Abbr title="Porażki">P</Abbr>
         </span>
         {!compact && (
-          <span role="columnheader" className={cn(WIDE, 'text-center')}>
+          <span role="columnheader" className={cn(wide, 'text-center')}>
             <Abbr title={`${scoreLabel} zdobyte i stracone`}>{scoreLabel}</Abbr>
           </span>
         )}
@@ -99,7 +109,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
           <Abbr title="Bilans">+/−</Abbr>
         </span>
         {!compact && (
-          <span role="columnheader" className={cn(WIDE, 'pl-4')}>
+          <span role="columnheader" className={cn(wide, 'pl-4')}>
             <Abbr title="Pięć ostatnich meczów, najnowszy z prawej">Forma</Abbr>
           </span>
         )}
@@ -147,19 +157,19 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
             <span role="cell" className={NUM}>
               {row.played}
             </span>
-            <span role="cell" className={cn(NUM, WIDE)}>
+            <span role="cell" className={cn(NUM, wide)}>
               {row.won}
             </span>
             {allowsDraw && (
-              <span role="cell" className={cn(NUM, WIDE)}>
+              <span role="cell" className={cn(NUM, wide)}>
                 {row.drawn}
               </span>
             )}
-            <span role="cell" className={cn(NUM, WIDE)}>
+            <span role="cell" className={cn(NUM, wide)}>
               {row.lost}
             </span>
             {!compact && (
-              <span role="cell" className={cn(WIDE, 'text-center tabular-nums text-muted-foreground')}>
+              <span role="cell" className={cn(wide, 'text-center tabular-nums text-muted-foreground')}>
                 {row.scoreFor}:{row.scoreAgainst}
               </span>
             )}
@@ -167,7 +177,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
               {signed(row.scoreDifference)}
             </span>
             {!compact && (
-              <span role="cell" className={cn(WIDE, 'pl-4')}>
+              <span role="cell" className={cn(wide, 'pl-4')}>
                 <Form results={row.form} />
               </span>
             )}
@@ -205,27 +215,71 @@ export function TiebreakSentence({ tiebreakers, className }: { tiebreakers: read
   )
 }
 
+/** Mistrz pucharu albo playoffu: zwycięzca finału, bez wiersza tabeli. */
+export interface ChampionTeam {
+  name: string
+  logoUrl: string | null
+}
+
+export type ChampionBandProps = { row: StandingsTableRow; scoreLabel: string } | { team: ChampionTeam }
+
 /**
- * Pas „Mistrz” nad tabelą ligi zakończonego turnieju: wypełnienie `--brand`
- * z obrysem `--brand-line` (`pub-brand-fill`), herb zastępczy w
- * `--brand-foreground`, nazwa, wygrane i zdobycze, punkty. Cały tekst stoi
- * w `--brand-foreground`, bez przezroczystości, żeby trzymał 4,5:1.
+ * Pas „Mistrz”: wypełnienie `--brand` z obrysem `--brand-line`
+ * (`pub-brand-fill`), herb zastępczy w `--brand-foreground` i nazwa. Nad
+ * tabelą ligi zakończonego turnieju (`row`) dochodzą wygrane, zdobycze
+ * i punkty; w pucharze i playoffie (`team`, zwycięzca finału, #296) sama
+ * drużyna. Cały tekst stoi w `--brand-foreground`, bez przezroczystości,
+ * żeby trzymał 4,5:1.
  */
-export function ChampionBand({ row, scoreLabel }: { row: StandingsTableRow; scoreLabel: string }) {
+export function ChampionBand(props: ChampionBandProps) {
+  const league = 'row' in props ? props : null
+  const team = 'row' in props ? props.row.team : props.team
   return (
     <section aria-label="Mistrz" data-slot="champion-band" className="pub-brand-fill flex items-center gap-4 rounded-md px-5 py-4 sm:gap-6 sm:px-7 sm:py-5">
-      <Crest name={row.team.name} logoUrl={row.team.logoUrl} onFill className="size-12 sm:size-14" />
+      <Crest name={team.name} logoUrl={team.logoUrl} onFill className="size-12 sm:size-14" />
       <span className="flex min-w-0 flex-col">
         <span className="text-sm">Mistrz</span>
-        <span className="pub-title text-3xl leading-[1.2] sm:text-[2.5rem]">{row.team.name}</span>
+        <span className="pub-title text-3xl leading-[1.2] wrap-break-word sm:text-[2.5rem]">{team.name}</span>
       </span>
-      <span className="ml-auto hidden text-right text-sm sm:block">
-        {row.won} {plural(row.won, ['wygrana', 'wygrane', 'wygranych'])}, {scoreLabel.toLocaleLowerCase('pl')} {row.scoreFor}:{row.scoreAgainst}
-      </span>
-      <span className="ml-auto flex flex-col items-end sm:ml-0">
-        <span className="pub-score text-5xl">{row.points}</span>
-        <span className="text-xs">pkt</span>
-      </span>
+      {league && (
+        <>
+          <span className="ml-auto hidden text-right text-sm sm:block">
+            {league.row.won} {plural(league.row.won, ['wygrana', 'wygrane', 'wygranych'])}, {league.scoreLabel.toLocaleLowerCase('pl')}{' '}
+            {league.row.scoreFor}:{league.row.scoreAgainst}
+          </span>
+          <span className="ml-auto flex flex-col items-end sm:ml-0">
+            <span className="pub-score text-5xl">{league.row.points}</span>
+            <span className="text-xs">pkt</span>
+          </span>
+        </>
+      )}
+    </section>
+  )
+}
+
+/** Tabela grupy z odpowiedzi `/standings` z liczbą wychodzących z grupy turnieju. */
+export interface GroupTableData {
+  groupId: number | null
+  groupName: string | null
+  rows: readonly StandingsTableRow[]
+  /** `Group.qualifiers` po `groupId`; `null`, gdy turniej grupy jeszcze nie zna: tabela bez linii. */
+  qualifiers: number | null
+  scoreLabel: string
+  allowsDraw: boolean
+}
+
+/**
+ * Tabela jednej grupy z belką sekcji: wąska (`compact`, bez zdobyczy i formy)
+ * z linią wyjścia. Tabela i Przegląd (#296) stawiają grupy w dwóch kolumnach.
+ */
+export function GroupTable({ table, index }: { table: GroupTableData; index: number }) {
+  const name = table.groupName ?? `Grupa ${index + 1}`
+  const id = `tabela-grupy-${table.groupId ?? index}`
+  const rows = table.qualifiers === null ? table.rows : withQualifiers(table.rows, table.qualifiers)
+  return (
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-3">
+      <SectionHead id={id} title={name} />
+      <StandingsTable rows={rows} scoreLabel={table.scoreLabel} allowsDraw={table.allowsDraw} compact label={`Tabela, ${name}`} />
     </section>
   )
 }

@@ -70,3 +70,14 @@ export const DlugieNazwisko: Story = {
     await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
   },
 }
+
+/** Boczna kolumna Przeglądu (#296, 20 rem): karty ex aequo jedna pod drugą, mniejsze cyfry. */
+export const Waski: Story = {
+  name: 'Wąski, w bocznej kolumnie',
+  args: { leaderboard: points, compact: true },
+  decorators: [(Story) => <div className="w-80">{Story()}</div>],
+  play: async ({ canvasElement }) => {
+    const [first, second] = cards(canvasElement)
+    await expect(second!.getBoundingClientRect().top).toBeGreaterThan(first!.getBoundingClientRect().bottom - 1)
+  },
+}
