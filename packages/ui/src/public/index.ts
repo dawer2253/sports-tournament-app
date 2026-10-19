@@ -19,9 +19,11 @@ export * from './live'
 export * from './score-cell'
 export * from './shell'
 export * from './skeleton'
+export * from './stats'
 export * from './tournament-logo'
 
 // Ekrany (dane w propsach).
+export * from './screens/stats'
 export * from './screens/system'
 
 // Logika, której potrzebuje strona (re-eksport, kod zostaje na miejscu).
