@@ -16,6 +16,7 @@ use App\Leaderboards\StatLeaderboard;
 use App\Matches\MatchPeriods;
 use App\Matches\MatchRelation;
 use App\Models\GameMatch;
+use App\Models\Team;
 use App\Models\Tournament;
 use App\Standings\TournamentStandings;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
@@ -107,6 +108,22 @@ class PublicTournamentController extends Controller
     {
         return response()->json([
             'data' => new StatLeaderboardResource(StatLeaderboard::of($request->tournament(), $request->stat())),
+        ]);
+    }
+
+    /**
+     * Drużyny turnieju (#296) w kształcie `TeamSummary`, rosnąco po `id`:
+     * prezentacja drużyn na Przeglądzie przed terminarzem. Relacja turnieju
+     * pomija drużyny usunięte miękko i drużyny innych turniejów, a drużyna
+     * bez grupy wchodzi jak każda. `TeamResource` się tu nie nadaje, bo
+     * wymaga liczników panelu.
+     */
+    public function teams(string $slug): JsonResponse
+    {
+        $teams = Tournament::findPublishedBySlug($slug)->teams()->orderBy('id')->get();
+
+        return response()->json([
+            'data' => $teams->map(fn (Team $team): array => ['id' => $team->id, 'name' => $team->name, 'logoUrl' => $team->logoUrl()])->all(),
         ]);
     }
 

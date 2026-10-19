@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\GameMatch;
+use App\Models\Group;
 use App\Models\MatchEvent;
 use App\Models\Player;
 use App\Models\Round;
@@ -28,7 +29,7 @@ beforeEach(function () {
 });
 
 /** Ścieżki pod slugiem, które stoją w tym tickecie. */
-const PUBLIC_PAGE_ROUTES = ['', '/standings', '/fixtures', '/results', '/leaderboard'];
+const PUBLIC_PAGE_ROUTES = ['', '/standings', '/fixtures', '/results', '/leaderboard', '/teams'];
 
 /** Opublikowany turniej z fazą ligową, dwiema kolejkami i dwiema drużynami. */
 function publicPageTournament(string $status = 'active', string $sport = 'football', array $attributes = []): Tournament
@@ -621,4 +622,48 @@ it('liczba zapytań przy liście meczów nie rośnie z liczbą meczów', functio
 
     expect(publicPageGet($tournament->slug, '/results')->json('data'))->toHaveCount(4)
         ->and($queries())->toBe($single);
+});
+
+// --- drużyny (#296) ------------------------------------------------------------
+
+/** Nazwy drużyn z `/teams` w kolejności z odpowiedzi. */
+function publicPageTeams(Tournament $tournament): array
+{
+    return array_column(publicPageGet($tournament->slug, '/teams')->assertValidResponse(200)->json('data'), 'name');
+}
+
+it('drużyny idą w kształcie TeamSummary, bez liczników, po id', function () {
+    $tournament = publicPageTournament();
+    [$orly, $sokoly] = $tournament->teams()->orderBy('id')->get()->all();
+
+    publicPageGet($tournament->slug, '/teams')
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertExactJson(['data' => [
+            ['id' => $orly->id, 'name' => 'Orły Bielany', 'logoUrl' => null],
+            ['id' => $sokoly->id, 'name' => 'Sokoły Ursus', 'logoUrl' => null],
+        ]]);
+});
+
+it('drużyna usunięta i drużyna innego turnieju nie wchodzą', function () {
+    $tournament = publicPageTournament();
+    Team::factory()->for($tournament)->create(['name' => 'Wilki Bemowo'])->delete();
+    Team::factory()->for(publicPageTournament())->create(['name' => 'Żubry Praga']);
+
+    expect(publicPageTeams($tournament))->toBe(['Orły Bielany', 'Sokoły Ursus']);
+});
+
+it('w turnieju z grupami wchodzi też drużyna bez grupy', function () {
+    $tournament = Tournament::factory()->create(['status' => 'active']);
+    $group = Group::factory()->for(Stage::factory()->group()->for($tournament))->create(['name' => 'Grupa A']);
+    Team::factory()->for($tournament)->create(['name' => 'Lwy Ochota', 'group_id' => $group->id]);
+    Team::factory()->for($tournament)->create(['name' => 'Rysie Wola', 'group_id' => null]);
+
+    expect(publicPageTeams($tournament))->toBe(['Lwy Ochota', 'Rysie Wola']);
+});
+
+it('turniej bez drużyn daje pustą listę', function () {
+    $tournament = Tournament::factory()->create(['status' => 'active']);
+
+    publicPageGet($tournament->slug, '/teams')->assertValidResponse(200)->assertExactJson(['data' => []]);
 });
