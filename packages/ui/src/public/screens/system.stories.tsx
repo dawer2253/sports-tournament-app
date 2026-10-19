@@ -69,6 +69,25 @@ export const NieznanaPodstrona: Story = {
   },
 }
 
+/** Bez adresów zakładek (`navHref` nie podany): przyciski zamiast odnośników z pustym `href`. */
+export const NieznanaPodstronaBezAdresow: Story = {
+  name: 'Nieznana podstrona bez adresów',
+  render: () => {
+    const tabs = publicTabs([{ type: 'knockout' }])
+    return (
+      <Shell tournament={publicCupTournament} tabs={tabs}>
+        <PageNotFound tabs={tabs} />
+      </Shell>
+    )
+  },
+  play: async ({ canvasElement }) => {
+    const nav = within(within(canvasElement).getByRole('navigation', { name: 'Zakładki turnieju' }))
+    await expect(nav.queryAllByRole('link')).toHaveLength(0)
+    await expect(nav.getAllByRole('button').map((button) => button.textContent)).toEqual(['Przegląd', 'Drabinka', 'Terminarz', 'Wyniki', 'Statystyki'])
+    await expect(canvasElement.querySelector('[href=""]')).toBeNull()
+  },
+}
+
 /** Brak meczu: w shellu, z odnośnikiem do Terminarza. */
 export const BrakMeczu: Story = {
   name: 'Brak meczu',

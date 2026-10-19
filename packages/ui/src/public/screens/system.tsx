@@ -82,11 +82,20 @@ export function PageNotFound({
       title="Nie ma takiej strony"
       action={
         <nav aria-label="Zakładki turnieju" className="flex flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <Button key={tab} href={navHref?.(tab) ?? ''} onNavigate={onNavigate && (() => onNavigate(tab))}>
-              {TAB_LABELS[tab]}
-            </Button>
-          ))}
+          {tabs.map((tab) => {
+            const href = navHref?.(tab)
+            const navigate = onNavigate && (() => onNavigate(tab))
+            // Bez adresu przycisk zamiast odnośnika z pustym `href` (ten wskazywałby bieżącą stronę).
+            return href === undefined ? (
+              <Button key={tab} onClick={navigate}>
+                {TAB_LABELS[tab]}
+              </Button>
+            ) : (
+              <Button key={tab} href={href} onNavigate={navigate}>
+                {TAB_LABELS[tab]}
+              </Button>
+            )
+          })}
         </nav>
       }
     >
