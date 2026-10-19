@@ -901,6 +901,7 @@ function groupTable(group: typeof GROUP_A, ids: number[]): StandingTable {
         scoreAgainst: 0,
         scoreDifference: 0,
         points: 6 - 3 * index,
+        form: [],
       };
     }),
   };

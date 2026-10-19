@@ -30,6 +30,7 @@ function table(group: Group, teams: Team[]): StandingTable {
       scoreAgainst: 0,
       scoreDifference: 0,
       points: 0,
+      form: [],
     })),
   };
 }

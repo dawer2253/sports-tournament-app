@@ -4708,7 +4708,23 @@ export interface components {
             scoreDifference: number;
             /** @description Punkty za wyniki meczów, zgodnie z `Tournament.points`. Nigdy zdobycze. */
             points: number;
+            /**
+             * @description Forma drużyny: wyniki jej ostatnich meczów w **tej** tabeli,
+             *     **najnowszy na końcu**. Liczą się tylko mecze `finished` tej tabeli
+             *     (faza `league` albo jedna grupa), te same co w `played`, więc mecz
+             *     `live` i `scheduled` formy nie zmienia. Kolejność idzie po kolejce
+             *     (`Round.order`, potem `matchNumber`), nie po dacie ani chwili
+             *     zapisu wyniku: mecz przełożony stoi w miejscu swojej kolejki.
+             *     Długość to `min(played, 5)`; drużyna bez rozegranego meczu ma `[]`.
+             *     W sporcie z `allowsDraw: false` nie ma `draw`.
+             */
+            form: components["schemas"]["FormResult"][];
         };
+        /**
+         * @description Wynik meczu z perspektywy drużyny, kody jak klucze `Points`.
+         * @enum {string}
+         */
+        FormResult: "win" | "draw" | "loss";
         StandingTable: {
             /** Format: int64 */
             stageId: number;

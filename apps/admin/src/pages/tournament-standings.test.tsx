@@ -98,6 +98,7 @@ function row(position: number, id: number, name: string, points: number, scoreDi
     scoreAgainst: 3,
     scoreDifference,
     points,
+    form: [],
   };
 }
 

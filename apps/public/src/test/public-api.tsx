@@ -50,6 +50,7 @@ export function row(overrides: Partial<StandingRow> = {}): StandingRow {
     scoreAgainst: 2,
     scoreDifference: 5,
     points: 7,
+    form: ['win', 'draw', 'win'],
     ...overrides,
   };
 }
