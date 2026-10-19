@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from 'react'
 import { EventIcon } from '../components/data/event-icon'
 import { formatEventMinute } from '../components/data/match-event-data'
-import type { MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
+import type { MatchPageTeam, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
 import type { MatchStatus } from '../components/data/match-row-data'
 import { plural } from '../lib/plural'
 import { cn } from '../lib/utils'
@@ -57,21 +57,26 @@ function flatOrder(events: MatchRelationEvent[], live: boolean): MatchRelationEv
   return [...events.filter((event) => event.minute !== null).toReversed(), ...events.filter((event) => event.minute === null)]
 }
 
+/** Gospodarz i gość meczu: strona wiersza i herb wgrany przez klub idą po `event.team.id`. */
+type RelationTeams = { home: MatchPageTeam | null; away: MatchPageTeam | null }
+
 /**
  * Wiersz relacji: minuta, ikona, herb drużyny, zawodnik (bez zawodnika
  * drużyna) z typem pod spodem i wynik po zdarzeniu w okienku. Zdarzenie
  * zmieniające wynik jest pogrubione.
  */
-function EventRow({ event, homeTeamId }: { event: MatchRelationEvent; homeTeamId: number | null }) {
+function EventRow({ event, teams }: { event: MatchRelationEvent; teams: RelationTeams }) {
+  const home = event.team.id === teams.home?.id
+  const logoUrl = (home ? teams.home : event.team.id === teams.away?.id ? teams.away : null)?.logoUrl ?? null
   return (
     <li
-      data-side={event.team.id === homeTeamId ? 'home' : 'away'}
+      data-side={home ? 'home' : 'away'}
       className="grid min-h-14 grid-cols-[3rem_1.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-hairline py-2"
     >
       <span className="pub-num text-lg text-muted-foreground">{formatEventMinute(event.minute)}</span>
       <EventIcon type={event.type} />
       <span className="flex min-w-0 items-center gap-3">
-        <Crest name={event.team.name} className="size-5" />
+        <Crest name={event.team.name} logoUrl={logoUrl} className="size-5" />
         <span className="flex min-w-0 flex-col leading-tight">
           <span className={cn('wrap-break-word', event.scoreAfter ? 'font-semibold' : 'font-medium')}>{event.player?.name ?? event.team.name}</span>
           <span className="text-xs text-muted-foreground">
@@ -87,16 +92,16 @@ function EventRow({ event, homeTeamId }: { event: MatchRelationEvent; homeTeamId
   )
 }
 
-function EventList({ events, homeTeamId, id, hidden }: { events: MatchRelationEvent[]; homeTeamId: number | null; id?: string; hidden?: boolean }) {
+function EventList({ events, teams, id, hidden }: { events: MatchRelationEvent[]; teams: RelationTeams; id?: string; hidden?: boolean }) {
   return (
     <ol id={id} hidden={hidden}>
-      {!hidden && events.map((event) => <EventRow key={event.id} event={event} homeTeamId={homeTeamId} />)}
+      {!hidden && events.map((event) => <EventRow key={event.id} event={event} teams={teams} />)}
     </ol>
   )
 }
 
 /** Część meczu: nagłówek-przycisk z wynikiem części i liczbą zdarzeń, pod nim zdarzenia. */
-function GroupBlock({ group, open, onToggle, homeTeamId }: { group: RelationGroup; open: boolean; onToggle: () => void; homeTeamId: number | null }) {
+function GroupBlock({ group, open, onToggle, teams }: { group: RelationGroup; open: boolean; onToggle: () => void; teams: RelationTeams }) {
   const panelId = useId()
   return (
     <div data-slot="relation-group">
@@ -118,15 +123,17 @@ function GroupBlock({ group, open, onToggle, homeTeamId }: { group: RelationGrou
           </span>
         </button>
       </h3>
-      <EventList id={panelId} hidden={!open} events={group.events} homeTeamId={homeTeamId} />
+      <EventList id={panelId} hidden={!open} events={group.events} teams={teams} />
     </div>
   )
 }
 
 export interface MatchRelationProps {
   status: MatchStatus
-  /** Id gospodarza; `null`, gdy miejsce w drabince nie jest rozstrzygnięte. */
-  homeTeamId: number | null
+  /** Gospodarz z tablicy; `null`, gdy miejsce w drabince nie jest rozstrzygnięte. */
+  homeTeam: MatchPageTeam | null
+  /** Gość z tablicy; `null` jak wyżej. */
+  awayTeam: MatchPageTeam | null
   /** Zdarzenia w kolejności z API (#188, reguła 10). */
   events: MatchRelationEvent[]
   /** Części ze zdarzeniami; pusta lista to turniej bez podziału. */
@@ -147,7 +154,8 @@ export interface MatchRelationProps {
  * - Na żywo „Relacja na żywo”, najnowsze u góry; po meczu „Przebieg meczu”.
  * - Mecz zaplanowany i mecz bez zdarzeń mają komunikat w miejscu relacji.
  */
-export function MatchRelation({ status, homeTeamId, events, periods, className }: MatchRelationProps) {
+export function MatchRelation({ status, homeTeam, awayTeam, events, periods, className }: MatchRelationProps) {
+  const teams = { home: homeTeam, away: awayTeam }
   const live = status === 'live'
   const titleId = useId()
   const [expanded, setExpanded] = useState(false)
@@ -179,7 +187,7 @@ export function MatchRelation({ status, homeTeamId, events, periods, className }
     const visible = collapse && !expanded ? ordered.slice(0, RELATION_COLLAPSE_THRESHOLD) : ordered
     body = (
       <>
-        <EventList events={visible} homeTeamId={homeTeamId} />
+        <EventList events={visible} teams={teams} />
         {visible.length < ordered.length && (
           <Button className="self-center" onClick={() => setExpanded(true)}>
             Pokaż całą relację ({ordered.length})
@@ -197,7 +205,7 @@ export function MatchRelation({ status, homeTeamId, events, periods, className }
           group={group}
           open={open}
           onToggle={() => setToggled((current) => ({ ...current, [group.key]: !open }))}
-          homeTeamId={homeTeamId}
+          teams={teams}
         />
       )
     })

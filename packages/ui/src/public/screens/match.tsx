@@ -43,7 +43,8 @@ export function MatchScreen({ match, backHref, onNavigate, timeZone }: MatchScre
       <MatchBoard match={match} timeZone={timeZone} />
       <MatchRelation
         status={match.status}
-        homeTeamId={match.homeTeam?.id ?? null}
+        homeTeam={match.homeTeam}
+        awayTeam={match.awayTeam}
         events={match.events}
         periods={match.periods}
         className="mx-auto w-full max-w-3xl"

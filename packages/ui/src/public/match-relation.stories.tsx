@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { expect, userEvent, within } from 'storybook/test'
 import type { MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
-import { matchPageBasketball, matchPageFinished, matchPageLive } from '../lib/demo-data'
+import { demoTeamLogoUrl, matchPageBasketball, matchPageFinished, matchPageLive } from '../lib/demo-data'
 import { Button } from './button'
 import { MatchRelation, RELATION_COLLAPSE_THRESHOLD } from './match-relation'
 
@@ -12,7 +12,8 @@ const meta = {
   parameters: { layout: 'padded' },
   args: {
     status: matchPageFinished.status,
-    homeTeamId: matchPageFinished.homeTeam!.id,
+    homeTeam: matchPageFinished.homeTeam,
+    awayTeam: matchPageFinished.awayTeam,
     events: matchPageFinished.events,
     periods: matchPageFinished.periods,
     className: 'mx-auto max-w-3xl',
@@ -47,12 +48,31 @@ export const PoMeczu: Story = {
   },
 }
 
+/**
+ * Herb wgrany przez klub: wiersz zdarzenia gospodarza pokazuje jego plik,
+ * a gościa bez pliku herb zastępczy. Drużynę wiersza wybiera `event.team.id`.
+ */
+export const HerbZPliku: Story = {
+  name: 'Herb z pliku',
+  args: { homeTeam: { ...matchPageFinished.homeTeam!, logoUrl: demoTeamLogoUrl } },
+  play: async ({ canvasElement }) => {
+    const rows = [...canvasElement.querySelectorAll<HTMLElement>('li[data-side]')]
+    const home = rows.filter((row) => row.dataset.side === 'home')
+    const away = rows.filter((row) => row.dataset.side === 'away')
+    await expect(home.length).toBeGreaterThan(0)
+    await expect(away.length).toBeGreaterThan(0)
+    for (const row of home) await expect(row.querySelector('[data-slot="crest"] img')).toHaveAttribute('src', demoTeamLogoUrl)
+    for (const row of away) await expect(row.querySelector('[data-slot="crest-fallback"]')).not.toBeNull()
+  },
+}
+
 /** Na żywo: najnowsza część na górze, a w niej najnowsze zdarzenie, z minutą „′”. */
 export const NaZywo: Story = {
   name: 'Na żywo',
   args: {
     status: matchPageLive.status,
-    homeTeamId: matchPageLive.homeTeam!.id,
+    homeTeam: matchPageLive.homeTeam,
+    awayTeam: matchPageLive.awayTeam,
     events: matchPageLive.events,
     periods: matchPageLive.periods,
   },
@@ -102,7 +122,8 @@ export const DwadziesciaJedenZdarzen: Story = {
 /** Kosz: ponad 20 zdarzeń, więc kwarty startują zwinięte, a klik rozwija jedną. */
 export const Kosz: Story = {
   args: {
-    homeTeamId: matchPageBasketball.homeTeam!.id,
+    homeTeam: matchPageBasketball.homeTeam,
+    awayTeam: matchPageBasketball.awayTeam,
     events: matchPageBasketball.events,
     periods: matchPageBasketball.periods,
   },
@@ -153,7 +174,7 @@ function LiveRefresh() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <Button onClick={() => setStep((current) => current + 1)}>Odśwież dane</Button>
-      <MatchRelation status="live" homeTeamId={matchPageBasketball.homeTeam!.id} events={data.events} periods={data.periods} />
+      <MatchRelation status="live" homeTeam={matchPageBasketball.homeTeam} awayTeam={matchPageBasketball.awayTeam} events={data.events} periods={data.periods} />
     </div>
   )
 }
@@ -183,7 +204,8 @@ export const WyborKibica: Story = {
 export const BezPodzialu: Story = {
   name: 'Bez podziału',
   args: {
-    homeTeamId: matchPageBasketball.homeTeam!.id,
+    homeTeam: matchPageBasketball.homeTeam,
+    awayTeam: matchPageBasketball.awayTeam,
     events: matchPageBasketball.events.map((event) => ({ ...event, period: null })),
     periods: [],
   },
