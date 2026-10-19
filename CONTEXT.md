@@ -330,6 +330,11 @@ Etykieta ma też **dopełniacz**, do przycisku w panelu: „Start 2. połowy”,
 (`Match.livePeriod`), ze startem stemplowanym przez serwer
 (`periodStartedAt`). Organizator prowadzi ją w oknie meczu: „Trwa” startuje
 1. część, a dalej jeden przycisk na zmianę, „Przerwa” albo „Start 2. połowy”.
+W API przycisk to pole `periodRunning` w zmianie meczu (`MatchUpdate`):
+`false` zaczyna przerwę, a `true` razem z `livePeriod` startuje część. To
+nie `SportConfig.runningClock`, które mówi, czy w ogóle pokazujemy minutę.
+Start przyjmuje tylko następną część (bieżąca + 1), a przerwa wchodzi tylko
+po części, która trwa i nie jest ostatnią.
 
 - **Przerwa**: część się skończyła, a następna jeszcze nie ruszyła; zegar stoi
   i tablica pokazuje „Przerwa”. Turniej bez podziału przerwy nie ma.

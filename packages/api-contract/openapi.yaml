@@ -5523,6 +5523,22 @@ components:
         tak samo `livePeriod` bez `periodRunning: true` i `periodRunning: true`
         bez `livePeriod`. Pola części nadpisują
         zegar ustawiony przejściem stanu z tego samego ciała.
+
+        Bieżąca część to `livePeriod` po przejściu stanu z tego samego ciała
+        (tabela wyżej; mecz bez części liczy się jak część `0`). Reguły
+        przycisku części, każda z `422` pod `livePeriod`:
+
+        - **Start** przyjmuje wyłącznie następną część: bieżąca + 1. Przeskok,
+          powtórka bieżącej i część wcześniejsza dają `422`, więc start
+          części nie przestawia zegara wstecz.
+        - **Przerwa** (`periodRunning: false`) wchodzi tylko po części, która
+          trwa (`periodStartedAt` różne od `null`) i nie jest ostatnią
+          (bieżąca < `periods.count`). Nie ma więc przerwy w turnieju bez
+          podziału (`periods.count: 1`), po ostatniej części, w dogrywce, w
+          trakcie przerwy ani po powrocie z `finished`.
+        - W turnieju bez podziału jedyna część to `1` (startuje ją
+          `scheduled` → `live`), a w fazie `knockout` po niej wolno
+          wystartować dogrywkę, część `2`.
       properties:
         homeScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
         awayScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
@@ -5952,7 +5968,10 @@ components:
             Kopia `Tournament.matchDuration` (#297). W turnieju bez podziału
             (`periods.count: 1`, `periods.minutes: null`) zegar bierze ją jako
             regulaminową długość jedynej części: po niej idzie czas doliczony
-            („60+15′”), a po 30 minutach ponad nią zegar znika.
+            („60+15′”), a po 30 minutach ponad nią zegar znika. To świadome
+            uproszczenie: `matchDuration` jest slotem rozkładu dat razem
+            z przerwą po meczu, więc przy przerwie w slocie czas doliczony
+            zaczyna się później, niż wynikałoby z samej gry.
         runningClock:
           type: boolean
           description: |
