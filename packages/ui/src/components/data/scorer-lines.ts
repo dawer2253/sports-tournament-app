@@ -4,7 +4,7 @@ import type { MatchRowData, MatchScorer } from './match-row-data'
 // formacie i ile ich widać. Osobno od `scorer-list.tsx`, bo to funkcje, a nie
 // komponent — korzystają z nich `MatchRow` i `LiveMatchTile`.
 
-/** Ile wierszy w formacie sumy widać na drużynę w wierszu meczu; pas strony meczu pokazuje wszystkie (#210). */
+/** Ile wierszy w formacie sumy widać na drużynę w wierszu meczu; tablica strony meczu pokazuje wszystkie (#210, #295). */
 export const SUM_LINES_LIMIT = 3
 
 /** Wiersz strzelca gotowy do pokazania w kolumnie gospodarza albo gościa. */
@@ -53,7 +53,7 @@ function sideLines(scorers: MatchScorer[], limit: number): ScorerLine[] {
  * przeciwnika drużyny `team`, bo to jej przeciwnik dostał zdobycz (#188).
  *
  * `limit` ucina wiersze w formacie sumy: wiersz meczu pokazuje
- * `SUM_LINES_LIMIT`, a pas strony meczu wszystkich (`Infinity`, #192).
+ * `SUM_LINES_LIMIT`, a tablica strony meczu wszystkich (`Infinity`, #192).
  */
 export function scorerSides(
   match: Pick<MatchRowData, 'homeTeam' | 'scorers'>,
