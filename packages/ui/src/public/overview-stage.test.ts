@@ -55,6 +55,14 @@ describe('overviewRounds', () => {
     expect(stage.startsAt).toBe('2026-09-05T10:00:00+00:00')
   })
 
+  it('porównuje terminy jako chwile, nie napisy: offset nie myli kolejności ani daty startu', () => {
+    // 11:00+02:00 to 09:00 UTC, więc ten mecz jest pierwszy, choć jego napis sortuje się dalej.
+    const stage = overviewRounds(fixtures([match(1, 1, 'scheduled', '2026-09-05T10:00:00+00:00'), match(2, 1, 'scheduled', '2026-09-05T11:00:00+02:00')]), [])
+
+    expect(ids(stage.stage!.round.matches)).toEqual([2, 1])
+    expect(stage.startsAt).toBe('2026-09-05T11:00:00+02:00')
+  })
+
   it('mecz trwający w 1. kolejce to już nie „przed startem”', () => {
     const stage = overviewRounds(fixtures([match(1, 1, 'live'), match(2, 1)]), [])
 

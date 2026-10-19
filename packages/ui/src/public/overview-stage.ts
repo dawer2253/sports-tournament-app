@@ -28,12 +28,13 @@ export interface OverviewRounds<M extends MatchInRound = MatchInRound> {
   startsAt: string | null
 }
 
-/** Termin rosnąco, bez terminu na końcu, przy remisie po `id`. */
+/** Termin rosnąco jako chwila (offset bywa różny), bez terminu na końcu, przy remisie po `id`. */
 function byKickoff(a: MatchInRound, b: MatchInRound): number {
-  if (a.kickoffAt === b.kickoffAt) return a.id - b.id
-  if (a.kickoffAt === null) return 1
-  if (b.kickoffAt === null) return -1
-  return a.kickoffAt.localeCompare(b.kickoffAt)
+  if (a.kickoffAt === null || b.kickoffAt === null) {
+    if (a.kickoffAt === b.kickoffAt) return a.id - b.id
+    return a.kickoffAt === null ? 1 : -1
+  }
+  return Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt) || a.id - b.id
 }
 
 /** Kolejka z meczami w kolejności terminów i z podsumowaniem liczonym od nowa. */
@@ -73,7 +74,7 @@ export function overviewRounds<M extends MatchInRound>(
   const roundsTotal = new Set([...upcoming, ...played].map((match) => match.round.id)).size
   const started = played.length > 0 || upcoming.some((match) => match.status !== 'scheduled')
   const kickoffs = upcoming.map((match) => match.kickoffAt).filter((iso): iso is string => iso !== null)
-  const startsAt = started || kickoffs.length === 0 ? null : kickoffs.toSorted()[0]!
+  const startsAt = started || kickoffs.length === 0 ? null : kickoffs.toSorted((a, b) => Date.parse(a) - Date.parse(b))[0]!
 
   const stageId = fixtures[0]?.summary.id ?? results[0]?.summary.id
   if (stageId === undefined) return { stage: null, next: null, roundsTotal, startsAt }
