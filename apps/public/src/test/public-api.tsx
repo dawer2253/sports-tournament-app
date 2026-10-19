@@ -183,13 +183,16 @@ export function leaderboard(overrides: Partial<StatLeaderboard> = {}): StatLeade
   return { stat: 'goals', label: 'Bramki', rows: [], ...overrides };
 }
 
+/** Klasyfikacja, której `/leaderboard` odpowiada `500`. */
+export const LEADERBOARD_ERROR = 'error' as const;
+
 /**
  * Strona publiczna po stronie „serwera”: sześć endpointów z licznikami
  * żądań. Domyślnie turniej bez meczów, z jedną tabelą i pustą klasyfikacją.
  *
  * `leaderboards` dostaje `stat` z adresu (`null` bez parametru), a
  * `requests.leaderboard` zapisuje go przy każdym żądaniu — test sprawdza
- * nim, o co ekran zapytał.
+ * nim, o co ekran zapytał. Zwrócone `LEADERBOARD_ERROR` daje `500`.
  */
 export function publicApi({
   data = tournament(),
@@ -204,7 +207,7 @@ export function publicApi({
   standings?: StandingTable[];
   fixtures?: PublicMatch[];
   results?: PublicMatch[];
-  leaderboards?: (stat: string | null) => StatLeaderboard;
+  leaderboards?: (stat: string | null) => StatLeaderboard | typeof LEADERBOARD_ERROR;
   /** Strony meczów (#210); mecz spoza listy daje `404` jak w API. */
   matches?: PublicMatchDetail[];
   /** Mecze fazy dla `/matches?stageId=` (#234); filtr po `stageId` jak w API. */
@@ -239,7 +242,10 @@ export function publicApi({
     http.get(`${API}/public/t/:slug/leaderboard`, ({ request }) => {
       const stat = new URL(request.url).searchParams.get('stat');
       requests.leaderboard.push(stat);
-      return HttpResponse.json({ data: leaderboards(stat) });
+      const board = leaderboards(stat);
+      return board === LEADERBOARD_ERROR
+        ? HttpResponse.json({ message: 'Usługa chwilowo niedostępna.' }, { status: 500 })
+        : HttpResponse.json({ data: board });
     }),
     http.get(`${API}/public/t/:slug/matches`, ({ request }) => {
       const stageId = new URL(request.url).searchParams.get('stageId');

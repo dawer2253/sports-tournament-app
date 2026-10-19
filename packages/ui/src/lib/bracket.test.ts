@@ -132,8 +132,9 @@ describe('mistrz i mecz o 3. miejsce', () => {
   })
 
   it('po finale finished mistrzem jest jego zwycięzca, także po karnych', () => {
-    expect(bracketChampion(withFinal(finished(final, 2, 1)))).toEqual(final.homeTeam)
-    expect(bracketChampion(withFinal(finished(final, 1, 1, 3, 4)))).toEqual(final.awayTeam)
+    // Mistrz to drużyna drabinki (`BracketTeam`): id i nazwa, bez herbu z wiersza meczu.
+    expect(bracketChampion(withFinal(finished(final, 2, 1)))).toEqual({ id: final.homeTeam!.id, name: final.homeTeam!.name })
+    expect(bracketChampion(withFinal(finished(final, 1, 1, 3, 4)))).toEqual({ id: final.awayTeam!.id, name: final.awayTeam!.name })
   })
 
   it('zwycięzca meczu o 3. miejsce nie jest mistrzem', () => {

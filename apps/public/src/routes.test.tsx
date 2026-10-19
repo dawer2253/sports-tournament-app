@@ -22,9 +22,9 @@ describe('trasa turnieju', () => {
     await user.click(tabs().getByRole('link', { name: 'Tabela' }));
     await screen.findByRole('heading', { level: 2, name: 'Tabela' });
     await user.click(tabs().getByRole('link', { name: 'Terminarz' }));
-    await screen.findByText('Brak zaplanowanych meczów');
+    await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' });
     await user.click(tabs().getByRole('link', { name: 'Wyniki' }));
-    await screen.findByText('Brak rozegranych meczów');
+    await screen.findByRole('heading', { level: 2, name: 'Wyniki' });
 
     expect(requests.tournament).toBe(1);
     expect(tabs().getByRole('link', { name: 'Wyniki' })).toHaveAttribute('aria-current', 'page');
@@ -185,7 +185,7 @@ describe('trasa turnieju', () => {
     expect(screen.getByText('Usługa chwilowo niedostępna.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
 
-    expect(await screen.findByText('Brak rozegranych meczów')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' })).toBeInTheDocument();
     expect(requests).toBe(2);
   });
 
