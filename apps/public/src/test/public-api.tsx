@@ -10,6 +10,7 @@ import type {
   StandingTable,
   StatLeaderboard,
   StatLeaderboardRow,
+  TeamSummary,
 } from '@tournament/api-client';
 import { render } from '@testing-library/react';
 import { HttpResponse, http } from 'msw';
@@ -187,8 +188,9 @@ export function leaderboard(overrides: Partial<StatLeaderboard> = {}): StatLeade
 export const LEADERBOARD_ERROR = 'error' as const;
 
 /**
- * Strona publiczna po stronie „serwera”: sześć endpointów z licznikami
- * żądań. Domyślnie turniej bez meczów, z jedną tabelą i pustą klasyfikacją.
+ * Strona publiczna po stronie „serwera”: endpointy z licznikami żądań.
+ * Domyślnie turniej bez meczów, z jedną tabelą, pustą klasyfikacją i bez
+ * drużyn w `/teams`.
  *
  * `leaderboards` dostaje `stat` z adresu (`null` bez parametru), a
  * `requests.leaderboard` zapisuje go przy każdym żądaniu — test sprawdza
@@ -202,6 +204,7 @@ export function publicApi({
   leaderboards = (stat) => leaderboard({ stat: stat ?? 'goals' }),
   matches = [],
   stageMatches = [],
+  teams = [],
 }: {
   data?: PublicTournament;
   standings?: StandingTable[];
@@ -212,6 +215,8 @@ export function publicApi({
   matches?: PublicMatchDetail[];
   /** Mecze fazy dla `/matches?stageId=` (#234); filtr po `stageId` jak w API. */
   stageMatches?: Match[];
+  /** Drużyny turnieju z `/teams` (#296), w kolejności z API. */
+  teams?: TeamSummary[];
 } = {}) {
   const requests = {
     tournament: 0,
@@ -221,6 +226,7 @@ export function publicApi({
     leaderboard: [] as (string | null)[],
     match: 0,
     stageMatches: [] as (string | null)[],
+    teams: 0,
   };
   server.use(
     http.get(`${API}/public/t/:slug`, () => {
@@ -251,6 +257,10 @@ export function publicApi({
       const stageId = new URL(request.url).searchParams.get('stageId');
       requests.stageMatches.push(stageId);
       return HttpResponse.json({ data: stageMatches.filter((candidate) => String(candidate.stageId) === stageId) });
+    }),
+    http.get(`${API}/public/t/:slug/teams`, () => {
+      requests.teams++;
+      return HttpResponse.json({ data: teams });
     }),
     http.get(`${API}/public/t/:slug/matches/:match`, ({ params }) => {
       requests.match++;

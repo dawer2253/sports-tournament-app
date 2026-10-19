@@ -1,23 +1,24 @@
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SLUG, match, publicApi, renderAt, scorer } from '../test/public-api';
+import { SLUG, finished, match, publicApi, renderAt, scorer } from '../test/public-api';
 
 /*
- * Strzelcy na kaflu „Na żywo” Przeglądu (#208). Wiersze składa serwer
- * (`PublicMatch.scorers`), a ekran rozstrzyga stronę, format i limit — tego
- * pilnują testy niżej. Wiersz Terminarza i Wyników strzelców już nie ma
- * (#292, test w `match-rounds.test.tsx`).
+ * Strzelcy na tablicy meczu trwającego w pasie etapu Przeglądu (#208, #296).
+ * Wiersze składa serwer (`PublicMatch.scorers`), a ekran pokazuje je tylko
+ * przy meczu na żywo. Wiersz Terminarza i Wyników strzelców nie ma (#292,
+ * test w `match-rounds.test.tsx`), a pełną listę ma strona meczu.
  */
 
-/** Wpisy listy strzelców drużyny, w kolejności z DOM-u; pusta, gdy listy nie ma. */
-function scorersOf(team: string, container: HTMLElement = document.body) {
-  const list = within(container).queryByRole('list', { name: `Strzelcy: ${team}` });
-  return list ? within(list).getAllByRole('listitem').map((item) => item.textContent) : [];
+/** Linia strzelców tablicy meczu o stanie `status`; `null` bez linii. */
+function scorersOn(status: 'live' | 'finished') {
+  const board = document.querySelector(`[data-slot="stage-board"][data-status="${status}"]`);
+  return board?.querySelector('[data-slot="stage-board-scorers"]')?.textContent ?? null;
 }
 
 describe('Przegląd', () => {
-  it('kafel „Na żywo” pokazuje strzelców po obu stronach, z samobójem u przeciwnika', async () => {
+  it('tablica meczu na żywo ma strzelców, z samobójem oznaczonym „(sam.)”; mecz zakończony ich nie ma', async () => {
     publicApi({
+      results: [finished(2, 3, { scorers: [scorer(2, 'home', 3, { player: { id: 3, name: 'Adam Bez' }, minutes: [12] })] })],
       fixtures: [
         match(1, 3, {
           status: 'live',
@@ -32,8 +33,8 @@ describe('Przegląd', () => {
     });
     renderAt(`/t/${SLUG}`);
 
-    const tile = within(await screen.findByRole('region', { name: 'Na żywo' })).getByRole('article');
-    expect(scorersOf('Gospodarz 1', tile)).toEqual(["Marek Nowak 5'", "Jan Lis 40' (sam.)"]);
-    expect(scorersOf('Gość 1', tile)).toEqual([]);
+    await screen.findByRole('region', { name: 'Kolejka 3' });
+    expect(scorersOn('live')).toBe("Marek Nowak 5', Jan Lis 40' (sam.)");
+    expect(scorersOn('finished')).toBeNull();
   });
 });

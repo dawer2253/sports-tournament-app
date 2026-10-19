@@ -58,7 +58,7 @@ describe('zakładki', () => {
     const requests = publicApi();
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Tabela (skrót)' });
+    await screen.findByRole('region', { name: 'Drużyny' });
     expect(tabs().getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Przegląd',
       'Tabela',
@@ -336,57 +336,14 @@ describe('drzewo', () => {
 });
 
 describe('Przegląd pucharu', () => {
-  it('ma kartę „Drabinka” zamiast skrótu tabeli: bieżąca runda, postęp i drużyny w grze', async () => {
-    const matches = cupMatches({ teams: 8, progress: { round: 1, finished: 3 } });
-    const requests = publicApi({
-      data: cup(),
-      stageMatches: matches,
-      fixtures: matches.filter((match) => match.status !== 'finished').map(asPublic),
-      results: matches.filter((match) => match.status === 'finished').map(asPublic),
-    });
-    renderAt(`/t/${SLUG}`);
-
-    const card = await screen.findByRole('region', { name: 'Drabinka' });
-    expect(await within(card).findByText('W grze 5 z 8 drużyn')).toBeInTheDocument();
-    const current = card.querySelector('li[aria-current="step"]');
-    expect(current).toHaveTextContent('Ćwierćfinał');
-    expect(current).toHaveTextContent('3/4');
-    expect(within(card).getByRole('link', { name: 'Zobacz drabinkę' })).toHaveAttribute('href', `/t/${SLUG}/drabinka`);
-    expect(screen.queryByRole('region', { name: 'Tabela (skrót)' })).not.toBeInTheDocument();
-    expect(requests.standings).toBe(0);
-  });
-
-  it('po finale rozstrzygniętym karnymi pokazuje mistrza i wynik finału z karnymi', async () => {
-    const matches = cupMatches(
-      { teams: 8, progress: 'done' },
-      { 3001: { homeScore: 1, awayScore: 1, homePenalties: 4, awayPenalties: 2 } },
-    );
-    publicApi({ data: cup(), stageMatches: matches, results: matches.map(asPublic) });
-    renderAt(`/t/${SLUG}`);
-
-    const card = await screen.findByRole('region', { name: 'Drabinka' });
-    const final = byId(matches, 3001);
-    expect(await within(card).findByRole('status')).toHaveTextContent(`${final.homeTeam!.name}Zwycięzca pucharu`);
-    const finalTile = within(within(card).getByRole('link', { name: /^Finał:/ }));
-    expect(finalTile.getByText('(4)')).toHaveClass('font-bold');
-    expect(finalTile.getByText('(2)')).not.toHaveClass('font-bold');
-  });
-
-  it('puchar bez wygenerowanej drabinki ma w karcie pusty stan', async () => {
-    publicApi({ data: cup(), stageMatches: [] });
-    renderAt(`/t/${SLUG}`);
-
-    const card = await screen.findByRole('region', { name: 'Drabinka' });
-    expect(within(card).getByText('Drabinka pojawi się tu, gdy organizator ją ułoży.')).toBeInTheDocument();
-  });
-
-  it('kafel „Na żywo” meczu o 3. miejsce ma etykietę „Mecz o 3. miejsce”, a nie „Finał”', async () => {
+  it('tablica meczu o 3. miejsce w pasie rundy finału ma etykietę „Mecz o 3. miejsce”, a nie „Finał”', async () => {
     const matches = cupMatches({ teams: 4, progress: { round: 2, finished: 0, live: 1 } });
     publicApi({ data: cup(), stageMatches: matches, fixtures: matches.filter((match) => match.round.order === 2).map(asPublic) });
     renderAt(`/t/${SLUG}`);
 
-    const live = await screen.findByRole('region', { name: 'Na żywo' });
-    await within(live).findByText('Mecz o 3. miejsce');
+    await screen.findByRole('region', { name: 'Finał' });
+    const live = document.querySelector<HTMLElement>('[data-slot="stage-board"][data-status="live"]')!;
+    expect(within(live).getByText('Mecz o 3. miejsce')).toBeInTheDocument();
     expect(within(live).queryByText('Finał')).not.toBeInTheDocument();
   });
 });

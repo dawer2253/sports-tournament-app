@@ -6,15 +6,20 @@ import type {
   PublicTournament,
   StandingRow,
   StatLeaderboard,
+  TeamSummary,
 } from '@tournament/api-client';
 import type {
   BracketMatch,
   Leaderboard,
   MatchInRound,
   MatchPageData,
+  PublicBracketMatch,
+  PublicShellTournament,
+  ShowcaseTeam,
+  SportCode,
+  StandingsTableRow,
   StatOption,
-} from '@tournament/ui';
-import type { PublicBracketMatch, PublicShellTournament, SportCode, StandingsTableRow } from '@tournament/ui/public';
+} from '@tournament/ui/public';
 
 /**
  * Strażnik zgodności typów z design systemu z kontraktem, jak
@@ -25,7 +30,7 @@ import type { PublicBracketMatch, PublicShellTournament, SportCode, StandingsTab
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni typ
  * w `packages/ui` (`src/public/public-shell-tournament.ts`, `round-groups.ts`,
  * `match-row-data.ts`, `match-page-data.ts`, `src/public/standings-table-row.ts`,
- * `leaderboard-data.ts`).
+ * `src/public/overview-stage.ts`, `leaderboard-data.ts`).
  */
 
 /** Turniej z kontraktu daje się pokazać w nagłówku shella strony publicznej (`Shell`). */
@@ -48,7 +53,7 @@ type ContractFitsPublicBracketMatch = Match extends PublicBracketMatch ? true : 
 
 export const contractFitsPublicBracketMatch: ContractFitsPublicBracketMatch = true;
 
-/** Mecz strony publicznej ze strzelcami daje się pokazać w `MatchRow` i `LiveMatchTile` (#208). */
+/** Mecz strony publicznej ze strzelcami daje się pokazać w `MatchRow` i na tablicy pasa etapu Przeglądu (`StageMatchBoard`, #208, #296). */
 type ContractFitsPublicMatch = PublicMatch extends MatchInRound ? true : never;
 
 export const contractFitsPublicMatch: ContractFitsPublicMatch = true;
@@ -58,19 +63,20 @@ type ContractFitsMatchPage = PublicMatchDetail extends MatchPageData ? true : ne
 
 export const contractFitsMatchPage: ContractFitsMatchPage = true;
 
-/**
- * Wiersz tabeli z kontraktu, z formą, daje się pokazać w publicznej
- * `StandingsTable` (#291), a przez to i w `StandingsSnippet` (wiersz panelu
- * to jego podzbiór).
- */
+/** Wiersz tabeli z kontraktu, z formą, daje się pokazać w publicznej `StandingsTable` (#291) na Tabeli i Przeglądzie. */
 type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;
 
 export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
 
-/** Klasyfikacja z kontraktu daje się pokazać w `StatRanking`, `StatLeaders`, `OtherStatLeaders` (`@tournament/ui/public`) i `LeaderboardLeaders`. */
+/** Klasyfikacja z kontraktu daje się pokazać w `StatRanking`, `StatLeaders` i `OtherStatLeaders` (`@tournament/ui/public`), także w bocznej kolumnie Przeglądu. */
 type ContractFitsLeaderboard = StatLeaderboard extends Leaderboard ? true : never;
 
 export const contractFitsLeaderboard: ContractFitsLeaderboard = true;
+
+/** Drużyna z `/teams` daje się pokazać w prezentacji drużyn Przeglądu (`TeamsShowcase`, #296). */
+type ContractFitsShowcaseTeam = TeamSummary extends ShowcaseTeam ? true : never;
+
+export const contractFitsShowcaseTeam: ContractFitsShowcaseTeam = true;
 
 /** Statystyka turnieju z kontraktu daje się podać do `StatTabs` i `StatsScreen` (`@tournament/ui/public`). */
 type ContractFitsStatOption = PublicStat extends StatOption ? true : never;

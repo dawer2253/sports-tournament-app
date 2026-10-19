@@ -4,7 +4,7 @@ import { HttpResponse, delay, http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from './lib/api';
 import { API_URL as API, server } from './test/server';
-import { SLUG, cup, publicApi, renderAt, tournament } from './test/public-api';
+import { SLUG, cup, match, publicApi, renderAt, tournament } from './test/public-api';
 
 const tabs = () => within(screen.getByRole('navigation', { name: 'Sekcje turnieju' }));
 
@@ -18,7 +18,7 @@ describe('trasa turnieju', () => {
     const user = userEvent.setup();
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Tabela (skrót)' });
+    await screen.findByRole('region', { name: 'Drużyny' });
     await user.click(tabs().getByRole('link', { name: 'Tabela' }));
     await screen.findByRole('heading', { level: 2, name: 'Tabela' });
     await user.click(tabs().getByRole('link', { name: 'Terminarz' }));
@@ -208,18 +208,18 @@ describe('odpytywanie', () => {
     'turniej %s: zapytania wracają po POLL_INTERVAL_MS',
     async (status) => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      const requests = publicApi({ data: tournament({ status }) });
-      // Przegląd pyta o wszystkie pięć zasobów naraz.
+      const requests = publicApi({ data: tournament({ status }), fixtures: [match(1, 1)] });
+      // Przegląd ligi z terminarzem pyta o pięć zasobów naraz, bez drużyn (#296).
       renderAt(`/t/${SLUG}`);
-      await screen.findByRole('region', { name: 'Tabela (skrót)' });
+      await screen.findByRole('region', { name: 'Kolejka 1' });
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0, stageMatches: [] }),
+        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0, stageMatches: [], teams: 0 }),
       );
 
       await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0, stageMatches: [] }),
+        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0, stageMatches: [], teams: 0 }),
       );
     },
   );

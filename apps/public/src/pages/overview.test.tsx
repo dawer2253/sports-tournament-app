@@ -1,185 +1,262 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { SLUG, finished, leaderRow, leaderboard, match, publicApi, renderAt, row, table } from '../test/public-api';
+import {
+  LEADERBOARD_ERROR,
+  SLUG,
+  asPublic,
+  cup,
+  cupMatches,
+  finished,
+  groupMatch,
+  groupTable,
+  groupsTournament,
+  leaderRow,
+  leaderboard,
+  match,
+  playoffMatches,
+  publicApi,
+  renderAt,
+  row,
+  table,
+  tournament,
+} from '../test/public-api';
 
-/**
- * Nazwy par w sekcji, w kolejności z DOM-u. `MatchRow` to odnośnik na stronę
- * meczu (#210) z nazwą „gospodarz – gość”; odnośnik nagłówka sekcji odpada.
- */
-function pairsIn(section: string) {
-  return within(screen.getByRole('region', { name: section }))
-    .getAllByRole('link', { name: / – / })
-    .map((link) => link.getAttribute('aria-label'));
+/** Przegląd w nowym wyglądzie (#296, DoD „Vitest (`apps/public`)”). */
+
+/** Pas etapu: region nazwany nazwą kolejki albo rundy. */
+const band = (name: string) => screen.findByRole('region', { name });
+
+/** Nazwy par tablic pasa etapu w kolejności z DOM-u. */
+function boards() {
+  return [...document.querySelectorAll('[data-slot="stage-board"]')].map((board) => board.getAttribute('aria-label'));
 }
 
-/** Tytuły sekcji Przeglądu w kolejności z DOM-u. */
-function sections() {
-  return screen.getAllByRole('region').map((region) => within(region).getAllByRole('heading')[0]!.textContent);
+/** Fakty nagłówka pasa, bez wiodących spacji. */
+function facts() {
+  return [...document.querySelectorAll('[data-slot="stage-band"] [data-slot="fact"]')].map((fact) => fact.textContent?.trim());
 }
 
-describe('Przegląd', () => {
-  it('sekcja „Na żywo” jest tylko przy meczu live, z kaflem każdego takiego meczu', async () => {
+/** Wiersze ciała tabeli w regionie: czy wiersz jest nad linią wyjścia. */
+function qualifying(region: HTMLElement) {
+  return within(region)
+    .getAllByRole('row')
+    .slice(1)
+    .map((tableRow) => within(tableRow).queryByText(', wychodzi z grupy') !== null);
+}
+
+/** Nazwy kafli prezentacji drużyn w kolejności z DOM-u. */
+function showcase() {
+  return [...document.querySelectorAll('[data-slot="showcase-team-name"]')].map((name) => name.textContent);
+}
+
+const TEAMS = [
+  { id: 3, name: 'Orły', logoUrl: null },
+  { id: 2, name: 'Łosie', logoUrl: null },
+  { id: 1, name: 'Lwy', logoUrl: null },
+];
+
+describe('Przegląd: pas etapu', () => {
+  it('dostaje kolejkę Terminarza, a nie tę z najwcześniejszym terminem, z meczami z /results i /fixtures razem', async () => {
+    // Kolejka 3 ma najwcześniejszy termin, ale Terminarz otwiera się na kolejce 2.
     publicApi({
+      results: [finished(2, 2), finished(1, 1)],
       fixtures: [
-        match(1, 3, { status: 'live', homeScore: 1, awayScore: 0 }),
-        match(2, 3, { status: 'live', homeScore: 0, awayScore: 0 }),
-        match(3, 3),
+        match(5, 3, { kickoffAt: '2026-10-11T10:00:00+00:00' }),
+        match(3, 2, { status: 'live', homeScore: 0, awayScore: 0 }),
+        match(4, 2),
       ],
     });
     renderAt(`/t/${SLUG}`);
 
-    const live = within(await screen.findByRole('region', { name: 'Na żywo' }));
-    expect(live.getAllByRole('article').map((tile) => tile.getAttribute('aria-label'))).toEqual([
-      'Gospodarz 1 – Gość 1',
-      'Gospodarz 2 – Gość 2',
-    ]);
-    // #210 zmienia punkt 1 Przeglądu z #206: „Śledź na żywo” prowadzi na stronę meczu.
-    expect(live.getAllByRole('link', { name: /Śledź na żywo/ }).map((link) => link.getAttribute('href'))).toEqual([
-      `/t/${SLUG}/mecze/1`,
-      `/t/${SLUG}/mecze/2`,
-    ]);
+    const region = within(await band('Kolejka 2'));
+    expect(region.getByText('Bieżąca kolejka')).toBeInTheDocument();
+    expect(boards()).toEqual(['Gospodarz 2 – Gość 2', 'Gospodarz 3 – Gość 3', 'Gospodarz 4 – Gość 4']);
+    expect(facts()).toEqual([expect.any(String), '1 z 3 rozegrane', 'z 3 kolejek']);
+    // Obok następna kolejka Terminarza.
+    expect(screen.getByRole('region', { name: 'Kolejka 3' })).toBeInTheDocument();
   });
 
-  it('bez meczu live sekcji „Na żywo” nie ma', async () => {
-    publicApi({ fixtures: [match(1, 3)] });
+  it('przed startem to 1. kolejka, a w tabeli termin pierwszego meczu', async () => {
+    publicApi({ fixtures: [match(1, 1), match(2, 1), match(3, 2, { kickoffAt: '2026-10-25T10:00:00+00:00' })] });
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Najbliższe mecze' });
-    expect(screen.queryByRole('region', { name: 'Na żywo' })).not.toBeInTheDocument();
+    expect(within(await band('Kolejka 1')).getByText('Pierwsza kolejka')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Tabela' })).getByText(/^Startuje /)).toBeInTheDocument();
   });
 
-  it('„Najbliższe mecze” to najwyżej 5 meczów zaplanowanych z jednej, najbliższej kolejki', async () => {
-    // API daje terminarz rosnąco po terminie: kolejka 4 zaczyna się przed 5.
-    // Mecz trwający z kolejki 4 ma swoją sekcję, więc tu go nie ma.
+  it('w turnieju finished to ostatnia kolejka, bez następnej', async () => {
+    publicApi({ data: tournament({ status: 'finished' }), results: [finished(3, 3), finished(2, 2), finished(1, 1)] });
+    renderAt(`/t/${SLUG}`);
+
+    expect(within(await band('Kolejka 3')).getByText('Ostatnia kolejka')).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="next-match"]')).toBeNull();
+  });
+
+  it('tablica prowadzi na stronę meczu, a klik z modyfikatorem zostaje przeglądarce', async () => {
+    publicApi({ fixtures: [match(7, 1)] });
+    const { router } = renderAt(`/t/${SLUG}`);
+
+    await band('Kolejka 1');
+    const board = screen.getByRole('link', { name: 'Gospodarz 7 – Gość 7' });
+    expect(board).toHaveAttribute('href', `/t/${SLUG}/mecze/7`);
+
+    fireEvent.click(board, { ctrlKey: true });
+    expect(router.state.location.pathname).toBe(`/t/${SLUG}`);
+
+    fireEvent.click(board);
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/t/${SLUG}/mecze/7`));
+  });
+});
+
+describe('Przegląd: w miejscu tabeli', () => {
+  it('liga: pełna tabela z formą, bez pasa „Mistrz” przy turnieju active', async () => {
+    publicApi({ fixtures: [match(1, 1)], standings: [table({ rows: [row(), row({ position: 2, team: { id: 2, name: 'Druga', logoUrl: null } })] })] });
+    renderAt(`/t/${SLUG}`);
+
+    const main = within(await screen.findByRole('region', { name: 'Tabela' }));
+    expect(await main.findByRole('columnheader', { name: 'Forma' })).toBeInTheDocument();
+    expect(main.getAllByRole('row')).toHaveLength(3);
+    expect(screen.queryByRole('region', { name: 'Mistrz' })).not.toBeInTheDocument();
+  });
+
+  it('liga: „Mistrz” to 1. miejsce tabeli, gdy turniej jest finished', async () => {
     publicApi({
-      fixtures: [
-        match(1, 4, { status: 'live', homeScore: 0, awayScore: 0 }),
-        ...[2, 3, 4, 5, 6, 7].map((id) => match(id, 4)),
-        match(8, 5),
-      ],
+      data: tournament({ status: 'finished' }),
+      results: [finished(1, 1)],
+      standings: [table({ rows: [row({ position: 1, team: { id: 9, name: 'Zwycięzcy FC', logoUrl: null } }), row({ position: 2 })] })],
     });
     renderAt(`/t/${SLUG}`);
 
-    const section = within(await screen.findByRole('region', { name: 'Najbliższe mecze' }));
-    expect(pairsIn('Najbliższe mecze')).toEqual([2, 3, 4, 5, 6].map((id) => `Gospodarz ${id} – Gość ${id}`));
-    expect(section.getByRole('link', { name: /Cały terminarz/ })).toHaveAttribute('href', `/t/${SLUG}/terminarz`);
+    expect(await screen.findByRole('region', { name: 'Mistrz' })).toHaveTextContent('Zwycięzcy FC');
   });
 
-  it('„Ostatnie wyniki” to najwyżej 5 meczów z najnowszej kolejki', async () => {
-    // API daje wyniki malejąco po terminie: najpierw najnowsza kolejka 6.
-    publicApi({ results: [...[1, 2, 3, 4, 5, 6].map((id) => finished(id, 6)), finished(7, 5)] });
-    renderAt(`/t/${SLUG}`);
-
-    const section = within(await screen.findByRole('region', { name: 'Ostatnie wyniki' }));
-    expect(pairsIn('Ostatnie wyniki')).toEqual([1, 2, 3, 4, 5].map((id) => `Gospodarz ${id} – Gość ${id}`));
-    expect(section.getByRole('link', { name: /Wszystkie wyniki/ })).toHaveAttribute('href', `/t/${SLUG}/wyniki`);
-  });
-
-  it('kolejki Przeglądu to te, na których otwierają się Terminarz i Wyniki, nie te z najwcześniejszym terminem', async () => {
-    // Przełożony mecz kolejki 1 rozegrano po kolejce 3, więc w `/results`
-    // (malejąco po terminie) stoi pierwszy. Wyniki otwierają się na kolejce 3.
-    // W `/fixtures` mecz kolejki 6 ma wcześniejszy termin niż kolejka 5.
-    publicApi({
-      results: [finished(1, 1), finished(2, 3), finished(3, 3), finished(4, 2)],
-      fixtures: [match(5, 6), match(6, 5), match(7, 5)],
+  it('puchar nie pyta o /standings; pas to runda z kompletem jej meczów, a w miejscu tabeli drabinka', async () => {
+    const matches = cupMatches({ teams: 4, progress: { round: 1, finished: 1 } });
+    const requests = publicApi({
+      data: cup(),
+      stageMatches: matches,
+      results: matches.filter((candidate) => candidate.status === 'finished').map(asPublic),
+      fixtures: matches.filter((candidate) => candidate.status !== 'finished').map(asPublic),
     });
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Ostatnie wyniki' });
-    expect(pairsIn('Ostatnie wyniki')).toEqual(['Gospodarz 2 – Gość 2', 'Gospodarz 3 – Gość 3']);
-    expect(pairsIn('Najbliższe mecze')).toEqual(['Gospodarz 6 – Gość 6', 'Gospodarz 7 – Gość 7']);
+    expect(within(await band('Półfinał')).getByText('Bieżąca runda')).toBeInTheDocument();
+    expect(boards()).toHaveLength(2);
+    expect(await screen.findByRole('region', { name: 'Drabinka' })).toBeInTheDocument();
+    // Obok mecze następnej rundy: finał i mecz o 3. miejsce z pustymi slotami.
+    expect(within(screen.getByRole('region', { name: 'Najbliższe mecze' })).getAllByRole('link', { name: / – / })).toHaveLength(2);
+    expect(requests.standings).toBe(0);
   });
 
-  it('skrót tabeli ma 5 pierwszych wierszy pierwszej tabeli i odnośnik do pełnej', async () => {
-    const names = ['Alfa', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta'];
+  it('puchar: „Mistrz” po finale rozstrzygniętym karnymi to drużyna z wyższymi karnymi', async () => {
+    const matches = cupMatches({ teams: 4, progress: 'done', thirdPlace: false }, { 2001: { homeScore: 1, awayScore: 1, homePenalties: 3, awayPenalties: 5 } });
+    const final = matches.find((candidate) => candidate.id === 2001)!;
+    publicApi({ data: cup({ status: 'finished' }), stageMatches: matches, results: matches.map(asPublic) });
+    renderAt(`/t/${SLUG}`);
+
+    expect(await screen.findByRole('region', { name: 'Mistrz' })).toHaveTextContent(final.awayTeam!.name);
+  });
+
+  it('grupy w fazie grupowej dostają wszystkie grupy z qualifiers po groupId', async () => {
+    const data = groupsTournament();
+    // Grupa B: wychodzi jedna, więc linia stoi po pierwszym miejscu.
+    data.stages[0]!.groups[1]!.qualifiers = 1;
+    publicApi({ data, standings: [groupTable(2), groupTable(1)], fixtures: [groupMatch(1, 1, 1), groupMatch(2, 2, 1)] });
+    renderAt(`/t/${SLUG}`);
+
+    const main = within(await screen.findByRole('region', { name: 'Tabele grup' }));
+    const a = await main.findByRole('region', { name: 'Grupa A' });
+    const b = main.getByRole('region', { name: 'Grupa B' });
+    expect(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(qualifying(a)).toEqual([true, true, false, false]);
+    expect(qualifying(b)).toEqual([true, false, false, false]);
+    expect(screen.queryByRole('region', { name: 'Drabinka' })).not.toBeInTheDocument();
+  });
+
+  it('grupy po wygenerowaniu drabinki: drabinka i odnośnik do tabel grup zamiast tabel, a w pasie runda playoffu', async () => {
+    const playoff = playoffMatches();
     publicApi({
-      standings: [
-        table({ rows: names.map((name, index) => row({ position: index + 1, team: { id: index + 1, name, logoUrl: null } })) }),
-        table({ stageId: 2, rows: [row({ team: { id: 99, name: 'Druga tabela', logoUrl: null } })] }),
-      ],
+      data: groupsTournament(),
+      standings: [groupTable(1), groupTable(2)],
+      stageMatches: playoff,
+      results: [groupMatch(1, 1, 3, { status: 'finished', homeScore: 1, awayScore: 0 })],
+      fixtures: playoff.map(asPublic),
     });
     renderAt(`/t/${SLUG}`);
 
-    const snippet = within(await screen.findByRole('region', { name: 'Tabela (skrót)' }));
-    const items = snippet.getAllByRole('listitem');
-    // Treść wiersza: miejsce, skrót herbu, nazwa, punkty.
-    expect(items.map((item) => item.textContent)).toEqual(
-      names.slice(0, 5).map((name, index) => expect.stringMatching(new RegExp(`^${index + 1}.*${name}`))),
-    );
-    expect(snippet.queryByText('Druga tabela')).not.toBeInTheDocument();
-    expect(snippet.getByRole('link', { name: /Zobacz pełną tabelę/ })).toHaveAttribute('href', `/t/${SLUG}/tabela`);
+    expect(await band('Półfinał')).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Drabinka' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Tabele grup' })).toHaveAttribute('href', `/t/${SLUG}/tabela`);
+    expect(screen.queryByRole('region', { name: 'Grupa A' })).not.toBeInTheDocument();
   });
+});
 
-  it('sekcja bez meczów znika: przed startem jest tylko tabela i klasyfikacja z pustym stanem', async () => {
-    publicApi({ fixtures: [], results: [] });
+describe('Przegląd: stan „Bez terminarza”', () => {
+  it('liga: drużyny idą z /teams, nie z wierszy /standings, alfabetycznie po polsku', async () => {
+    const requests = publicApi({ teams: TEAMS, standings: [table({ rows: [row({ team: { id: 9, name: 'Z tabeli', logoUrl: null } })] })] });
     renderAt(`/t/${SLUG}`);
 
-    const card = within(await screen.findByRole('region', { name: 'Bramki' }));
-    expect(sections()).toEqual(['Tabela (skrót)', 'Bramki']);
-    expect(card.getByText(/Klasyfikacja ruszy po pierwszym zakończonym meczu/)).toBeInTheDocument();
-    expect(card.queryByRole('listitem')).not.toBeInTheDocument();
+    await screen.findByRole('region', { name: 'Drużyny' });
+    await waitFor(() => expect(showcase()).toEqual(['Lwy', 'Łosie', 'Orły']));
+    expect(screen.queryByText('Z tabeli')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(requests.teams).toBeGreaterThan(0);
   });
 
-  it('sekcje idą w kolejności: Na żywo, Najbliższe mecze, Ostatnie wyniki, Tabela', async () => {
-    publicApi({
-      fixtures: [match(1, 2, { status: 'live', homeScore: 1, awayScore: 1 }), match(2, 3)],
-      results: [finished(3, 1)],
-    });
+  it('puchar bez drabinki pokazuje drużyny z /teams', async () => {
+    publicApi({ data: cup(), teams: TEAMS });
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Na żywo' });
-    await screen.findByRole('region', { name: 'Ostatnie wyniki' });
-    await screen.findByRole('region', { name: 'Bramki' });
-    expect(sections()).toEqual(['Na żywo', 'Najbliższe mecze', 'Ostatnie wyniki', 'Tabela (skrót)', 'Bramki']);
+    await screen.findByRole('region', { name: 'Drużyny' });
+    await waitFor(() => expect(showcase()).toEqual(['Lwy', 'Łosie', 'Orły']));
   });
 
-  it('karta klasyfikacji pyta o domyślną statystykę, a tytuł i etykietę bierze z odpowiedzi', async () => {
-    // Para rozjechana celowo: turniej jest piłkarski, a odpowiedź mówi
-    // „Punkty” — przejdzie tylko widok, który czyta `label`, nie sport.
-    const requests = publicApi({ leaderboards: () => leaderboard({ label: 'Punkty', rows: [leaderRow(1, { value: 57 })] }) });
+  it('grupy bez kolejek pokazują drużyny z /teams, także bez grupy', async () => {
+    publicApi({ data: groupsTournament(), teams: TEAMS, standings: [groupTable(1), groupTable(2)] });
     renderAt(`/t/${SLUG}`);
 
-    const card = within(await screen.findByRole('region', { name: 'Punkty' }));
-    expect(screen.queryByRole('region', { name: 'Bramki' })).not.toBeInTheDocument();
-    expect(card.getByRole('listitem')).toHaveTextContent(/Zawodnik 1.*57.*Punkty/);
-    expect(card.getByRole('link', { name: /Wszystkie statystyki/ })).toHaveAttribute('href', `/t/${SLUG}/statystyki`);
+    await screen.findByRole('region', { name: 'Drużyny' });
+    await waitFor(() => expect(showcase()).toEqual(['Lwy', 'Łosie', 'Orły']));
+    expect(screen.queryByRole('region', { name: 'Grupa A' })).not.toBeInTheDocument();
+  });
+
+  it('liga z terminarzem nie pyta o /teams', async () => {
+    const requests = publicApi({ fixtures: [match(1, 1)] });
+    renderAt(`/t/${SLUG}`);
+
+    await band('Kolejka 1');
+    expect(requests.teams).toBe(0);
+  });
+
+  it('puchar z drabinką nie pyta o /teams', async () => {
+    const matches = cupMatches({ teams: 4 });
+    const requests = publicApi({ data: cup(), stageMatches: matches, fixtures: matches.map(asPublic) });
+    renderAt(`/t/${SLUG}`);
+
+    await band('Półfinał');
+    expect(requests.teams).toBe(0);
+  });
+});
+
+describe('Przegląd: sekcje niezależne', () => {
+  it('błąd klasyfikacji nie zdejmuje pasa ani tabeli, a sekcja ma ponowienie', async () => {
+    publicApi({ fixtures: [match(1, 1)], leaderboards: () => LEADERBOARD_ERROR });
+    renderAt(`/t/${SLUG}`);
+
+    const leader = within(await screen.findByRole('region', { name: 'Klasyfikacja' }));
+    expect(await leader.findByRole('alert')).toHaveTextContent('Nie udało się wczytać klasyfikacji');
+    expect(leader.getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Kolejka 1' })).toBeInTheDocument();
+    expect(await within(screen.getByRole('region', { name: 'Tabela' })).findByRole('table')).toBeInTheDocument();
+  });
+
+  it('lider klasyfikacji domyślnej statystyki: tytuł z odpowiedzi i odnośnik do Statystyk', async () => {
+    const requests = publicApi({ fixtures: [match(1, 1)], leaderboards: () => leaderboard({ label: 'Punkty', rows: [leaderRow(1, { value: 57 })] }) });
+    renderAt(`/t/${SLUG}`);
+
+    const leader = within(await screen.findByRole('region', { name: 'Punkty' }));
+    expect(leader.getByText('Zawodnik 1')).toBeInTheDocument();
+    expect(leader.getByRole('link', { name: 'Statystyki' })).toHaveAttribute('href', `/t/${SLUG}/statystyki`);
     expect(requests.leaderboard).toEqual([null]);
-  });
-
-  it('karta klasyfikacji dopełnia liderów do 5 wierszy kolejnymi pozycjami', async () => {
-    publicApi({
-      leaderboards: () =>
-        leaderboard({
-          rows: [
-            leaderRow(1, { position: 1, value: 5 }),
-            leaderRow(2, { position: 1, value: 5 }),
-            ...[3, 4, 5, 6, 7].map((id) => leaderRow(id, { position: 3, value: 2 })),
-          ],
-        }),
-    });
-    renderAt(`/t/${SLUG}`);
-
-    const card = within(await screen.findByRole('region', { name: 'Bramki' }));
-    expect(card.getAllByRole('listitem').map((item) => item.textContent)).toEqual(
-      [1, 2, 3, 4, 5].map((id) => expect.stringContaining(`Zawodnik ${id}`)),
-    );
-  });
-
-  it('karta klasyfikacji pokazuje wszystkich z pierwszym miejscem, także sześciu, i nikogo więcej', async () => {
-    publicApi({
-      leaderboards: () =>
-        leaderboard({
-          rows: [
-            ...[1, 2, 3, 4, 5, 6].map((id) => leaderRow(id, { position: 1, value: 2 })),
-            leaderRow(7, { position: 7, value: 1 }),
-          ],
-        }),
-    });
-    renderAt(`/t/${SLUG}`);
-
-    const card = within(await screen.findByRole('region', { name: 'Bramki' }));
-    expect(card.getAllByRole('listitem').map((item) => item.textContent)).toEqual(
-      [1, 2, 3, 4, 5, 6].map((id) => expect.stringContaining(`Zawodnik ${id}`)),
-    );
   });
 });

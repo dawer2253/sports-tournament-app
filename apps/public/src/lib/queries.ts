@@ -49,6 +49,14 @@ export const useStandings = (slug: string, enabled = true) =>
   usePublicQuery(['public', slug, 'standings'], () => unwrap(api.GET('/public/t/{slug}/standings', path(slug))), enabled);
 
 /**
+ * Drużyny turnieju (#296) do prezentacji na Przeglądzie. Pyta tylko w stanie
+ * „Bez terminarza” (`enabled`), także w lidze: z terminarzem Przegląd
+ * pokazuje drużyny w tabeli i na tablicach.
+ */
+export const useTeams = (slug: string, enabled = true) =>
+  usePublicQuery(['public', slug, 'teams'], () => unwrap(api.GET('/public/t/{slug}/teams', path(slug))), enabled);
+
+/**
  * Komplet meczów fazy w każdym stanie (#234), z którego Drabinka buduje
  * drzewo, a Terminarz, Wyniki, Przegląd i strona meczu liczą etykiety
  * pozycji. Bez fazy (`null`) zapytanie nie idzie.

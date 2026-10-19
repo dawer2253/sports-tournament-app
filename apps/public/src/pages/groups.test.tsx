@@ -55,7 +55,7 @@ describe('zakładki turnieju z grupami', () => {
     publicApi({ data: groupsTournament(), standings: [groupTable(1), groupTable(2)] });
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Tabele grup (skrót)' });
+    await screen.findByRole('region', { name: 'Drużyny' });
     expect(tabs().getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Przegląd',
       'Tabela',
@@ -152,31 +152,6 @@ describe('Tabela turnieju z grupami', () => {
 
     expect(await screen.findByRole('heading', { name: 'Grupy jeszcze nie są ułożone' })).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
-});
-
-describe('Przegląd turnieju z grupami', () => {
-  it('ma skrót wszystkich grup z linią wyjścia, a przed wygenerowaniem drabinki nie ma karty „Drabinka”', async () => {
-    const requests = publicApi({ data: groupsTournament(), standings: [groupTable(1), groupTable(2)], stageMatches: [] });
-    renderAt(`/t/${SLUG}`);
-
-    const snippet = await screen.findByRole('region', { name: 'Tabele grup (skrót)' });
-    const a = within(snippet).getByRole('region', { name: 'Grupa A' });
-    const b = within(snippet).getByRole('region', { name: 'Grupa B' });
-    expect(qualifying(a)).toEqual([true, true, false, false]);
-    expect(within(b).getByText('Wychodzą 2 z 4')).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Tabela (skrót)' })).not.toBeInTheDocument();
-    expect(requests.stageMatches).toContain(String(4));
-    expect(screen.queryByRole('region', { name: 'Drabinka' })).not.toBeInTheDocument();
-  });
-
-  it('po wygenerowaniu drabinki ma kartę „Drabinka” nad skrótem tabel grup', async () => {
-    publicApi({ data: groupsTournament(), standings: [groupTable(1), groupTable(2)], stageMatches: playoffMatches() });
-    renderAt(`/t/${SLUG}`);
-
-    const bracket = await screen.findByRole('region', { name: 'Drabinka' });
-    const groups = screen.getByRole('region', { name: 'Tabele grup (skrót)' });
-    expect(bracket.compareDocumentPosition(groups) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
 
