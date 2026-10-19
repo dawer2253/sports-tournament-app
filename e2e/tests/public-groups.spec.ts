@@ -125,7 +125,7 @@ test('kibic widzi tabele grup z linią wyjścia i grupy w Terminarzu', async ({ 
   });
 });
 
-test('kibic widzi pustą Drabinkę z odnośnikiem do Tabeli, a po wygenerowaniu drzewo i notkę o rozjeździe', async ({
+test('kibic widzi pustą Drabinkę z odnośnikiem do tabel grup, a po wygenerowaniu drzewo i notkę o rozjeździe', async ({
   page,
   api,
   groups,
