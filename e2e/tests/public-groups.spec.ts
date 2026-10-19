@@ -136,10 +136,10 @@ test('kibic widzi pustą Drabinkę z odnośnikiem do Tabeli, a po wygenerowaniu 
     return created;
   });
 
-  await test.step('przed wygenerowaniem Drabinka ma pusty stan z odnośnikiem do Tabeli', async () => {
+  await test.step('przed wygenerowaniem Drabinka ma pusty stan z odnośnikiem do tabel grup', async () => {
     await page.goto(`${PUBLIC_URL}/t/${groups.slug}/drabinka`);
-    await expect(page.getByText('Drabinki jeszcze nie ma')).toBeVisible();
-    await page.getByRole('link', { name: 'Przejdź do tabeli' }).click();
+    await expect(page.getByRole('heading', { name: 'Drabinka powstanie po fazie grupowej' })).toBeVisible();
+    await page.getByRole('link', { name: 'Zobacz tabele grup' }).click();
     await expect(page).toHaveURL(`${PUBLIC_URL}/t/${groups.slug}/tabela`);
   });
 

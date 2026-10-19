@@ -132,20 +132,31 @@ describe('Przegląd turnieju z grupami', () => {
 });
 
 describe('Drabinka turnieju z grupami', () => {
-  it('przed wygenerowaniem ma pusty stan z odnośnikiem do Tabeli', async () => {
+  it('przed wygenerowaniem ma pusty stan z odnośnikiem do tabel grup i liczbą wychodzących z grup', async () => {
     publicApi({ data: groupsTournament(), standings: [groupTable(1), groupTable(2)], stageMatches: [] });
     renderAt(`/t/${SLUG}/drabinka`);
 
-    expect(await screen.findByText('Drabinki jeszcze nie ma')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Przejdź do tabeli' })).toHaveAttribute('href', `/t/${SLUG}/tabela`);
+    expect(await screen.findByRole('heading', { name: 'Drabinka powstanie po fazie grupowej' })).toBeInTheDocument();
+    expect(screen.getByText('Playoff')).toBeInTheDocument();
+    expect(screen.getByText(/^Z każdej grupy wychodzą 2 drużyny\./)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zobacz tabele grup' })).toHaveAttribute('href', `/t/${SLUG}/tabela`);
   });
 
-  it('w samym pucharze pusty stan zostaje bez odnośnika', async () => {
+  it('liczba wychodzących idzie z qualifiers grup, a nie jest wpisana na sztywno', async () => {
+    const data = groupsTournament();
+    data.stages[0]!.groups[1]!.qualifiers = 1;
+    publicApi({ data, standings: [groupTable(1), groupTable(2)], stageMatches: [] });
+    renderAt(`/t/${SLUG}/drabinka`);
+
+    expect(await screen.findByText(/^Z grup wychodzą łącznie 3 drużyny\./)).toBeInTheDocument();
+  });
+
+  it('w samym pucharze pusty stan prowadzi na Przegląd, nie do tabel grup', async () => {
     publicApi({ data: cup(), stageMatches: [] });
     renderAt(`/t/${SLUG}/drabinka`);
 
-    expect(await screen.findByText('Drabinki jeszcze nie ma')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Przejdź do tabeli' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Drabinka jeszcze nie jest ułożona' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Zobacz tabele grup' })).not.toBeInTheDocument();
   });
 
   it('po wygenerowaniu z czołówki tabel ma drzewo bez notki o rozjeździe', async () => {

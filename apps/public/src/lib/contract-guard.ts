@@ -15,7 +15,7 @@ import type {
   StandingsTableRow,
   StatOption,
 } from '@tournament/ui';
-import type { PublicShellTournament, SportCode } from '@tournament/ui/public';
+import type { PublicBracketMatch, PublicShellTournament, SportCode } from '@tournament/ui/public';
 
 /**
  * Strażnik zgodności typów z design systemu z kontraktem, jak
@@ -39,10 +39,15 @@ type ContractFitsMatch = Match extends MatchInRound ? true : never;
 
 export const contractFitsMatch: ContractFitsMatch = true;
 
-/** Mecz fazy z kontraktu daje się podać regułom i drzewu drabinki (`BracketTree`, #234). */
+/** Mecz fazy z kontraktu daje się podać regułom drabinki (`lib/bracket.ts`, #234) i drzewu strony (`BracketTree` z `@tournament/ui/public`, #293). */
 type ContractFitsBracketMatch = Match extends BracketMatch ? true : never;
 
 export const contractFitsBracketMatch: ContractFitsBracketMatch = true;
+
+/** Mecz fazy z kontraktu niesie herby drużyn do kafla Drabinki (`BracketTile`, #293). */
+type ContractFitsPublicBracketMatch = Match extends PublicBracketMatch ? true : never;
+
+export const contractFitsPublicBracketMatch: ContractFitsPublicBracketMatch = true;
 
 /** Mecz strony publicznej ze strzelcami daje się pokazać w `MatchRow` i `LiveMatchTile` (#208). */
 type ContractFitsPublicMatch = PublicMatch extends MatchInRound ? true : never;
