@@ -9,6 +9,9 @@ import type { MatchRowData } from '../components/data/match-row-data'
 /** Strona meczu. */
 export type Side = 'home' | 'away'
 
+/** Podpis pustego slotu, gdy nie wiadomo, skąd przyjdzie drużyna. */
+export const UNKNOWN_SLOT = 'Do ustalenia'
+
 export function teamOf(match: MatchRowData, side: Side) {
   return side === 'home' ? match.homeTeam : match.awayTeam
 }
@@ -16,7 +19,7 @@ export function teamOf(match: MatchRowData, side: Side) {
 /** Nazwa strony meczu: drużyna, a w pustym slocie pucharu źródło albo „Do ustalenia”, jak w wierszu meczu. */
 export function sideName(match: MatchRowData, side: Side): string {
   const source = side === 'home' ? match.bracket?.homeSource : match.bracket?.awaySource
-  return teamOf(match, side)?.name ?? source ?? 'Do ustalenia'
+  return teamOf(match, side)?.name ?? source ?? UNKNOWN_SLOT
 }
 
 /** Nazwa odnośnika tablicy i wiersza meczu: „Gospodarz – Gość”, jak w wierszu z #292. */

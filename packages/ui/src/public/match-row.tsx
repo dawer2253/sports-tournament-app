@@ -1,21 +1,15 @@
 import type { MatchRowData } from '../components/data/match-row-data'
+import { bracketLoserSide } from '../lib/bracket'
 import { formatKickoff, formatShortDay } from '../lib/kickoff'
 import { cn } from '../lib/utils'
 import { Anchor } from './anchor'
 import { Crest } from './crest'
 import { LiveBadge, LiveClock } from './live'
+import { sideName, teamOf, type Side } from './match-sides'
 import { ScoreCell } from './score-cell'
 
 /** Lista, w której stoi wiersz: Terminarz pokazuje godzinę, Wyniki krótki dzień. */
 export type MatchListMode = 'fixtures' | 'results'
-
-type Side = 'home' | 'away'
-
-const other = (side: Side): Side => (side === 'home' ? 'away' : 'home')
-
-function teamOf(match: MatchRowData, side: Side) {
-  return side === 'home' ? match.homeTeam : match.awayTeam
-}
 
 function scoreOf(match: MatchRowData, side: Side) {
   return side === 'home' ? match.homeScore : match.awayScore
@@ -27,19 +21,7 @@ function penaltiesOf(match: MatchRowData, side: Side) {
 
 /** Przegrany meczu zakończonego, także po karnych: jego strona jest przygaszona. */
 function lostMatch(match: MatchRowData, side: Side): boolean {
-  if (match.status !== 'finished') return false
-  const own = scoreOf(match, side)
-  const opponent = scoreOf(match, other(side))
-  if (own === null || opponent === null) return false
-  if (own !== opponent) return own < opponent
-  const [ownPens, opponentPens] = [penaltiesOf(match, side), penaltiesOf(match, other(side))]
-  return ownPens !== null && opponentPens !== null && ownPens < opponentPens
-}
-
-/** Nazwa strony meczu: drużyna, a w pustym slocie pucharu źródło albo „Do ustalenia”. */
-function sideName(match: MatchRowData, side: Side): string {
-  const source = side === 'home' ? match.bracket?.homeSource : match.bracket?.awaySource
-  return teamOf(match, side)?.name ?? source ?? 'Do ustalenia'
+  return bracketLoserSide(match) === side
 }
 
 /**

@@ -25,6 +25,7 @@ import { cn } from '../lib/utils'
 import { Anchor } from './anchor'
 import { Crest } from './crest'
 import { LiveTag } from './live'
+import { UNKNOWN_SLOT } from './match-sides'
 
 /** Drużyna w slocie meczu drabinki z herbem (`TeamSummary` z kontraktu). */
 export type PublicBracketTeam = BracketTeam & { logoUrl: string | null }
@@ -53,8 +54,6 @@ const SWIPE_MIN = 50
 
 const SIDES = ['home', 'away'] as const
 
-/** Podpis pustego slotu, do którego nie prowadzi żadna krawędź (niespójne dane). */
-const UNKNOWN_SLOT = 'Do ustalenia'
 
 // --- Kafel ------------------------------------------------------------------
 

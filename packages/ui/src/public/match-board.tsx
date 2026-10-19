@@ -1,13 +1,12 @@
 import type { MatchPageMatch, MatchPageTeam } from '../components/data/match-page-data'
 import { Penalties } from '../components/data/penalties'
 import { scorerSides, type ScorerLine } from '../components/data/scorer-lines'
-import { bracketWinnerSide } from '../lib/bracket'
+import { bracketLoserSide, bracketWinnerSide } from '../lib/bracket'
 import { formatKickoff } from '../lib/kickoff'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
 import { LiveClock, LiveTag } from './live'
-
-type Side = 'home' | 'away'
+import { UNKNOWN_SLOT, type Side } from './match-sides'
 
 export interface MatchBoardProps {
   match: MatchPageMatch
@@ -17,7 +16,7 @@ export interface MatchBoardProps {
 }
 
 function teamName(team: MatchPageTeam | null) {
-  return team?.name ?? 'Do ustalenia'
+  return team?.name ?? UNKNOWN_SLOT
 }
 
 /** Przygaszenie strony przegranej: `data-dim` dla funkcji `play`, kolor przez `cn`. */
@@ -129,8 +128,7 @@ export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
   const home = teamName(match.homeTeam)
   const away = teamName(match.awayTeam)
   const scheduled = match.status === 'scheduled'
-  const winner = bracketWinnerSide(match)
-  const loser: Side | null = winner === null ? null : winner === 'home' ? 'away' : 'home'
+  const loser = bracketLoserSide(match)
   const scorers = scorerSides(match, { limit: Infinity })
   const hasScorers = !scheduled && scorers.home.length + scorers.away.length > 0
 
