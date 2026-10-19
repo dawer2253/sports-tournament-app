@@ -9,7 +9,7 @@ import { Label } from './label'
 import { SettingsSection } from './settings-section'
 
 const meta = {
-  title: 'UI/Prymitywy/SettingsSection',
+  title: 'Panel/UI/Prymitywy/SettingsSection',
   component: SettingsSection,
   tags: ['autodocs'],
 } satisfies Meta<typeof SettingsSection>

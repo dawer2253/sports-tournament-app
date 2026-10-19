@@ -11,7 +11,7 @@ const LOGO_URL =
   )
 
 const meta = {
-  title: 'Ekrany/Admin/Ustawienia',
+  title: 'Panel/Ekrany/Admin/Ustawienia',
   component: AdminSettings,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminSettings>

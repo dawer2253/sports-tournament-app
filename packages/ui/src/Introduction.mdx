@@ -1,6 +1,6 @@
 import { Meta } from '@storybook/addon-docs/blocks'
 
-<Meta title="Wprowadzenie" />
+<Meta title="Panel/Wprowadzenie" />
 
 <div className="font-sans">
 
@@ -15,13 +15,14 @@ i oszczędny w kolorze: jedynym nasyconym akcentem jest zieleń marki.
 
 ## Struktura
 
-Sidebar powtarza układ `src/`: **jedna sekcja to jeden katalog**, a separatorem grup jest `/`.
-Tytuł story to ścieżka — `UI/Prymitywy/Button`, `Ekrany/Admin/Drużyny`. Znaku `·` w tytułach
+Sidebar ma dwa korzenie: **Panel** (ten opis) i **Strona publiczna** (własne Wprowadzenie,
+od S7). W Panelu sidebar powtarza układ `src/`: **jedna sekcja to jeden katalog**, a separatorem grup jest `/`.
+Tytuł story to ścieżka — `Panel/UI/Prymitywy/Button`, `Panel/Ekrany/Admin/Drużyny`. Znaku `·` w tytułach
 nie używamy: Storybook go nie interpretuje i skleiłby się w jeden liść.
 
 - **Fundamenty**: reguły systemu (kolory/tokeny, promień, typografia oraz przepis „jak zbudować ekran"). **Zacznij tutaj.**
 - **UI**: komponenty, w trzech sekcjach równych katalogom źródłowym — **Układ** (`components/layout`), **Dane** (`components/data`), **Prymitywy** (`components/ui`, Button, Badge, Card, Input…). Każdy ma stories + autodocs.
-- **Ekrany**: złożone widoki, w dwóch folderach — **`Ekrany/Admin`** (panel/CMS) i **`Ekrany/Public`** (strona rozgrywek). Każdy ekran ma stronę specyfikacji (`.mdx`).
+- **Ekrany**: złożone widoki panelu w **`Ekrany/Admin`** (panel/CMS). Każdy ekran ma stronę specyfikacji (`.mdx`). Ekrany strony rozgrywek stoją w „Strona publiczna/Ekrany”.
   Ekran jest **odbiciem tego, co stoi w aplikacji**: ten sam układ, ten sam nagłówek i te same wspólne komponenty; różni się źródłem danych (demo zamiast API) i nieaktywnymi akcjami. Nie rysujemy na nim funkcji, której w aplikacji nie ma (ani osobnego ekranu, gdy w aplikacji to okno).
 
 Kolejność sekcji: **`Wprowadzenie → Fundamenty → UI → Ekrany`** (`storySort.order` w
@@ -33,7 +34,7 @@ Dashboard, Logowanie, Kreator turnieju, Drużyny, Skład drużyny, Grupy, Termin
 ### Ekrany / Public (strona rozgrywek)
 Przegląd, Tabela, Terminarz, Wyniki, Drabinka, Statystyki, Mecz.
 
-Wspólne layouty: **`AdminShell`** (sidebar + topbar) i **`PublicShell`** (brandowany nagłówek + zakładki).
+Wspólne layouty: **`AdminShell`** (sidebar + topbar) i **`Shell`** strony publicznej (`src/public/`, korzeń „Strona publiczna”).
 Dane demo w `src/lib/demo-data.ts` (spójne między ekranami).
 
 ## Motyw

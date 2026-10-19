@@ -9,7 +9,7 @@ import type { BracketMatchRowData } from './bracket-match-row-data'
 const [quarterFinals, semiFinals, finalRound] = cupRounds.map((round) => round.matches)
 
 const meta = {
-  title: 'UI/Dane/Wiersz meczu drabinki',
+  title: 'Panel/UI/Dane/Wiersz meczu drabinki',
   component: BracketMatchRow,
   parameters: { layout: 'padded' },
   args: { match: quarterFinals![0]!, timeZone: scheduleTimeZone, penaltySlot: true },

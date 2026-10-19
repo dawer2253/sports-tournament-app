@@ -1,10 +1,18 @@
 import type { PublicTournament } from '@tournament/api-client';
-import { EmptyState, Skeleton, publicTabs } from '@tournament/ui';
-import { PublicShell, type PublicNavKey } from '@tournament/ui/components/layout/public-shell.tsx';
-import { useEffect } from 'react';
+import {
+  MatchClockProvider,
+  Shell,
+  TournamentLoadError,
+  TournamentLoading,
+  TournamentNotFound,
+  TOURNAMENT_NOT_FOUND,
+  publicTabs,
+  type MatchClockSettings,
+  type PublicNavKey,
+} from '@tournament/ui/public';
+import { useEffect, useMemo } from 'react';
 import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
 import { usePublicTournament } from '../lib/queries';
-import { StandalonePage } from './standalone-page';
 
 /** Podtrasa zakładki pod `/t/:slug`, po polsku (#192). */
 const TAB_PATHS: Record<PublicNavKey, string> = {
@@ -21,12 +29,20 @@ export function tabHref(slug: string, key: PublicNavKey): string {
   return TAB_PATHS[key] ? `/t/${slug}/${TAB_PATHS[key]}` : `/t/${slug}`;
 }
 
+/**
+ * Nawigacja zakładek turnieju dla shella i ekranów: adres zakładki
+ * i przejście routerem (`navHref` + `onNavigate`).
+ */
+export function useTabNav(slug: string): { navHref: (key: PublicNavKey) => string; onNavigate: (key: PublicNavKey) => void } {
+  const navigate = useNavigate();
+  return { navHref: (key) => tabHref(slug, key), onNavigate: (key) => void navigate(tabHref(slug, key)) };
+}
+
 /** Adres strony meczu (#210). */
 export function matchHref(slug: string, matchId: number): string {
   return `/t/${slug}/mecze/${matchId}`;
 }
 
-const NOT_FOUND = 'Nie ma takiego turnieju';
 const FAILED = 'Nie udało się wczytać turnieju';
 
 /** `handle` trasy zakładki: którą zakładkę podświetla shell. */
@@ -47,12 +63,12 @@ function useActiveTab(): PublicNavKey | undefined {
  */
 export function TournamentLayout() {
   const { slug = '' } = useParams();
-  const navigate = useNavigate();
+  const tabNav = useTabNav(slug);
   const active = useActiveTab();
   const tournament = usePublicTournament(slug);
   const notFound = tournament.data === null;
   const failed = tournament.data === undefined && tournament.isError;
-  const title = tournament.data?.name ?? (notFound ? NOT_FOUND : failed ? FAILED : undefined);
+  const title = tournament.data?.name ?? (notFound ? TOURNAMENT_NOT_FOUND : failed ? FAILED : undefined);
 
   // Tytuł karty idzie za tym, co widać: nazwa turnieju, a bez niego stan
   // ekranu — inaczej po wejściu z innego turnieju została by jego nazwa.
@@ -60,51 +76,46 @@ export function TournamentLayout() {
     if (title) document.title = title;
   }, [title]);
 
+  const clock = useClockSettings(tournament.data);
+
   // Dane przed błędem: nieudane odświeżenie w tle nie zdejmuje ekranu.
   // Zostaje ostatni wczytany turniej, a następne odpytanie spróbuje znowu.
   if (tournament.data) {
     return (
-      <PublicShell
+      <Shell
         tournament={tournament.data}
         // Puchar ma Drabinkę w miejscu Tabeli (#234), a turniej z grupami
         // obie naraz (#268).
         tabs={publicTabs(tournament.data.stages)}
         active={active}
-        navHref={(key) => tabHref(slug, key)}
-        onNavigate={(key) => void navigate(tabHref(slug, key))}
+        {...tabNav}
       >
-        <Outlet context={tournament.data} />
-      </PublicShell>
+        {/* Zegar meczów na żywo (#297) liczy przeglądarka z ustawień turnieju, co 30 s, bez nowych zapytań. */}
+        <MatchClockProvider settings={clock}>
+          <Outlet context={tournament.data} />
+        </MatchClockProvider>
+      </Shell>
     );
   }
 
-  if (notFound) {
-    return (
-      <StandalonePage>
-        <EmptyState
-          title={NOT_FOUND}
-          description="Sprawdź adres. Turniej mógł zostać usunięty albo jeszcze nie jest opublikowany."
-        />
-      </StandalonePage>
-    );
-  }
+  if (notFound) return <TournamentNotFound path={`/t/${slug}`} />;
 
-  if (failed) {
-    return (
-      <StandalonePage>
-        <EmptyState variant="error" title={FAILED} description={tournament.error.message} />
-      </StandalonePage>
-    );
-  }
+  if (failed) return <TournamentLoadError message={tournament.error.message} onRetry={() => void tournament.refetch()} />;
 
-  return (
-    <StandalonePage>
-      <div aria-busy="true" aria-label="Wczytywanie turnieju" className="space-y-3">
-        <Skeleton className="h-8 w-80" />
-        <Skeleton className="h-40 w-full" />
-      </div>
-    </StandalonePage>
-  );
+  return <TournamentLoading />;
+}
+
+/**
+ * Ustawienia zegara meczów (#297) z turnieju: podział meczu, długość
+ * i `runningClock`. Obiekt zmienia się tylko ze zmianą tych pól, więc
+ * odpytanie turnieju co 15 s nie przelicza zegarów pod spodem.
+ */
+function useClockSettings(tournament: PublicTournament | null | undefined): MatchClockSettings {
+  const count = tournament?.periods.count ?? 1;
+  const minutes = tournament?.periods.minutes ?? null;
+  const matchDuration = tournament?.matchDuration ?? 0;
+  const runningClock = tournament?.runningClock ?? false;
+  return useMemo(() => ({ periods: { count, minutes }, matchDuration, runningClock }), [count, minutes, matchDuration, runningClock]);
 }
 
 /** Turniej wczytany przez `TournamentLayout`, dla ekranów zakładek. */

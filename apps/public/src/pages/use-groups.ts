@@ -1,5 +1,5 @@
 import type { Group, StandingTable } from '@tournament/api-client';
-import { hasGroupStage } from '@tournament/ui';
+import { hasGroupStage } from '@tournament/ui/public';
 import { useMemo } from 'react';
 import { useTournament } from './tournament-layout';
 

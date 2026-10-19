@@ -65,6 +65,9 @@ function match(order: number, matchNumber: number, home: number, away: number, o
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     collisions: [],
     ...overrides,
   };
@@ -113,6 +116,7 @@ const SPORTS: Sport[] = [
     name: 'Piłka nożna',
     config: {
       allowsDraw: true,
+      runningClock: true,
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       defaultMatchDuration: 60,
       defaultPeriods: { count: 2, minutes: 45 },
@@ -856,6 +860,138 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     expect(bodies).toEqual([]);
     expect(state.posts).toEqual([]);
     expect(within(dialog).getByLabelText('Minuta')).toHaveValue('12');
+  });
+});
+
+// --- część meczu (#297) ------------------------------------------------------
+
+/** Mecz trwający w części `livePeriod`: biegnie, w przerwie albo po powrocie z zakończonego. */
+function livePeriod(livePeriod: number, state: 'running' | 'break' | 'reopened' = 'running'): Partial<AdminMatch> {
+  return {
+    ...LIVE,
+    livePeriod,
+    periodStartedAt: state === 'running' ? '2026-09-06T10:00:00+00:00' : null,
+    onBreak: state === 'break',
+  };
+}
+
+/** Turniej z innym podziałem meczu (`Tournament.periods`). */
+function servePeriods(periods: Tournament['periods']) {
+  server.use(http.get(`${API}/tournaments/${TOURNAMENT.id}`, () => HttpResponse.json({ data: { ...TOURNAMENT, periods } })));
+}
+
+/** Przyciski części meczu w oknie: „Przerwa”, „Start …”, „Dogrywka…”. */
+function periodButtons(dialog: HTMLElement) {
+  return within(dialog)
+    .queryAllByRole('button')
+    .map((button) => button.textContent ?? '')
+    .filter((text) => /^(Przerwa|Start |Dogrywka)/.test(text));
+}
+
+describe('Terminarz — część meczu (#297)', () => {
+  it('przycisk części stoi tylko przy meczu zapisanym jako trwający, nie po samym przełączeniu na „Trwa”', async () => {
+    serveMatches([match(1, 1, 1, 2), match(1, 2, 3, 4, livePeriod(1))]);
+    const { user } = renderSchedule('?round=1');
+
+    const scheduled = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(scheduled).getByRole('radio', { name: 'Trwa' }));
+    expect(periodButtons(scheduled)).toEqual([]);
+    await user.keyboard('{Escape}');
+
+    const live = await openMatchRow(user, 'Orły Bielany – Rysie Wola');
+    expect(periodButtons(live)).toEqual(['Przerwa']);
+  });
+
+  it('w przerwie po 1. części zaczyna następną: „Start 2. połowy” przy 2 częściach', async () => {
+    serveMatches([match(1, 1, 1, 2, livePeriod(1, 'break'))]);
+    const { user } = renderSchedule('?round=1');
+    expect(periodButtons(await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus'))).toEqual(['Start 2. połowy']);
+  });
+
+  it('przy 4 częściach przycisk mówi o kwarcie', async () => {
+    servePeriods({ count: 4, minutes: 10 });
+    serveMatches([match(1, 1, 1, 2, livePeriod(1, 'break'))]);
+    const { user } = renderSchedule('?round=1');
+    expect(periodButtons(await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus'))).toEqual(['Start 2. kwarty']);
+  });
+
+  it('turniej bez podziału nie ma przerwy', async () => {
+    servePeriods({ count: 1, minutes: null });
+    serveMatches([match(1, 1, 1, 2, livePeriod(1))]);
+    const { user } = renderSchedule('?round=1');
+    expect(periodButtons(await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus'))).toEqual([]);
+  });
+
+  it('w lidze w ostatniej części nie ma przycisku', async () => {
+    serveMatches([match(1, 1, 1, 2, livePeriod(2))]);
+    const { user } = renderSchedule('?round=1');
+    expect(periodButtons(await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus'))).toEqual([]);
+  });
+
+  it('po powrocie z „Zakończony” zaczyna część po ostatniej zapisanej, a nie przerwę', async () => {
+    serveMatches([match(1, 1, 1, 2, livePeriod(1, 'reopened'))]);
+    const { user } = renderSchedule('?round=1');
+    expect(periodButtons(await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus'))).toEqual(['Start 2. połowy']);
+  });
+
+  it('klik wysyła od razu PATCH z samymi polami części, bez wyniku, a okno zostaje otwarte', async () => {
+    const matches = [match(1, 1, 1, 2, livePeriod(1))];
+    serveMatches(matches);
+    // Serwer stempluje start części sam (opis `MatchUpdate`): przerwa zeruje start, start części go ustawia.
+    const bodies: Record<string, unknown>[] = [];
+    server.use(
+      http.patch(MATCH_PATCH_URL, async ({ request }) => {
+        const body = (await request.json()) as { livePeriod?: number; periodRunning: boolean };
+        bodies.push(body);
+        const clock = body.periodRunning
+          ? livePeriod(body.livePeriod!)
+          : { periodStartedAt: null, onBreak: true };
+        return HttpResponse.json({ data: { ...matches[0], ...clock } });
+      }),
+    );
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.clear(within(dialog).getByLabelText('Wynik Wilki Bemowo'));
+    await user.type(within(dialog).getByLabelText('Wynik Wilki Bemowo'), '3');
+    await user.click(within(dialog).getByRole('button', { name: 'Przerwa' }));
+
+    await waitFor(() => expect(bodies).toEqual([{ periodRunning: false }]));
+    expect(screen.getByRole('dialog')).toBe(dialog);
+    // Przerwa zapisana: przycisk zmienia się na start następnej części, a niezapisany wynik zostaje w polu.
+    expect(await within(dialog).findByRole('button', { name: 'Start 2. połowy' })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Wynik Wilki Bemowo')).toHaveValue(3);
+
+    await user.click(within(dialog).getByRole('button', { name: 'Start 2. połowy' }));
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(bodies[1]).toEqual({ livePeriod: 2, periodRunning: true });
+  });
+
+  it('422 z przycisku części stoi nad przyciskami okna', async () => {
+    serveMatches([match(1, 1, 1, 2, livePeriod(1))]);
+    const message = 'Część meczu prowadzi się tylko w meczu trwającym.';
+    server.use(http.patch(MATCH_PATCH_URL, () => HttpResponse.json({ message, errors: { livePeriod: [message] } }, { status: 422 })));
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('button', { name: 'Przerwa' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+  });
+
+  it('„Zapisz” meczu trwającego nie wysyła pól części', async () => {
+    const matches = [match(1, 1, 1, 2, livePeriod(1))];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ status: 'live' });
+    expect(bodies[0]).not.toHaveProperty('livePeriod');
+    expect(bodies[0]).not.toHaveProperty('periodRunning');
   });
 });
 

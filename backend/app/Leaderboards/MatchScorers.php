@@ -77,7 +77,7 @@ final class MatchScorers
             $key = $event->player_id.($ownGoal ? ':own' : '');
 
             $rows[$key] ??= [
-                'team' => self::teamSummary($event->team),
+                'team' => $event->team->summary(),
                 'player' => ['id' => $event->player->id, 'name' => $event->player->name],
                 'value' => 0,
                 'minutes' => [],
@@ -136,13 +136,5 @@ final class MatchScorers
     private static function sortKey(array $row): array
     {
         return [$row['minutes'] === [], $row['minutes'][0] ?? 0, $row['player']['id'], $row['ownGoal']];
-    }
-
-    /**
-     * @return array{id: int, name: string, logoUrl: ?string}
-     */
-    private static function teamSummary(Team $team): array
-    {
-        return ['id' => $team->id, 'name' => $team->name, 'logoUrl' => $team->logoUrl()];
     }
 }

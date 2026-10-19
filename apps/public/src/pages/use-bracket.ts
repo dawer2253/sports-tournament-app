@@ -1,5 +1,5 @@
 import type { PublicTournament } from '@tournament/api-client';
-import { bracketPosition, isKnockoutOnly, type MatchRowBracket } from '@tournament/ui';
+import { bracketPosition, isKnockoutOnly, type MatchRowBracket } from '@tournament/ui/public';
 import { useCallback, useMemo } from 'react';
 import { useStageMatches } from '../lib/queries';
 import { useTournament } from './tournament-layout';

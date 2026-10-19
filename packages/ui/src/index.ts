@@ -6,9 +6,11 @@ export * from './lib/bracket';
 export * from './lib/contrast';
 export * from './lib/group-composition';
 export * from './lib/kickoff';
-export * from './lib/match-band';
+export * from './lib/match-clock';
 export * from './lib/plural';
 export * from './lib/qualifiers';
+export * from './lib/team-abbr';
+export * from './lib/image-fallback';
 
 export * from './components/ui/avatar';
 export * from './components/ui/badge';
@@ -45,16 +47,10 @@ export * from './components/ui/typography';
 
 export * from './components/data/bracket-match-row';
 export * from './components/data/bracket-match-row-data';
-export * from './components/data/bracket-match-tile';
-export * from './components/data/bracket-summary';
-export * from './components/data/bracket-tree';
 export * from './components/data/data-table';
 export * from './components/data/first-round-preview';
 export * from './components/data/group-composition';
 export * from './components/data/leaderboard-data';
-export * from './components/data/leaderboard-leaders';
-export * from './components/data/leaderboard-table';
-export * from './components/data/live-match-tile';
 export * from './components/data/match-row';
 export * from './components/data/match-row-data';
 export * from './components/data/penalties';
@@ -65,25 +61,19 @@ export * from './components/data/event-type-buttons';
 export * from './components/data/player-number-grid';
 export * from './components/data/match-timeline';
 export * from './components/data/match-page-data';
-export * from './components/data/match-relation';
 export * from './components/data/event-icon';
 export * from './components/data/match-status-toggle';
 export * from './components/data/player-row';
 export * from './components/data/players-table';
 export * from './components/data/round-list';
 export * from './components/data/round-groups';
-export * from './components/data/round-sections';
-export * from './components/data/public-overview';
 export * from './components/data/round-summary';
 export * from './components/data/round-tabs';
 export * from './components/data/seeding-list';
 export * from './components/data/seeding-team';
 export * from './components/data/score-inputs';
 export * from './components/data/standings-table';
-export * from './components/data/standings-snippet';
-export * from './components/data/group-standings-snippet';
 export * from './components/data/standings-table-row';
-export * from './components/data/stat-switcher';
 export * from './components/data/team-row';
 export * from './components/data/teams-table';
 export * from './components/data/tiebreaker-editor';
@@ -97,22 +87,9 @@ export * from './components/data/venue-row';
 export * from './components/data/venues-table';
 
 export * from './components/layout/admin-shell';
-export * from './components/layout/back-link';
 export * from './components/layout/live-marker';
 export * from './components/layout/meta-list';
-export * from './components/layout/photo-panel';
-export * from './components/layout/public-nav';
-export * from './components/layout/public-section';
-export * from './components/layout/public-shell-tournament';
 export * from './components/layout/team-crest';
 export * from './components/layout/team-logo';
 export * from './components/layout/tournament-logo';
 
-// PublicShell celowo poza barrel-em: importuje zdjęcia hero, a Vite emituje
-// zaimportowane assety niezależnie od tree-shakingu, więc panel admina wciągałby
-// ponad 500 kB grafiki, której nigdy nie użyje. Strona publiczna bierze go ze ścieżki:
-// import { PublicShell } from '@tournament/ui/components/layout/public-shell.tsx';
-
-// MatchHeader (pas strony meczu) z tego samego powodu: importuje zdjęcia
-// sportów. Strona publiczna bierze go ze ścieżki:
-// import { MatchHeader } from '@tournament/ui/components/data/match-header.tsx';

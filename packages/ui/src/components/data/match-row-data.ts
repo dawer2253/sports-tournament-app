@@ -9,8 +9,8 @@
 export type MatchRowData = {
   id: number
   /** `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte. */
-  homeTeam: { id: number; name: string } | null
-  awayTeam: { id: number; name: string } | null
+  homeTeam: MatchRowTeam | null
+  awayTeam: MatchRowTeam | null
   homeScore: number | null
   awayScore: number | null
   status: MatchStatus
@@ -40,7 +40,23 @@ export type MatchRowData = {
    * ani miejsca na karne.
    */
   group?: string
+  /**
+   * Zegar meczu trwającego (`Match.livePeriod`, `periodStartedAt`, `onBreak`,
+   * #297): z niego strona publiczna liczy minutę przy „Na żywo”. Brak pól to
+   * samo „Na żywo”; panel ich nie pokazuje.
+   */
+  livePeriod?: number | null
+  periodStartedAt?: string | null
+  onBreak?: boolean
 }
+
+/**
+ * Drużyna meczu (`TeamSummary` z kontraktu). `logoUrl` jest wymagane, wzorem
+ * `StandingsTableRow.team`, żeby strażnik w aplikacji złapał zmianę nazwy pola
+ * w kontrakcie; `null` to drużyna bez wgranego herbu (#292). Panelowy
+ * `MatchRow` herbu nie rysuje, publiczny tak.
+ */
+export type MatchRowTeam = { id: number; name: string; logoUrl: string | null }
 
 /**
  * Pozycja meczu fazy `knockout` w wierszu (#234): etykieta, podpisy pustych

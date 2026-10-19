@@ -1,5 +1,11 @@
 <!doctype html>
-<html lang="pl">
+<!--
+  Strona publiczna jest zawsze ciemna. `dark` stoi na <html>, a nie na korzeniu
+  shella, bo okna i popovery Radixa renderują się w portalu w <body>, poza
+  drzewem shella, i inaczej zostałyby jasne (ten sam powód co `theme-root.tsx`
+  w Storybooku, #136).
+-->
+<html lang="pl" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

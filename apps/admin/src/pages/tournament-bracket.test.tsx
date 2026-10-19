@@ -84,6 +84,9 @@ function match(
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     collisions: [],
     ...overrides,
   };
@@ -135,6 +138,7 @@ function sport(id: number, code: Sport['code'], name: string, allowsDraw: boolea
     name,
     config: {
       allowsDraw,
+      runningClock: code === 'football',
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       defaultMatchDuration: 60,
       defaultPeriods: { count: 2, minutes: 45 },
@@ -868,6 +872,53 @@ describe('Drabinka — okno meczu (#228)', () => {
   });
 });
 
+// --- część meczu (#297) ------------------------------------------------------
+
+/** Półfinał 1 trwający w części `livePeriod`, która biegnie. */
+function liveSemi(livePeriod: number): AdminMatch[] {
+  return semis({
+    201: { status: 'live', homeScore: 1, awayScore: 1, livePeriod, periodStartedAt: '2026-10-10T12:00:00+00:00', onBreak: false },
+  });
+}
+
+describe('Drabinka — część meczu (#297)', () => {
+  it('po ostatniej części meczu pucharowego przycisk „Dogrywka / karne” zaczyna część count + 1', async () => {
+    const state = serveMatches(liveSemi(2));
+    const bodies = serveSave(state);
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    expect(within(dialog).queryByRole('button', { name: 'Przerwa' })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Dogrywka / karne' }));
+
+    await waitFor(() => expect(bodies).toEqual([{ livePeriod: 3, periodRunning: true }]));
+  });
+
+  it('w koszykówce (bez karnych) przycisk po ostatniej części to sama „Dogrywka”', async () => {
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}`, () =>
+        HttpResponse.json({
+          data: { ...TOURNAMENT, periods: { count: 4, minutes: 10 }, sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false } },
+        }),
+      ),
+    );
+    serveMatches(liveSemi(4));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    expect(await within(dialog).findByRole('button', { name: 'Dogrywka' })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: 'Dogrywka / karne' })).not.toBeInTheDocument();
+  });
+
+  it('w dogrywce przycisku części już nie ma', async () => {
+    serveMatches(liveSemi(3));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    expect(within(dialog).queryByRole('button', { name: /^(Przerwa|Start |Dogrywka)/ })).not.toBeInTheDocument();
+  });
+});
+
 // --- Turniej grupy + playoff (#260) ------------------------------------------
 
 const GROUP_A = { id: 3, name: 'Grupa A', order: 1, qualifiers: 2 };
@@ -901,6 +952,7 @@ function groupTable(group: typeof GROUP_A, ids: number[]): StandingTable {
         scoreAgainst: 0,
         scoreDifference: 0,
         points: 6 - 3 * index,
+        form: [],
       };
     }),
   };

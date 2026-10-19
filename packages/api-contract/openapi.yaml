@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Sports Tournament API
-  version: 0.5.0
+  version: 0.6.0
   description: |
     Kontrakt REST API aplikacji do prowadzenia turniejów sportowych.
 
@@ -245,6 +245,7 @@ paths:
                     name: Piłka nożna
                     config:
                       allowsDraw: true
+                      runningClock: true
                       defaultPoints: { win: 3, draw: 1, loss: 0 }
                       defaultMatchDuration: 60
                       defaultPeriods: { count: 2, minutes: 45 }
@@ -271,6 +272,7 @@ paths:
                     name: Koszykówka
                     config:
                       allowsDraw: false
+                      runningClock: false
                       defaultPoints: { win: 2, draw: 0, loss: 1 }
                       defaultMatchDuration: 40
                       defaultPeriods: { count: 4, minutes: 10 }
@@ -1890,6 +1892,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 2
                         stageId: 1
@@ -1908,6 +1913,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 3
                         stageId: 1
@@ -1926,6 +1934,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 4
                         stageId: 1
@@ -1944,6 +1955,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 5
                         stageId: 1
@@ -1962,6 +1976,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 6
                         stageId: 1
@@ -1980,6 +1997,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
                 puchar:
@@ -2020,6 +2040,9 @@ paths:
                         winnerToMatchId: 201
                         loserToMatchId: null
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 104
                         stageId: 2
@@ -2038,6 +2061,9 @@ paths:
                         winnerToMatchId: 202
                         loserToMatchId: null
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 201
                         stageId: 2
@@ -2056,6 +2082,9 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: home
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 202
                         stageId: 2
@@ -2074,6 +2103,9 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 301
                         stageId: 2
@@ -2092,6 +2124,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 302
                         stageId: 2
@@ -2110,6 +2145,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
                 koszykowka:
@@ -2140,6 +2178,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                       - id: 2
                         stageId: 1
@@ -2158,6 +2199,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 2 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -2570,9 +2614,9 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
-                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
-                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0 }
+                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6, form: [win, win] }
+                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3, form: [loss, win] }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0, form: [loss, loss] }
                 koszykowka:
                   summary: Turniej koszykarski — zdobycze to punkty
                   description: |
@@ -2592,8 +2636,8 @@ paths:
                           - { code: head_to_head, label: Bezpośredni mecz }
                           - { code: score_diff, label: Różnica punktów }
                         rows:
-                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4 }
-                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2 }
+                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4, form: [win, win] }
+                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2, form: [loss, loss] }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2617,6 +2661,8 @@ paths:
         drabinkę. Czwarty, po `Prefer: example=grupy`, to turniej z fazą
         `group` i fazą `knockout`: ten sam przełącznik daje jego tabele grup
         w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
+        Wszystkie cztery przełączniki obsługuje też `/teams`: drużyny tych
+        samych turniejów.
       security: []
       responses:
         '200':
@@ -2641,6 +2687,9 @@ paths:
                       status: active
                       sport: { id: 1, code: football, name: Piłka nożna, allowsDraw: true }
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      periods: { count: 2, minutes: 45 }
+                      matchDuration: 60
+                      runningClock: true
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
                       stats:
@@ -2656,6 +2705,9 @@ paths:
                       status: active
                       sport: { id: 2, code: basketball, name: Koszykówka, allowsDraw: false }
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      periods: { count: 4, minutes: 10 }
+                      matchDuration: 40
+                      runningClock: false
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
                       stats:
@@ -2675,6 +2727,9 @@ paths:
                       status: active
                       sport: { id: 1, code: football, name: Piłka nożna, allowsDraw: true }
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      periods: { count: 2, minutes: 45 }
+                      matchDuration: 60
+                      runningClock: true
                       stages:
                         - { id: 2, type: knockout, name: Faza pucharowa, order: 1, groups: [] }
                       stats:
@@ -2695,6 +2750,9 @@ paths:
                       status: active
                       sport: { id: 1, code: football, name: Piłka nożna, allowsDraw: true }
                       branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      periods: { count: 2, minutes: 45 }
+                      matchDuration: 60
+                      runningClock: true
                       stages:
                         - id: 3
                           type: group
@@ -2760,9 +2818,9 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6 }
-                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3 }
-                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0 }
+                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6, form: [win, win] }
+                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3, form: [loss, win] }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0, form: [loss, loss] }
                 koszykowka:
                   summary: Turniej koszykarski — zdobycze to punkty
                   description: |
@@ -2782,8 +2840,8 @@ paths:
                           - { code: head_to_head, label: Bezpośredni mecz }
                           - { code: score_diff, label: Różnica punktów }
                         rows:
-                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4 }
-                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2 }
+                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4, form: [win, win] }
+                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2, form: [loss, loss] }
                 grupy:
                   summary: Grupy z playoffem — tabela na grupę
                   description: |
@@ -2805,10 +2863,10 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 3, won: 2, drawn: 1, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 7 }
-                          - { position: 2, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 3, won: 1, drawn: 2, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 5 }
-                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 3, scoreDifference: 1, points: 4 }
-                          - { position: 4, team: { id: 4, name: Rysie Wola, logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 0, scoreAgainst: 7, scoreDifference: -7, points: 0 }
+                          - { position: 1, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 3, won: 2, drawn: 1, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 7, form: [draw, win, win] }
+                          - { position: 2, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 3, won: 1, drawn: 2, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 5, form: [draw, win, draw] }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 3, scoreDifference: 1, points: 4, form: [win, loss, draw] }
+                          - { position: 4, team: { id: 4, name: Rysie Wola, logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 0, scoreAgainst: 7, scoreDifference: -7, points: 0, form: [loss, loss, loss] }
                       - stageId: 3
                         stageName: Faza grupowa
                         groupId: 2
@@ -2821,10 +2879,85 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 5, name: Żubry Praga, logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 1, scoreDifference: 5, points: 9 }
-                          - { position: 2, team: { id: 7, name: Lwy Ochota, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 4 }
-                          - { position: 3, team: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 4, scoreAgainst: 5, scoreDifference: -1, points: 3 }
-                          - { position: 4, team: { id: 8, name: Jastrzębie Wawer, logoUrl: null }, played: 3, won: 0, drawn: 1, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 1 }
+                          - { position: 1, team: { id: 5, name: Żubry Praga, logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 1, scoreDifference: 5, points: 9, form: [win, win, win] }
+                          - { position: 2, team: { id: 7, name: Lwy Ochota, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 4, form: [draw, loss, win] }
+                          - { position: 3, team: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 4, scoreAgainst: 5, scoreDifference: -1, points: 3, form: [loss, win, loss] }
+                          - { position: 4, team: { id: 8, name: Jastrzębie Wawer, logoUrl: null }, played: 3, won: 0, drawn: 1, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 1, form: [draw, loss, loss] }
+        '304': { $ref: '#/components/responses/NotModified' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /public/t/{slug}/teams:
+    parameters:
+      - { $ref: '#/components/parameters/Slug' }
+      - { $ref: '#/components/parameters/IfNoneMatch' }
+    get:
+      tags: [Public]
+      summary: Drużyny turnieju
+      description: |
+        Wszystkie drużyny turnieju bez usuniętych, także te bez grupy i spoza
+        drabinki. Strona publiczna pokazuje z nich prezentację drużyn na
+        Przeglądzie, zanim powstanie terminarz (#296). Turniej bez drużyn daje
+        puste `data`, a szkic i nieznany slug `404`, jak `/public/t/{slug}`.
+
+        Kolejność: rosnąco po `id`, czyli w kolejności dopisania do turnieju.
+        Ekran układa drużyny sam (alfabetycznie), więc na kolejność z API nie
+        należy liczyć.
+
+        Przykłady są cztery: `pilka` (domyślny), `koszykowka`, `puchar`
+        i `grupy`, z tymi samymi drużynami co przykłady tych przełączników
+        w pozostałych endpointach `/public/t/{slug}/*`.
+      security: []
+      responses:
+        '200':
+          description: Drużyny
+          headers:
+            ETag: { $ref: '#/components/headers/ETag' }
+            Cache-Control: { $ref: '#/components/headers/CacheControl' }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/TeamSummary' }
+              examples:
+                pilka:
+                  summary: Turniej piłkarski
+                  value:
+                    data:
+                      - { id: 1, name: Wilki Bemowo, logoUrl: null }
+                      - { id: 2, name: Sokoły Ursus, logoUrl: null }
+                      - { id: 3, name: Orły Bielany, logoUrl: null }
+                koszykowka:
+                  summary: Turniej koszykarski
+                  value:
+                    data:
+                      - { id: 4, name: Żubry Wola, logoUrl: null }
+                      - { id: 5, name: Rysie Mokotów, logoUrl: null }
+                puchar:
+                  summary: Puchar piłkarski — sześć drużyn drabinki
+                  value:
+                    data:
+                      - { id: 1, name: Wilki Bemowo, logoUrl: null }
+                      - { id: 2, name: Sokoły Ursus, logoUrl: null }
+                      - { id: 3, name: Orły Bielany, logoUrl: null }
+                      - { id: 4, name: Rysie Wola, logoUrl: null }
+                      - { id: 5, name: Żubry Praga, logoUrl: null }
+                      - { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                grupy:
+                  summary: Grupy z playoffem — osiem drużyn w dwóch grupach
+                  value:
+                    data:
+                      - { id: 1, name: Wilki Bemowo, logoUrl: null }
+                      - { id: 2, name: Sokoły Ursus, logoUrl: null }
+                      - { id: 3, name: Orły Bielany, logoUrl: null }
+                      - { id: 4, name: Rysie Wola, logoUrl: null }
+                      - { id: 5, name: Żubry Praga, logoUrl: null }
+                      - { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }
+                      - { id: 7, name: Lwy Ochota, logoUrl: null }
+                      - { id: 8, name: Jastrzębie Wawer, logoUrl: null }
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -2902,6 +3035,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 2
                         stageId: 1
                         groupId: null
@@ -2919,6 +3055,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 3
                         stageId: 1
                         groupId: null
@@ -2936,6 +3075,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 4
                         stageId: 1
                         groupId: null
@@ -2953,6 +3095,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 5
                         stageId: 1
                         groupId: null
@@ -2970,6 +3115,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 6
                         stageId: 1
                         groupId: null
@@ -2987,6 +3135,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                 puchar:
                   summary: Faza pucharowa — drabinka sześciodrużynowa w trakcie
                   description: |
@@ -3025,6 +3176,9 @@ paths:
                         winnerToMatchId: 201
                         loserToMatchId: null
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 104
                         stageId: 2
                         groupId: null
@@ -3042,6 +3196,9 @@ paths:
                         winnerToMatchId: 202
                         loserToMatchId: null
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 201
                         stageId: 2
                         groupId: null
@@ -3059,6 +3216,9 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: home
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 202
                         stageId: 2
                         groupId: null
@@ -3076,6 +3236,9 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 302
                         stageId: 2
                         groupId: null
@@ -3093,6 +3256,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 301
                         stageId: 2
                         groupId: null
@@ -3110,6 +3276,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                 grupy:
                   summary: Playoff po fazie grupowej — jeden półfinał rozegrany
                   description: |
@@ -3138,6 +3307,9 @@ paths:
                         winnerToMatchId: 421
                         loserToMatchId: 422
                         advancesToSlot: home
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 412
                         stageId: 4
                         groupId: null
@@ -3155,6 +3327,9 @@ paths:
                         winnerToMatchId: 421
                         loserToMatchId: 422
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 422
                         stageId: 4
                         groupId: null
@@ -3172,6 +3347,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                       - id: 421
                         stageId: 4
                         groupId: null
@@ -3189,6 +3367,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422':
@@ -3270,6 +3451,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: 2
+                        periodStartedAt: '2026-09-27T10:55:00+00:00'
+                        onBreak: false
                         scorers:
                           - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [38], ownGoal: false }
                       - id: 5
@@ -3289,6 +3473,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 6
                         stageId: 1
@@ -3307,6 +3494,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                 koszykowka:
                   summary: Turniej koszykarski — mecz na żywo z sumami rzutów
@@ -3333,6 +3523,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: 3
+                        periodStartedAt: '2026-09-20T16:25:00+00:00'
+                        onBreak: false
                         scorers:
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 5, minutes: [2, 6], ownGoal: false }
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 4, minutes: [3, 8], ownGoal: false }
@@ -3367,6 +3560,9 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 302
                         stageId: 2
@@ -3385,6 +3581,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 301
                         stageId: 2
@@ -3403,6 +3602,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                 grupy:
                   summary: Grupy z playoffem — po fazie grupowej czeka playoff
@@ -3429,6 +3631,9 @@ paths:
                         winnerToMatchId: 421
                         loserToMatchId: 422
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 422
                         stageId: 4
@@ -3447,6 +3652,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 421
                         stageId: 4
@@ -3465,6 +3673,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -3533,6 +3744,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers:
                           - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [23], ownGoal: false }
                           - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 4, name: Tomasz Lis }, value: 1, minutes: [67], ownGoal: false }
@@ -3554,6 +3768,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers:
                           - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [12, 58], ownGoal: false }
                           - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [81], ownGoal: true }
@@ -3574,6 +3791,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers:
                           - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 1, minutes: [34], ownGoal: false }
                           - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [50], ownGoal: false }
@@ -3604,6 +3824,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers:
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 26, minutes: [], ownGoal: false }
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 26, minutes: [], ownGoal: false }
@@ -3628,6 +3851,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers:
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 28, minutes: [], ownGoal: false }
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 31, minutes: [], ownGoal: false }
@@ -3660,6 +3886,9 @@ paths:
                         winnerToMatchId: 301
                         loserToMatchId: 302
                         advancesToSlot: home
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 104
                         stageId: 2
@@ -3678,6 +3907,9 @@ paths:
                         winnerToMatchId: 202
                         loserToMatchId: null
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 102
                         stageId: 2
@@ -3696,6 +3928,9 @@ paths:
                         winnerToMatchId: 201
                         loserToMatchId: null
                         advancesToSlot: away
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                 grupy:
                   summary: Grupy z playoffem — mecze grup z `groupId` i półfinał
@@ -3723,6 +3958,9 @@ paths:
                         winnerToMatchId: 421
                         loserToMatchId: 422
                         advancesToSlot: home
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 334
                         stageId: 3
@@ -3741,6 +3979,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 333
                         stageId: 3
@@ -3759,6 +4000,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 332
                         stageId: 3
@@ -3777,6 +4021,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 331
                         stageId: 3
@@ -3795,6 +4042,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 324
                         stageId: 3
@@ -3813,6 +4063,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 323
                         stageId: 3
@@ -3831,6 +4084,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 322
                         stageId: 3
@@ -3849,6 +4105,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 321
                         stageId: 3
@@ -3867,6 +4126,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 314
                         stageId: 3
@@ -3885,6 +4147,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 313
                         stageId: 3
@@ -3903,6 +4168,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 312
                         stageId: 3
@@ -3921,6 +4189,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
                       - id: 311
                         stageId: 3
@@ -3939,6 +4210,9 @@ paths:
                         winnerToMatchId: null
                         loserToMatchId: null
                         advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
                         scorers: []
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -4002,6 +4276,9 @@ paths:
                       winnerToMatchId: null
                       loserToMatchId: null
                       advancesToSlot: null
+                      livePeriod: null
+                      periodStartedAt: null
+                      onBreak: false
                       scorers:
                         - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [12, 58], ownGoal: false }
                         - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [81], ownGoal: true }
@@ -4039,6 +4316,9 @@ paths:
                       winnerToMatchId: null
                       loserToMatchId: null
                       advancesToSlot: null
+                      livePeriod: null
+                      periodStartedAt: null
+                      onBreak: false
                       scorers:
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 7, minutes: [2, 13, 24], ownGoal: false }
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 7, minutes: [3, 22, 35], ownGoal: false }
@@ -4098,6 +4378,9 @@ paths:
                       winnerToMatchId: null
                       loserToMatchId: null
                       advancesToSlot: null
+                      livePeriod: 2
+                      periodStartedAt: '2026-09-20T12:55:00+00:00'
+                      onBreak: false
                       scorers:
                         - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, value: 1, minutes: [15], ownGoal: false }
                         - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, value: 1, minutes: [52], ownGoal: false }
@@ -4521,11 +4804,18 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, defaultPoints, defaultMatchDuration, defaultPeriods, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
+      required: [allowsDraw, runningClock, defaultPoints, defaultMatchDuration, defaultPeriods, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
       properties:
         allowsDraw:
           type: boolean
           description: Czy w tym sporcie mecz może zakończyć się remisem.
+        runningClock:
+          type: boolean
+          description: |
+            Czy zegar meczu biegnie w minutach (#297). Piłka nożna `true`:
+            tablica pokazuje minutę („67′”). Koszykówka `false`: zegar staje
+            przy każdym przerwaniu gry, więc tablica pokazuje część
+            („3. kwarta”) zamiast minuty.
         defaultPoints: { $ref: '#/components/schemas/Points' }
         defaultMatchDuration:
           type: integer
@@ -5007,7 +5297,7 @@ components:
         Kształt zamrożony w v0.1. Pola drabinkowe (`winnerToMatchId`,
         `loserToMatchId`, `advancesToSlot`) opisuje
         [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
-      required: [id, stageId, groupId, round, matchNumber, homeTeam, awayTeam, homeScore, awayScore, homePenalties, awayPenalties, status, kickoffAt, venue, winnerToMatchId, loserToMatchId, advancesToSlot]
+      required: [id, stageId, groupId, round, matchNumber, homeTeam, awayTeam, homeScore, awayScore, homePenalties, awayPenalties, status, kickoffAt, venue, winnerToMatchId, loserToMatchId, advancesToSlot, livePeriod, periodStartedAt, onBreak]
       properties:
         id: { type: integer, format: int64 }
         stageId: { type: integer, format: int64 }
@@ -5092,6 +5382,43 @@ components:
 
             Niepuste dokładnie wtedy, gdy niepuste jest co najmniej jedno
             z `winnerToMatchId` i `loserToMatchId`.
+        livePeriod:
+          type: [integer, 'null']
+          minimum: 1
+          description: |
+            Bieżąca część meczu `live` (#297), od 1. Wartość
+            `Tournament.periods.count + 1` znaczy „Dogrywka / karne”
+            i występuje tylko w fazie `knockout`. `null` przy `scheduled`
+            i `finished`.
+
+            Zegar meczu liczy przeglądarka z `livePeriod`, `periodStartedAt`
+            i `onBreak` oraz `PublicTournament.periods` i `runningClock`:
+
+            | `periodStartedAt` | `onBreak` | tablica |
+            |---|---|---|
+            | chwila | `false` | minuta części („67′”, „45+3′”), w sporcie bez `runningClock` część („3. kwarta”) |
+            | `null` | `true` | „Przerwa” po części `livePeriod` |
+            | `null` | `false` | samo „Na żywo”: mecz wrócił z `finished` do `live` i część nie biegnie, dopóki organizator nie zacznie następnej |
+
+            Każda część startuje od stałej minuty
+            `(livePeriod − 1) × periods.minutes + 1`, a po regulaminowym końcu
+            części idzie czas doliczony. Przy `livePeriod = periods.count + 1`
+            tablica pokazuje „Dogrywka” bez minuty. Minuta zegara to nie zapis minuty
+            zdarzenia (`MatchEvent.minute` zostaje bez zmian).
+        periodStartedAt:
+          type: [string, 'null']
+          format: date-time
+          description: |
+            Chwila startu bieżącej części według serwera (stempluje ją serwer,
+            klient czasu nie wysyła). `null` w przerwie, po powrocie
+            z `finished` do `live` i poza `live`.
+        onBreak:
+          type: boolean
+          description: |
+            Przerwa po części `livePeriod`: część się skończyła, a następna
+            jeszcze nie ruszyła. Odróżnia przerwę od meczu, który wrócił
+            z `finished` do `live` bez zegara (oba mają `periodStartedAt: null`).
+            `false` poza `live`.
 
     MatchUpdate:
       type: object
@@ -5164,6 +5491,54 @@ components:
         - Zmiana wyniku albo karnych bez zmiany zwycięzcy zawsze przechodzi
           i niczego dalej nie rusza. Slotu po wolnym losie nic nie dotyka, bo
           nie prowadzi do niego żadna krawędź.
+
+        **Część meczu** (#297). Serwer sam stempluje start części swoim
+        czasem (`Match.periodStartedAt`), klient czasu nie wysyła. Zmiana stanu
+        ustawia zegar tak:
+
+        | przejście stanu | `livePeriod` | `periodStartedAt` | `onBreak` |
+        |---|---|---|---|
+        | `scheduled` → `live` | `1` | teraz | `false` |
+        | `finished` → `live` | ostatnia część sprzed zakończenia (`1`, gdy mecz nie trwał) | `null` | `false` |
+        | `live` → `live` (ciało ze `status: live` meczu, który trwa) | bez zmian | bez zmian | bez zmian |
+        | → `scheduled` | `null` | `null` | `false` |
+        | → `finished` | `null` w odpowiedzi; serwer pamięta ostatnią część na wypadek powrotu | `null` | `false` |
+
+        Powrót z `finished` do `live` (zwykle poprawka pomyłki) to stan różny
+        od przerwy: część nie biegnie, a tablica pokazuje samo „Na żywo”, nie
+        „Przerwa” i nie minutę od 1′. Zegar rusza dopiero przy starcie
+        następnej części.
+
+        Panel prowadzi części dwoma polami ciała, poza wynikiem:
+
+        | ciało | skutek |
+        |---|---|
+        | `periodRunning: false` | przerwa: `periodStartedAt: null`, `onBreak: true`, `livePeriod` zostaje |
+        | `livePeriod: N`, `periodRunning: true` | start części `N`: `livePeriod: N`, `periodStartedAt` teraz, `onBreak: false` |
+
+        Pola części jadą tylko do meczu `live` (po scaleniu ze stanem
+        z ciała). Przy innym stanie dają `422` pod `livePeriod`. `livePeriod`
+        spoza `1…periods.count`, a w fazie `knockout` spoza
+        `1…periods.count + 1` (dogrywka), też daje `422` pod `livePeriod`,
+        tak samo `livePeriod` bez `periodRunning: true` i `periodRunning: true`
+        bez `livePeriod`. Pola części nadpisują
+        zegar ustawiony przejściem stanu z tego samego ciała.
+
+        Bieżąca część to `livePeriod` po przejściu stanu z tego samego ciała
+        (tabela wyżej; mecz bez części liczy się jak część `0`). Reguły
+        przycisku części, każda z `422` pod `livePeriod`:
+
+        - **Start** przyjmuje wyłącznie następną część: bieżąca + 1. Przeskok,
+          powtórka bieżącej i część wcześniejsza dają `422`, więc start
+          części nie przestawia zegara wstecz.
+        - **Przerwa** (`periodRunning: false`) wchodzi tylko po części, która
+          trwa (`periodStartedAt` różne od `null`) i nie jest ostatnią
+          (bieżąca < `periods.count`). Nie ma więc przerwy w turnieju bez
+          podziału (`periods.count: 1`), po ostatniej części, w dogrywce, w
+          trakcie przerwy ani po powrocie z `finished`.
+        - W turnieju bez podziału jedyna część to `1` (startuje ją
+          `scheduled` → `live`), a w fazie `knockout` po niej wolno
+          wystartować dogrywkę, część `2`.
       properties:
         homeScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
         awayScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
@@ -5191,6 +5566,15 @@ components:
           description: |
             Obiekt turnieju, na którym gra mecz. `null` znaczy „bez obiektu”.
             Obcy turniejowi albo usunięty obiekt daje `422`.
+        livePeriod:
+          type: integer
+          minimum: 1
+          description: Część meczu, która startuje (razem z `periodRunning` równym `true`). Reguły w opisie `MatchUpdate`.
+        periodRunning:
+          type: boolean
+          description: |
+            `true` startuje część `livePeriod` teraz, `false` zaczyna przerwę
+            po bieżącej części. Reguły w opisie `MatchUpdate`.
 
     MatchCollisionType:
       type: string
@@ -5394,7 +5778,7 @@ components:
 
     StandingRow:
       type: object
-      required: [position, team, played, won, drawn, lost, scoreFor, scoreAgainst, scoreDifference, points]
+      required: [position, team, played, won, drawn, lost, scoreFor, scoreAgainst, scoreDifference, points, form]
       properties:
         position:
           type: integer
@@ -5422,6 +5806,24 @@ components:
         points:
           type: integer
           description: Punkty za wyniki meczów, zgodnie z `Tournament.points`. Nigdy zdobycze.
+        form:
+          type: array
+          maxItems: 5
+          description: |
+            Forma drużyny: wyniki jej ostatnich meczów w **tej** tabeli,
+            **najnowszy na końcu**. Liczą się tylko mecze `finished` tej tabeli
+            (faza `league` albo jedna grupa), te same co w `played`, więc mecz
+            `live` i `scheduled` formy nie zmienia. Kolejność idzie po kolejce
+            (`Round.order`, potem `matchNumber`), nie po dacie ani chwili
+            zapisu wyniku: mecz przełożony stoi w miejscu swojej kolejki.
+            Długość to `min(played, 5)`; drużyna bez rozegranego meczu ma `[]`.
+            W sporcie z `allowsDraw: false` nie ma `draw`.
+          items: { $ref: '#/components/schemas/FormResult' }
+
+    FormResult:
+      type: string
+      enum: [win, draw, loss]
+      description: Wynik meczu z perspektywy drużyny, kody jak klucze `Points`.
 
     StandingTable:
       type: object
@@ -5526,7 +5928,7 @@ components:
 
     PublicTournament:
       type: object
-      required: [name, slug, status, sport, branding, stages, stats]
+      required: [name, slug, status, sport, branding, stages, stats, periods, matchDuration, runningClock]
       properties:
         name: { type: string }
         slug: { type: string }
@@ -5551,3 +5953,28 @@ components:
             strona publiczna nie widzi `GET /sports` (wymaga logowania),
             a nawigacja potrzebuje nazw statystyk, zanim pobierze klasyfikację.
           items: { $ref: '#/components/schemas/PublicStat' }
+        periods:
+          allOf:
+            - $ref: '#/components/schemas/MatchPeriods'
+          description: |
+            Kopia `Tournament.periods` (#297): z niej przeglądarka liczy
+            minutę meczu na żywo (`Match.livePeriod`, `periodStartedAt`)
+            i etykietę części („3. kwarta”).
+        matchDuration:
+          type: integer
+          minimum: 10
+          maximum: 600
+          description: |
+            Kopia `Tournament.matchDuration` (#297). W turnieju bez podziału
+            (`periods.count: 1`, `periods.minutes: null`) zegar bierze ją jako
+            regulaminową długość jedynej części: po niej idzie czas doliczony
+            („60+15′”), a po 30 minutach ponad nią zegar znika. To świadome
+            uproszczenie: `matchDuration` jest slotem rozkładu dat razem
+            z przerwą po meczu, więc przy przerwie w slocie czas doliczony
+            zaczyna się później, niż wynikałoby z samej gry.
+        runningClock:
+          type: boolean
+          description: |
+            `SportConfig.runningClock` sportu turnieju (#297). W bazie turnieju
+            tego pola nie ma: serwer bierze je z konfiguracji sportu, wzorem
+            `stats`, bo strona publiczna nie widzi `GET /sports`.

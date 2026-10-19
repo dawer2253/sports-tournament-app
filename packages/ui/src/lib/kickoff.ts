@@ -67,5 +67,17 @@ export function formatRoundDates(kickoffs: readonly (string | null)[], timeZone?
   if (days.length === 0) return 'bez terminu'
   const range = days.length === 1 ? days[0] : `${days[0]} – ${days[days.length - 1]}`
   const undated = kickoffs.filter((iso) => iso === null).length
-  return undated > 0 ? `${range} · ${undated} bez terminu` : range
+  // Przecinek, nie „·”: kropka między faktami to zasada, której UI nie łamie.
+  return undated > 0 ? `${range}, ${undated} bez terminu` : range
+}
+
+/**
+ * Krótki dzień do kolumny terminu w wierszu meczu strony publicznej
+ * (#292): „sob. 5.09”. `null` bez terminu.
+ */
+export function formatShortDay(iso: string | null, timeZone?: string): string | null {
+  if (iso === null) return null
+  return new Intl.DateTimeFormat('pl-PL', { weekday: 'short', day: 'numeric', month: '2-digit', timeZone })
+    .format(new Date(iso))
+    .replace(',', '')
 }

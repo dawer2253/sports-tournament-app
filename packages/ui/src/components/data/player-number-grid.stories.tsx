@@ -20,7 +20,7 @@ function ControlledGrid(props: PlayerNumberGridProps) {
 }
 
 const meta = {
-  title: 'UI/Dane/Siatka numerów zawodników',
+  title: 'Panel/UI/Dane/Siatka numerów zawodników',
   component: PlayerNumberGrid,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-xs">{Story()}</div>],

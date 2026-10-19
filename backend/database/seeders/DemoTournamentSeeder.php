@@ -82,6 +82,15 @@ class DemoTournamentSeeder extends Seeder
     ];
 
     /**
+     * Mecz trwający (#297), jak przykład `pilka` w `GET /public/t/{slug}/fixtures`:
+     * kolejka 4, 1:0 po bramce Adama Zielińskiego z 38′, w 2. połowie, która
+     * ruszyła 20 minut przed seedowaniem — tuż po `make fresh` tablica pokazuje
+     * ok. 66′. Zegar biegnie od chwili seedowania, więc później idzie doliczony
+     * czas, a po 90+30′ zostaje samo „Na żywo”: na demo `make fresh` tuż przed.
+     */
+    private const LIVE = ['round' => 4, 'homeScore' => 1, 'awayScore' => 0, 'period' => 2, 'startedMinutesAgo' => 20];
+
+    /**
      * Zdarzenia meczowe: [kolejka, zawodnik, typ, minuta]. Bramki muszą sumować
      * się do wyniku meczu — inaczej klasyfikacja strzelców i tabela mówiłyby
      * o tym samym meczu co innego. Samobój należy do drużyny strzelca, a bramkę
@@ -102,6 +111,7 @@ class DemoTournamentSeeder extends Seeder
         [3, 'Adam Zieliński', 'goal', 15],
         [3, 'Tomasz Lis', 'goal', 70],
         [3, 'Rafał Duda', 'goal', 44],
+        [4, 'Adam Zieliński', 'goal', 38],
     ];
 
     /** Obiekty: [nazwa, adres]. */
@@ -349,11 +359,20 @@ class DemoTournamentSeeder extends Seeder
         }
 
         foreach (self::FIXTURES as [$roundNumber, $home, $away, $kickoff, $atVenue]) {
-            $this->createMatch(
+            $matches[$roundNumber] = $this->createMatch(
                 $stage, $roundNumber, $teams[$home], $teams[$away], $kickoff,
                 $atVenue ? $venue : null,
             );
         }
+
+        $matches[self::LIVE['round']]->update([
+            'status' => 'live',
+            'home_score' => self::LIVE['homeScore'],
+            'away_score' => self::LIVE['awayScore'],
+            'live_period' => self::LIVE['period'],
+            'period_started_at' => now()->subMinutes(self::LIVE['startedMinutesAgo']),
+            'on_break' => false,
+        ]);
 
         foreach (self::EVENTS as [$roundNumber, $playerName, $type, $minute]) {
             $player = $players[$playerName];
@@ -661,8 +680,8 @@ class DemoTournamentSeeder extends Seeder
 
     /**
      * Mecz razem z jego kolejką: w lidze demo każda kolejka ma dokładnie jeden
-     * mecz, więc jedno bez drugiego nie powstaje. Wynik podany oznacza mecz rozegrany — innego stanu to demo
-     * nie potrzebuje.
+     * mecz, więc jedno bez drugiego nie powstaje. Wynik podany oznacza mecz
+     * rozegrany; mecz trwający (`LIVE`) seed przestawia osobno.
      */
     private function createMatch(
         Stage $stage,

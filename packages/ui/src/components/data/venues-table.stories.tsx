@@ -4,7 +4,7 @@ import { venueRows } from '../../lib/demo-data'
 import { VenuesTable } from './venues-table'
 
 const meta = {
-  title: 'UI/Dane/Tabela obiektów',
+  title: 'Panel/UI/Dane/Tabela obiektów',
   component: VenuesTable,
   parameters: { layout: 'padded' },
   args: {

@@ -118,7 +118,7 @@ function standingsColumns(scoreLabel: string, allowsDraw: boolean, previousPosit
     }),
     helper.accessor('points', {
       header: 'Pkt',
-      // Nagłówek „Pkt” w kolorze tekstu, jak w `public-standings`: to kolumna,
+      // Nagłówek „Pkt” w kolorze tekstu: to kolumna,
       // po której tabela jest ułożona.
       meta: { className: 'w-12 text-center font-bold tabular-nums text-foreground!' },
     }),
@@ -132,8 +132,8 @@ function isQualifiersLine(rows: StandingsTableRow[], index: number) {
 
 /**
  * Tabela ligi albo grupy w panelu (#173, #259). Nagłówek odcięty od wierszy
- * tak jak w `public-standings`: tło, wersaliki, drobniejszy i przytłumiony
- * krój. Drużyny z tą samą liczbą punktów tworzą blok, który od reszty oddziela
+ * tłem, wersalikami, drobniejszym i przytłumionym
+ * krojem. Drużyny z tą samą liczbą punktów tworzą blok, który od reszty oddziela
  * grubsza linia — remis czyta się wtedy jako całość.
  *
  * W tabeli grupy wiersze niosą `qualifies` i `tied` (`withQualifiers`):

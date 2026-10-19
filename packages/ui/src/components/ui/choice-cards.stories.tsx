@@ -19,7 +19,7 @@ const FORMATS: ChoiceOption<Format>[] = [
 ]
 
 const meta = {
-  title: 'UI/Prymitywy/Wybór kafelkowy',
+  title: 'Panel/UI/Prymitywy/Wybór kafelkowy',
   component: ChoiceCards,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-2xl">{Story()}</div>],

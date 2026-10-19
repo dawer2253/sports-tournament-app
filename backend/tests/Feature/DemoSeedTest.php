@@ -65,11 +65,33 @@ it('sieje pierwszą rundę rozegraną i rewanże w terminarzu', function () {
         'Orły Bielany 0:3 Wilki Bemowo',
         'Sokoły Ursus 2:1 Orły Bielany',
     ])
-        ->and($tournament->matches()->where('matches.status', 'scheduled')->count())->toBe(3)
+        ->and($tournament->matches()->where('matches.status', 'scheduled')->count())->toBe(2)
+        ->and($tournament->matches()->where('matches.status', 'live')->count())->toBe(1)
         ->and($tournament->matches()->whereNull('home_score')->where('matches.status', 'finished')->count())->toBe(0)
         // Ostatnia kolejka jest bez obiektu — `venue` jest w kontrakcie
         // opcjonalne i demo ma pokazywać także ten przypadek.
         ->and($tournament->matches()->whereNull('venue_id')->count())->toBe(1);
+});
+
+it('sieje mecz trwający w 2. połowie, zaczętej przed seedowaniem, jak przykład pilka terminarza (#297)', function () {
+    $live = Tournament::firstWhere('slug', 'liga-osiedlowa-2026')
+        ->matches()
+        ->where('matches.status', 'live')
+        ->with(['round', 'homeTeam', 'awayTeam'])
+        ->sole();
+
+    expect([$live->round->order, $live->homeTeam->name, $live->home_score, $live->away_score, $live->awayTeam->name])
+        ->toBe([4, 'Sokoły Ursus', 1, 0, 'Wilki Bemowo'])
+        ->and($live->live_period)->toBe(2)
+        ->and($live->on_break)->toBeFalse()
+        ->and($live->period_started_at->isPast())->toBeTrue()
+        // Tuż po seedowaniu 2. połowa trwa ok. 20 minut, więc tablica pokazuje ok. 66′.
+        ->and((int) $live->period_started_at->diffInMinutes(now()))->toBe(20);
+
+    $this->getJson('/api/v1/public/t/liga-osiedlowa-2026/fixtures')
+        ->assertOk()
+        ->assertJsonPath('data.0.livePeriod', 2)
+        ->assertJsonPath('data.0.scorers.0.minutes', [38]);
 });
 
 it('sieje zdarzenia meczowe zgodne z wynikami', function () {

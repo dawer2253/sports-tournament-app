@@ -1,9 +1,9 @@
 import type { PublicMatch } from '@tournament/api-client';
-import { EmptyState, RoundSections, groupByRound } from '@tournament/ui';
-import { CalendarDays } from 'lucide-react';
+import { FixturesScreen, groupByRound, LoadError, MatchListLoading, ResultsScreen } from '@tournament/ui/public';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { matchHref, useTournament } from './tournament-layout';
+import { useFixtures, useResults } from '../lib/queries';
+import { matchHref, useTabNav, useTournament } from './tournament-layout';
 import { useBracketRows } from './use-bracket';
 import { useGroups } from './use-groups';
 
@@ -28,36 +28,52 @@ export function useRounds(matches: PublicMatch[] | undefined, direction: 'asc' |
   }, [rows, direction, stages, group]);
 }
 
+const SCREENS = { fixtures: FixturesScreen, results: ResultsScreen };
+const LABELS = { fixtures: 'terminarza', results: 'wyników' };
+
 /**
- * Mecze po kolejce dla Terminarza i Wyników: jedna lista z nagłówkami kolejek
- * i „Pokaż więcej” (`RoundSections`, #226), na `MatchRow` z panelu bez
- * kolizji, z oznaczeniem tylko meczu na żywo i ze strzelcami pod wynikiem
- * (#208). Cały wiersz prowadzi na stronę meczu (#210). Godziny liczy strefa
- * przeglądarki (`Tournament.timezone` odłożone, #158).
+ * Terminarz albo Wyniki (#292): ekran z `@tournament/ui/public` na obu
+ * listach naraz (`/fixtures` i `/results`, te same klucze co Przegląd), bo
+ * Terminarz liczy postęp kolejki z całej kolejki, a obie zakładki rozróżniają
+ * puste stany. Cały wiersz prowadzi na stronę meczu (#210). Godziny liczy
+ * strefa przeglądarki (`Tournament.timezone` odłożone, #158).
  */
-export function MatchRounds({
-  matches,
-  direction,
-  empty,
-}: {
-  matches: PublicMatch[];
-  direction: 'asc' | 'desc';
-  empty: string;
-}) {
+export function MatchRounds({ mode }: { mode: 'fixtures' | 'results' }) {
   const { slug } = useTournament();
   const navigate = useNavigate();
-  const rounds = useRounds(matches, direction);
+  const tabNav = useTabNav(slug);
+  const fixtures = useFixtures(slug);
+  const results = useResults(slug);
+  const fixtureRounds = useRounds(fixtures.data, 'asc');
+  const resultRounds = useRounds(results.data, 'desc');
 
-  if (rounds.length === 0) {
-    return <EmptyState icon={<CalendarDays />} title={empty} />;
+  // Dane wygrywają z błędem: nieudane odświeżenie w tle nie zdejmuje listy.
+  if (!fixtures.data || !results.data) {
+    const failed = fixtures.data ? null : fixtures.error;
+    const error = failed ?? (results.data ? null : results.error);
+    if (error) {
+      return (
+        <LoadError
+          label={LABELS[mode]}
+          message={error.message}
+          onRetry={() => {
+            if (!fixtures.data) void fixtures.refetch();
+            if (!results.data) void results.refetch();
+          }}
+        />
+      );
+    }
+    return <MatchListLoading label={LABELS[mode]} />;
   }
 
+  const Screen = SCREENS[mode];
   return (
-    <RoundSections
-      rounds={rounds}
-      statusDisplay="live"
+    <Screen
+      fixtures={fixtureRounds}
+      results={resultRounds}
       matchHref={(match) => matchHref(slug, match.id)}
       onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
+      {...tabNav}
     />
   );
 }

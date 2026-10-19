@@ -165,3 +165,16 @@ it('oddaje termin meczu ze strony meczu w +00:00', function () {
 
     expectEveryDateInUtc($response, ['data.kickoffAt']);
 });
+
+it('oddaje start części meczu trwającego w +00:00, w panelu i na stronie publicznej (#297)', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create(['status' => 'active']);
+    $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
+    GameMatch::factory()->for($round)->live()->create(['kickoff_at' => '2026-10-25 09:00:00', 'live_period' => 2, 'period_started_at' => '2026-10-25 09:55:00']);
+
+    $admin = actingAsOrganizer($organizer)->getJson("/api/v1/tournaments/{$tournament->id}/matches")->assertOk();
+    $public = $this->getJson("/api/v1/public/t/{$tournament->slug}/fixtures")->assertOk();
+
+    expectEveryDateInUtc($admin, ['data.0.periodStartedAt']);
+    expectEveryDateInUtc($public, ['data.0.periodStartedAt']);
+});

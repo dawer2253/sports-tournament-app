@@ -235,6 +235,7 @@ export function TournamentSchedulePage() {
           onOpenMatch={openMatch}
           onClose={() => setOpenMatchId(null)}
           sportCode={tournament.sport.code}
+          periods={tournament.periods}
         />
       )}
     </>

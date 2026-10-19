@@ -35,7 +35,7 @@ final class TournamentStandings
 
         return $tournament->stages()
             ->whereIn('type', ['league', 'group'])
-            ->with(['matches', 'groups' => fn ($query) => $query->orderBy('order')])
+            ->with(['matches.round', 'groups' => fn ($query) => $query->orderBy('order')])
             ->orderBy('order')
             ->get()
             ->flatMap(fn (Stage $stage): array => $stage->type === 'league'

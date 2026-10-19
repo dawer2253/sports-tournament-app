@@ -1,10 +1,11 @@
 import { formatRoundDates } from '../../lib/kickoff'
-import type { MatchRowData, MatchStatus } from './match-row-data'
+import type { MatchRowData } from './match-row-data'
 import type { RoundSummary } from './round-summary'
 
-// Grupowanie meczów strony publicznej po kolejce i wybór kolejek Przeglądu.
-// Osobno od `round-sections.tsx`, bo to funkcje, a nie komponent: korzystają
-// z nich makiety i `apps/public`.
+// Grupowanie meczów strony publicznej po kolejce i porcje listy kolejek.
+// Osobno od `public/round-sections.tsx`, bo to funkcje, a nie komponent:
+// korzystają z nich makiety i `apps/public`. Etap Przeglądu wybiera
+// `public/overview-stage.ts`.
 
 /** Kolejka z jej meczami w kolejności wyświetlania. */
 export type RoundWithMatches<M extends MatchRowData = MatchRowData> = {
@@ -57,34 +58,35 @@ export function groupByRound<M extends MatchInRound>(
     })
 }
 
-/** Ile meczów pokazują „Najbliższe mecze” i „Ostatnie wyniki” na Przeglądzie. */
-export const OVERVIEW_MATCHES_LIMIT = 5
+/** Ile kolejek pokazuje pierwsza porcja i ile dokłada każde „Pokaż więcej”. */
+export const ROUNDS_PER_PAGE = 3
 
-/**
- * „Najbliższe mecze” Przeglądu: pierwsza kolejka Terminarza (`groupByRound`
- * rosnąco) z meczem `scheduled`, a z niej mecze `scheduled`, najwyżej
- * `limit`. Mecz trwający ma własną sekcję. Kolejka jest ta sama, którą
- * Terminarz pokazuje pierwszą, więc „Cały terminarz” prowadzi dalej, a nie
- * gdzie indziej.
- */
-export function nextRoundMatches<M extends MatchRowData>(rounds: readonly RoundWithMatches<M>[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
-  return firstRoundWith(rounds, 'scheduled', limit)
+/** Porcja listy kolejek: ile pokazać, `id` ostatniej pokazanej i ostatniej po „Pokaż więcej”. */
+export type RoundsPage = {
+  shown: number
+  lastShown: number | null
+  /** `id` ostatniej kolejki po „Pokaż więcej”; `null`, gdy komplet już widać. */
+  more: number | null
 }
 
 /**
- * „Ostatnie wyniki” Przeglądu: pierwsza kolejka Wyników (`groupByRound`
- * od najnowszej), a z niej mecze `finished`, najwyżej `limit` — ta sama
- * kolejka, na której otwierają się Wyniki.
+ * Porcja Terminarza i Wyników (#226). Lista pamięta `id` ostatniej pokazanej
+ * kolejki (`lastShown`), nie liczbę porcji, także przed pierwszym kliknięciem:
+ * nowa kolejka na górze Wyników wchodzi przy odpytywaniu ponad to, co widać,
+ * a koniec meczu trwającego nie skraca porcji, więc nic nie spada pod „Pokaż
+ * więcej”. Na start widać `ROUNDS_PER_PAGE` kolejek, a gdy mecz trwa
+ * w dalszej, porcja sięga do ostatniej kolejki z meczem trwającym włącznie.
+ * Gdy zapamiętanej kolejki nie ma w danych (Terminarz: jej ostatni mecz się
+ * zakończył), lista wraca do domyślnej porcji.
  */
-export function latestRoundMatches<M extends MatchRowData>(rounds: readonly RoundWithMatches<M>[], limit = OVERVIEW_MATCHES_LIMIT): M[] {
-  return firstRoundWith(rounds, 'finished', limit)
-}
-
-/** Mecze o stanie `status` z pierwszej kolejki, która takie ma, najwyżej `limit`. */
-function firstRoundWith<M extends MatchRowData>(rounds: readonly RoundWithMatches<M>[], status: MatchStatus, limit: number): M[] {
-  for (const round of rounds) {
-    const inStatus = round.matches.filter((match) => match.status === status)
-    if (inStatus.length > 0) return inStatus.slice(0, limit)
+export function roundsPage(rounds: readonly RoundWithMatches[], lastShown: number | null): RoundsPage {
+  const liveIndex = rounds.findLastIndex((round) => round.matches.some((match) => match.status === 'live'))
+  const initial = Math.max(ROUNDS_PER_PAGE, liveIndex + 1)
+  const lastShownIndex = rounds.findIndex((round) => round.summary.id === lastShown)
+  const shown = Math.min(Math.max(initial, lastShownIndex + 1), rounds.length)
+  return {
+    shown,
+    lastShown: rounds[shown - 1]?.summary.id ?? null,
+    more: shown < rounds.length ? rounds[Math.min(shown + ROUNDS_PER_PAGE, rounds.length) - 1]!.summary.id : null,
   }
-  return []
 }

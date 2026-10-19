@@ -12,7 +12,7 @@ function rows(canvasElement: HTMLElement): (string | null)[] {
 }
 
 const meta = {
-  title: 'UI/Dane/Podgląd 1. rundy',
+  title: 'Panel/UI/Dane/Podgląd 1. rundy',
   component: FirstRoundPreview,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-sm">{Story()}</div>],

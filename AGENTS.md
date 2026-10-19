@@ -70,7 +70,8 @@ i playoffem — obsługują go publiczne `/public/t/{slug}`, `/standings`,
 `/matches`, `/fixtures` i `/results`, więc strona publiczna pokazuje wtedy
 dwie tabele grup z linią wyjścia i Drabinkę playoffu
 (`/t/grupy-osiedlowe-2026`). Ten turniej ma odpowiednik w seedzie demo
-(`grupy-osiedlowe-2026`).
+(`grupy-osiedlowe-2026`). Wszystkie trzy przełączniki obsługuje też publiczne
+`/teams` (drużyny turnieju do prezentacji na Przeglądzie przed terminarzem).
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.

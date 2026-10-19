@@ -1,0 +1,53 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Strona publiczna/Wprowadzenie" />
+
+# Strona publiczna
+
+Strona turnieju dla kibica (`apps/public`, bez logowania). Od S7 ma własny
+język (wariant C „Kolejka”) i własne komponenty, osobno od panelu na shadcn
+([mapa S7, #286](https://github.com/dawer2253/sports-tournament-app/issues/286)).
+
+## Gdzie leży kod
+
+- **`packages/ui/src/public/`**: shell, klocki i ekrany strony publicznej.
+  Nazwy bez przedrostka (`Shell`, `Crest`, `Form`…).
+- **Barrel `@tournament/ui/public`** (`src/public/index.ts`): wszystko, czego
+  potrzebuje strona, także re-eksport logiki wspólnej z panelem
+  (`groupByRound`, `bracketPosition`, `formatKickoff`…). Barrel panelu
+  (`@tournament/ui`) tego katalogu nie re-eksportuje.
+- **Motyw** w `src/public/theme.css`: tokeny, kroje Barlow i narzędzia `pub-*`.
+  Importuje go `apps/public/src/index.css` i Storybook, panel nie.
+- **Ekrany** w `src/public/screens/` to komponenty z danymi w propsach. Story
+  podaje im demo, a strona w `apps/public` tylko pobiera dane i wybiera stan
+  (wczytywanie, błąd, 404). Ekran w Storybooku i w aplikacji to ten sam kod.
+
+## Reguła lintera
+
+W `src/public/**` oxlint zabrania importów z `components/ui` i
+`components/layout` (komponenty panelu). Klocek przepisz w `src/public/`,
+a logikę przenieś do `src/lib/`. Import z `components/data` reguła przepuszcza.
+
+## Zawsze ciemna
+
+`class="dark"` stoi statycznie na `<html>` strony, bo okna i popovery Radixa
+renderują się w portalu w `body`, poza drzewem shella (#136). Stories pod
+„Strona publiczna” są zawsze ciemne, niezależnie od przełącznika „Motyw”,
+a kolor turnieju wybiera przełącznik **„Kolor turnieju”** w pasku narzędzi
+(zieleń, granat, bordo, żółty). Story, które ma zostać przy kolorze z danych
+(np. „Brak turnieju”), ustawia `parameters: { brandColor: { disable: true } }`.
+
+## Jak dodać ekran
+
+1. Komponent w `src/public/screens/<nazwa>.tsx` z danymi w propsach, bez
+   pobierania i bez routera; adresy i nawigację dostaje w propsach
+   (`href` + `onNavigate`, jak zakładki shella).
+2. Eksport w `src/public/index.ts`.
+3. Stories w `src/public/screens/<nazwa>.stories.tsx` z tytułem
+   `Strona publiczna/Ekrany/<Nazwa>`: osobne story na każdy format (liga,
+   puchar, grupy) i stan, z funkcją `play` dla zachowań.
+4. Strona w `apps/public/src/pages/` pobiera dane, obsługuje wczytywanie,
+   błąd i 404 (`LoadingScreen`, `LoadError`, `MatchNotFound`…) i rysuje ekran.
+
+Wszystkie ekrany strony stoją już w nowym języku: Przegląd (#296) był
+ostatnim, więc dawna gałąź z ekranami do przepisania zniknęła.

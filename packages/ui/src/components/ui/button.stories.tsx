@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { Button } from './button'
 
 const meta = {
-  title: 'UI/Prymitywy/Button',
+  title: 'Panel/UI/Prymitywy/Button',
   component: Button,
   tags: ['autodocs'],
   argTypes: {

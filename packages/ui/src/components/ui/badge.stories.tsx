@@ -3,7 +3,7 @@ import { Check, AlertTriangle } from 'lucide-react'
 import { Badge } from './badge'
 
 const meta = {
-  title: 'UI/Prymitywy/Badge',
+  title: 'Panel/UI/Prymitywy/Badge',
   component: Badge,
   tags: ['autodocs'],
   args: { children: 'Badge' },

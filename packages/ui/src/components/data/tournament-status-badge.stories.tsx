@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { TournamentStatusBadge } from './tournament-status-badge'
 
 const meta = {
-  title: 'UI/Dane/Odznaka statusu turnieju',
+  title: 'Panel/UI/Dane/Odznaka statusu turnieju',
   component: TournamentStatusBadge,
   parameters: { layout: 'padded' },
 } satisfies Meta<typeof TournamentStatusBadge>

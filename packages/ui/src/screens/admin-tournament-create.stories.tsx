@@ -3,7 +3,7 @@ import { expect, within } from 'storybook/test'
 import { AdminTournamentCreate } from './admin-tournament-create'
 
 const meta = {
-  title: 'Ekrany/Admin/Kreator turnieju',
+  title: 'Panel/Ekrany/Admin/Kreator turnieju',
   component: AdminTournamentCreate,
   parameters: { layout: 'fullscreen' },
 } satisfies Meta<typeof AdminTournamentCreate>

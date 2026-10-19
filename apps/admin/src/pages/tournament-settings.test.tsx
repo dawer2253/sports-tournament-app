@@ -29,6 +29,7 @@ const SPORTS: Sport[] = [
     name: 'Piłka nożna',
     config: {
       allowsDraw: true,
+      runningClock: true,
       defaultMatchDuration: 60,
       defaultPeriods: { count: 2, minutes: 45 },
       defaultPoints: { win: 3, draw: 1, loss: 0 },
@@ -52,6 +53,7 @@ const SPORTS: Sport[] = [
     name: 'Koszykówka',
     config: {
       allowsDraw: false,
+      runningClock: false,
       defaultMatchDuration: 40,
       defaultPeriods: { count: 4, minutes: 10 },
       defaultPoints: { win: 2, draw: 0, loss: 1 },

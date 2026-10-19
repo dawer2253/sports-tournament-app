@@ -14,6 +14,9 @@ export const API_URL = `${BACKEND_URL}/api/v1`;
 export const ADMIN_URL = 'http://localhost:5173';
 export const PUBLIC_URL = 'http://localhost:5174';
 
+/** Jeden cykl odpytywania strony publicznej (`POLL_INTERVAL_MS`, 15 s) z zapasem na odpowiedź Laravela. */
+export const ONE_POLL = 20_000;
+
 /** Konto z seeda demo (`DemoTournamentSeeder`), zaseedowane na starcie przebiegu. */
 export const ORGANIZER = { email: 'dawid@example.com', password: 'tajnehaslo123' } as const;
 

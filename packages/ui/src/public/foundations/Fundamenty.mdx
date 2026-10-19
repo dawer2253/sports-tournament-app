@@ -1,0 +1,96 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+import { BrandRule, FillSample, PublicTokens, TypeScale } from './foundations'
+
+<Meta title="Strona publiczna/Fundamenty" />
+
+# Strona publiczna: fundamenty
+
+Strona turnieju czyta się jak tablica na boisku: duże, wąskie cyfry, mało
+ozdób, kolor turnieju tylko tam, gdzie coś wskazuje (wariant C „Kolejka”,
+[#287](https://github.com/dawer2253/sports-tournament-app/issues/287)).
+
+## Trzy zasady
+
+1. **Zawsze ciemna.** `class="dark"` stoi na `<html>` (`apps/public/index.html`),
+   a korzeń shella ma `.public-site`. Tło, powierzchnie, tekst i stany to
+   tokeny `.dark` bez zmian (grafit). Strona dokłada tylko trzy płaszczyzny
+   i dwa kroje, opisane niżej.
+2. **Kolor turnieju jest jedynym akcentem.** Aktywna zakładka, odnośnik,
+   herb zastępczy, zwycięstwo w formie, pasek lidera, liczba lidera
+   klasyfikacji, logo domyślne. Wyjątkiem jest „Na żywo” w `--destructive`:
+   to stan, a nie akcent, i ma wyglądać tak samo w każdym turnieju.
+3. **Tablica w Barlow Condensed, tekst w Barlow.** Wyniki, liczby, godziny,
+   nagłówki i zakładki idą krojem wąskim; tekst do czytania (nazwy
+   w wierszach, meta) zwykłym Barlow tej samej rodziny.
+
+## Tokeny ponad `.dark`
+
+Wartości stoją w `src/public/theme.css`, który ładuje tylko strona publiczna
+i Storybook; panel go nie widzi.
+
+<PublicTokens />
+
+Kolor turnieju ustawia korzeń shella z `brandVars(primaryColor)`
+(`src/lib/brand-on-dark.ts`):
+
+| Zmienna | Rola | Skąd |
+|---|---|---|
+| `--brand` | wypełnienie: logo domyślne, pas „Mistrz” | `branding.primaryColor` bez zmian |
+| `--brand-foreground` | tekst na wypełnieniu | `brandForeground()` |
+| `--brand-line` | linia, kształt, duża liczba na ciemnym tle | `brandOnDark()`, rozjaśniany przy kontraście < 3:1 z kartą |
+| `--brand-text` | zwykły tekst na ciemnym tle | `brandOnDark(…, { min: 4.5 })` |
+| `--brand-line-foreground` | tekst na wypełnieniu w `--brand-line` (forma „W”) | `brandForeground(--brand-line)` |
+
+Tailwind: `bg-sunken`, `border-hairline`, `border-rule`, `text-brand-text`,
+`text-brand-line`/`border-brand-line`, `font-display`, `font-body`, a do
+wypełnienia kolorem turnieju narzędzie `pub-brand-fill`.
+
+## Kroje
+
+- **Barlow Condensed** 500, 600, 700, 800 (`@fontsource/barlow-condensed`)
+- **Barlow** 400, 500, 600 (`@fontsource/barlow`)
+
+Oba z własnego serwera, bez CDN Google. Pliki wag niosą `latin` i
+`latin-ext`, więc „Ż”, „ś” i „ł” są w kroju, a nie w zastępczym. Panel zostaje
+przy Inter (też z `@fontsource`).
+
+## Skala typografii
+
+Skala 13 / 14 / 16 / 20 / 28 / 40 / 64 / 120 px, w kodzie jako `text-pub-13`
+… `text-pub-120` (`theme.css`); innych rozmiarów strona nie używa. **Wersaliki
+tylko** w nazwie turnieju w pasku, w nazwach drużyn na tablicach (tablica
+meczu, nazwa mistrza w pasie „Mistrz” i w kaflu mistrza Drabinki, kafle
+prezentacji drużyn) i w tytule nagłówka ekranu (`pub-title`). Nagłówki
+sekcji, belki i nazwisko lidera Statystyk są zdaniem.
+
+Poziomy nagłówków: nazwa turnieju w pasku to `h1` (jeden na stronie), tytuł
+nagłówka ekranu `h2`, belka sekcji `h3`.
+
+<TypeScale />
+
+## Reguła koloru turnieju na ciemnym tle
+
+Kolor organizera gra dwie role i każda ma własną regułę:
+
+- **Wypełnienie** zostaje kolorem organizera. Tekst na nim jest jasny albo
+  ciemny według `brandForeground()` (próg 4,5:1).
+- **Linia, kształt i duża liczba** (`--brand-line`) muszą mieć co najmniej
+  **3:1 z kartą** (`--card`, najjaśniejsza powierzchnia pod akcentem; WCAG 1.4.11).
+- **Zwykły tekst** (`--brand-text`: odnośnik, „Mistrz”) musi mieć **4,5:1**.
+
+Gdy kolor nie ma progu, `brandOnDark()` podnosi jasność w OKLCH krokiem 0,01
+przy tej samej barwie, aż przejdzie. Kibic dalej widzi swój granat, tylko
+jaśniejszy. Testy w `brand-on-dark.test.ts` pilnują progów, barwy i tego, że
+powierzchnie przepisane do JS zgadzają się z `.dark` w `index.css`.
+
+<BrandRule />
+
+## Obrys wypełnienia i herb na wypełnieniu
+
+Każde wypełnienie `--brand` ma obrys 1 px w `--brand-line` (`pub-brand-fill`,
+decyzja z [#289](https://github.com/dawer2253/sports-tournament-app/issues/289)).
+Przy zieleni i żółtym obrys jest tym samym kolorem co wypełnienie i go nie
+widać; przy granacie i bordo daje krawędź na grafitowym tle. Herb zastępczy
+na wypełnieniu (pas „Mistrz”) ma obrys i skrót w `--brand-foreground`.
+
+<FillSample />

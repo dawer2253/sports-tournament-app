@@ -1,0 +1,120 @@
+/*
+  STRONA PUBLICZNA — motyw ponad `.dark` (#289, #290)
+  ─────────────────────────────────────────────────────────────
+  Arkusz tylko strony publicznej: importuje go `apps/public/src/index.css`
+  (po `@tournament/ui/styles.css`) i Storybook. Panel go nie widzi, więc nie
+  ładuje Barlow ani nie zna narzędzi `pub-*`.
+
+  Strona jest zawsze ciemna: `class="dark"` stoi na `<html>`, a korzeń shella
+  ma `.public-site` i zmienne koloru turnieju z `brandVars()`. Tło,
+  powierzchnie, tekst i stany to tokeny `.dark` z `index.css` bez zmian.
+  Ponad nimi dochodzą tylko trzy płaszczyzny (`--pub-sunken`, `--pub-hairline`,
+  `--pub-rule`) i dwa kroje.
+
+  Kroje: Barlow Condensed na wszystko, co jest tablicą (wyniki, liczby,
+  godziny, nagłówki, zakładki), Barlow na zwykły tekst. Pliki wag niosą
+  `latin` i `latin-ext`, więc „ą”, „ł”, „ż” są w kroju.
+*/
+@import '@fontsource/barlow-condensed/500.css';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+
+@theme inline {
+  --font-display: 'Barlow Condensed', ui-sans-serif, sans-serif;
+  --font-body: 'Barlow', ui-sans-serif, sans-serif;
+  --color-sunken: var(--pub-sunken);
+  --color-rule: var(--pub-rule);
+  --color-hairline: var(--pub-hairline);
+  --color-brand-line: var(--brand-line);
+  --color-brand-text: var(--brand-text);
+  --color-brand-line-foreground: var(--brand-line-foreground);
+  /* Skala typografii: jedyne rozmiary tekstu strony (`text-pub-13` … `text-pub-120`).
+     Bez własnej interlinii, jak dowolna wartość w nawiasie: tę daje `leading-*`
+     albo narzędzie `pub-*`. `cn()` zna je z `PUBLIC_TEXT_SCALE` (`lib/utils.ts`). */
+  --text-pub-13: 0.8125rem;
+  --text-pub-14: 0.875rem;
+  --text-pub-16: 1rem;
+  --text-pub-20: 1.25rem;
+  --text-pub-28: 1.75rem;
+  --text-pub-40: 2.5rem;
+  --text-pub-64: 4rem;
+  --text-pub-120: 7.5rem;
+}
+
+.public-site {
+  /* Pod tablicą wyników i pasek shella: ciemniej niż tło, jak wyświetlacz.
+     Ta sama wartość co `--sidebar` z `.dark` (pilnuje jej `DARK_SURFACES.sunken`). */
+  --pub-sunken: oklch(0.1750 0.0140 250);
+  /* Belka pod nagłówkiem sekcji: pełny kolor tekstu, bo sekcję zamyka belka, nie ramka. */
+  --pub-rule: oklch(0.9600 0.0040 240);
+  /* Linia między wierszami: ciszej niż `--border`, żeby lista nie była kratą. */
+  --pub-hairline: oklch(0.2650 0.0150 250);
+  /* Wartości zapasowe, gdy korzeń nie dostał `brandVars()`. */
+  --brand-line: var(--brand);
+  --brand-text: var(--brand);
+  --brand-line-foreground: var(--brand-foreground);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Skala: 13 / 14 / 16 / 20 / 28 / 40 / 64 / 120 px (`text-pub-*` wyżej), bez
+   rozmiarów spoza niej, także w narzędziach niżej. Wersaliki tylko
+   w `pub-title` (nazwa turnieju w pasku, nazwy drużyn na tablicy, tytuł
+   nagłówka ekranu); nagłówki sekcji i belki są zdaniem. */
+@utility pub-score {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.85;
+  letter-spacing: -0.01em;
+}
+@utility pub-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.5rem;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+@utility pub-h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+@utility pub-h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  line-height: 1.15;
+}
+@utility pub-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+@utility pub-tab {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+/*
+  Wypełnienie kolorem turnieju (logo domyślne, pas „Mistrz”, kafel mistrza):
+  kolor organizera z tekstem z `brandForeground()` i obrysem 1 px w
+  `--brand-line`. Przy kolorze, który ma 3:1 z kartą (zieleń, żółty), obrys
+  jest tym samym kolorem co wypełnienie i go nie widać; przy granacie i bordo
+  daje krawędź na grafitowym tle (#289). Jedno narzędzie, żeby każde
+  wypełnienie brało to samo.
+*/
+@utility pub-brand-fill {
+  background-color: var(--brand);
+  color: var(--brand-foreground);
+  border: 1px solid var(--brand-line);
+}

@@ -1,6 +1,7 @@
 import { cn } from '../../lib/utils'
 import { ImageWithFallback } from '../ui/image-with-fallback'
-import { TeamCrest, teamAbbr } from './team-crest'
+import { teamAbbr } from '../../lib/team-abbr'
+import { TeamCrest } from './team-crest'
 
 export interface TeamLogoProps {
   /** `Team.logoUrl` z kontraktu: `null`, gdy drużyna nie ma wgranego herbu. */

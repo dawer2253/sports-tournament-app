@@ -4,7 +4,7 @@ import { HttpResponse, delay, http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from './lib/api';
 import { API_URL as API, server } from './test/server';
-import { SLUG, publicApi, renderAt, tournament } from './test/public-api';
+import { SLUG, cup, match, publicApi, renderAt, tournament } from './test/public-api';
 
 const tabs = () => within(screen.getByRole('navigation', { name: 'Sekcje turnieju' }));
 
@@ -18,13 +18,13 @@ describe('trasa turnieju', () => {
     const user = userEvent.setup();
     renderAt(`/t/${SLUG}`);
 
-    await screen.findByRole('region', { name: 'Tabela (skrót)' });
+    await screen.findByRole('region', { name: 'Drużyny' });
     await user.click(tabs().getByRole('link', { name: 'Tabela' }));
-    await screen.findByRole('table');
+    await screen.findByRole('heading', { level: 2, name: 'Tabela' });
     await user.click(tabs().getByRole('link', { name: 'Terminarz' }));
-    await screen.findByText('Brak zaplanowanych meczów');
+    await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' });
     await user.click(tabs().getByRole('link', { name: 'Wyniki' }));
-    await screen.findByText('Brak rozegranych meczów');
+    await screen.findByRole('heading', { level: 2, name: 'Wyniki' });
 
     expect(requests.tournament).toBe(1);
     expect(tabs().getByRole('link', { name: 'Wyniki' })).toHaveAttribute('aria-current', 'page');
@@ -34,7 +34,7 @@ describe('trasa turnieju', () => {
     publicApi();
     const { router } = renderAt(`/t/${SLUG}/tabela`);
 
-    await screen.findByRole('table');
+    await screen.findByRole('heading', { level: 2, name: 'Tabela' });
     expect(tabs().getByRole('link', { name: 'Tabela' })).toHaveAttribute('aria-current', 'page');
     expect(tabs().getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       `/t/${SLUG}`,
@@ -130,20 +130,63 @@ describe('trasa turnieju', () => {
     await waitFor(() => expect(document.title).toBe('Puchar Jesieni 2026'));
   });
 
-  it('meta pod nazwą ma „Zakończony” przy turnieju finished', async () => {
+  it('pasek shella nie ma metki sportu ani „Zakończony” (wariant C, #287)', async () => {
     publicApi({ data: tournament({ status: 'finished' }) });
     renderAt(`/t/${SLUG}`);
-    const header = within(await screen.findByRole('banner'));
-    expect(header.getByText('Piłka nożna')).toBeInTheDocument();
-    expect(header.getByText('Zakończony')).toBeInTheDocument();
+    const name = await screen.findByRole('heading', { level: 1, name: 'Liga Osiedlowa 2026' });
+    const header = within(name.closest('header')!);
+    expect(header.queryByText('Piłka nożna')).not.toBeInTheDocument();
+    expect(header.queryByText('Zakończony')).not.toBeInTheDocument();
   });
 
-  it('meta pod nazwą nie ma „Zakończony” przy turnieju active', async () => {
-    publicApi();
+  it('korzeń shella dostaje kolor turnieju z odpowiedzi API, rozjaśniony na ciemne tło', async () => {
+    publicApi({ data: tournament({ branding: { logoUrl: null, primaryColor: '#1E3A8A' } }) });
     renderAt(`/t/${SLUG}`);
-    const header = within(await screen.findByRole('banner'));
-    expect(header.getByText('Piłka nożna')).toBeInTheDocument();
-    expect(header.queryByText('Zakończony')).not.toBeInTheDocument();
+    const name = await screen.findByRole('heading', { level: 1, name: 'Liga Osiedlowa 2026' });
+    const root = name.closest<HTMLElement>('.public-site')!;
+    expect(root.style.getPropertyValue('--brand')).toBe('#1E3A8A');
+    // Granat ma z kartą za mało kontrastu: linia i tekst idą rozjaśnione (#287).
+    expect(root.style.getPropertyValue('--brand-line')).toBe('#4769be');
+    expect(root.style.getPropertyValue('--brand-text')).toBe('#6085dc');
+  });
+
+  it('nieznana podtrasa pucharu daje odnośniki do zakładek pucharu, bez Tabeli', async () => {
+    publicApi({ data: cup() });
+    const user = userEvent.setup();
+    const { router } = renderAt(`/t/${SLUG}/kalendarz`);
+
+    const links = within(await screen.findByRole('navigation', { name: 'Zakładki turnieju' })).getAllByRole('link');
+    expect(links.map((link) => [link.textContent, link.getAttribute('href')])).toEqual([
+      ['Przegląd', `/t/${SLUG}`],
+      ['Drabinka', `/t/${SLUG}/drabinka`],
+      ['Terminarz', `/t/${SLUG}/terminarz`],
+      ['Wyniki', `/t/${SLUG}/wyniki`],
+      ['Statystyki', `/t/${SLUG}/statystyki`],
+    ]);
+    await user.click(links[2]!);
+    expect(router.state.location.pathname).toBe(`/t/${SLUG}/terminarz`);
+  });
+
+  it('błąd zakładki: „Spróbuj ponownie” pyta jeszcze raz i pokazuje dane', async () => {
+    publicApi();
+    let requests = 0;
+    server.use(
+      http.get(`${API}/public/t/:slug/results`, () => {
+        requests++;
+        return requests === 1
+          ? HttpResponse.json({ message: 'Usługa chwilowo niedostępna.' }, { status: 503 })
+          : HttpResponse.json({ data: [] });
+      }),
+    );
+    const user = userEvent.setup();
+    renderAt(`/t/${SLUG}/wyniki`);
+
+    expect(await screen.findByText('Nie udało się wczytać wyników')).toBeInTheDocument();
+    expect(screen.getByText('Usługa chwilowo niedostępna.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
+
+    expect(await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' })).toBeInTheDocument();
+    expect(requests).toBe(2);
   });
 
   it('nieudane odświeżenie w tle nie zdejmuje ekranu', async () => {
@@ -165,18 +208,18 @@ describe('odpytywanie', () => {
     'turniej %s: zapytania wracają po POLL_INTERVAL_MS',
     async (status) => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      const requests = publicApi({ data: tournament({ status }) });
-      // Przegląd pyta o wszystkie pięć zasobów naraz.
+      const requests = publicApi({ data: tournament({ status }), fixtures: [match(1, 1)] });
+      // Przegląd ligi z terminarzem pyta o pięć zasobów naraz, bez drużyn (#296).
       renderAt(`/t/${SLUG}`);
-      await screen.findByRole('region', { name: 'Tabela (skrót)' });
+      await screen.findByRole('region', { name: 'Kolejka 1' });
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0, stageMatches: [] }),
+        expect(requests).toEqual({ tournament: 1, standings: 1, fixtures: 1, results: 1, leaderboard: [null], match: 0, stageMatches: [], teams: 0 }),
       );
 
       await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
       await waitFor(() =>
-        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0, stageMatches: [] }),
+        expect(requests).toEqual({ tournament: 2, standings: 2, fixtures: 2, results: 2, leaderboard: [null, null], match: 0, stageMatches: [], teams: 0 }),
       );
     },
   );

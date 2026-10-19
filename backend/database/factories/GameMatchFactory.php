@@ -57,13 +57,18 @@ class GameMatchFactory extends Factory
         ]);
     }
 
-    /** Mecz trwający — ma już wynik cząstkowy, ale nie wchodzi do tabeli. */
+    /**
+     * Mecz trwający — ma już wynik cząstkowy, ale nie wchodzi do tabeli.
+     * Gra 1. część od chwili utworzenia (#297), jak po „Trwa” w panelu.
+     */
     public function live(int $home = 1, int $away = 0): static
     {
         return $this->state([
             'status' => 'live',
             'home_score' => $home,
             'away_score' => $away,
+            'live_period' => 1,
+            'period_started_at' => now(),
         ]);
     }
 

@@ -4,7 +4,7 @@ import { teamPlayers } from '../../lib/demo-data'
 import { PlayersTable } from './players-table'
 
 const meta = {
-  title: 'UI/Dane/Tabela zawodników',
+  title: 'Panel/UI/Dane/Tabela zawodników',
   component: PlayersTable,
   parameters: { layout: 'padded' },
   args: { players: teamPlayers, onEdit: fn(), onDelete: fn() },

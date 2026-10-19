@@ -4,7 +4,6 @@ namespace App\Http\Resources;
 
 use App\Http\Resources\Concerns\FormatsDates;
 use App\Models\GameMatch;
-use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,8 +36,8 @@ class MatchResource extends JsonResource
                 'order' => $this->round->order,
             ],
             'matchNumber' => $this->match_number,
-            'homeTeam' => $this->teamSummary($this->homeTeam),
-            'awayTeam' => $this->teamSummary($this->awayTeam),
+            'homeTeam' => $this->homeTeam?->summary(),
+            'awayTeam' => $this->awayTeam?->summary(),
             'homeScore' => $this->home_score,
             'awayScore' => $this->away_score,
             'homePenalties' => $this->home_penalties,
@@ -49,16 +48,24 @@ class MatchResource extends JsonResource
             'winnerToMatchId' => $this->winner_to_match_id,
             'loserToMatchId' => $this->loser_to_match_id,
             'advancesToSlot' => $this->advances_to_slot,
+            ...$this->clock(),
         ];
     }
 
     /**
-     * `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte.
+     * Zegar meczu (#297) tylko przy `live`. Po zakończeniu baza pamięta
+     * ostatnią część na wypadek powrotu do `live`, ale API jej nie pokazuje.
      *
-     * @return array{id: int, name: string, logoUrl: ?string}|null
+     * @return array{livePeriod: ?int, periodStartedAt: ?string, onBreak: bool}
      */
-    private function teamSummary(?Team $team): ?array
+    private function clock(): array
     {
-        return $team === null ? null : ['id' => $team->id, 'name' => $team->name, 'logoUrl' => $team->logoUrl()];
+        $live = $this->status === 'live';
+
+        return [
+            'livePeriod' => $live ? $this->live_period : null,
+            'periodStartedAt' => $live ? $this->formatDate($this->period_started_at) : null,
+            'onBreak' => $live && $this->on_break,
+        ];
     }
 }

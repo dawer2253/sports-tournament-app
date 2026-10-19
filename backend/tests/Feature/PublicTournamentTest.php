@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\GameMatch;
+use App\Models\Group;
 use App\Models\MatchEvent;
 use App\Models\Player;
 use App\Models\Round;
@@ -28,7 +29,7 @@ beforeEach(function () {
 });
 
 /** Ścieżki pod slugiem, które stoją w tym tickecie. */
-const PUBLIC_PAGE_ROUTES = ['', '/standings', '/fixtures', '/results', '/leaderboard'];
+const PUBLIC_PAGE_ROUTES = ['', '/standings', '/fixtures', '/results', '/leaderboard', '/teams'];
 
 /** Opublikowany turniej z fazą ligową, dwiema kolejkami i dwiema drużynami. */
 function publicPageTournament(string $status = 'active', string $sport = 'football', array $attributes = []): Tournament
@@ -225,6 +226,22 @@ it('tabela niesie allowsDraw sportu i kryteria w kolejności turnieju z etykieta
             ['code' => 'head_to_head', 'label' => 'Bezpośredni mecz'],
         ])
         ->assertJsonPath('data.0.rows.*.team.name', ['Orły Bielany', 'Sokoły Ursus']);
+});
+
+it('tabela strony publicznej niesie formę jak panel, a drużyna bez meczów ma pustą', function () {
+    $tournament = publicPageTournament();
+    publicPageMatch($tournament, 2, ['status' => 'finished', 'home_score' => 0, 'away_score' => 1]);
+    publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 2, 'away_score' => 2]);
+    Team::factory()->for($tournament)->create(['name' => 'Wilki Bemowo']);
+
+    $public = publicPageGet($tournament->slug, '/standings')
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.0.rows.*.team.name', ['Sokoły Ursus', 'Orły Bielany', 'Wilki Bemowo'])
+        ->assertJsonPath('data.0.rows.*.form', [['draw', 'win'], ['draw', 'loss'], []]);
+
+    $panel = actingAsOrganizer($tournament->user)->getJson("/api/v1/tournaments/{$tournament->id}/standings");
+
+    expect($public->json('data.0.rows'))->toBe($panel->json('data.0.rows'));
 });
 
 // --- terminarz i wyniki ------------------------------------------------------
@@ -605,4 +622,107 @@ it('liczba zapytań przy liście meczów nie rośnie z liczbą meczów', functio
 
     expect(publicPageGet($tournament->slug, '/results')->json('data'))->toHaveCount(4)
         ->and($queries())->toBe($single);
+});
+
+// --- zegar meczu (#297) -----------------------------------------------------------
+
+it('turniej niesie podział meczu, długość meczu i runningClock sportu', function (string $sport, bool $running) {
+    $tournament = publicPageTournament(sport: $sport);
+    $tournament->update(['period_count' => 2, 'period_minutes' => 30, 'match_duration' => 75]);
+
+    publicPageGet($tournament->slug)
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.periods', ['count' => 2, 'minutes' => 30])
+        ->assertJsonPath('data.matchDuration', 75)
+        ->assertJsonPath('data.runningClock', $running);
+})->with([
+    'piłka' => ['football', true],
+    'kosz' => ['basketball', false],
+]);
+
+it('terminarz, mecze fazy i strona meczu niosą część i start meczu trwającego', function () {
+    $tournament = publicPageTournament();
+    $match = publicPageMatch($tournament, 1, [
+        'status' => 'live', 'home_score' => 1, 'away_score' => 0,
+        'live_period' => 2, 'period_started_at' => '2026-09-27 10:55:00', 'on_break' => false,
+    ]);
+    $stageId = $tournament->stages()->value('id');
+
+    $clock = ['livePeriod' => 2, 'periodStartedAt' => '2026-09-27T10:55:00+00:00', 'onBreak' => false];
+    $pick = fn (array $row): array => array_intersect_key($row, $clock);
+
+    expect($pick(publicPageGet($tournament->slug, '/fixtures')->assertValidResponse(200)->json('data.0')))->toBe($clock)
+        ->and($pick(publicPageGet($tournament->slug, "/matches?stageId={$stageId}")->assertValidResponse(200)->json('data.0')))->toBe($clock)
+        ->and($pick(publicPageGet($tournament->slug, "/matches/{$match->id}")->assertValidResponse(200)->json('data')))->toBe($clock);
+});
+
+it('mecz zakończony nie pokazuje części, którą baza pamięta na wypadek powrotu', function () {
+    $tournament = publicPageTournament();
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 1, 'away_score' => 0, 'live_period' => 2]);
+
+    publicPageGet($tournament->slug, "/matches/{$match->id}")
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.livePeriod', null)
+        ->assertJsonPath('data.periodStartedAt', null);
+});
+
+it('przerwa zmienia ETag: dawny If-None-Match dostaje 200, nie 304', function () {
+    $tournament = publicPageTournament();
+    $match = publicPageMatch($tournament, 1);
+    actingAsOrganizer($tournament->user)
+        ->patchJson("/api/v1/matches/{$match->id}", ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])
+        ->assertOk();
+    $etag = publicPageGet($tournament->slug, '/fixtures')->assertOk()->headers->get('ETag');
+
+    actingAsOrganizer($tournament->user)
+        ->patchJson("/api/v1/matches/{$match->id}", ['periodRunning' => false])
+        ->assertOk();
+
+    publicPageGet($tournament->slug, '/fixtures', ['If-None-Match' => $etag])
+        ->assertOk()
+        ->assertJsonPath('data.0.onBreak', true);
+});
+
+// --- drużyny (#296) ------------------------------------------------------------
+
+/** Nazwy drużyn z `/teams` w kolejności z odpowiedzi. */
+function publicPageTeams(Tournament $tournament): array
+{
+    return array_column(publicPageGet($tournament->slug, '/teams')->assertValidResponse(200)->json('data'), 'name');
+}
+
+it('drużyny idą w kształcie TeamSummary, bez liczników, po id', function () {
+    $tournament = publicPageTournament();
+    [$orly, $sokoly] = $tournament->teams()->orderBy('id')->get()->all();
+
+    publicPageGet($tournament->slug, '/teams')
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertExactJson(['data' => [
+            ['id' => $orly->id, 'name' => 'Orły Bielany', 'logoUrl' => null],
+            ['id' => $sokoly->id, 'name' => 'Sokoły Ursus', 'logoUrl' => null],
+        ]]);
+});
+
+it('drużyna usunięta i drużyna innego turnieju nie wchodzą', function () {
+    $tournament = publicPageTournament();
+    Team::factory()->for($tournament)->create(['name' => 'Wilki Bemowo'])->delete();
+    Team::factory()->for(publicPageTournament())->create(['name' => 'Żubry Praga']);
+
+    expect(publicPageTeams($tournament))->toBe(['Orły Bielany', 'Sokoły Ursus']);
+});
+
+it('w turnieju z grupami wchodzi też drużyna bez grupy', function () {
+    $tournament = Tournament::factory()->create(['status' => 'active']);
+    $group = Group::factory()->for(Stage::factory()->group()->for($tournament))->create(['name' => 'Grupa A']);
+    Team::factory()->for($tournament)->create(['name' => 'Lwy Ochota', 'group_id' => $group->id]);
+    Team::factory()->for($tournament)->create(['name' => 'Rysie Wola', 'group_id' => null]);
+
+    expect(publicPageTeams($tournament))->toBe(['Lwy Ochota', 'Rysie Wola']);
+});
+
+it('turniej bez drużyn daje pustą listę', function () {
+    $tournament = Tournament::factory()->create(['status' => 'active']);
+
+    publicPageGet($tournament->slug, '/teams')->assertValidResponse(200)->assertExactJson(['data' => []]);
 });

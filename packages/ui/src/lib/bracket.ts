@@ -82,6 +82,12 @@ export function bracketWinnerSide(
   return homePenalties > awayPenalties ? 'home' : 'away'
 }
 
+/** Strona przegranego meczu zakończonego (także po karnych): przeciwna do `bracketWinnerSide`. */
+export function bracketLoserSide(match: Parameters<typeof bracketWinnerSide>[0]): 'home' | 'away' | null {
+  const winner = bracketWinnerSide(match)
+  return winner === null ? null : winner === 'home' ? 'away' : 'home'
+}
+
 // --- Odczyt drabinki z kompletu meczów fazy (#227, #234) ----------------------
 //
 // Kontrakt nie ma listy rund, etykiet pozycji, wolnych losów ani flagi meczu

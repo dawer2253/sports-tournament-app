@@ -3,12 +3,11 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import { scheduleInProgress, scheduleTimeZone, scheduleUndated } from '../../lib/demo-data'
 import { cn } from '../../lib/utils'
 import { expectTextFits, phone375, textFitProblems } from '../../test/viewport'
-import { PublicSection } from '../layout/public-section'
 import { MatchRow } from './match-row'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
 const meta = {
-  title: 'UI/Dane/Wiersz meczu',
+  title: 'Panel/UI/Dane/Wiersz meczu',
   component: MatchRow,
   parameters: { layout: 'padded' },
   args: { match: scheduleInProgress[0], timeZone: scheduleTimeZone },
@@ -26,8 +25,8 @@ const colliding = scheduleInProgress.find((match) => (match.collisions?.length ?
 const longNames: MatchRowData = {
   ...scheduled,
   id: 999,
-  homeTeam: { id: 901, name: 'Międzyszkolny Klub Sportowy Huragan Bemowo' },
-  awayTeam: { id: 902, name: 'Orły' },
+  homeTeam: { id: 901, name: 'Międzyszkolny Klub Sportowy Huragan Bemowo', logoUrl: null },
+  awayTeam: { id: 902, name: 'Orły', logoUrl: null },
 }
 
 const undated: MatchRowData = { ...scheduleUndated[0], id: 998 }
@@ -193,10 +192,10 @@ export const Odnosnik: Story = {
 
 // --- Strzelcy pod wynikiem (#208) ---------------------------------------------
 
-const wilki = { id: 1, name: 'Wilki Bemowo' }
-const sokoly = { id: 2, name: 'Sokoły Ursus' }
-const zubry = { id: 4, name: 'Żubry Wola' }
-const rysie = { id: 5, name: 'Rysie Mokotów' }
+const wilki = { id: 1, name: 'Wilki Bemowo', logoUrl: null }
+const sokoly = { id: 2, name: 'Sokoły Ursus', logoUrl: null }
+const zubry = { id: 4, name: 'Żubry Wola', logoUrl: null }
+const rysie = { id: 5, name: 'Rysie Mokotów', logoUrl: null }
 
 function scorer(team: MatchScorer['team'], id: number, name: string, value: number, minutes: number[], ownGoal = false): MatchScorer {
   return { team, player: { id, name }, value, minutes, ownGoal }
@@ -414,8 +413,8 @@ export const PucharNaTelefonie: Story = {
 /** Wiersze pucharu z nazwami do 20 znaków i podpisami pustych slotów (#239), także trwający. */
 const longCupRows: MatchRowData[] = [
   cupRow(921, {
-    homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów' },
-    awayTeam: { id: 32, name: 'Jastrzębie Białołęka' },
+    homeTeam: { id: 31, name: 'Niedźwiedzie Mokotów', logoUrl: null },
+    awayTeam: { id: 32, name: 'Jastrzębie Białołęka', logoUrl: null },
     homeScore: 1,
     awayScore: 1,
     homePenalties: 4,
@@ -424,8 +423,8 @@ const longCupRows: MatchRowData[] = [
   cupRow(922, {
     ...live,
     id: 922,
-    homeTeam: { id: 33, name: 'Gepardy Śródmieście' },
-    awayTeam: { id: 34, name: 'Nosorożce Targówek' },
+    homeTeam: { id: 33, name: 'Gepardy Śródmieście', logoUrl: null },
+    awayTeam: { id: 34, name: 'Nosorożce Targówek', logoUrl: null },
     bracket: { label: 'Półfinał 2', penaltySlot: true },
   }),
   cupRow(923, {
@@ -480,33 +479,9 @@ export const PucharDlugieNazwyNaTelefonie: Story = {
 }
 
 /**
- * Przegląd na telefonie 375 px (#239): te same wiersze w prawdziwej karcie
- * sekcji, której padding zjada nazwom miejsce. Zmiana paddingu karty albo
- * wiersza, przez którą nazwy z DoD znów się nie mieszczą, wywraca to story.
- */
-export const PucharWKarciePrzegladuNaTelefonie: Story = {
-  ...phone375,
-  // Szerokość treści strony publicznej przy 375 px, także w Vitest bez marginesu `padded`.
-  render: () => (
-    <div className="w-[343px] max-w-full">
-      <PublicSection title="Najbliższe mecze">
-        {longCupRows.map((match) => (
-          <MatchRow key={match.id} match={match} timeZone={scheduleTimeZone} statusDisplay="live" href={`/t/puchar/mecze/${match.id}`} />
-        ))}
-      </PublicSection>
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    await expect(window.innerWidth).toBe(375)
-    await expectColumns(canvasElement, 3)
-    await expectTextFits([...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-team"]')])
-  },
-}
-
-/**
- * Te same wiersze w każdej szerokości od karty Przeglądu na telefonie
- * (319 px: 375 bez marginesów strony i paddingu karty `PublicSection`) po
- * szeroki Terminarz (#239). Nazwy mieszczą się w dwóch liniach bez łamania
+ * Te same wiersze w każdej szerokości od 319 px (dawna karta Przeglądu na
+ * telefonie: 375 bez marginesów strony i paddingu karty) po szeroki
+ * Terminarz (#239). Nazwy mieszczą się w dwóch liniach bez łamania
  * słów, a górna linia (etykieta, termin, „Na żywo”, strzałka) nie wystaje.
  * „Próg układu” wyżej pilnuje tylko szerokości nazw w lidze; tu liczy się
  * to, czy tekst się mieści, bo karne i strzałka zabierają nazwom miejsce.
@@ -556,7 +531,7 @@ export const PucharKoszykowka: Story = {
 
 const groupRows: MatchRowData[] = [
   { ...finished, id: 931, homeTeam: wilki, awayTeam: sokoly, group: 'Grupa A' },
-  { ...scheduled, id: 932, homeTeam: { id: 5, name: 'Żubry Praga' }, awayTeam: { id: 7, name: 'Lwy Ochota' }, group: 'Grupa B' },
+  { ...scheduled, id: 932, homeTeam: { id: 5, name: 'Żubry Praga', logoUrl: null }, awayTeam: { id: 7, name: 'Lwy Ochota', logoUrl: null }, group: 'Grupa B' },
   cupRow(933, { homeScore: 2, awayScore: 1 }),
 ]
 

@@ -253,6 +253,9 @@ function serveCup(status: 'scheduled' | 'live') {
     kickoffAt: null,
     venue: null,
     loserToMatchId: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     collisions: [],
   };
   const sokoly = { id: SOKOLY.id, name: SOKOLY.name, logoUrl: null };
@@ -283,6 +286,9 @@ function serveCup(status: 'scheduled' | 'live') {
       status: 'scheduled',
       winnerToMatchId: null,
       advancesToSlot: null,
+      livePeriod: null,
+      periodStartedAt: null,
+      onBreak: false,
     },
   ];
   server.use(

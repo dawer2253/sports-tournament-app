@@ -5,7 +5,7 @@ import { Checkbox } from './checkbox'
 import { Label } from './label'
 
 const meta = {
-  title: 'UI/Prymitywy/Checkbox',
+  title: 'Panel/UI/Prymitywy/Checkbox',
   component: Checkbox,
   tags: ['autodocs'],
 } satisfies Meta<typeof Checkbox>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Matches\MatchPeriods;
 use App\Models\Tournament;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -10,7 +11,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Turniej strony publicznej (`PublicTournament`): bez `id`, punktacji
  * i kryteriów, za to z fazami i statystykami klasyfikacji. Te ostatnie
  * w bazie nie istnieją, składa je `availableStats` i `statLabels` sportu.
- * Wymaga wczytanych `sport` i `stages.groups`.
+ * Do zegara meczu na żywo (#297) idą też podział meczu, jego długość
+ * i `runningClock` sportu. Wymaga wczytanych `sport` i `stages.groups`.
  *
  * @mixin Tournament
  */
@@ -40,6 +42,11 @@ class PublicTournamentResource extends JsonResource
                 'code' => $stat,
                 'label' => $this->sport->statLabel($stat),
             ], $this->sport->availableStats()),
+            // Zegar meczu na żywo (#297) liczy przeglądarka, więc dostaje
+            // podział meczu i flagę sportu, której w bazie turnieju nie ma.
+            'periods' => MatchPeriods::of($this->resource)->toArray(),
+            'matchDuration' => $this->match_duration,
+            'runningClock' => $this->sport->runningClock(),
         ];
     }
 }

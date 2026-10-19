@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { isValidationError, type AdminMatch, type MatchStatus, type Sport } from '@tournament/api-client';
+import { isValidationError, type AdminMatch, type MatchStatus, type Sport, type Tournament } from '@tournament/api-client';
 import {
+  Button,
   FormDialog,
   Label,
   MatchStatusToggle,
@@ -14,6 +15,7 @@ import {
   collisionLabel,
   formatKickoff,
   matchLabel,
+  periodLabelGenitive,
   toast,
 } from '@tournament/ui';
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
@@ -30,6 +32,8 @@ const SAVE_FAILED = 'Nie udało się zapisać meczu. Spróbuj ponownie.';
 
 const START_FAILED = 'Nie udało się rozpocząć meczu. Spróbuj ponownie.';
 
+const PERIOD_FAILED = 'Nie udało się zmienić części meczu. Spróbuj ponownie.';
+
 /** Wartość „bez obiektu” w `Select`; pusty napis `Select` traktuje jak brak wyboru. */
 const NO_VENUE = 'none';
 
@@ -40,6 +44,37 @@ const NO_VENUE = 'none';
  * i obiekt przy swoich polach. Reszta idzie nad przyciskami.
  */
 const FIELDS = ['homeScore', 'awayScore', 'homePenalties', 'awayPenalties', 'kickoffAt', 'venueId'] as const;
+
+/** Zapisany zegar meczu (#297): stan i bieżąca część, jak przyszły z serwera. */
+type SavedClock = Pick<AdminMatch, 'status' | 'livePeriod' | 'periodStartedAt' | 'onBreak'>;
+
+/** Ciało `PATCH` przycisku części: przerwa albo start części. */
+type PeriodBody = { periodRunning: false } | { livePeriod: number; periodRunning: true };
+
+/**
+ * Jeden przycisk części meczu trwającego (#297, rozstrzygnięcie #289):
+ * „Przerwa”, gdy część biegnie i nie jest ostatnia; „Start N. połowy” w
+ * przerwie i po powrocie z „Zakończony” (część nie biegnie); po ostatniej
+ * części meczu pucharowego „Dogrywka / karne”, a w sporcie bez remisu (bez
+ * karnych) „Dogrywka”. W lidze i grupie po ostatniej części, w dogrywce
+ * i w turnieju bez podziału przed dogrywką przycisku nie ma.
+ */
+function periodAction(
+  clock: SavedClock,
+  periods: Tournament['periods'],
+  knockout: boolean,
+  allowsDraw: boolean,
+): { label: string; body: PeriodBody } | null {
+  const current = clock.livePeriod;
+  if (clock.status !== 'live' || current === null || current > periods.count) return null;
+  const next = { livePeriod: current + 1, periodRunning: true } as const;
+  if (current < periods.count) {
+    return clock.periodStartedAt !== null
+      ? { label: 'Przerwa', body: { periodRunning: false } }
+      : { label: `Start ${periodLabelGenitive(next.livePeriod, periods.count)}`, body: next };
+  }
+  return knockout ? { label: allowsDraw ? 'Dogrywka / karne' : 'Dogrywka', body: next } : null;
+}
 
 /** Pole liczby jako wartość dla API: pusty napis to `null`. */
 function toNumber(value: string): number | null {
@@ -73,6 +108,8 @@ export interface MatchDialogProps {
   onClose: () => void;
   /** Sport turnieju: z niego idą typy zdarzeń i ich etykiety (`GET /sports`). */
   sportCode: Sport['code'];
+  /** Podział meczu turnieju (`Tournament.periods`): z niego przycisk części meczu trwającego (#297). */
+  periods: Tournament['periods'];
   /**
    * Mecz drabinki (#228): nagłówek z etykietą pozycji, karne i notka przed
    * zapisem. `matches` to wtedy komplet meczów fazy, z którego liczą się
@@ -107,7 +144,7 @@ export interface MatchDialogProps {
  * Mecz bez obu drużyn czeka na rywali: wynik, stan i zdarzenia są niedostępne,
  * a termin i obiekt zostają.
  */
-export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose, sportCode, knockout = false }: MatchDialogProps) {
+export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose, sportCode, periods, knockout = false }: MatchDialogProps) {
   const queryClient = useQueryClient();
   const venues = useVenues(tournamentId);
   const sports = useSports();
@@ -128,6 +165,9 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   // odświeżeniu listy meczów.
   const [startedHere, setStartedHere] = useState(false);
   const started = match.status !== 'scheduled' || startedHere;
+  // Zegar zapisany na serwerze, a nie stan przełącznika: przycisk części stoi
+  // dopiero przy meczu zapisanym jako „Trwa” (#297).
+  const [savedClock, setSavedClock] = useState<SavedClock>(match);
 
   const waiting = !match.homeTeam || !match.awayTeam;
   const row = knockout ? bracketRow(match, matches) : null;
@@ -165,6 +205,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
       // Wynik i stan przychodzą z serwera z pominięciem pól, więc stare błędy par znikają tu.
       clearPairErrors();
       setStartedHere(true);
+      setSavedClock(saved);
       setStatus(saved.status);
       setHomeScore(saved.homeScore?.toString() ?? '');
       setAwayScore(saved.awayScore?.toString() ?? '');
@@ -174,6 +215,26 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     },
     onError: (error) => showErrors(error, START_FAILED),
   });
+
+  /**
+   * Przycisk części (#297): od razu własny `PATCH` z samymi polami części,
+   * wzorem „Rozpocznij mecz”. Okno zostaje otwarte, a wynik, termin i obiekt
+   * zostają w polach do „Zapisz”.
+   */
+  const period = useMutation({
+    mutationFn: async (body: PeriodBody) => {
+      const result = await api.PATCH('/matches/{match}', { params: { path: { match: match.id } }, body });
+      if (result.data) return result.data.data;
+      throw result.response.status === 422 && isValidationError(result.error) ? result.error : new Error(PERIOD_FAILED);
+    },
+    onSuccess: async (saved) => {
+      setFormError(undefined);
+      setSavedClock(saved);
+      await queryClient.invalidateQueries({ queryKey: scheduleKeys.matches(tournamentId) });
+    },
+    onError: (error) => showErrors(error, PERIOD_FAILED),
+  });
+  const action = periodAction(savedClock, periods, knockout, allowsDraw);
 
   function showErrors(error: unknown, fallback: string) {
     setFieldErrors({});
@@ -319,6 +380,18 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
               />
               <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
             </div>
+            {action && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="justify-self-start"
+                disabled={period.isPending || save.isPending}
+                onClick={() => period.mutate(action.body)}
+              >
+                {action.label}
+              </Button>
+            )}
             {fieldErrors.homeScore && (
               <p id={scoreErrorId} className="text-sm text-destructive">
                 {fieldErrors.homeScore}

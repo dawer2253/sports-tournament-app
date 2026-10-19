@@ -13,6 +13,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/index.css",
+    "./public": "./src/public/index.ts",
     "./*": "./src/*"
   },
   "scripts": {
@@ -25,6 +26,9 @@
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
     "@tanstack/react-table": "^9.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

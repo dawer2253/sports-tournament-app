@@ -15,6 +15,30 @@ export const phone375 = {
   globals: { viewport: { value: 'phone375', isRotated: false } },
 } as const
 
+/** Telefon o szerokości 390 px: zasada „bez przewijania w bok” z #209 i DoD #290. */
+export const phone390 = {
+  parameters: {
+    viewport: {
+      options: {
+        phone390: { name: 'Telefon 390', styles: { width: '390px', height: '844px' }, type: 'mobile' },
+      },
+    },
+  },
+  globals: { viewport: { value: 'phone390', isRotated: false } },
+} as const
+
+/** Tablet o szerokości 768 px: dokładnie próg `md`, od którego zakładki stoją w pasku (#290). */
+export const tablet768 = {
+  parameters: {
+    viewport: {
+      options: {
+        tablet768: { name: 'Tablet 768', styles: { width: '768px', height: '1024px' }, type: 'tablet' },
+      },
+    },
+  },
+  globals: { viewport: { value: 'tablet768', isRotated: false } },
+} as const
+
 /** Komputer o szerokości 1280 px, powyżej progu `lg` (#239, #243). */
 export const desktop1280 = {
   parameters: {

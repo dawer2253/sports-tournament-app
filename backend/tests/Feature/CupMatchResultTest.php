@@ -333,6 +333,38 @@ it('live albo finished w meczu bez obu drużyn daje 422 pod status', function (s
         ->assertJsonPath('errors.status.0', 'Mecz czeka na rywali z poprzedniej rundy.');
 })->with(['live', 'finished']);
 
+it('dogrywka to część count + 1 tylko w pucharze, a count + 2 daje 422 pod livePeriod (#297)', function () {
+    ['sf1' => $sf1] = cupResultBracket();
+    $this->travelTo('2026-10-03 12:00:00');
+    cupResultUpdate($sf1, ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])->assertValidResponse(200);
+    cupResultUpdate($sf1, ['livePeriod' => 2, 'periodRunning' => true])->assertValidResponse(200);
+    $this->travelTo('2026-10-03 13:40:00');
+
+    cupResultUpdate($sf1, ['livePeriod' => 3, 'periodRunning' => true])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.livePeriod', 3)
+        ->assertJsonPath('data.periodStartedAt', '2026-10-03T13:40:00+00:00');
+
+    cupResultUpdate($sf1, ['livePeriod' => 4, 'periodRunning' => true])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('livePeriod');
+});
+
+it('puchar bez podziału: po jedynej części startuje dogrywka, a przerwy nie ma ani przed nią, ani w niej (#297)', function () {
+    ['sf1' => $sf1] = cupResultBracket();
+    $sf1->stage->tournament->update(['period_count' => 1, 'period_minutes' => null]);
+    cupResultUpdate($sf1, ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])->assertValidResponse(200);
+
+    cupResultUpdate($sf1, ['periodRunning' => false])->assertValidResponse(422)->assertJsonValidationErrors('livePeriod');
+
+    cupResultUpdate($sf1, ['livePeriod' => 2, 'periodRunning' => true])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.livePeriod', 2);
+
+    cupResultUpdate($sf1, ['periodRunning' => false])->assertValidResponse(422)->assertJsonValidationErrors('livePeriod');
+    expect($sf1->refresh()->on_break)->toBeFalse();
+});
+
 it('mecz bez rywala przyjmuje sam termin', function () {
     ['final' => $final] = cupResultBracket();
 

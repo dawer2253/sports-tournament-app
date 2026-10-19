@@ -7,7 +7,7 @@ import { TiebreakerEditor, TiebreakerSentence } from './tiebreaker-editor'
 const available = sportSettings.football.availableTiebreakers
 
 const meta = {
-  title: 'UI/Dane/Edytor tiebreaków',
+  title: 'Panel/UI/Dane/Edytor tiebreaków',
   component: TiebreakerEditor,
   parameters: { layout: 'padded' },
   decorators: [(Story) => <div className="max-w-sm">{Story()}</div>],

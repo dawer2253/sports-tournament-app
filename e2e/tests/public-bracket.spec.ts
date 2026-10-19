@@ -2,7 +2,7 @@ import { PUBLIC_URL } from './env';
 import { expect, test } from './fixtures';
 
 /**
- * Drabinka na stronie publicznej (#234): puchar czterech drużyn z meczem
+ * Drabinka na stronie publicznej (#234, #293): puchar czterech drużyn z meczem
  * o 3. miejsce, półfinał 1 rozstrzygnięty karnymi przez API panelu. Szew,
  * którego nie widzi ani vitest na mocku, ani Pest bez przeglądarki: awans
  * w backendzie → `/matches?stageId=` → drzewo strony publicznej.
@@ -57,11 +57,11 @@ test('kibic widzi w drabince zwycięzcę półfinału w finale, przegranego w me
     // Start okna trafia do `?od=` przy wejściu (#239): półfinał ma mecz niezakończony.
     await expect(page).toHaveURL(`${PUBLIC_URL}/t/${cup.slug}/drabinka?od=1`);
 
-    await expect(page.getByRole('link', { name: 'Finał: Bobry – Do ustalenia' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Mecz o 3. miejsce: Gryfy – Do ustalenia' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Finał: Bobry – Zwycięzca: Półfinał 2' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Mecz o 3. miejsce: Gryfy – Przegrany: Półfinał 2' })).toBeVisible();
   });
 
-  await test.step('karne półfinału stoją w nawiasie przy wyniku', async () => {
+  await test.step('karne półfinału stoją w nawiasie przy nazwach', async () => {
     const semi = page.getByRole('link', { name: 'Półfinał 1: Bobry – Gryfy' });
     await expect(semi.getByText('(4)', { exact: true })).toBeVisible();
     await expect(semi.getByText('(3)', { exact: true })).toBeVisible();

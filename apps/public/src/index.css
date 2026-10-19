@@ -1,4 +1,6 @@
 @import "@tournament/ui/styles.css";
+/* Motyw strony publicznej (tokeny, kroje Barlow, narzędzia `pub-*`); panel go nie ładuje. */
+@import "@tournament/ui/public/theme.css";
 
 /*
   Tailwind 4 sam wykrywa źródła klas, ale pomija node_modules, a @tournament/ui

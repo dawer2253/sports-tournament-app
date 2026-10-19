@@ -22,6 +22,7 @@ export type StageType = Schemas['StageType'];
 export type Group = Schemas['Group'];
 export type BracketSeed = Schemas['BracketSeed'];
 export type Team = Schemas['Team'];
+export type TeamSummary = Schemas['TeamSummary'];
 export type Player = Schemas['Player'];
 export type Venue = Schemas['Venue'];
 export type Match = Schemas['Match'];

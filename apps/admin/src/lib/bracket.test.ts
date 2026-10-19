@@ -38,6 +38,9 @@ function match(id: number, round: AdminMatch['round'], matchNumber: number, over
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     collisions: [],
     ...overrides,
   };

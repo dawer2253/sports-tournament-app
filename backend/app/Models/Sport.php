@@ -107,6 +107,12 @@ class Sport extends Model
         return $this->config['allowsDraw'];
     }
 
+    /** Czy zegar meczu biegnie w minutach (#297): piłka tak, kosz pokazuje kwartę. */
+    public function runningClock(): bool
+    {
+        return $this->config['runningClock'];
+    }
+
     public function scoreLabel(): string
     {
         return self::SCORE_LABELS[$this->code];
