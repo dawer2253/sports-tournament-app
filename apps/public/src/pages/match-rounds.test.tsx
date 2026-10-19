@@ -4,7 +4,7 @@ import { HttpResponse, http } from 'msw';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { POLL_INTERVAL_MS } from '../lib/api';
 import { API_URL as API, server } from '../test/server';
-import { SLUG, finished, match, publicApi, renderAt, scorer } from '../test/public-api';
+import { SLUG, finished, match, publicApi, renderAt, scorer, tournament } from '../test/public-api';
 
 /** Nazwy pokazanych kolejek, w kolejności z DOM-u (kolejka to sekcja nazwana nagłówkiem). */
 function shownRounds() {
@@ -304,5 +304,55 @@ describe('Wyniki', () => {
 
     expect(await screen.findByRole('heading', { name: 'Jeszcze nie ma wyników' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zobacz terminarz' })).toHaveAttribute('href', `/t/${SLUG}/terminarz`);
+  });
+});
+
+describe('Zegar meczu na żywo (#297)', () => {
+  const NOW = Date.parse('2026-10-18T11:20:00Z');
+  /** Mecz trwający w 2. części, zaczętej 5 min 40 s przed „teraz”. */
+  const live = () =>
+    match(1, 1, {
+      status: 'live',
+      homeScore: 1,
+      awayScore: 0,
+      livePeriod: 2,
+      periodStartedAt: new Date(NOW - 340_000).toISOString(),
+      onBreak: false,
+    });
+  const row = async () => within(await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' }));
+
+  it('liczy minutę z podziału meczu turnieju, a nie z 45 minut', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    publicApi({ data: tournament({ periods: { count: 2, minutes: 30 } }), fixtures: [live()] });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    // 2. połowa przy 2 × 30 startuje od 31′, więc po 5 pełnych minutach 36′ (przy 2 × 45 byłoby 51′).
+    expect((await row()).getByText('36′')).toBeInTheDocument();
+  });
+
+  it('w sporcie bez biegnącego zegara pokazuje część zamiast minuty', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    publicApi({ data: tournament({ periods: { count: 4, minutes: 10 }, runningClock: false }), fixtures: [live()] });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    expect((await row()).getByText('2. kwarta')).toBeInTheDocument();
+  });
+
+  it('minuta idzie po 30 s timerem przeglądarki, bez żądań ponad zwykłe odpytywanie', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    const requests = publicApi({ fixtures: [live()] });
+    renderAt(`/t/${SLUG}/terminarz`);
+    // 2. połowa 2 × 45 po 5 pełnych minutach.
+    expect((await row()).getByText('51′')).toBeInTheDocument();
+    const before = { tournament: requests.tournament, fixtures: requests.fixtures };
+
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+
+    expect((await row()).getByText('52′')).toBeInTheDocument();
+    const polls = Math.floor(30_000 / POLL_INTERVAL_MS);
+    expect({ tournament: requests.tournament, fixtures: requests.fixtures }).toEqual({
+      tournament: before.tournament + polls,
+      fixtures: before.fixtures + polls,
+    });
   });
 });

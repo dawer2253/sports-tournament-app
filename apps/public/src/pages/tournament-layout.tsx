@@ -1,13 +1,15 @@
 import type { PublicTournament } from '@tournament/api-client';
 import {
+  MatchClockProvider,
   Shell,
   TournamentLoadError,
   TournamentLoading,
   TournamentNotFound,
   publicTabs,
+  type MatchClockSettings,
   type PublicNavKey,
 } from '@tournament/ui/public';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
 import { usePublicTournament } from '../lib/queries';
 
@@ -65,6 +67,8 @@ export function TournamentLayout() {
     if (title) document.title = title;
   }, [title]);
 
+  const clock = useClockSettings(tournament.data);
+
   // Dane przed błędem: nieudane odświeżenie w tle nie zdejmuje ekranu.
   // Zostaje ostatni wczytany turniej, a następne odpytanie spróbuje znowu.
   if (tournament.data) {
@@ -78,7 +82,10 @@ export function TournamentLayout() {
         navHref={(key) => tabHref(slug, key)}
         onNavigate={(key) => void navigate(tabHref(slug, key))}
       >
-        <Outlet context={tournament.data} />
+        {/* Zegar meczów na żywo (#297) liczy przeglądarka z ustawień turnieju, co 30 s, bez nowych zapytań. */}
+        <MatchClockProvider settings={clock}>
+          <Outlet context={tournament.data} />
+        </MatchClockProvider>
       </Shell>
     );
   }
@@ -88,6 +95,19 @@ export function TournamentLayout() {
   if (failed) return <TournamentLoadError message={tournament.error.message} onRetry={() => void tournament.refetch()} />;
 
   return <TournamentLoading />;
+}
+
+/**
+ * Ustawienia zegara meczów (#297) z turnieju: podział meczu, długość
+ * i `runningClock`. Obiekt zmienia się tylko ze zmianą tych pól, więc
+ * odpytanie turnieju co 15 s nie przelicza zegarów pod spodem.
+ */
+function useClockSettings(tournament: PublicTournament | null | undefined): MatchClockSettings {
+  const count = tournament?.periods.count ?? 1;
+  const minutes = tournament?.periods.minutes ?? null;
+  const matchDuration = tournament?.matchDuration ?? 0;
+  const runningClock = tournament?.runningClock ?? false;
+  return useMemo(() => ({ periods: { count, minutes }, matchDuration, runningClock }), [count, minutes, matchDuration, runningClock]);
 }
 
 /** Turniej wczytany przez `TournamentLayout`, dla ekranów zakładek. */

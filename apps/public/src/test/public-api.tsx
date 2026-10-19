@@ -35,6 +35,9 @@ export function tournament(overrides: Partial<PublicTournament> = {}): PublicTou
       { code: 'yellowCards', label: 'Żółte kartki' },
       { code: 'redCards', label: 'Czerwone kartki' },
     ],
+    periods: { count: 2, minutes: 45 },
+    matchDuration: 60,
+    runningClock: true,
     ...overrides,
   };
 }
@@ -94,6 +97,9 @@ export function match(id: number, round: number, overrides: Partial<PublicMatch>
     winnerToMatchId: null,
     loserToMatchId: null,
     advancesToSlot: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     scorers: [],
     ...overrides,
   };
@@ -295,6 +301,9 @@ export function cupMatches(options: DemoBracketOptions, overrides: Record<number
     groupId: null,
     homeTeam: team(match.homeTeam),
     awayTeam: team(match.awayTeam),
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
     ...overrides[match.id],
   }));
 }

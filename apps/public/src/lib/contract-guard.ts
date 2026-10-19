@@ -11,6 +11,8 @@ import type {
 import type {
   BracketMatch,
   Leaderboard,
+  MatchClockSettings,
+  MatchClockState,
   MatchInRound,
   MatchPageData,
   PublicBracketMatch,
@@ -82,6 +84,20 @@ export const contractFitsShowcaseTeam: ContractFitsShowcaseTeam = true;
 type ContractFitsStatOption = PublicStat extends StatOption ? true : never;
 
 export const contractFitsStatOption: ContractFitsStatOption = true;
+
+/**
+ * Mecz z kontraktu niesie zegar meczu na żywo (#297) w kształcie, z którego
+ * `matchClock` liczy minutę. W typach wierszy, tablic i kafli pola są
+ * opcjonalne (dane demo), więc dopiero ten strażnik łapie zmianę nazwy pola.
+ */
+type ContractFitsMatchClock = Match extends MatchClockState ? true : never;
+
+export const contractFitsMatchClock: ContractFitsMatchClock = true;
+
+/** Turniej z kontraktu niesie ustawienia zegara (`periods`, `matchDuration`, `runningClock`) dla `MatchClockProvider`. */
+type ContractFitsClockSettings = PublicTournament extends MatchClockSettings ? true : never;
+
+export const contractFitsClockSettings: ContractFitsClockSettings = true;
 
 /** Kody sportu w DS to dokładnie kody z kontraktu: nowy sport w kontrakcie czerwieni tu, aż DS go pozna. */
 type ContractSportCode = PublicTournament['sport']['code'];
