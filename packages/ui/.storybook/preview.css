@@ -1,0 +1,9 @@
+/*
+  Arkusz Storybooka: motyw wspólny i motyw strony publicznej w jednym
+  przebiegu Tailwinda. Dwa osobne importy w `preview.tsx` dałyby dwa
+  osobne arkusze, a narzędzia z `@theme` strony publicznej (`bg-sunken`,
+  `text-brand-text`…) nie trafiłyby do arkusza ze wspólnymi klasami.
+  Tak samo składa je `apps/public/src/index.css`.
+*/
+@import '../src/index.css';
+@import '../src/public/theme.css';
