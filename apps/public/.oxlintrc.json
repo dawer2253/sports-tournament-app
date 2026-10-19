@@ -1,0 +1,32 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  },
+  "overrides": [
+    {
+      "files": ["src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@tournament/ui", "@tournament/ui/**", "!@tournament/ui/public", "!@tournament/ui/styles.css", "!@tournament/ui/public/theme.css"],
+                "message": "Strona publiczna bierze z @tournament/ui tylko @tournament/ui/public (#289)"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/test/**"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}
