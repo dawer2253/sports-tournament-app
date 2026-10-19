@@ -125,6 +125,38 @@ export const PoKarnych: Story = {
     await expect(canvas.getByText('(4)')).toHaveClass('font-bold')
     const dimmed = [...canvasElement.querySelectorAll<HTMLElement>('[data-dim]')].map((element) => element.dataset.side)
     await expect(new Set(dimmed)).toEqual(new Set(['home']))
+    await expectPenaltiesBesideScores(canvasElement)
+  },
+}
+
+/**
+ * Karne stoją obok okienka swojej drużyny, w tej samej linii: gospodarza
+ * z lewej od jego wyniku, gościa z prawej od jego wyniku.
+ */
+async function expectPenaltiesBesideScores(canvasElement: HTMLElement) {
+  const [home, away] = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="score-window"]')].map((element) => element.getBoundingClientRect())
+  const [homePens, awayPens] = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="penalties"]')].map((element) => element.getBoundingClientRect())
+  await expect(homePens!.right).toBeLessThanOrEqual(home!.left)
+  await expect(awayPens!.left).toBeGreaterThanOrEqual(away!.right)
+  for (const [pens, window] of [[homePens!, home!], [awayPens!, away!]] as const) {
+    const middle = pens.top + pens.height / 2
+    await expect(middle).toBeGreaterThan(window.top)
+    await expect(middle).toBeLessThan(window.bottom)
+  }
+}
+
+/** Karne na telefonie 375 px przy długich nazwach: obok wyników, wynik na środku, bez przewijania w bok. */
+export const PoKarnychTelefon: Story = {
+  name: 'Po karnych, telefon',
+  args: { match: { ...thirdPlace, homeTeam: { id: thirdPlace.homeTeam!.id, name: 'Międzyszkolny Klub Sportowy Huragan Bemowo', logoUrl: null } } },
+  parameters: { ...phone375.parameters },
+  globals: phone375.globals,
+  play: async ({ canvasElement }) => {
+    await expect(window.innerWidth).toBe(375)
+    await document.fonts.ready
+    await expectPenaltiesBesideScores(canvasElement)
+    await expectScoreCentered(canvasElement)
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth)
   },
 }
 

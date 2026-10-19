@@ -67,9 +67,10 @@ function ScoreWindow({ value, side, dim }: { value: number | null; side: Side; d
 }
 
 /**
- * Środek tablicy: dwa okienka wyniku z karnymi w nawiasie pod wynikiem każdej
- * drużyny (pogrubione u zwycięzcy, #234) albo, przed meczem, godzina.
- * Nazwa dla czytnika: „Wynik 1 : 1, karne 4 : 3”.
+ * Środek tablicy: dwa okienka wyniku z karnymi w nawiasie obok wyniku każdej
+ * drużyny, „(3) 1 1 (4)”: gospodarza z lewej, gościa z prawej, pogrubione
+ * u zwycięzcy (#234), albo, przed meczem, godzina. Nazwa dla czytnika:
+ * „Wynik 1 : 1, karne 4 : 3”.
  */
 function Score({ match, loser, timeZone }: { match: MatchPageMatch; loser: Side | null; timeZone?: string }) {
   if (match.status === 'scheduled') {
@@ -83,18 +84,13 @@ function Score({ match, loser, timeZone }: { match: MatchPageMatch; loser: Side 
   const penalties = match.homePenalties != null && match.awayPenalties != null
   const winner = bracketWinnerSide(match)
   const label = penalties ? `Wynik ${score}, karne ${match.homePenalties} : ${match.awayPenalties}` : `Wynik ${score}`
+  const pens = 'pub-num text-base sm:text-xl'
   return (
-    <div role="img" aria-label={label} className="flex flex-col items-center gap-1">
-      <span className="flex gap-1.5 sm:gap-2">
-        <ScoreWindow value={match.homeScore} side="home" dim={loser === 'home'} />
-        <ScoreWindow value={match.awayScore} side="away" dim={loser === 'away'} />
-      </span>
-      {penalties && (
-        <span data-slot="match-board-penalties" className="grid w-full grid-cols-2 pub-num text-lg sm:text-xl">
-          <Penalties value={match.homePenalties} won={winner === 'home'} className="text-center" />
-          <Penalties value={match.awayPenalties} won={winner === 'away'} className="text-center" />
-        </span>
-      )}
+    <div role="img" aria-label={label} className="flex items-center gap-1 sm:gap-2">
+      {penalties && <Penalties value={match.homePenalties} won={winner === 'home'} className={pens} />}
+      <ScoreWindow value={match.homeScore} side="home" dim={loser === 'home'} />
+      <ScoreWindow value={match.awayScore} side="away" dim={loser === 'away'} />
+      {penalties && <Penalties value={match.awayPenalties} won={winner === 'away'} className={pens} />}
     </div>
   )
 }
