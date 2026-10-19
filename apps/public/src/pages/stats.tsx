@@ -1,54 +1,68 @@
-import { EmptyState, Heading, LeaderboardTable, StatSwitcher } from '@tournament/ui';
-import { Trophy } from 'lucide-react';
+import { LoadError, NoStats, StatsLoading, StatsScreen, type StatBoard } from '@tournament/ui/public';
 import { useSearchParams } from 'react-router';
-import { useLeaderboard } from '../lib/queries';
-import { QueryState } from './query-state';
-import { useTournament } from './tournament-layout';
+import { useLeaderboards } from '../lib/queries';
+import { tabHref, useTournament } from './tournament-layout';
 
 /**
- * Statystyki (#207): przełącznik z `PublicTournament.stats` i klasyfikacja
- * wybranej statystyki. Wybór siedzi w adresie (`?stat=yellowCards`), więc
- * link do „kartek” da się wysłać.
+ * Statystyki (#207, #294): zakładki z `PublicTournament.stats`, klasyfikacja
+ * wybranej statystyki i boczna kolumna z liderami pozostałych. Wybór siedzi
+ * w adresie (`?stat=yellowCards`), więc link do „kartek” da się wysłać.
  *
  * Kod spoza statystyk turnieju (stary link, inny sport) traktujemy jak brak
- * parametru i nie wysyłamy go do API, które odpowiedziałoby `422`. Bez
- * parametru zapytanie też idzie bez niego: domyślną statystykę wybiera
- * serwer, ta sama co pierwsza w `stats`.
+ * parametru i nie wysyłamy go do API, które odpowiedziałoby `422`. Każda
+ * statystyka ma stale jedno zapytanie (pierwsza bez parametru: domyślną
+ * wybiera serwer), a główna klasyfikacja i boczna kolumna biorą z nich, więc
+ * zmiana zakładki nie wysyła żądania.
  */
 export function StatsPage() {
   const { slug, stats } = useTournament();
   const [searchParams, setSearchParams] = useSearchParams();
+  const leaderboards = useLeaderboards(
+    slug,
+    stats.map((stat) => stat.code),
+  );
   const requested = searchParams.get('stat');
-  const stat = stats.some((option) => option.code === requested) ? (requested ?? undefined) : undefined;
-  const leaderboard = useLeaderboard(slug, stat);
-  const selected = stat ?? stats[0]?.code;
+  const index = Math.max(
+    0,
+    stats.findIndex((stat) => stat.code === requested),
+  );
+  const selected = stats[index];
 
-  if (!selected) {
-    return <EmptyState icon={<Trophy />} title="Ten turniej nie ma statystyk" />;
+  if (!selected) return <NoStats />;
+
+  const first = stats[0]!.code;
+  const statHref = (code: string) => (code === first ? tabHref(slug, 'stats') : `${tabHref(slug, 'stats')}?stat=${code}`);
+  // Pierwsza statystyka to domyślna: adres zostaje bez parametru, żeby jedna
+  // klasyfikacja nie miała dwóch adresów.
+  const select = (code: string) => setSearchParams(code === first ? {} : { stat: code });
+
+  const main = leaderboards[index]!;
+  if (!main.data) {
+    if (main.error) {
+      return <LoadError title="Statystyki" label="klasyfikacji" message={main.error.message} onRetry={() => void main.refetch()} />;
+    }
+    return <StatsLoading />;
   }
 
+  const boards = Object.fromEntries(
+    stats.map((stat, position): [string, StatBoard] => {
+      const query = leaderboards[position]!;
+      if (query.data) return [stat.code, { status: 'ready', leaderboard: query.data }];
+      if (query.error) {
+        return [stat.code, { status: 'error', message: query.error.message, onRetry: () => void query.refetch() }];
+      }
+      return [stat.code, { status: 'loading' }];
+    }),
+  );
+
   return (
-    <StatSwitcher
+    <StatsScreen
       stats={stats}
-      value={selected}
-      // Pierwsza statystyka to domyślna: adres zostaje bez parametru,
-      // żeby jedna klasyfikacja nie miała dwóch adresów.
-      onValueChange={(code) => setSearchParams(code === stats[0]?.code ? {} : { stat: code })}
-    >
-      {leaderboard.data ? (
-        <section className="space-y-3">
-          <Heading level="section">{leaderboard.data.label}</Heading>
-          <LeaderboardTable leaderboard={leaderboard.data} />
-          {leaderboard.data.rows.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              Klasyfikacja obejmuje mecze zakończone ze wszystkich faz turnieju. Zawodnicy z równą wartością dzielą
-              miejsce.
-            </p>
-          )}
-        </section>
-      ) : (
-        <QueryState error={leaderboard.error} label="klasyfikacji" onRetry={() => void leaderboard.refetch()} />
-      )}
-    </StatSwitcher>
+      value={selected.code}
+      leaderboard={main.data}
+      boards={boards}
+      statHref={statHref}
+      onValueChange={select}
+    />
   );
 }
