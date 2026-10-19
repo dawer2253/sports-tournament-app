@@ -227,6 +227,22 @@ it('tabela niesie allowsDraw sportu i kryteria w kolejności turnieju z etykieta
         ->assertJsonPath('data.0.rows.*.team.name', ['Orły Bielany', 'Sokoły Ursus']);
 });
 
+it('tabela strony publicznej niesie formę jak panel, a drużyna bez meczów ma pustą', function () {
+    $tournament = publicPageTournament();
+    publicPageMatch($tournament, 2, ['status' => 'finished', 'home_score' => 0, 'away_score' => 1]);
+    publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 2, 'away_score' => 2]);
+    Team::factory()->for($tournament)->create(['name' => 'Wilki Bemowo']);
+
+    $public = publicPageGet($tournament->slug, '/standings')
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.0.rows.*.team.name', ['Sokoły Ursus', 'Orły Bielany', 'Wilki Bemowo'])
+        ->assertJsonPath('data.0.rows.*.form', [['draw', 'win'], ['draw', 'loss'], []]);
+
+    $panel = actingAsOrganizer($tournament->user)->getJson("/api/v1/tournaments/{$tournament->id}/standings");
+
+    expect($public->json('data.0.rows'))->toBe($panel->json('data.0.rows'));
+});
+
 // --- terminarz i wyniki ------------------------------------------------------
 
 it('terminarz ma mecze zaplanowane i trwające, a wyniki wyłącznie zakończone, bez meczów innego turnieju', function () {

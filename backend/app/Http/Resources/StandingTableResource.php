@@ -55,6 +55,7 @@ class StandingTableResource extends JsonResource
                 'scoreAgainst' => $row->scoreAgainst,
                 'scoreDifference' => $row->scoreDifference(),
                 'points' => $row->points,
+                'form' => $row->form(),
             ], $table->rows),
         ];
     }

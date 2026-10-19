@@ -100,6 +100,7 @@ it('przed pierwszym meczem oddaje wszystkie drużyny fazy z zerami, alfabetyczni
             'scoreAgainst' => 0,
             'scoreDifference' => 0,
             'points' => 0,
+            'form' => [],
         ]);
 });
 
@@ -143,6 +144,7 @@ it('liczy mecze, bilans i punkty według punktacji turnieju', function () {
         'scoreAgainst' => 3,
         'scoreDifference' => 2,
         'points' => 6,
+        'form' => ['win', 'draw'],
     ]);
 });
 
@@ -379,3 +381,149 @@ it('odrzuca powtórzony klucz i notację nawiasową pod tiebreakers', function (
     'powtórzony klucz' => ['?tiebreakers=points&tiebreakers=score_for'],
     'nawiasy' => ['?tiebreakers[]=points&tiebreakers[]=score_for'],
 ]);
+
+// --- forma (#291) ------------------------------------------------------------
+
+/**
+ * Mecz w kolejce o podanym `order`; kolejka powstaje, gdy jej jeszcze nie ma.
+ * `scheduled` jest bez wyniku.
+ */
+function standingsRoundMatch(Tournament $tournament, int $order, string $home, string $away, ?int $homeScore = null, ?int $awayScore = null, string $status = 'finished'): GameMatch
+{
+    $stage = $tournament->stages()->firstOrFail();
+    $round = $stage->rounds()->where('order', $order)->first()
+        ?? Round::factory()->for($stage)->create(['name' => "Kolejka {$order}", 'order' => $order]);
+
+    return GameMatch::factory()->for($round)->create([
+        'match_number' => (int) GameMatch::where('round_id', $round->id)->max('match_number') + 1,
+        'home_team_id' => standingsTeam($tournament, $home)->id,
+        'away_team_id' => standingsTeam($tournament, $away)->id,
+        'home_score' => $homeScore,
+        'away_score' => $awayScore,
+        'status' => $status,
+    ]);
+}
+
+/** Forma drużyny z pierwszej tabeli odpowiedzi. */
+function standingsFormOf(TestResponse $response, string $team): array
+{
+    return collect($response->json('data.0.rows'))->firstWhere('team.name', $team)['form'];
+}
+
+/**
+ * Niezmiennik formy w każdym wierszu każdej tabeli: długość `min(played, 5)`,
+ * a przy `played ≤ 5` tyle samo `win`/`draw`/`loss` co `won`/`drawn`/`lost`.
+ */
+function standingsExpectFormMatchesRecord(TestResponse $response): void
+{
+    foreach ($response->json('data.*.rows.*') as $row) {
+        expect($row['form'])->toHaveCount(min($row['played'], 5));
+
+        if ($row['played'] <= 5) {
+            $counts = array_count_values($row['form']);
+            expect([$counts['win'] ?? 0, $counts['draw'] ?? 0, $counts['loss'] ?? 0])
+                ->toBe([$row['won'], $row['drawn'], $row['lost']]);
+        }
+    }
+}
+
+// Wilki wygrywają kolejki 1–3, remisują 4., przegrywają 5., wygrywają 6.
+// i remisują 7. Ostatnie pięć to kolejki 3–7, najnowsza na końcu.
+it('forma to pięć ostatnich meczów po kolejce, najnowszy na końcu', function () {
+    $tournament = standingsLeague(['Wilki Bemowo', 'Orły Bielany']);
+    $scores = [[1, 0], [2, 0], [3, 1], [1, 1], [0, 2], [4, 0], [2, 2]];
+
+    foreach ($scores as $index => [$home, $away]) {
+        standingsRoundMatch($tournament, $index + 1, 'Wilki Bemowo', 'Orły Bielany', $home, $away);
+    }
+
+    $response = standingsOf($tournament)->assertValidResponse(200);
+
+    expect(standingsFormOf($response, 'Wilki Bemowo'))->toBe(['win', 'draw', 'loss', 'win', 'draw'])
+        ->and(standingsFormOf($response, 'Orły Bielany'))->toBe(['loss', 'draw', 'win', 'loss', 'draw']);
+    standingsExpectFormMatchesRecord($response);
+});
+
+// Mecz 1. kolejki przełożono: jego wynik zapisano po wyniku 2. kolejki, więc
+// ma późniejsze `id`. W formie i tak stoi przed meczem 2. kolejki.
+it('forma idzie po kolejce, nie po kolejności zapisu wyniku ani id meczu', function () {
+    $tournament = standingsLeague(['Wilki Bemowo', 'Orły Bielany', 'Sokoły Ursus']);
+    standingsRoundMatch($tournament, 2, 'Wilki Bemowo', 'Orły Bielany', 0, 3);
+    standingsRoundMatch($tournament, 1, 'Wilki Bemowo', 'Sokoły Ursus', 2, 0);
+
+    expect(standingsFormOf(standingsOf($tournament)->assertValidResponse(200), 'Wilki Bemowo'))
+        ->toBe(['win', 'loss']);
+});
+
+it('w jednej kolejce forma idzie po numerze meczu, nie po id', function () {
+    $tournament = standingsLeague(['Wilki Bemowo', 'Orły Bielany', 'Sokoły Ursus']);
+    $round = $tournament->stages()->firstOrFail()->rounds()->firstOrFail();
+
+    foreach ([[2, 'Orły Bielany', 0, 1], [1, 'Sokoły Ursus', 1, 0]] as [$number, $away, $homeScore, $awayScore]) {
+        GameMatch::factory()->for($round)->finished($homeScore, $awayScore)->create([
+            'match_number' => $number,
+            'home_team_id' => standingsTeam($tournament, 'Wilki Bemowo')->id,
+            'away_team_id' => standingsTeam($tournament, $away)->id,
+        ]);
+    }
+
+    expect(standingsFormOf(standingsOf($tournament)->assertValidResponse(200), 'Wilki Bemowo'))
+        ->toBe(['win', 'loss']);
+});
+
+it('mecz live z dowolnym wynikiem i mecz zaplanowany nie wchodzą do formy', function () {
+    $tournament = standingsLeague(['Wilki Bemowo', 'Orły Bielany', 'Sokoły Ursus']);
+    standingsRoundMatch($tournament, 1, 'Wilki Bemowo', 'Orły Bielany', 1, 0);
+    standingsRoundMatch($tournament, 2, 'Sokoły Ursus', 'Wilki Bemowo', 4, 0, 'live');
+    standingsRoundMatch($tournament, 3, 'Orły Bielany', 'Wilki Bemowo', status: 'scheduled');
+
+    $response = standingsOf($tournament)->assertValidResponse(200);
+
+    expect(standingsFormOf($response, 'Wilki Bemowo'))->toBe(['win'])
+        ->and(standingsFormOf($response, 'Sokoły Ursus'))->toBe([]);
+    standingsExpectFormMatchesRecord($response);
+});
+
+// Model odmawia usunięcia drużyny z meczem zakończonym (`GuardsStartedMatches`),
+// ale kalkulator pomija mecz z drużyną usuniętą niezależnie od tego guardu
+// (docblock `tally()`), więc test usuwa ją masowo, z pominięciem modelu.
+it('forma zgadza się z bilansem także po usunięciu drużyny, z którą grano', function () {
+    $tournament = standingsLeague(['Wilki Bemowo', 'Orły Bielany', 'Sokoły Ursus']);
+    standingsRoundMatch($tournament, 1, 'Wilki Bemowo', 'Orły Bielany', 2, 0);
+    standingsRoundMatch($tournament, 2, 'Sokoły Ursus', 'Wilki Bemowo', 1, 1);
+    standingsRoundMatch($tournament, 3, 'Orły Bielany', 'Sokoły Ursus', 0, 3);
+    Team::query()->whereKey(standingsTeam($tournament, 'Orły Bielany')->id)->delete();
+
+    $response = standingsOf($tournament)->assertValidResponse(200);
+
+    expect(standingsOrder($response))->toBe(['Sokoły Ursus', 'Wilki Bemowo'])
+        ->and(standingsFormOf($response, 'Wilki Bemowo'))->toBe(['draw'])
+        ->and(standingsFormOf($response, 'Sokoły Ursus'))->toBe(['draw']);
+    standingsExpectFormMatchesRecord($response);
+});
+
+it('w koszykówce forma nie ma remisu', function () {
+    $tournament = standingsLeague(['Rysie Mokotów', 'Żubry Wola'], 'basketball');
+    standingsRoundMatch($tournament, 1, 'Rysie Mokotów', 'Żubry Wola', 70, 81);
+    standingsRoundMatch($tournament, 2, 'Żubry Wola', 'Rysie Mokotów', 77, 80);
+
+    $response = standingsOf($tournament)->assertValidResponse(200);
+
+    expect(standingsFormOf($response, 'Rysie Mokotów'))->toBe(['loss', 'win'])
+        ->and(standingsFormOf($response, 'Żubry Wola'))->toBe(['win', 'loss'])
+        ->and($response->json('data.0.rows.*.form.*'))->not->toContain('draw');
+});
+
+// Wisła i Arka mają po 4 punkty, a kolejność rozstrzyga mini-tabela. Forma
+// każdej z nich to dalej jej pełny sezon, nie same mecze bezpośrednie.
+it('remis rozstrzygany head_to_head nie zmienia formy', function () {
+    $tournament = standingsHeadToHeadLeague(['points', 'head_to_head', 'score_for']);
+
+    $response = standingsOf($tournament)->assertValidResponse(200);
+
+    expect(standingsOrder($response))->toBe(['Wisła', 'Arka', 'Cracovia'])
+        ->and(standingsFormOf($response, 'Wisła'))->toBe(['win', 'loss', 'draw'])
+        ->and(standingsFormOf($response, 'Arka'))->toBe(['loss', 'win', 'draw'])
+        ->and(standingsFormOf($response, 'Cracovia'))->toBe(['draw', 'draw']);
+    standingsExpectFormMatchesRecord($response);
+});
