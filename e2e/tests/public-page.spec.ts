@@ -56,6 +56,11 @@ test('strona publiczna pokazuje tabelę i terminarz po wyniku zapisanym w panelu
     { team: home, played: 1, won: 1, drawn: 0, lost: 0, score: '2:0', points: 3 },
     { team: away, played: 1, won: 0, drawn: 0, lost: 1, score: '0:2', points: 0 },
   ]);
+  // Forma (#291) liczy Laravel z tych samych meczów co bilans, a strona ją
+  // tylko pokazuje: zwycięzca ma jedną wygraną, przegrany jedną porażkę.
+  const formOf = (team: string) => page.getByRole('table').getByRole('row').filter({ hasText: team }).getByText(/^Forma:/);
+  await expect(formOf(home)).toHaveText('Forma: zwycięstwo');
+  await expect(formOf(away)).toHaveText('Forma: porażka');
 
   // Terminarz: zakończony mecz z niego wypadł, został rewanż.
   await page.getByRole('navigation', { name: 'Sekcje turnieju' }).getByRole('link', { name: 'Terminarz' }).click();

@@ -20,7 +20,7 @@ describe('trasa turnieju', () => {
 
     await screen.findByRole('region', { name: 'Tabela (skrót)' });
     await user.click(tabs().getByRole('link', { name: 'Tabela' }));
-    await screen.findByRole('table');
+    await screen.findByRole('heading', { level: 2, name: 'Tabela' });
     await user.click(tabs().getByRole('link', { name: 'Terminarz' }));
     await screen.findByText('Brak zaplanowanych meczów');
     await user.click(tabs().getByRole('link', { name: 'Wyniki' }));
@@ -34,7 +34,7 @@ describe('trasa turnieju', () => {
     publicApi();
     const { router } = renderAt(`/t/${SLUG}/tabela`);
 
-    await screen.findByRole('table');
+    await screen.findByRole('heading', { level: 2, name: 'Tabela' });
     expect(tabs().getByRole('link', { name: 'Tabela' })).toHaveAttribute('aria-current', 'page');
     expect(tabs().getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       `/t/${SLUG}`,

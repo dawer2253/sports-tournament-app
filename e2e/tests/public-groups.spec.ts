@@ -21,7 +21,8 @@ const GROUPS = {
 
 const STRENGTH = new Map<string, number>(Object.values(GROUPS).flatMap((names) => names.map((name, index) => [name, index] as const)));
 
-const QUALIFIERS_SENTENCE = 'Z grupy wychodzą 2 drużyny — miejsca nad przerywaną linią. Remis na linii rozstrzyga organizer.';
+/** Podpis linii wyjścia w tabeli grupy (#291): jeden na grupę, nad pierwszym niewychodzącym. */
+const QUALIFIERS_LINE = 'wyjście z grupy';
 
 interface GroupsSetup {
   groupStageId: number;
@@ -98,14 +99,14 @@ test('kibic widzi tabele grup z linią wyjścia i grupy w Terminarzu', async ({ 
     return { match, remaining };
   });
 
-  await test.step('Tabela ma obie grupy z punktami, linią wyjścia i zdaniem o wychodzących', async () => {
+  await test.step('Tabela ma obie grupy z punktami i linią wyjścia', async () => {
     await page.goto(`${PUBLIC_URL}/t/${groups.slug}`);
     await page.getByRole('navigation', { name: 'Sekcje turnieju' }).getByRole('link', { name: 'Tabela' }).click();
 
     for (const [name, [winner]] of Object.entries(GROUPS)) {
       const region = page.getByRole('region', { name });
       await expect(region.getByRole('heading', { name })).toBeVisible();
-      await expect(region.getByText(QUALIFIERS_SENTENCE)).toBeVisible();
+      await expect(region.getByText(QUALIFIERS_LINE, { exact: true })).toHaveCount(1);
       // Wiersz nad linią rozpoznaje się po słowach, które tabela daje czytnikowi ekranu.
       await expect(region.getByText(', wychodzi z grupy')).toHaveCount(2);
       const leader = region.getByRole('row').filter({ hasText: winner });

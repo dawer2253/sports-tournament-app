@@ -98,6 +98,15 @@ export function match(id: number, round: number, overrides: Partial<PublicMatch>
   };
 }
 
+/**
+ * Mecz fazy dla `/matches?stageId=` (`Match`, bez strzelców), np. terminarz
+ * ligi z `tournament()` (`stageId: 1`) pod faktami nagłówka Tabeli.
+ */
+export function stageMatch(id: number, round: number, overrides: Partial<Match> = {}): Match {
+  const { scorers: _scorers, ...base } = match(id, round);
+  return { ...base, ...overrides };
+}
+
 /** Mecz zakończony z wynikiem. */
 export function finished(id: number, round: number, overrides: Partial<PublicMatch> = {}): PublicMatch {
   return match(id, round, { status: 'finished', homeScore: 2, awayScore: 1, ...overrides });

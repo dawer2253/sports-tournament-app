@@ -12,10 +12,9 @@ import type {
   Leaderboard,
   MatchInRound,
   MatchPageData,
-  StandingsTableRow,
   StatOption,
 } from '@tournament/ui';
-import type { PublicShellTournament, SportCode } from '@tournament/ui/public';
+import type { PublicShellTournament, SportCode, StandingsTableRow } from '@tournament/ui/public';
 
 /**
  * Strażnik zgodności typów z design systemu z kontraktem, jak
@@ -25,7 +24,7 @@ import type { PublicShellTournament, SportCode } from '@tournament/ui/public';
  *
  * Jeżeli tu czerwone: kontrakt się zmienił, więc popraw odpowiedni typ
  * w `packages/ui` (`src/public/public-shell-tournament.ts`, `round-groups.ts`,
- * `match-row-data.ts`, `match-page-data.ts`, `standings-table-row.ts`,
+ * `match-row-data.ts`, `match-page-data.ts`, `src/public/standings-table-row.ts`,
  * `leaderboard-data.ts`).
  */
 
@@ -54,7 +53,11 @@ type ContractFitsMatchPage = PublicMatchDetail extends MatchPageData ? true : ne
 
 export const contractFitsMatchPage: ContractFitsMatchPage = true;
 
-/** Wiersz tabeli z kontraktu daje się pokazać w `StandingsTable` i `StandingsSnippet`. */
+/**
+ * Wiersz tabeli z kontraktu, z formą, daje się pokazać w publicznej
+ * `StandingsTable` (#291), a przez to i w `StandingsSnippet` (wiersz panelu
+ * to jego podzbiór).
+ */
 type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;
 
 export const contractFitsStandingsRow: ContractFitsStandingsRow = true;
