@@ -1,4 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+/* Inter z własnego serwera (`@fontsource`), bez CDN Google (#289). Te same wagi
+   co dawniej w adresie CDN; plik wagi niesie `latin` i `latin-ext`. Kroje strony
+   publicznej (Barlow, Barlow Condensed) ładuje `src/public/theme.css`, nie ten
+   arkusz, więc panel ich nie pobiera. */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
 @import "tailwindcss";
 @import "tw-animate-css";
 /* Warianty, których oczekują komponenty z generatora radix-nova (`data-checked`,
