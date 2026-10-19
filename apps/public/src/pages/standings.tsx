@@ -1,102 +1,95 @@
-import type { Group, StandingTable } from '@tournament/api-client';
+import type { PublicTournament } from '@tournament/api-client';
 import {
-  EmptyState,
-  Heading,
-  QUALIFY,
-  StandingsTable,
-  TEAMS,
-  TiebreakerSentence,
-  plural,
-  withQualifiers,
-} from '@tournament/ui';
-import { ListOrdered } from 'lucide-react';
-import { useStandings } from '../lib/queries';
-import { QueryState } from './query-state';
-import { TabLink } from './tab-link';
-import { useTournament } from './tournament-layout';
+  EmptyBoard,
+  LoadError,
+  PageHead,
+  StandingsLoading,
+  StandingsScreen,
+  TextLink,
+  scheduleProgress,
+} from '@tournament/ui/public';
+import { useNavigate } from 'react-router';
+import { useStageMatches, useStandings } from '../lib/queries';
+import { tabHref, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 import { useGroups } from './use-groups';
 
+/** Faza z tabelą: pierwsza faza `league` albo `group` po `order`. */
+function tableStage(tournament: PublicTournament) {
+  return tournament.stages.toSorted((a, b) => a.order - b.order).find((stage) => stage.type !== 'knockout') ?? null;
+}
+
 /**
- * Tabela (#206): `StandingsTable` z `scoreLabel` i `allowsDraw` z odpowiedzi,
- * pod nią `TiebreakerSentence` z jej `tiebreakers` — zdanie zgadza się więc
- * zawsze z wierszami, nad którymi stoi.
+ * Tabela (#291): strona tylko pobiera i przekazuje dane ekranowi
+ * `StandingsScreen` z `@tournament/ui/public`. Pobiera tabele (`/standings`),
+ * grupy turnieju (`useGroups`: kolejność i liczba wychodzących po `groupId`),
+ * stan turnieju i komplet meczów fazy tabeli (`/matches?stageId=`) do faktów
+ * w nagłówku i stanu „Bez terminarza”. W grupach patrzy też na mecze fazy
+ * pucharowej: odnośnik do Drabinki stoi dopiero, gdy drabinka jest
+ * wygenerowana.
  *
  * Puchar tabeli nie ma (#234): pod `/tabela` stoi pusty stan z odnośnikiem do
- * Drabinki, jak Terminarz pucharu w panelu (#227), a o tabelę strona nie pyta.
- *
- * Turniej z grupami (#268, wariant A z #252) ma wszystkie grupy jedna pod
- * drugą, w kolejności `Group.order`, z linią wyjścia po `qualifiers`
- * miejscach (`withQualifiers`) i zdaniem o wychodzących. Liczbę wychodzących
- * strona bierze z grup turnieju, po `StandingTable.groupId`. Liga linii nie ma.
+ * Drabinki, a o tabelę strona nie pyta.
  */
 export function StandingsPage() {
-  const { slug } = useTournament();
-  const { cup } = useBracket();
-  const { withGroups } = useGroups();
+  const tournament = useTournament();
+  const { slug } = tournament;
+  const navigate = useNavigate();
+  const { cup, matches: playoff } = useBracket();
+  const { groupStage, withGroups } = useGroups();
+  const stage = tableStage(tournament);
   const standings = useStandings(slug, !cup);
+  const stageMatches = useStageMatches(slug, cup ? null : (stage?.id ?? null));
+
+  const link = (tab: 'home' | 'bracket') => ({ href: tabHref(slug, tab), onNavigate: () => void navigate(tabHref(slug, tab)) });
 
   if (cup) {
     return (
-      <EmptyState
-        icon={<ListOrdered />}
-        title="Puchar nie ma tabeli"
-        description="Przebieg pucharu pokazuje drabinka."
-        action={<TabLink tab="bracket">Przejdź do drabinki</TabLink>}
-      />
+      <>
+        <PageHead title="Tabela" />
+        <EmptyBoard title="Puchar nie ma tabeli" action={<TextLink {...link('bracket')}>Przejdź do drabinki</TextLink>}>
+          Przebieg pucharu pokazuje drabinka.
+        </EmptyBoard>
+      </>
     );
   }
 
-  if (!standings.data) {
-    return <QueryState error={standings.error} label="tabeli" onRetry={() => void standings.refetch()} />;
-  }
-
-  if (standings.data.length === 0) {
+  const failed = (!standings.data && standings.error) || (!stageMatches.data && stageMatches.error);
+  if (failed) {
     return (
-      <EmptyState
-        icon={<ListOrdered />}
-        title="Ten turniej nie ma tabeli"
-        description="Tabelę ma faza ligowa i każda grupa. Faza pucharowa układa się w drabinkę."
+      <LoadError
+        title="Tabela"
+        label="tabeli"
+        message={failed.message}
+        onRetry={() => {
+          if (standings.error) void standings.refetch();
+          if (stageMatches.error) void stageMatches.refetch();
+        }}
       />
     );
   }
 
-  return (
-    <div className="space-y-8">
-      {withGroups(standings.data).map(({ table, group }) => (
-        <TableSection key={`${table.stageId}-${table.groupId ?? 'all'}`} table={table} group={group} />
-      ))}
-    </div>
-  );
-}
+  if (!standings.data || !stageMatches.data) return <StandingsLoading />;
 
-/** Jedna tabela z nagłówkiem; tabela grupy dostaje linię wyjścia i zdanie o wychodzących. */
-function TableSection({ table, group }: { table: StandingTable; group?: Group }) {
-  const heading = table.groupName ?? table.stageName;
-  return (
-    <section aria-label={heading} className="space-y-3">
-      <Heading level="section">{heading}</Heading>
-      <StandingsTable
-        rows={group ? withQualifiers(table.rows, group.qualifiers) : table.rows}
-        scoreLabel={table.scoreLabel}
-        allowsDraw={table.allowsDraw}
-      />
-      {group && <QualifiersLegend qualifiers={group.qualifiers} />}
-      <TiebreakerSentence items={table.tiebreakers} />
-    </section>
-  );
-}
+  const generatedBracket = groupStage && (playoff.data?.length ?? 0) > 0;
 
-/**
- * Zdanie pod tabelą grupy (#268), wzorem panelu (#259) bez części
- * o podmianie, która jest sprawą organizera. Słownik: „wyjście z grupy”,
- * nie „awans” (`CONTEXT.md`).
- */
-function QualifiersLegend({ qualifiers }: { qualifiers: number }) {
   return (
-    <p className="text-xs text-muted-foreground">
-      Z grupy {plural(qualifiers, QUALIFY)} {qualifiers} {plural(qualifiers, TEAMS)} — miejsca nad przerywaną linią. Remis
-      na linii rozstrzyga organizer.
-    </p>
+    <StandingsScreen
+      format={groupStage ? 'groups' : 'league'}
+      stageName={stage?.name ?? 'Tabela'}
+      tables={withGroups(standings.data).map(({ table, group }) => ({
+        groupId: table.groupId,
+        groupName: table.groupName,
+        rows: table.rows,
+        qualifiers: group?.qualifiers ?? null,
+        scoreLabel: table.scoreLabel,
+        allowsDraw: table.allowsDraw,
+        tiebreakers: table.tiebreakers,
+      }))}
+      status={tournament.status}
+      schedule={scheduleProgress(stageMatches.data)}
+      overview={link('home')}
+      bracket={generatedBracket ? link('bracket') : undefined}
+    />
   );
 }

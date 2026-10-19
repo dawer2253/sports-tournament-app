@@ -132,6 +132,27 @@ it('liczy tabelę grupy z jej meczów, a wynik meczu innej grupy niczego w niej 
         ->and($after[1]['rows'][0])->toMatchArray(['played' => 1, 'won' => 1, 'scoreFor' => 5, 'points' => 3]);
 });
 
+it('forma grupy bierze tylko mecze tej grupy', function () {
+    $tournament = groupStandingsTournament([
+        'Grupa A' => ['Wilki Bemowo', 'Orły Bielany'],
+        'Grupa B' => ['Sokoły Ursus', 'Żubry Wola'],
+    ]);
+    groupStandingsMatch($tournament, 'Wilki Bemowo', 'Orły Bielany', 2, 0);
+    groupStandingsMatch($tournament, 'Sokoły Ursus', 'Żubry Wola', 1, 1);
+    groupStandingsMatch($tournament, 'Orły Bielany', 'Wilki Bemowo', 3, 1);
+
+    $response = groupStandingsOf($tournament)->assertValidResponse(200);
+
+    $forms = collect($response->json('data.*.rows.*'))->mapWithKeys(fn (array $row): array => [$row['team']['name'] => $row['form']]);
+
+    expect($forms->all())->toEqual([
+        'Wilki Bemowo' => ['win', 'loss'],
+        'Orły Bielany' => ['loss', 'win'],
+        'Sokoły Ursus' => ['draw'],
+        'Żubry Wola' => ['draw'],
+    ]);
+});
+
 it('daje grupie bez żywych drużyn tabelę bez wierszy, a grupie z mniejszą liczbą drużyn niż qualifiers tabelę z resztą', function () {
     $tournament = groupStandingsTournament([
         'Grupa A' => ['Wilki Bemowo', 'Orły Bielany'],

@@ -50,6 +50,7 @@ export function row(overrides: Partial<StandingRow> = {}): StandingRow {
     scoreAgainst: 2,
     scoreDifference: 5,
     points: 7,
+    form: ['win', 'draw', 'win'],
     ...overrides,
   };
 }
@@ -95,6 +96,15 @@ export function match(id: number, round: number, overrides: Partial<PublicMatch>
     scorers: [],
     ...overrides,
   };
+}
+
+/**
+ * Mecz fazy dla `/matches?stageId=` (`Match`, bez strzelców), np. terminarz
+ * ligi z `tournament()` (`stageId: 1`) pod faktami nagłówka Tabeli.
+ */
+export function stageMatch(id: number, round: number, overrides: Partial<Match> = {}): Match {
+  const { scorers: _scorers, ...base } = match(id, round);
+  return { ...base, ...overrides };
 }
 
 /** Mecz zakończony z wynikiem. */

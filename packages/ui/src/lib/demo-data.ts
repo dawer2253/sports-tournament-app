@@ -13,12 +13,14 @@ import type { TeamRow } from '../components/data/team-row'
 import type { TiebreakerItem } from '../components/data/tiebreaker-item'
 import type { TournamentRow } from '../components/data/tournament-row'
 import type { VenueRow } from '../components/data/venue-row'
+import type { FormResult } from '../public/form'
 import type { PublicShellTournament } from '../public/public-shell-tournament'
+import type { ScheduleProgress } from '../public/schedule-progress'
+import type { StandingsTableRow as PublicStandingsTableRow } from '../public/standings-table-row'
 import { bracketPosition, bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch } from './bracket'
 import { formatRoundDates } from './kickoff'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
-export type FormResult = 'W' | 'D' | 'L'
 
 export type Team = {
   id: number
@@ -109,14 +111,14 @@ export type StandingRow = {
 }
 
 export const standings: StandingRow[] = [
-  { pos: 1, team: teams[0], p: 5, w: 4, d: 1, l: 0, gf: 12, ga: 4, pts: 13, form: ['W', 'W', 'D', 'W', 'W'] },
-  { pos: 2, team: teams[1], p: 5, w: 3, d: 1, l: 1, gf: 9, ga: 6, pts: 10, form: ['W', 'L', 'W', 'D', 'W'] },
-  { pos: 3, team: teams[2], p: 5, w: 3, d: 1, l: 1, gf: 8, ga: 7, pts: 10, form: ['W', 'W', 'L', 'D', 'W'] },
-  { pos: 4, team: teams[3], p: 5, w: 2, d: 0, l: 3, gf: 7, ga: 8, pts: 6, form: ['L', 'W', 'L', 'W', 'L'] },
-  { pos: 5, team: teams[5], p: 5, w: 2, d: 0, l: 3, gf: 6, ga: 9, pts: 6, form: ['L', 'W', 'L', 'L', 'W'] },
-  { pos: 6, team: teams[6], p: 5, w: 1, d: 2, l: 2, gf: 5, ga: 7, pts: 5, form: ['D', 'L', 'D', 'W', 'L'] },
-  { pos: 7, team: teams[7], p: 5, w: 1, d: 1, l: 3, gf: 4, ga: 8, pts: 4, form: ['L', 'L', 'W', 'D', 'L'] },
-  { pos: 8, team: teams[4], p: 5, w: 0, d: 0, l: 5, gf: 3, ga: 14, pts: 0, form: ['L', 'L', 'L', 'L', 'L'] },
+  { pos: 1, team: teams[0], p: 5, w: 4, d: 1, l: 0, gf: 12, ga: 4, pts: 13, form: ['win', 'win', 'draw', 'win', 'win'] },
+  { pos: 2, team: teams[1], p: 5, w: 3, d: 1, l: 1, gf: 9, ga: 6, pts: 10, form: ['win', 'loss', 'win', 'draw', 'win'] },
+  { pos: 3, team: teams[2], p: 5, w: 3, d: 1, l: 1, gf: 8, ga: 7, pts: 10, form: ['win', 'win', 'loss', 'draw', 'win'] },
+  { pos: 4, team: teams[3], p: 5, w: 2, d: 0, l: 3, gf: 7, ga: 8, pts: 6, form: ['loss', 'win', 'loss', 'win', 'loss'] },
+  { pos: 5, team: teams[5], p: 5, w: 2, d: 0, l: 3, gf: 6, ga: 9, pts: 6, form: ['loss', 'win', 'loss', 'loss', 'win'] },
+  { pos: 6, team: teams[6], p: 5, w: 1, d: 2, l: 2, gf: 5, ga: 7, pts: 5, form: ['draw', 'loss', 'draw', 'win', 'loss'] },
+  { pos: 7, team: teams[7], p: 5, w: 1, d: 1, l: 3, gf: 4, ga: 8, pts: 4, form: ['loss', 'loss', 'win', 'draw', 'loss'] },
+  { pos: 8, team: teams[4], p: 5, w: 0, d: 0, l: 5, gf: 3, ga: 14, pts: 0, form: ['loss', 'loss', 'loss', 'loss', 'loss'] },
 ]
 
 // Pod jaką nazwą występują zdobycze tej tabeli (`Score` w CONTEXT.md; koszykówka:
@@ -744,6 +746,126 @@ export const publicResults: ScheduleDemoMatch[] = scheduleInProgress
   .filter((match) => match.status === 'finished')
   .map(asPublicMatch)
   .toSorted((a, b) => byKickoff(b, a))
+
+// --- Tabela strony publicznej (#291) ----------------------------------------
+
+/**
+ * Tabela ligi demo liczona z meczów terminarza demo tymi samymi regułami co
+ * backend (`StandingsCalculator`): bilans i forma tylko z meczów `finished`,
+ * forma po kolejce (najnowszy wynik na końcu, najwyżej pięć), kolejność po
+ * punktach, bilansie i zdobyczach, na końcu po nazwie. Dzięki temu forma,
+ * liczby wiersza i fakty w nagłówku zgadzają się z Wynikami demo.
+ */
+function demoLeagueTable(matches: readonly ScheduleDemoMatch[]): PublicStandingsTableRow[] {
+  const finished = matches
+    .filter((match) => match.status === 'finished')
+    .toSorted((a, b) => a.round.order - b.round.order || a.id - b.id)
+  const rows = teamRows.map((team) => ({
+    team: { id: team.id, name: team.name, logoUrl: team.logoUrl },
+    played: 0, won: 0, drawn: 0, lost: 0, scoreFor: 0, scoreAgainst: 0, points: 0,
+    results: [] as FormResult[],
+  }))
+  const byId = new Map(rows.map((row) => [row.team.id, row]))
+  const record = (teamId: number | undefined, scored: number, conceded: number) => {
+    const row = teamId === undefined ? undefined : byId.get(teamId)
+    if (!row) return
+    const result: FormResult = scored > conceded ? 'win' : scored < conceded ? 'loss' : 'draw'
+    row.played++
+    row.scoreFor += scored
+    row.scoreAgainst += conceded
+    row[result === 'win' ? 'won' : result === 'loss' ? 'lost' : 'drawn']++
+    row.points += { win: 3, draw: 1, loss: 0 }[result]
+    row.results.push(result)
+  }
+  for (const match of finished) {
+    record(match.homeTeam?.id, match.homeScore!, match.awayScore!)
+    record(match.awayTeam?.id, match.awayScore!, match.homeScore!)
+  }
+  return rows
+    .map(({ results, ...row }) => ({ ...row, scoreDifference: row.scoreFor - row.scoreAgainst, form: results.slice(-5) }))
+    .toSorted(
+      (a, b) =>
+        b.points - a.points ||
+        b.scoreDifference - a.scoreDifference ||
+        b.scoreFor - a.scoreFor ||
+        a.team.name.localeCompare(b.team.name, 'pl'),
+    )
+    .map((row, index) => ({ ...row, position: index + 1 }))
+}
+
+/** Sezon zakończony: cały terminarz rozegrany, wyniki tym samym przepisem co w trakcie. */
+export const scheduleFinished: ScheduleDemoMatch[] = scheduleInProgress.map((match) => ({
+  ...match,
+  status: 'finished' as const,
+  homeScore: match.homeScore ?? (match.id * 7) % 4,
+  awayScore: match.awayScore ?? (match.id * 3) % 3,
+}))
+
+/** Sezon przed startem: terminarz z datami, bez żadnego wyniku. */
+export const scheduleBeforeStart: ScheduleDemoMatch[] = scheduleInProgress.map((match) => ({
+  ...match,
+  status: 'scheduled' as const,
+  homeScore: null,
+  awayScore: null,
+}))
+
+/**
+ * `GET /public/t/{slug}/standings` ligi demo w trzech chwilach sezonu,
+ * z terminarza demo (`scheduleInProgress` i pochodnych).
+ */
+export const publicStandingsRows = {
+  inProgress: demoLeagueTable(scheduleInProgress),
+  finished: demoLeagueTable(scheduleFinished),
+  beforeStart: demoLeagueTable(scheduleBeforeStart),
+}
+
+/** Kryteria ligi demo jak w `StandingTable.tiebreakers`: pierwsze zawsze `points`. */
+export const publicStandingsTiebreakers = [
+  { code: 'points', label: 'Punkty w tabeli' },
+  { code: 'head_to_head', label: 'Bezpośredni mecz' },
+  { code: 'score_diff', label: 'Różnica bramek' },
+  { code: 'score_for', label: 'Bramki zdobyte' },
+]
+
+/**
+ * Tabela ligi koszykówki (`basketballStandingsTableRows`) z formą zgodną
+ * z bilansem wierszy; bez remisów, bo koszykówka ich nie zna. Trzy z sześciu
+ * kolejek rozegrane.
+ */
+export const publicBasketballStandingsRows: PublicStandingsTableRow[] = basketballStandingsTableRows.map((row, index) => ({
+  ...row,
+  form: ([['win', 'win', 'win'], ['win', 'loss', 'win'], ['loss', 'win', 'loss'], ['loss', 'loss', 'loss']] as const)[index]!,
+}))
+
+export const publicBasketballSchedule: ScheduleProgress = { roundsPlayed: 3, roundsTotal: 6, startsAt: null }
+
+export const publicBasketballTiebreakers = [
+  { code: 'points', label: 'Punkty w tabeli' },
+  { code: 'head_to_head', label: 'Bezpośredni mecz' },
+  { code: 'score_diff', label: 'Różnica punktów' },
+]
+
+/**
+ * Tabele grup z przykładu `grupy` w kontrakcie (`groupStandings`) z tą samą
+ * formą co przykład: faza grupowa rozegrana, trzy kolejki.
+ */
+const GROUP_FORMS: Record<number, readonly FormResult[]> = {
+  2: ['draw', 'win', 'win'],
+  1: ['draw', 'win', 'draw'],
+  3: ['win', 'loss', 'draw'],
+  4: ['loss', 'loss', 'loss'],
+  5: ['win', 'win', 'win'],
+  7: ['draw', 'loss', 'win'],
+  6: ['loss', 'win', 'loss'],
+  8: ['draw', 'loss', 'loss'],
+}
+
+export const publicGroupStandings = groupStandings.map((group) => ({
+  ...group,
+  rows: group.rows.map((row): PublicStandingsTableRow => ({ ...row, form: GROUP_FORMS[row.team.id] ?? [] })),
+}))
+
+export const publicGroupSchedule: ScheduleProgress = { roundsPlayed: 3, roundsTotal: 3, startsAt: null }
 
 // --- Drabinka pucharu (#227) -------------------------------------------------
 

@@ -28,6 +28,9 @@ final class StandingRow
 
     public int $points = 0;
 
+    /** @var list<'win'|'draw'|'loss'> wyniki w kolejności doliczania */
+    private array $results = [];
+
     public function __construct(public readonly Team $team) {}
 
     /**
@@ -44,13 +47,27 @@ final class StandingRow
         if ($scored > $conceded) {
             $this->won++;
             $this->points += $points['win'];
+            $this->results[] = 'win';
         } elseif ($scored < $conceded) {
             $this->lost++;
             $this->points += $points['loss'];
+            $this->results[] = 'loss';
         } else {
             $this->drawn++;
             $this->points += $points['draw'];
+            $this->results[] = 'draw';
         }
+    }
+
+    /**
+     * Forma: wyniki pięciu ostatnio doliczonych meczów, najnowszy na końcu.
+     * Kolejność doliczania ustala kalkulator (po kolejce).
+     *
+     * @return list<'win'|'draw'|'loss'>
+     */
+    public function form(): array
+    {
+        return array_slice($this->results, -5);
     }
 
     public function scoreDifference(): int

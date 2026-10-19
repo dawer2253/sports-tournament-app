@@ -25,6 +25,11 @@ use RuntimeException;
  *    wielkości liter, z `team.id` jako bezpiecznikiem. Miejsca są więc zawsze
  *    unikalne, `1..n`.
  * 5. Wiersz dostaje każda podana drużyna, także bez meczów.
+ * 6. Forma (#291) to wyniki z tych samych meczów co bilans, po kolejce
+ *    (`rounds.order`, potem `match_number`, na końcu `id`), nie po chwili
+ *    zapisu wyniku: terminarz powstaje bez dat, a kolejka meczu się nie
+ *    zmienia. Mini-tabela `head_to_head` liczy na osobnych wierszach, więc
+ *    formy pełnej tabeli nie rusza.
  */
 final readonly class StandingsCalculator
 {
@@ -40,12 +45,20 @@ final readonly class StandingsCalculator
     /**
      * @param  Collection<int, Team>  $teams  komplet drużyn tabeli
      * @param  Collection<int, GameMatch>  $matches  mecze tabeli w każdym statusie;
-     *                                               niezakończone są potrzebne regule 3
+     *                                               niezakończone są potrzebne regule 3,
+     *                                               kolejka (`round`) regule 6
      * @return list<StandingRow>
      */
     public function calculate(Collection $teams, Collection $matches): array
     {
-        $rows = $this->tally($teams, $matches->filter(fn (GameMatch $match): bool => $match->isFinished()));
+        $finished = $matches
+            ->filter(fn (GameMatch $match): bool => $match->isFinished())
+            ->sortBy([
+                fn (GameMatch $a, GameMatch $b): int => $a->round->order <=> $b->round->order,
+                fn (GameMatch $a, GameMatch $b): int => $a->match_number <=> $b->match_number,
+                fn (GameMatch $a, GameMatch $b): int => $a->id <=> $b->id,
+            ]);
+        $rows = $this->tally($teams, $finished);
         $ranked = $this->rank(array_values($rows), 0, $matches);
 
         foreach ($ranked as $index => $row) {
