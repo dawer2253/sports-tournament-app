@@ -2,7 +2,7 @@ openapi: 3.1.0
 
 info:
   title: Sports Tournament API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     Kontrakt REST API aplikacji do prowadzenia turniejów sportowych.
 
@@ -249,6 +249,7 @@ paths:
                       defaultPoints: { win: 3, draw: 1, loss: 0 }
                       defaultMatchDuration: 60
                       defaultPeriods: { count: 2, minutes: 45 }
+                      defaultSetFormat: null
                       eventTypes:
                         - { code: goal, label: Bramka, hasPlayer: true, value: 1, stat: goals }
                         - { code: own_goal, label: Bramka samobójcza, hasPlayer: true, value: 1, stat: null }
@@ -276,6 +277,7 @@ paths:
                       defaultPoints: { win: 2, draw: 0, loss: 1 }
                       defaultMatchDuration: 40
                       defaultPeriods: { count: 4, minutes: 10 }
+                      defaultSetFormat: null
                       eventTypes:
                         - { code: free_throw, label: Rzut wolny, hasPlayer: true, value: 1, stat: points }
                         - { code: two_pointer, label: Rzut za 2, hasPlayer: true, value: 2, stat: points }
@@ -293,6 +295,31 @@ paths:
                       statLabels:
                         points: Punkty
                         fouls: Faule
+                  - id: 3
+                    code: volleyball
+                    name: Siatkówka
+                    config:
+                      allowsDraw: false
+                      runningClock: false
+                      defaultPoints: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 }
+                      defaultMatchDuration: 90
+                      defaultPeriods: { count: 1, minutes: null }
+                      defaultSetFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 }
+                      eventTypes:
+                        - { code: ace, label: As serwisowy, hasPlayer: true, value: 1, stat: points }
+                        - { code: block, label: Blok punktowy, hasPlayer: true, value: 1, stat: points }
+                        - { code: attack, label: Atak punktowy, hasPlayer: true, value: 1, stat: points }
+                      defaultTiebreakers: [points, wins, set_ratio, point_ratio, head_to_head]
+                      availableTiebreakers: [points, wins, set_ratio, point_ratio, head_to_head]
+                      tiebreakerLabels:
+                        points: Punkty w tabeli
+                        wins: Zwycięstwa
+                        set_ratio: Stosunek setów
+                        point_ratio: Stosunek punktów w setach
+                        head_to_head: Bezpośredni mecz
+                      availableStats: [points]
+                      statLabels:
+                        points: Punkty
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
   /tournaments:
@@ -352,6 +379,7 @@ paths:
                     tiebreakers: [points, head_to_head, score_diff]
                     matchDuration: 40
                     periods: { count: 4, minutes: 10 }
+                    setFormat: null
                     teamsCount: 8
                     createdAt: '2026-09-10T07:00:00+00:00'
                     updatedAt: '2026-09-10T07:00:00+00:00'
@@ -365,6 +393,7 @@ paths:
                     tiebreakers: [points, head_to_head, score_diff, score_for]
                     matchDuration: 60
                     periods: { count: 2, minutes: 45 }
+                    setFormat: null
                     teamsCount: 3
                     createdAt: '2026-09-01T08:00:00+00:00'
                     updatedAt: '2026-09-14T16:30:00+00:00'
@@ -411,6 +440,7 @@ paths:
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   matchDuration: 60
                   periods: { count: 2, minutes: 45 }
+                  setFormat: null
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -429,6 +459,11 @@ paths:
         ten sam przełącznik obsługuje listę meczów i tabelę, więc w panelu
         przestawia naraz turniej, terminarz i tabelę. Turniej koszykarski to
         ten z seedu demo (`liga-koszykowki-2026`).
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik ma lista meczów i tabela
+        panelu.
       responses:
         '200':
           description: Turniej
@@ -454,6 +489,7 @@ paths:
                       tiebreakers: [points, head_to_head, score_diff, score_for]
                       matchDuration: 60
                       periods: { count: 2, minutes: 45 }
+                      setFormat: null
                       teamsCount: 3
                       createdAt: '2026-09-01T08:00:00+00:00'
                       updatedAt: '2026-09-14T16:30:00+00:00'
@@ -471,9 +507,31 @@ paths:
                       tiebreakers: [points, head_to_head, score_diff]
                       matchDuration: 40
                       periods: { count: 4, minutes: 10 }
+                      setFormat: null
                       teamsCount: 2
                       createdAt: '2026-09-01T08:00:00+00:00'
                       updatedAt: '2026-09-14T16:30:00+00:00'
+                siatkowka:
+                  summary: Turniej siatkarski — format seta i punktacja po secie decydującym
+                  description: |
+                    Turniej siatkarski z seedu demo (`liga-siatkowki-2026`), zgodny
+                    z przykładem `siatkowka` na liście meczów panelu i w tabeli.
+                  value:
+                    data:
+                      id: 3
+                      name: Liga Siatkówki 2026
+                      slug: liga-siatkowki-2026
+                      status: active
+                      sport: { id: 3, code: volleyball, name: Siatkówka, allowsDraw: false }
+                      branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      points: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 }
+                      tiebreakers: [points, wins, set_ratio, point_ratio, head_to_head]
+                      matchDuration: 90
+                      periods: { count: 1, minutes: null }
+                      setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 }
+                      teamsCount: 4
+                      createdAt: '2026-09-01T08:00:00+00:00'
+                      updatedAt: '2026-09-19T15:02:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -496,6 +554,8 @@ paths:
         Punktację (`points`) i tiebreaki (`tiebreakers`) wolno zmieniać zawsze,
         niezależnie od statusu turnieju i od rozegranych meczów. Tabela liczy
         się przy odczycie, więc zmiana obejmuje też mecze już rozegrane.
+        Wyjątkiem jest format seta w sporcie z setami: zmienia się tylko do
+        pierwszego wpisanego seta (`TournamentUpdate.setFormat`).
       requestBody:
         required: true
         content:
@@ -583,6 +643,7 @@ paths:
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   matchDuration: 60
                   periods: { count: 2, minutes: 45 }
+                  setFormat: null
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -618,6 +679,7 @@ paths:
                   tiebreakers: [points, head_to_head, score_diff, score_for]
                   matchDuration: 60
                   periods: { count: 2, minutes: 45 }
+                  setFormat: null
                   teamsCount: 0
                   createdAt: '2026-09-01T08:00:00+00:00'
                   updatedAt: '2026-09-01T08:00:00+00:00'
@@ -1857,6 +1919,10 @@ paths:
         `Prefer: example=koszykowka`. Koszykarski jest zgodny z przykładem
         `koszykowka` tabeli i turnieju, więc jeden przełącznik przestawia
         w panelu turniej, terminarz i tabelę naraz.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik mają turniej i tabela panelu.
       responses:
         '200':
           description: Stronicowane mecze, opcjonalnie zawężone parametrami
@@ -1886,6 +1952,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-06T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -1907,6 +1974,7 @@ paths:
                         awayScore: 3
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-13T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -1928,6 +1996,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-20T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -1949,6 +2018,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-09-27T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -1970,6 +2040,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -1991,6 +2062,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: null
@@ -2034,6 +2106,7 @@ paths:
                         awayScore: 2
                         homePenalties: 4
                         awayPenalties: 3
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -2055,6 +2128,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-04T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -2076,6 +2150,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -2097,6 +2172,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -2118,6 +2194,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-18T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -2139,6 +2216,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-18T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -2172,6 +2250,7 @@ paths:
                         awayScore: 70
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-06T16:00:00+00:00'
                         venue: { id: 1, name: Hala Bemowo }
@@ -2193,6 +2272,7 @@ paths:
                         awayScore: 78
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-13T16:00:00+00:00'
                         venue: { id: 1, name: Hala Bemowo }
@@ -2204,6 +2284,148 @@ paths:
                         onBreak: false
                         collisions: []
                     meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 2 }
+                siatkowka:
+                  summary: Liga siatkówki — wynik w setach
+                  description: |
+                    Ten sam turniej co przykłady `siatkowka` w `GET /tournaments/{tournament}`
+                    i w tabeli. `homeScore` i `awayScore` to sety wygrane, policzone
+                    z `sets`. Mecz 3 rozstrzygnął piąty set do 15, a mecz 5 trwa
+                    z niedokończonym trzecim setem.
+                  value:
+                    data:
+                      - id: 1
+                        stageId: 1
+                        groupId: null
+                        round: { id: 1, name: Kolejka 1, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                        awayTeam: { id: 7, name: Mewy Żoliborz, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 19 }, { home: 25, away: 21 }, { home: 25, away: 17 }]
+                        status: finished
+                        kickoffAt: '2026-09-05T15:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        collisions: []
+                      - id: 2
+                        stageId: 1
+                        groupId: null
+                        round: { id: 1, name: Kolejka 1, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 8, name: Czaple Ursynów, logoUrl: null }
+                        awayTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 22 }, { home: 22, away: 25 }, { home: 25, away: 20 }, { home: 25, away: 23 }]
+                        status: finished
+                        kickoffAt: '2026-09-05T17:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        collisions: []
+                      - id: 3
+                        stageId: 1
+                        groupId: null
+                        round: { id: 2, name: Kolejka 2, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                        awayTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 2
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 23 }, { home: 23, away: 25 }, { home: 25, away: 21 }, { home: 20, away: 25 }, { home: 15, away: 11 }]
+                        status: finished
+                        kickoffAt: '2026-09-12T15:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        collisions: []
+                      - id: 4
+                        stageId: 1
+                        groupId: null
+                        round: { id: 2, name: Kolejka 2, order: 2 }
+                        matchNumber: 2
+                        homeTeam: { id: 7, name: Mewy Żoliborz, logoUrl: null }
+                        awayTeam: { id: 8, name: Czaple Ursynów, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 20 }, { home: 23, away: 25 }, { home: 25, away: 22 }, { home: 25, away: 19 }]
+                        status: finished
+                        kickoffAt: '2026-09-12T17:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        collisions: []
+                      - id: 5
+                        stageId: 1
+                        groupId: null
+                        round: { id: 3, name: Kolejka 3, order: 3 }
+                        matchNumber: 1
+                        homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                        awayTeam: { id: 8, name: Czaple Ursynów, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 21 }, { home: 18, away: 25 }, { home: 14, away: 12 }]
+                        status: live
+                        kickoffAt: '2026-09-19T15:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: 1
+                        periodStartedAt: '2026-09-19T15:02:00+00:00'
+                        onBreak: false
+                        collisions: []
+                      - id: 6
+                        stageId: 1
+                        groupId: null
+                        round: { id: 3, name: Kolejka 3, order: 3 }
+                        matchNumber: 2
+                        homeTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                        awayTeam: { id: 7, name: Mewy Żoliborz, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: []
+                        status: scheduled
+                        kickoffAt: '2026-09-19T17:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        collisions: []
+                    meta: { currentPage: 1, lastPage: 1, perPage: 50, total: 6 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2561,6 +2783,11 @@ paths:
         mają ten sam przełącznik, więc w panelu przestawia naraz turniej,
         terminarz i tabelę. Mock nie liczy tabel, więc parametr `tiebreakers`
         niczego w nim nie zmienia.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik mają turniej i lista meczów
+        panelu.
       parameters:
         - name: tiebreakers
           in: query
@@ -2607,6 +2834,7 @@ paths:
                         groupId: null
                         groupName: null
                         scoreLabel: Bramki
+                        rallyPointsLabel: null
                         allowsDraw: true
                         tiebreakers:
                           - { code: points, label: Punkty w tabeli }
@@ -2614,9 +2842,9 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6, form: [win, win] }
-                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3, form: [loss, win] }
-                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0, form: [loss, loss] }
+                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, rallyPointsFor: null, rallyPointsAgainst: null, points: 6, form: [win, win] }
+                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, rallyPointsFor: null, rallyPointsAgainst: null, points: 3, form: [loss, win] }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, rallyPointsFor: null, rallyPointsAgainst: null, points: 0, form: [loss, loss] }
                 koszykowka:
                   summary: Turniej koszykarski — zdobycze to punkty
                   description: |
@@ -2630,14 +2858,42 @@ paths:
                         groupId: null
                         groupName: null
                         scoreLabel: Punkty
+                        rallyPointsLabel: null
                         allowsDraw: false
                         tiebreakers:
                           - { code: points, label: Punkty w tabeli }
                           - { code: head_to_head, label: Bezpośredni mecz }
                           - { code: score_diff, label: Różnica punktów }
                         rows:
-                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4, form: [win, win] }
-                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2, form: [loss, loss] }
+                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, rallyPointsFor: null, rallyPointsAgainst: null, points: 4, form: [win, win] }
+                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, rallyPointsFor: null, rallyPointsAgainst: null, points: 2, form: [loss, loss] }
+                siatkowka:
+                  summary: Turniej siatkarski — zdobycze to sety
+                  description: |
+                    Turniej siatkarski z seedu demo (`liga-siatkowki-2026`), zgodny
+                    z przykładem `siatkowka` na liście meczów panelu. Czaple i Mewy mają
+                    po 3 pkt i jednym zwycięstwie, a rozdziela je stosunek setów (4:4
+                    przed 3:4), choć Mewy wygrały mecz bezpośredni.
+                  value:
+                    data:
+                      - stageId: 1
+                        stageName: Faza zasadnicza
+                        groupId: null
+                        groupName: null
+                        scoreLabel: Sety
+                        rallyPointsLabel: Punkty w setach
+                        allowsDraw: false
+                        tiebreakers:
+                          - { code: points, label: Punkty w tabeli }
+                          - { code: wins, label: Zwycięstwa }
+                          - { code: set_ratio, label: Stosunek setów }
+                          - { code: point_ratio, label: Stosunek punktów w setach }
+                          - { code: head_to_head, label: Bezpośredni mecz }
+                        rows:
+                          - { position: 1, team: { id: 6, name: Orlęta Wawer, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 2, scoreDifference: 4, rallyPointsFor: 183, rallyPointsAgainst: 162, points: 5, form: [win, win] }
+                          - { position: 2, team: { id: 8, name: Czaple Ursynów, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 4, scoreAgainst: 4, scoreDifference: 0, rallyPointsFor: 183, rallyPointsAgainst: 188, points: 3, form: [win, loss] }
+                          - { position: 3, team: { id: 7, name: Mewy Żoliborz, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 4, scoreDifference: -1, rallyPointsFor: 155, rallyPointsAgainst: 161, points: 3, form: [loss, win] }
+                          - { position: 4, team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 3, scoreAgainst: 6, scoreDifference: -3, rallyPointsFor: 195, rallyPointsAgainst: 205, points: 1, form: [loss, loss] }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2663,6 +2919,11 @@ paths:
         w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
         Wszystkie cztery przełączniki obsługuje też `/teams`: drużyny tych
         samych turniejów.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik mają `/standings`,
+        `/fixtures`, `/results` i strona meczu.
       security: []
       responses:
         '200':
@@ -2713,6 +2974,26 @@ paths:
                       stats:
                         - { code: points, label: Punkty }
                         - { code: fouls, label: Faule }
+                siatkowka:
+                  summary: Turniej siatkarski
+                  description: |
+                    Liga siatkówki z seedu demo (`liga-siatkowki-2026`). Jedna część
+                    bez czasu i `runningClock: false`, więc mecz trwający ma samo
+                    „Na żywo”.
+                  value:
+                    data:
+                      name: Liga Siatkówki 2026
+                      slug: liga-siatkowki-2026
+                      status: active
+                      sport: { id: 3, code: volleyball, name: Siatkówka, allowsDraw: false }
+                      branding: { logoUrl: null, primaryColor: '#1F7A45' }
+                      periods: { count: 1, minutes: null }
+                      matchDuration: 90
+                      runningClock: false
+                      stages:
+                        - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
+                      stats:
+                        - { code: points, label: Punkty }
                 puchar:
                   summary: Puchar piłkarski
                   description: |
@@ -2785,6 +3066,10 @@ paths:
         nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu. Trzeci, po
         `Prefer: example=grupy`, to dwie tabele grup turnieju z przykładu
         `grupy` w `/public/t/{slug}`.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik ma `/public/t/{slug}`.
       security: []
       responses:
         '200':
@@ -2811,6 +3096,7 @@ paths:
                         groupId: null
                         groupName: null
                         scoreLabel: Bramki
+                        rallyPointsLabel: null
                         allowsDraw: true
                         tiebreakers:
                           - { code: points, label: Punkty w tabeli }
@@ -2818,9 +3104,9 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, points: 6, form: [win, win] }
-                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 3, form: [loss, win] }
-                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 0, form: [loss, loss] }
+                          - { position: 1, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 5, scoreAgainst: 1, scoreDifference: 4, rallyPointsFor: null, rallyPointsAgainst: null, points: 6, form: [win, win] }
+                          - { position: 2, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, rallyPointsFor: null, rallyPointsAgainst: null, points: 3, form: [loss, win] }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, rallyPointsFor: null, rallyPointsAgainst: null, points: 0, form: [loss, loss] }
                 koszykowka:
                   summary: Turniej koszykarski — zdobycze to punkty
                   description: |
@@ -2834,14 +3120,40 @@ paths:
                         groupId: null
                         groupName: null
                         scoreLabel: Punkty
+                        rallyPointsLabel: null
                         allowsDraw: false
                         tiebreakers:
                           - { code: points, label: Punkty w tabeli }
                           - { code: head_to_head, label: Bezpośredni mecz }
                           - { code: score_diff, label: Różnica punktów }
                         rows:
-                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, points: 4, form: [win, win] }
-                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, points: 2, form: [loss, loss] }
+                          - { position: 1, team: { id: 4, name: Żubry Wola, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 168, scoreAgainst: 141, scoreDifference: 27, rallyPointsFor: null, rallyPointsAgainst: null, points: 4, form: [win, win] }
+                          - { position: 2, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 141, scoreAgainst: 168, scoreDifference: -27, rallyPointsFor: null, rallyPointsAgainst: null, points: 2, form: [loss, loss] }
+                siatkowka:
+                  summary: Turniej siatkarski — zdobycze to sety
+                  description: |
+                    Tabela turnieju z przykładu `siatkowka` w `/public/t/{slug}`,
+                    z kolumną punktów w setach (`rallyPointsLabel`).
+                  value:
+                    data:
+                      - stageId: 1
+                        stageName: Faza zasadnicza
+                        groupId: null
+                        groupName: null
+                        scoreLabel: Sety
+                        rallyPointsLabel: Punkty w setach
+                        allowsDraw: false
+                        tiebreakers:
+                          - { code: points, label: Punkty w tabeli }
+                          - { code: wins, label: Zwycięstwa }
+                          - { code: set_ratio, label: Stosunek setów }
+                          - { code: point_ratio, label: Stosunek punktów w setach }
+                          - { code: head_to_head, label: Bezpośredni mecz }
+                        rows:
+                          - { position: 1, team: { id: 6, name: Orlęta Wawer, logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 2, scoreDifference: 4, rallyPointsFor: 183, rallyPointsAgainst: 162, points: 5, form: [win, win] }
+                          - { position: 2, team: { id: 8, name: Czaple Ursynów, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 4, scoreAgainst: 4, scoreDifference: 0, rallyPointsFor: 183, rallyPointsAgainst: 188, points: 3, form: [win, loss] }
+                          - { position: 3, team: { id: 7, name: Mewy Żoliborz, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 4, scoreDifference: -1, rallyPointsFor: 155, rallyPointsAgainst: 161, points: 3, form: [loss, win] }
+                          - { position: 4, team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 3, scoreAgainst: 6, scoreDifference: -3, rallyPointsFor: 195, rallyPointsAgainst: 205, points: 1, form: [loss, loss] }
                 grupy:
                   summary: Grupy z playoffem — tabela na grupę
                   description: |
@@ -2856,6 +3168,7 @@ paths:
                         groupId: 1
                         groupName: Grupa A
                         scoreLabel: Bramki
+                        rallyPointsLabel: null
                         allowsDraw: true
                         tiebreakers:
                           - { code: points, label: Punkty w tabeli }
@@ -2863,15 +3176,16 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 3, won: 2, drawn: 1, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 7, form: [draw, win, win] }
-                          - { position: 2, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 3, won: 1, drawn: 2, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, points: 5, form: [draw, win, draw] }
-                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 3, scoreDifference: 1, points: 4, form: [win, loss, draw] }
-                          - { position: 4, team: { id: 4, name: Rysie Wola, logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 0, scoreAgainst: 7, scoreDifference: -7, points: 0, form: [loss, loss, loss] }
+                          - { position: 1, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, played: 3, won: 2, drawn: 1, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, rallyPointsFor: null, rallyPointsAgainst: null, points: 7, form: [draw, win, win] }
+                          - { position: 2, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, played: 3, won: 1, drawn: 2, lost: 0, scoreFor: 5, scoreAgainst: 2, scoreDifference: 3, rallyPointsFor: null, rallyPointsAgainst: null, points: 5, form: [draw, win, draw] }
+                          - { position: 3, team: { id: 3, name: Orły Bielany, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 4, scoreAgainst: 3, scoreDifference: 1, rallyPointsFor: null, rallyPointsAgainst: null, points: 4, form: [win, loss, draw] }
+                          - { position: 4, team: { id: 4, name: Rysie Wola, logoUrl: null }, played: 3, won: 0, drawn: 0, lost: 3, scoreFor: 0, scoreAgainst: 7, scoreDifference: -7, rallyPointsFor: null, rallyPointsAgainst: null, points: 0, form: [loss, loss, loss] }
                       - stageId: 3
                         stageName: Faza grupowa
                         groupId: 2
                         groupName: Grupa B
                         scoreLabel: Bramki
+                        rallyPointsLabel: null
                         allowsDraw: true
                         tiebreakers:
                           - { code: points, label: Punkty w tabeli }
@@ -2879,10 +3193,10 @@ paths:
                           - { code: score_diff, label: Różnica bramek }
                           - { code: score_for, label: Bramki zdobyte }
                         rows:
-                          - { position: 1, team: { id: 5, name: Żubry Praga, logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 1, scoreDifference: 5, points: 9, form: [win, win, win] }
-                          - { position: 2, team: { id: 7, name: Lwy Ochota, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, points: 4, form: [draw, loss, win] }
-                          - { position: 3, team: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 4, scoreAgainst: 5, scoreDifference: -1, points: 3, form: [loss, win, loss] }
-                          - { position: 4, team: { id: 8, name: Jastrzębie Wawer, logoUrl: null }, played: 3, won: 0, drawn: 1, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, points: 1, form: [draw, loss, loss] }
+                          - { position: 1, team: { id: 5, name: Żubry Praga, logoUrl: null }, played: 3, won: 3, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 1, scoreDifference: 5, rallyPointsFor: null, rallyPointsAgainst: null, points: 9, form: [win, win, win] }
+                          - { position: 2, team: { id: 7, name: Lwy Ochota, logoUrl: null }, played: 3, won: 1, drawn: 1, lost: 1, scoreFor: 3, scoreAgainst: 3, scoreDifference: 0, rallyPointsFor: null, rallyPointsAgainst: null, points: 4, form: [draw, loss, win] }
+                          - { position: 3, team: { id: 6, name: Niedźwiedzie Mokotów, logoUrl: null }, played: 3, won: 1, drawn: 0, lost: 2, scoreFor: 4, scoreAgainst: 5, scoreDifference: -1, rallyPointsFor: null, rallyPointsAgainst: null, points: 3, form: [loss, win, loss] }
+                          - { position: 4, team: { id: 8, name: Jastrzębie Wawer, logoUrl: null }, played: 3, won: 0, drawn: 1, lost: 2, scoreFor: 1, scoreAgainst: 5, scoreDifference: -4, rallyPointsFor: null, rallyPointsAgainst: null, points: 1, form: [draw, loss, loss] }
         '304': { $ref: '#/components/responses/NotModified' }
         '404': { $ref: '#/components/responses/NotFound' }
 
@@ -3029,6 +3343,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-06T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3049,6 +3364,7 @@ paths:
                         awayScore: 3
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-13T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3069,6 +3385,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-20T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3089,6 +3406,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-09-27T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3109,6 +3427,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3129,6 +3448,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: null
@@ -3170,6 +3490,7 @@ paths:
                         awayScore: 2
                         homePenalties: 4
                         awayPenalties: 3
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3190,6 +3511,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-04T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3210,6 +3532,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3230,6 +3553,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3250,6 +3574,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-18T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3270,6 +3595,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-18T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3301,6 +3627,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-03T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3321,6 +3648,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-03T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3341,6 +3669,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-10T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3361,6 +3690,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-10T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3410,6 +3740,10 @@ paths:
         i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
         `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
         a czwarty po `Prefer: example=grupy`.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik ma `/public/t/{slug}`.
       security: []
       responses:
         '200':
@@ -3445,6 +3779,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: live
                         kickoffAt: '2026-09-27T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3467,6 +3802,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3488,6 +3824,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: null
@@ -3517,6 +3854,7 @@ paths:
                         awayScore: 7
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: live
                         kickoffAt: '2026-09-20T16:00:00+00:00'
                         venue: { id: 1, name: Hala Bemowo }
@@ -3531,6 +3869,57 @@ paths:
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 4, minutes: [3, 8], ownGoal: false }
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 3, minutes: [5], ownGoal: false }
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 4, minutes: [], ownGoal: false }
+                siatkowka:
+                  summary: Turniej siatkarski — mecz trwający z niedokończonym setem
+                  description: |
+                    Trzecia kolejka ligi z przykładu `siatkowka` w tabeli. W meczu
+                    trwającym trzeci set stoi na 14:12, więc wynik w setach to 1:1.
+                  value:
+                    data:
+                      - id: 5
+                        stageId: 1
+                        groupId: null
+                        round: { id: 3, name: Kolejka 3, order: 3 }
+                        matchNumber: 1
+                        homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                        awayTeam: { id: 8, name: Czaple Ursynów, logoUrl: null }
+                        homeScore: 1
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 21 }, { home: 18, away: 25 }, { home: 14, away: 12 }]
+                        status: live
+                        kickoffAt: '2026-09-19T15:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: 1
+                        periodStartedAt: '2026-09-19T15:02:00+00:00'
+                        onBreak: false
+                        scorers: []
+                      - id: 6
+                        stageId: 1
+                        groupId: null
+                        round: { id: 3, name: Kolejka 3, order: 3 }
+                        matchNumber: 2
+                        homeTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                        awayTeam: { id: 7, name: Mewy Żoliborz, logoUrl: null }
+                        homeScore: null
+                        awayScore: null
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: []
+                        status: scheduled
+                        kickoffAt: '2026-09-19T17:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        scorers: []
                 puchar:
                   summary: Puchar — mecze drabinki, także bez obu drużyn
                   description: |
@@ -3554,6 +3943,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-11T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3575,6 +3965,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-18T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3596,6 +3987,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-18T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3625,6 +4017,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-03T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3646,6 +4039,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-10T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3667,6 +4061,7 @@ paths:
                         awayScore: null
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: scheduled
                         kickoffAt: '2026-10-10T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3701,6 +4096,10 @@ paths:
         i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
         `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
         a czwarty po `Prefer: example=grupy`.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. Ten sam przełącznik ma `/public/t/{slug}`.
       security: []
       responses:
         '200':
@@ -3738,6 +4137,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-20T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3762,6 +4162,7 @@ paths:
                         awayScore: 3
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-13T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3785,6 +4186,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-06T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3818,6 +4220,7 @@ paths:
                         awayScore: 78
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-13T16:00:00+00:00'
                         venue: { id: 1, name: Hala Bemowo }
@@ -3845,6 +4248,7 @@ paths:
                         awayScore: 70
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-06T16:00:00+00:00'
                         venue: { id: 1, name: Hala Bemowo }
@@ -3861,6 +4265,103 @@ paths:
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 22, minutes: [], ownGoal: false }
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, value: 24, minutes: [], ownGoal: false }
                           - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 24, minutes: [], ownGoal: false }
+                siatkowka:
+                  summary: Turniej siatkarski — wyniki setów
+                  description: |
+                    Mecze zakończone ligi z przykładu `siatkowka` w tabeli. Strzelcy
+                    meczu 3 to zawodnicy z punktami (asy, bloki, ataki) ze strony meczu.
+                  value:
+                    data:
+                      - id: 4
+                        stageId: 1
+                        groupId: null
+                        round: { id: 2, name: Kolejka 2, order: 2 }
+                        matchNumber: 2
+                        homeTeam: { id: 7, name: Mewy Żoliborz, logoUrl: null }
+                        awayTeam: { id: 8, name: Czaple Ursynów, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 20 }, { home: 23, away: 25 }, { home: 25, away: 22 }, { home: 25, away: 19 }]
+                        status: finished
+                        kickoffAt: '2026-09-12T17:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        scorers: []
+                      - id: 3
+                        stageId: 1
+                        groupId: null
+                        round: { id: 2, name: Kolejka 2, order: 2 }
+                        matchNumber: 1
+                        homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                        awayTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 2
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 23 }, { home: 23, away: 25 }, { home: 25, away: 21 }, { home: 20, away: 25 }, { home: 15, away: 11 }]
+                        status: finished
+                        kickoffAt: '2026-09-12T15:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        scorers:
+                          - { team: { id: 6, name: Orlęta Wawer, logoUrl: null }, player: { id: 21, name: Kamil Lis }, value: 2, minutes: [], ownGoal: false }
+                          - { team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, player: { id: 31, name: Ola Kruk }, value: 1, minutes: [], ownGoal: false }
+                      - id: 2
+                        stageId: 1
+                        groupId: null
+                        round: { id: 1, name: Kolejka 1, order: 1 }
+                        matchNumber: 2
+                        homeTeam: { id: 8, name: Czaple Ursynów, logoUrl: null }
+                        awayTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 1
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 22 }, { home: 22, away: 25 }, { home: 25, away: 20 }, { home: 25, away: 23 }]
+                        status: finished
+                        kickoffAt: '2026-09-05T17:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        scorers: []
+                      - id: 1
+                        stageId: 1
+                        groupId: null
+                        round: { id: 1, name: Kolejka 1, order: 1 }
+                        matchNumber: 1
+                        homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                        awayTeam: { id: 7, name: Mewy Żoliborz, logoUrl: null }
+                        homeScore: 3
+                        awayScore: 0
+                        homePenalties: null
+                        awayPenalties: null
+                        sets: [{ home: 25, away: 19 }, { home: 25, away: 21 }, { home: 25, away: 17 }]
+                        status: finished
+                        kickoffAt: '2026-09-05T15:00:00+00:00'
+                        venue: { id: 1, name: Hala Targówek }
+                        winnerToMatchId: null
+                        loserToMatchId: null
+                        advancesToSlot: null
+                        livePeriod: null
+                        periodStartedAt: null
+                        onBreak: false
+                        scorers: []
                 puchar:
                   summary: Puchar — z remisem rozstrzygniętym karnymi
                   description: |
@@ -3880,6 +4381,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-11T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3901,6 +4403,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-04T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3922,6 +4425,7 @@ paths:
                         awayScore: 2
                         homePenalties: 4
                         awayPenalties: 3
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-04T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3952,6 +4456,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-10-03T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3973,6 +4478,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-19T16:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -3994,6 +4500,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-19T14:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4015,6 +4522,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-19T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4036,6 +4544,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-19T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4057,6 +4566,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-12T16:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4078,6 +4588,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-12T14:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4099,6 +4610,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-12T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4120,6 +4632,7 @@ paths:
                         awayScore: 2
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-12T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4141,6 +4654,7 @@ paths:
                         awayScore: 2
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-05T16:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4162,6 +4676,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-05T14:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4183,6 +4698,7 @@ paths:
                         awayScore: 1
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-05T12:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4204,6 +4720,7 @@ paths:
                         awayScore: 0
                         homePenalties: null
                         awayPenalties: null
+                        sets: null
                         status: finished
                         kickoffAt: '2026-09-05T10:00:00+00:00'
                         venue: { id: 1, name: Boisko Bemowo }
@@ -4235,6 +4752,10 @@ paths:
         kartką i zdarzeniem bez minuty), `koszykowka` (rzuty za 1, 2 i 3,
         faule, cztery kwarty) i `na-zywo` (mecz trwający). Mock zwraca
         wybrany po nagłówku `Prefer: example=…`, dla każdego `match` ten sam.
+
+        Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+        (`liga-siatkowki-2026`), mock zwraca po nagłówku
+        `Prefer: example=siatkowka`. To mecz 3 z przykładu `siatkowka` w `/results`.
       security: []
       responses:
         '200':
@@ -4270,6 +4791,7 @@ paths:
                       awayScore: 3
                       homePenalties: null
                       awayPenalties: null
+                      sets: null
                       status: finished
                       kickoffAt: '2026-09-13T10:00:00+00:00'
                       venue: { id: 1, name: Boisko Bemowo }
@@ -4310,6 +4832,7 @@ paths:
                       awayScore: 22
                       homePenalties: null
                       awayPenalties: null
+                      sets: null
                       status: finished
                       kickoffAt: '2026-09-20T16:00:00+00:00'
                       venue: { id: 1, name: Hala Bemowo }
@@ -4356,6 +4879,43 @@ paths:
                           - { number: 2, label: 2. kwarta, homeScore: 5, awayScore: 5 }
                           - { number: 3, label: 3. kwarta, homeScore: 5, awayScore: 4 }
                           - { number: 4, label: 4. kwarta, homeScore: 6, awayScore: 9 }
+                siatkowka:
+                  summary: Orlęta Wawer – Jaskółki Targówek 3:2, piąty set do 15
+                  description: |
+                    Mecz 3 z przykładu `siatkowka` w `/results`. Zdarzenia nie mają
+                    minut i nie zmieniają wyniku (`scoreAfter: null`), a mecz ma jedną
+                    część, więc `periods: []`; wyniki setów niesie `sets`.
+                  value:
+                    data:
+                      id: 3
+                      stageId: 1
+                      groupId: null
+                      round: { id: 2, name: Kolejka 2, order: 2 }
+                      matchNumber: 1
+                      homeTeam: { id: 6, name: Orlęta Wawer, logoUrl: null }
+                      awayTeam: { id: 9, name: Jaskółki Targówek, logoUrl: null }
+                      homeScore: 3
+                      awayScore: 2
+                      homePenalties: null
+                      awayPenalties: null
+                      sets: [{ home: 25, away: 23 }, { home: 23, away: 25 }, { home: 25, away: 21 }, { home: 20, away: 25 }, { home: 15, away: 11 }]
+                      status: finished
+                      kickoffAt: '2026-09-12T15:00:00+00:00'
+                      venue: { id: 1, name: Hala Targówek }
+                      winnerToMatchId: null
+                      loserToMatchId: null
+                      advancesToSlot: null
+                      livePeriod: null
+                      periodStartedAt: null
+                      onBreak: false
+                      scorers:
+                        - { team: { id: 6, name: Orlęta Wawer, logoUrl: null }, player: { id: 21, name: Kamil Lis }, value: 2, minutes: [], ownGoal: false }
+                        - { team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, player: { id: 31, name: Ola Kruk }, value: 1, minutes: [], ownGoal: false }
+                      events:
+                        - { id: 31, team: { id: 6, name: Orlęta Wawer, logoUrl: null }, player: { id: 21, name: Kamil Lis }, type: ace, typeLabel: As serwisowy, minute: null, period: null, scoreAfter: null }
+                        - { id: 32, team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, player: { id: 31, name: Ola Kruk }, type: attack, typeLabel: Atak punktowy, minute: null, period: null, scoreAfter: null }
+                        - { id: 33, team: { id: 6, name: Orlęta Wawer, logoUrl: null }, player: { id: 21, name: Kamil Lis }, type: block, typeLabel: Blok punktowy, minute: null, period: null, scoreAfter: null }
+                      periods: []
                 na-zywo:
                   summary: Wilki Bemowo – Orły Bielany 1:1, mecz trwa
                   description: Mecz trwający, w 2. połowie. Strzelcy i relacja dochodzą w trakcie.
@@ -4372,6 +4932,7 @@ paths:
                       awayScore: 1
                       homePenalties: null
                       awayPenalties: null
+                      sets: null
                       status: live
                       kickoffAt: '2026-09-20T12:00:00+00:00'
                       venue: { id: 1, name: Boisko Bemowo }
@@ -4758,7 +5319,7 @@ components:
 
     SportCode:
       type: string
-      enum: [football, basketball]
+      enum: [football, basketball, volleyball]
 
     Points:
       type: object
@@ -4769,6 +5330,15 @@ components:
         `loss ≤ draw ≤ win`. Naruszenie porządku daje `422` pod `points`.
         Wartość spoza zakresu daje `422` pod `points.win`, `points.draw` albo
         `points.loss`.
+
+        W sporcie z setami (`SportConfig.defaultSetFormat` różne od `null`,
+        #301) dochodzą `winDecidingSet` i `lossDecidingSet`: punkty za mecz
+        rozstrzygnięty w secie decydującym, czyli wygrany różnicą jednego
+        seta (3:2, 2:1). Pozostałe mecze dają `win` i `loss`. Oba pola są tam
+        wymagane, a w sporcie bez setów zabronione: brak albo nadmiar daje
+        `422` pod `points.winDecidingSet` albo `points.lossDecidingSet`.
+        Obowiązuje też porządek `loss ≤ lossDecidingSet < winDecidingSet ≤ win`,
+        a jego naruszenie daje `422` pod `points`.
       properties:
         win: { type: integer, minimum: 0, maximum: 10 }
         draw:
@@ -4781,6 +5351,60 @@ components:
             `points.draw` i nie jest zerowana. Do porządku `loss ≤ draw ≤ win`
             `draw` wtedy nie wchodzi, bo np. koszykówka ma `draw: 0` i `loss: 1`.
         loss: { type: integer, minimum: 0, maximum: 10 }
+        winDecidingSet:
+          type: integer
+          minimum: 0
+          maximum: 10
+          description: Punkty za wygraną w secie decydującym. Tylko w sporcie z setami.
+        lossDecidingSet:
+          type: integer
+          minimum: 0
+          maximum: 10
+          description: Punkty za porażkę w secie decydującym. Tylko w sporcie z setami.
+
+    SetFormat:
+      type: object
+      required: [setsToWin, setPoints, decidingSetPoints, minLead]
+      description: |
+        Format seta w sporcie z setami (#301): do ilu wygranych setów gra się
+        mecz, do ilu punktów set i set decydujący oraz jaką przewagą trzeba
+        wygrać set. Set decydujący to ostatni możliwy set meczu, o numerze
+        `2 × setsToWin − 1` (5. przy meczu do 3, grany przy 2:2, i 3. przy
+        meczu do 2, grany przy 1:1). Reguły zapisu setów opisuje `MatchUpdate`.
+
+        Przy zapisie (`TournamentUpdate.setFormat`) wartość spoza zakresu daje
+        `422` pod `setFormat.<pole>`, a `decidingSetPoints` większe od
+        `setPoints` daje `422` pod `setFormat.decidingSetPoints`.
+      properties:
+        setsToWin:
+          type: integer
+          enum: [2, 3]
+          description: Liczba wygranych setów, która kończy mecz.
+        setPoints:
+          type: integer
+          minimum: 5
+          maximum: 50
+          description: Próg punktów seta innego niż decydujący.
+        decidingSetPoints:
+          type: integer
+          minimum: 5
+          maximum: 50
+          description: Próg punktów seta decydującego, nie większy od `setPoints`.
+        minLead:
+          type: integer
+          enum: [1, 2]
+          description: |
+            Przewaga, którą trzeba wygrać set. Przy `2` po wyrównaniu na progu
+            minus jeden (24:24) gra toczy się na przewagi, bez górnej granicy
+            (26:24, 31:29). Przy `1` set kończy się na progu (25:24).
+
+    SetScore:
+      type: object
+      required: [home, away]
+      description: Wynik jednego seta w punktach (#301).
+      properties:
+        home: { type: integer, minimum: 0, maximum: 99 }
+        away: { type: integer, minimum: 0, maximum: 99 }
 
     SportEventType:
       type: object
@@ -4804,7 +5428,7 @@ components:
 
     SportConfig:
       type: object
-      required: [allowsDraw, runningClock, defaultPoints, defaultMatchDuration, defaultPeriods, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
+      required: [allowsDraw, runningClock, defaultPoints, defaultMatchDuration, defaultPeriods, defaultSetFormat, eventTypes, defaultTiebreakers, availableTiebreakers, tiebreakerLabels, availableStats, statLabels]
       properties:
         allowsDraw:
           type: boolean
@@ -4815,7 +5439,8 @@ components:
             Czy zegar meczu biegnie w minutach (#297). Piłka nożna `true`:
             tablica pokazuje minutę („67′”). Koszykówka `false`: zegar staje
             przy każdym przerwaniu gry, więc tablica pokazuje część
-            („3. kwarta”) zamiast minuty.
+            („3. kwarta”) zamiast minuty. Siatkówka `false` przy jednej
+            części, więc tablica pokazuje samo „Na żywo”.
         defaultPoints: { $ref: '#/components/schemas/Points' }
         defaultMatchDuration:
           type: integer
@@ -4824,7 +5449,7 @@ components:
           description: |
             Domyślna długość meczu w minutach, razem z przerwą po nim,
             kopiowana do turnieju przy zakładaniu (`Tournament.matchDuration`).
-            Wartości amatorskie: piłka nożna 60, koszykówka 40.
+            Wartości amatorskie: piłka nożna 60, koszykówka 40, siatkówka 90.
         defaultPeriods:
           allOf:
             - $ref: '#/components/schemas/MatchPeriods'
@@ -4832,8 +5457,24 @@ components:
             Domyślny podział meczu na części, kopiowany do turnieju przy
             zakładaniu (`Tournament.periods`), wzorem `defaultMatchDuration`.
             Piłka nożna `{ count: 2, minutes: 45 }`, koszykówka
-            `{ count: 4, minutes: 10 }`. Z `defaultMatchDuration` się go nie
+            `{ count: 4, minutes: 10 }`, siatkówka `{ count: 1, minutes: null }`,
+            bo set nie ma czasu. Z `defaultMatchDuration` się go nie
             wylicza: tamta długość jest amatorska i zawiera przerwę.
+        defaultSetFormat:
+          oneOf:
+            - $ref: '#/components/schemas/SetFormat'
+            - type: 'null'
+          description: |
+            Domyślny format seta, kopiowany do turnieju przy zakładaniu
+            (`Tournament.setFormat`), wzorem `defaultPeriods`. Siatkówka
+            `{ setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 }`,
+            piłka i koszykówka `null`.
+
+            Sport z formatem seta to **sport z setami** (#301): wynik meczu to
+            sety wygrane, remisu nie ma i dogrywki też nie, a mecz ma jedną
+            część bez czasu (`periods: { count: 1, minutes: null }`). Osobnej
+            flagi na to nie ma: reguły opisane jako „w sporcie z setami”
+            czytają właśnie ten warunek.
         eventTypes:
           type: array
           items: { $ref: '#/components/schemas/SportEventType' }
@@ -4861,7 +5502,7 @@ components:
           description: |
             Kody statystyk, według których liczy się klasyfikacja
             (`StatLeaderboard`). Pierwszy wpis to klasyfikacja domyślna:
-            piłka `goals`, kosz `points`.
+            piłka `goals`, kosz i siatkówka `points`.
           items: { type: string }
         statLabels:
           type: object
@@ -4903,13 +5544,23 @@ components:
         pierwsze na liście turnieju. `score_against` stawia wyżej drużynę,
         która straciła mniej, pozostałe kryteria drużynę z wyższą wartością.
 
+        `set_ratio` i `point_ratio` (#301, sport z setami) to ilorazy: sety
+        wygrane do przegranych (`scoreFor` do `scoreAgainst`) i punkty
+        w setach zdobyte do straconych (`rallyPointsFor` do
+        `rallyPointsAgainst`). Porównuje się je mnożeniem krzyżowym, bez
+        ułamków. Drużyna bez straconego seta (punktu) stoi wyżej niż każda ze
+        straconym, a z dwóch bez straconego wyżej stoi ta, która zdobyła
+        więcej; przy równej liczbie decyduje następne kryterium. Drużyna bez
+        rozegranego seta (0:0) ma iloraz zero, tak jak drużyna, która nie
+        wygrała żadnego.
+
         `head_to_head` to mini-tabela z zakończonych meczów między remisującymi
         drużynami, sortowana po punktach, bilansie i zdobyczach w tych meczach.
         Nie zagłębia się rekurencyjnie: drużyny, których mini-tabela nie
         rozdzieliła, idą do następnego kryterium z listy, bez powrotu do
         `head_to_head`. Kryterium jest pomijane, dopóki w fazie istnieje
         niezakończony mecz między remisującymi.
-      enum: [points, head_to_head, score_diff, score_for, score_against, wins]
+      enum: [points, head_to_head, score_diff, score_for, score_against, wins, set_ratio, point_ratio]
 
     TournamentStatus:
       type: string
@@ -4976,7 +5627,7 @@ components:
 
     Tournament:
       type: object
-      required: [id, name, slug, status, sport, branding, points, tiebreakers, matchDuration, periods, teamsCount, createdAt, updatedAt]
+      required: [id, name, slug, status, sport, branding, points, tiebreakers, matchDuration, periods, setFormat, teamsCount, createdAt, updatedAt]
       properties:
         id: { type: integer, format: int64 }
         name: { type: string }
@@ -5012,6 +5663,16 @@ components:
             u siebie. Zmiana działa wstecz na wszystkie mecze turnieju: część
             zdarzenia liczy się przy odczycie z jego minuty
             (`PublicMatchEvent.period`), a w zdarzeniach nic się nie zapisuje.
+            W sporcie z setami zawsze `{ count: 1, minutes: null }`.
+        setFormat:
+          oneOf:
+            - $ref: '#/components/schemas/SetFormat'
+            - type: 'null'
+          description: |
+            Format seta turnieju (#301). Turniej dostaje go przy zakładaniu
+            jako kopię `SportConfig.defaultSetFormat`, a potem organizer zmienia
+            go u siebie, ale tylko do pierwszego wpisanego seta
+            (`TournamentUpdate.setFormat`). `null` w sporcie bez setów.
         teamsCount: { type: integer, minimum: 0 }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -5045,6 +5706,25 @@ components:
             Podział meczu (`Tournament.periods`). Przychodzi w komplecie albo
             wcale; reguły i klucze błędów opisuje `MatchPeriods`. Zmiana
             przelicza relacje wszystkich meczów turnieju na stronie publicznej.
+            W sporcie z setami jedyna dopuszczalna wartość to
+            `{ count: 1, minutes: null }`, bo set nie ma czasu: inna daje `422`
+            pod `periods`.
+        setFormat:
+          allOf:
+            - $ref: '#/components/schemas/SetFormat'
+          description: |
+            Format seta (`Tournament.setFormat`, #301). Przychodzi w komplecie
+            albo wcale; zakresy i klucze błędów opisuje `SetFormat`.
+            W sporcie bez setów daje `422` pod `setFormat`.
+
+            **Blokada:** gdy w turnieju jest choć jeden mecz z wpisanym setem
+            (`Match.sets` niepuste), format różny od zapisanego daje `422` pod
+            `setFormat` z komunikatem „Format seta zmienisz tylko przed
+            pierwszym wynikiem.”. Format równy zapisanemu przechodzi, żeby
+            formularz ustawień dało się zapisać w całości. Format to reguła,
+            według której wyniki powstały, więc jego zmiana zrobiłaby
+            z wpisanych setów niepoprawne; punktacja i kryteria tylko wyniki
+            oceniają i dalej działają wstecz.
         branding:
           type: object
           additionalProperties: false
@@ -5297,7 +5977,7 @@ components:
         Kształt zamrożony w v0.1. Pola drabinkowe (`winnerToMatchId`,
         `loserToMatchId`, `advancesToSlot`) opisuje
         [ADR-0004](../../docs/adr/0004-drabinka-pozycja-wlasna-i-propagacja-osobno.md).
-      required: [id, stageId, groupId, round, matchNumber, homeTeam, awayTeam, homeScore, awayScore, homePenalties, awayPenalties, status, kickoffAt, venue, winnerToMatchId, loserToMatchId, advancesToSlot, livePeriod, periodStartedAt, onBreak]
+      required: [id, stageId, groupId, round, matchNumber, homeTeam, awayTeam, homeScore, awayScore, homePenalties, awayPenalties, sets, status, kickoffAt, venue, winnerToMatchId, loserToMatchId, advancesToSlot, livePeriod, periodStartedAt, onBreak]
       properties:
         id: { type: integer, format: int64 }
         stageId: { type: integer, format: int64 }
@@ -5337,8 +6017,24 @@ components:
           oneOf:
             - $ref: '#/components/schemas/TeamSummary'
             - type: 'null'
-        homeScore: { type: [integer, 'null'], minimum: 0 }
-        awayScore: { type: [integer, 'null'], minimum: 0 }
+        homeScore:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Zdobycze gospodarza. W sporcie z setami to sety wygrane, które
+            serwer liczy z `sets` (#301), a klient ich nie wysyła.
+        awayScore:
+          type: [integer, 'null']
+          minimum: 0
+          description: Zdobycze gościa, w sporcie z setami sety wygrane (patrz `homeScore`).
+        sets:
+          type: [array, 'null']
+          items: { $ref: '#/components/schemas/SetScore' }
+          description: |
+            Wyniki setów w kolejności rozegrania (#301). W sporcie z setami
+            lista, pusta przed pierwszym setem; w meczu `live` ostatni set może
+            być niedokończony. W sporcie bez setów `null`. Reguły zapisu
+            opisuje `MatchUpdate`.
         homePenalties:
           type: [integer, 'null']
           minimum: 0
@@ -5388,8 +6084,8 @@ components:
           description: |
             Bieżąca część meczu `live` (#297), od 1. Wartość
             `Tournament.periods.count + 1` znaczy „Dogrywka / karne”
-            i występuje tylko w fazie `knockout`. `null` przy `scheduled`
-            i `finished`.
+            i występuje tylko w fazie `knockout`, a w sporcie z setami nigdy,
+            bo tam dogrywki nie ma. `null` przy `scheduled` i `finished`.
 
             Zegar meczu liczy przeglądarka z `livePeriod`, `periodStartedAt`
             i `onBreak` oraz `PublicTournament.periods` i `runningClock`:
@@ -5469,6 +6165,45 @@ components:
         powrót do `scheduled` z wynikiem. W sporcie bez remisów remis przy
         `finished` jest błędem wyniku, więc karne nie mają tam kiedy wejść.
 
+        **Sety** (#301). W sporcie z setami wynik niesie `sets`, a serwer
+        liczy z niego `homeScore` i `awayScore` (sety wygrane). Wysłanie
+        `homeScore` albo `awayScore` daje tam `422` pod `homeScore`
+        („W meczu na sety wynik liczy się z setów.”), a wysłanie `sets`
+        w sporcie bez setów daje `422` pod `sets`. Lista przychodzi
+        w komplecie i zastępuje zapisaną.
+
+        Próg seta to `Tournament.setFormat.setPoints`, a seta decydującego
+        (numer `2 × setsToWin − 1`) `decidingSetPoints`. Set jest
+        **zakończony**, gdy przy progu P zwycięzca W i przegrany L spełniają:
+
+        | `minLead` | set zakończony | przykłady przy P = 25 |
+        |---|---|---|
+        | `2` | W = P i L ≤ P − 2 albo W > P i W − L = 2 | 25:23, 27:25 tak; 25:24, 28:25 nie |
+        | `1` | W = P i L ≤ P − 1 | 25:24 tak; 26:24 nie |
+
+        Set **niedokończony** to wynik, od którego gra może jeszcze trwać:
+        obie drużyny poniżej progu albo, przy `minLead: 2`, różnica co
+        najwyżej 1 na progu lub za nim (24:24, 25:24). Wynik ani zakończony,
+        ani niedokończony (26:22, 28:25) daje `422` pod `sets.{n}`, gdzie `n`
+        to indeks seta od 0, wzorem `tiebreakers.N`.
+
+        Spójność setów ze stanem, po scaleniu ciała z zapisanym meczem:
+
+        | stan | `sets` |
+        |---|---|
+        | `scheduled` | pusta lista |
+        | `live` | sety poza ostatnim zakończone, ostatni może być niedokończony |
+        | `finished` | wszystkie zakończone, jedna drużyna ma `setsToWin` setów |
+
+        W każdym stanie nie ma seta po rozstrzygnięciu meczu (gdy któraś
+        drużyna ma już `setsToWin` setów). Set niedokończony poza ostatnią
+        pozycją, niedokończony ostatni set meczu `finished` i set po
+        rozstrzygnięciu dają `422` pod `sets.{n}`. Sety przy `scheduled`
+        i mecz `finished` bez zwycięzcy dają `422` pod `sets`. Powrót do
+        `scheduled` nie czyści setów sam, tak jak wyniku: klient wysyła
+        `sets: []`. Remisu w setach nie ma, więc karne nie mają kiedy wejść,
+        a awans w drabince idzie po setach wygranych.
+
         Mecz bez obu drużyn (pusty slot drabinki) może być tylko `scheduled`:
         `live` albo `finished` daje `422` pod `status`. Termin i obiekt wolno
         mu ustawić.
@@ -5521,7 +6256,8 @@ components:
         spoza `1…periods.count`, a w fazie `knockout` spoza
         `1…periods.count + 1` (dogrywka), też daje `422` pod `livePeriod`,
         tak samo `livePeriod` bez `periodRunning: true` i `periodRunning: true`
-        bez `livePeriod`. Pola części nadpisują
+        bez `livePeriod`. W sporcie z setami dogrywki nie ma, więc zakres to
+        `1…periods.count` także w fazie `knockout`. Pola części nadpisują
         zegar ustawiony przejściem stanu z tego samego ciała.
 
         Bieżąca część to `livePeriod` po przejściu stanu z tego samego ciała
@@ -5538,10 +6274,15 @@ components:
           trakcie przerwy ani po powrocie z `finished`.
         - W turnieju bez podziału jedyna część to `1` (startuje ją
           `scheduled` → `live`), a w fazie `knockout` po niej wolno
-          wystartować dogrywkę, część `2`.
+          wystartować dogrywkę, część `2` — poza sportem z setami.
       properties:
         homeScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
         awayScore: { type: [integer, 'null'], minimum: 0, maximum: 999 }
+        sets:
+          type: array
+          maxItems: 5
+          items: { $ref: '#/components/schemas/SetScore' }
+          description: Wyniki setów, tylko w sporcie z setami. Reguły w opisie `MatchUpdate`.
         homePenalties:
           type: [integer, 'null']
           minimum: 0
@@ -5698,6 +6439,11 @@ components:
         **wszystkie** `events[].scoreAfter` oraz `periods[].homeScore`
         i `awayScore` są `null`: strona nie może pokazać bieżącego wyniku,
         który kończy się na innym niż wynik w nagłówku.
+
+        **Sport z setami** (#301). Wynik to sety, a zdarzenia (as, blok,
+        atak) to wybrane akcje, nie każdy punkt, więc żadne zdarzenie nie
+        zmienia wyniku: `events[].scoreAfter` jest zawsze `null`. Mecz ma
+        jedną część, więc `periods: []`, a wyniki setów niesie `sets`.
       allOf:
         - $ref: '#/components/schemas/PublicMatch'
         - type: object
@@ -5747,8 +6493,8 @@ components:
                 samobóju, który podnosi wynik **przeciwnika** drużyny
                 `team`. Zdobycz to `SportEventType.value`, a zdarzenia liczą
                 się w kolejności listy, także te bez minuty. `null` przy
-                kartce, faulu i przy niezgodności z wynikiem meczu (opis
-                `PublicMatchDetail`).
+                kartce, faulu, przy niezgodności z wynikiem meczu i przy
+                każdym zdarzeniu w sporcie z setami (opis `PublicMatchDetail`).
 
     PublicMatchPeriod:
       type: object
@@ -5778,7 +6524,7 @@ components:
 
     StandingRow:
       type: object
-      required: [position, team, played, won, drawn, lost, scoreFor, scoreAgainst, scoreDifference, points, form]
+      required: [position, team, played, won, drawn, lost, scoreFor, scoreAgainst, scoreDifference, rallyPointsFor, rallyPointsAgainst, points, form]
       properties:
         position:
           type: integer
@@ -5800,9 +6546,20 @@ components:
         scoreFor:
           type: integer
           minimum: 0
-          description: 'Zdobycze drużyny: bramki w piłce, punkty w koszykówce. Nie mylić z `points`.'
+          description: 'Zdobycze drużyny: bramki w piłce, punkty w koszykówce, sety wygrane w siatkówce. Nie mylić z `points`.'
         scoreAgainst: { type: integer, minimum: 0 }
         scoreDifference: { type: integer }
+        rallyPointsFor:
+          type: [integer, 'null']
+          minimum: 0
+          description: |
+            Punkty w setach zdobyte przez drużynę: suma jej punktów ze
+            wszystkich setów zakończonych meczów tabeli (#301). `null`
+            w sporcie bez setów. Nie mylić z `points` ani ze `scoreFor`.
+        rallyPointsAgainst:
+          type: [integer, 'null']
+          minimum: 0
+          description: Punkty w setach stracone przez drużynę. `null` w sporcie bez setów.
         points:
           type: integer
           description: Punkty za wyniki meczów, zgodnie z `Tournament.points`. Nigdy zdobycze.
@@ -5827,7 +6584,7 @@ components:
 
     StandingTable:
       type: object
-      required: [stageId, stageName, groupId, groupName, scoreLabel, allowsDraw, tiebreakers, rows]
+      required: [stageId, stageName, groupId, groupName, scoreLabel, rallyPointsLabel, allowsDraw, tiebreakers, rows]
       properties:
         stageId: { type: integer, format: int64 }
         stageName: { type: string }
@@ -5844,12 +6601,20 @@ components:
           type: string
           description: |
             Nagłówek kolumny `scoreFor`:`scoreAgainst`, wyprowadzony ze sportu
-            turnieju: „Bramki" w piłce nożnej, „Punkty" w koszykówce. Pola w API
+            turnieju: „Bramki" w piłce nożnej, „Punkty" w koszykówce, „Sety"
+            w siatkówce. Pola w API
             nazywają się `score*` niezależnie od sportu — tak przewiduje
             [ADR-0003](../../docs/adr/0003-zdobycze-nazywaja-sie-score-nie-goals.md).
             To, że etykietę niesie odpowiedź, a nie mapowanie po stronie klienta,
             ustala [ADR-0006](../../docs/adr/0006-etykiete-zdobyczy-niesie-odpowiedz-tabeli.md);
             `StatLeaderboard.label` robi to samo dla klasyfikacji.
+        rallyPointsLabel:
+          type: [string, 'null']
+          description: |
+            Nagłówek kolumny `rallyPointsFor`:`rallyPointsAgainst` (#301):
+            „Punkty w setach” w sporcie z setami, `null` w pozostałych, gdzie
+            tej kolumny nie ma. Jedzie z tabelą z tego samego powodu co
+            `scoreLabel` (ADR-0006).
         allowsDraw:
           type: boolean
           description: |

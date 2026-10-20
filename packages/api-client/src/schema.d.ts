@@ -275,6 +275,7 @@ export interface paths {
                          *               "count": 2,
                          *               "minutes": 45
                          *             },
+                         *             "defaultSetFormat": null,
                          *             "eventTypes": [
                          *               {
                          *                 "code": "goal",
@@ -354,6 +355,7 @@ export interface paths {
                          *               "count": 4,
                          *               "minutes": 10
                          *             },
+                         *             "defaultSetFormat": null,
                          *             "eventTypes": [
                          *               {
                          *                 "code": "free_throw",
@@ -410,6 +412,83 @@ export interface paths {
                          *             "statLabels": {
                          *               "points": "Punkty",
                          *               "fouls": "Faule"
+                         *             }
+                         *           }
+                         *         },
+                         *         {
+                         *           "id": 3,
+                         *           "code": "volleyball",
+                         *           "name": "Siatkówka",
+                         *           "config": {
+                         *             "allowsDraw": false,
+                         *             "runningClock": false,
+                         *             "defaultPoints": {
+                         *               "win": 3,
+                         *               "draw": 0,
+                         *               "loss": 0,
+                         *               "winDecidingSet": 2,
+                         *               "lossDecidingSet": 1
+                         *             },
+                         *             "defaultMatchDuration": 90,
+                         *             "defaultPeriods": {
+                         *               "count": 1,
+                         *               "minutes": null
+                         *             },
+                         *             "defaultSetFormat": {
+                         *               "setsToWin": 3,
+                         *               "setPoints": 25,
+                         *               "decidingSetPoints": 15,
+                         *               "minLead": 2
+                         *             },
+                         *             "eventTypes": [
+                         *               {
+                         *                 "code": "ace",
+                         *                 "label": "As serwisowy",
+                         *                 "hasPlayer": true,
+                         *                 "value": 1,
+                         *                 "stat": "points"
+                         *               },
+                         *               {
+                         *                 "code": "block",
+                         *                 "label": "Blok punktowy",
+                         *                 "hasPlayer": true,
+                         *                 "value": 1,
+                         *                 "stat": "points"
+                         *               },
+                         *               {
+                         *                 "code": "attack",
+                         *                 "label": "Atak punktowy",
+                         *                 "hasPlayer": true,
+                         *                 "value": 1,
+                         *                 "stat": "points"
+                         *               }
+                         *             ],
+                         *             "defaultTiebreakers": [
+                         *               "points",
+                         *               "wins",
+                         *               "set_ratio",
+                         *               "point_ratio",
+                         *               "head_to_head"
+                         *             ],
+                         *             "availableTiebreakers": [
+                         *               "points",
+                         *               "wins",
+                         *               "set_ratio",
+                         *               "point_ratio",
+                         *               "head_to_head"
+                         *             ],
+                         *             "tiebreakerLabels": {
+                         *               "points": "Punkty w tabeli",
+                         *               "wins": "Zwycięstwa",
+                         *               "set_ratio": "Stosunek setów",
+                         *               "point_ratio": "Stosunek punktów w setach",
+                         *               "head_to_head": "Bezpośredni mecz"
+                         *             },
+                         *             "availableStats": [
+                         *               "points"
+                         *             ],
+                         *             "statLabels": {
+                         *               "points": "Punkty"
                          *             }
                          *           }
                          *         }
@@ -512,6 +591,7 @@ export interface paths {
                          *             "count": 4,
                          *             "minutes": 10
                          *           },
+                         *           "setFormat": null,
                          *           "teamsCount": 8,
                          *           "createdAt": "2026-09-10T07:00:00+00:00",
                          *           "updatedAt": "2026-09-10T07:00:00+00:00"
@@ -547,6 +627,7 @@ export interface paths {
                          *             "count": 2,
                          *             "minutes": 45
                          *           },
+                         *           "setFormat": null,
                          *           "teamsCount": 3,
                          *           "createdAt": "2026-09-01T08:00:00+00:00",
                          *           "updatedAt": "2026-09-14T16:30:00+00:00"
@@ -638,6 +719,7 @@ export interface paths {
                          *           "count": 2,
                          *           "minutes": 45
                          *         },
+                         *         "setFormat": null,
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -675,6 +757,11 @@ export interface paths {
          *     ten sam przełącznik obsługuje listę meczów i tabelę, więc w panelu
          *     przestawia naraz turniej, terminarz i tabelę. Turniej koszykarski to
          *     ten z seedu demo (`liga-koszykowki-2026`).
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik ma lista meczów i tabela
+         *     panelu.
          */
         get: {
             parameters: {
@@ -759,6 +846,8 @@ export interface paths {
          *     Punktację (`points`) i tiebreaki (`tiebreakers`) wolno zmieniać zawsze,
          *     niezależnie od statusu turnieju i od rozegranych meczów. Tabela liczy
          *     się przy odczycie, więc zmiana obejmuje też mecze już rozegrane.
+         *     Wyjątkiem jest format seta w sporcie z setami: zmienia się tylko do
+         *     pierwszego wpisanego seta (`TournamentUpdate.setFormat`).
          */
         patch: {
             parameters: {
@@ -884,6 +973,7 @@ export interface paths {
                          *           "count": 2,
                          *           "minutes": 45
                          *         },
+                         *         "setFormat": null,
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -956,6 +1046,7 @@ export interface paths {
                          *           "count": 2,
                          *           "minutes": 45
                          *         },
+                         *         "setFormat": null,
                          *         "teamsCount": 0,
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
@@ -2700,6 +2791,10 @@ export interface paths {
          *     `Prefer: example=koszykowka`. Koszykarski jest zgodny z przykładem
          *     `koszykowka` tabeli i turnieju, więc jeden przełącznik przestawia
          *     w panelu turniej, terminarz i tabelę naraz.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik mają turniej i tabela panelu.
          */
         get: {
             parameters: {
@@ -3106,6 +3201,11 @@ export interface paths {
          *     mają ten sam przełącznik, więc w panelu przestawia naraz turniej,
          *     terminarz i tabelę. Mock nie liczy tabel, więc parametr `tiebreakers`
          *     niczego w nim nie zmienia.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik mają turniej i lista meczów
+         *     panelu.
          */
         get: {
             parameters: {
@@ -3202,6 +3302,11 @@ export interface paths {
          *     w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
          *     Wszystkie cztery przełączniki obsługuje też `/teams`: drużyny tych
          *     samych turniejów.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik mają `/standings`,
+         *     `/fixtures`, `/results` i strona meczu.
          */
         get: {
             parameters: {
@@ -3290,6 +3395,10 @@ export interface paths {
          *     nagłówek kolumny z odpowiedzi, a nie ze sztywnego napisu. Trzeci, po
          *     `Prefer: example=grupy`, to dwie tabele grup turnieju z przykładu
          *     `grupy` w `/public/t/{slug}`.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik ma `/public/t/{slug}`.
          */
         get: {
             parameters: {
@@ -3616,6 +3725,10 @@ export interface paths {
          *     i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
          *     `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
          *     a czwarty po `Prefer: example=grupy`.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik ma `/public/t/{slug}`.
          */
         get: {
             parameters: {
@@ -3709,6 +3822,10 @@ export interface paths {
          *     i `grupy`. Mock zwraca drugi po wysłaniu nagłówka
          *     `Prefer: example=koszykowka`, trzeci po `Prefer: example=puchar`,
          *     a czwarty po `Prefer: example=grupy`.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. Ten sam przełącznik ma `/public/t/{slug}`.
          */
         get: {
             parameters: {
@@ -3799,6 +3916,10 @@ export interface paths {
          *     kartką i zdarzeniem bez minuty), `koszykowka` (rzuty za 1, 2 i 3,
          *     faule, cztery kwarty) i `na-zywo` (mecz trwający). Mock zwraca
          *     wybrany po nagłówku `Prefer: example=…`, dla każdego `match` ten sam.
+         *
+         *     Przykład `siatkowka` (#301), liga siatkówki z seedu demo
+         *     (`liga-siatkowki-2026`), mock zwraca po nagłówku
+         *     `Prefer: example=siatkowka`. To mecz 3 z przykładu `siatkowka` w `/results`.
          */
         get: {
             parameters: {
@@ -4018,13 +4139,22 @@ export interface components {
             user: components["schemas"]["User"];
         };
         /** @enum {string} */
-        SportCode: "football" | "basketball";
+        SportCode: "football" | "basketball" | "volleyball";
         /**
          * @description Punktacja: ile punktów w tabeli daje wygrana, remis i porażka. Obowiązuje
          *     porządek `loss < win`, a w sporcie z remisami (`allowsDraw: true`) także
          *     `loss ≤ draw ≤ win`. Naruszenie porządku daje `422` pod `points`.
          *     Wartość spoza zakresu daje `422` pod `points.win`, `points.draw` albo
          *     `points.loss`.
+         *
+         *     W sporcie z setami (`SportConfig.defaultSetFormat` różne od `null`,
+         *     #301) dochodzą `winDecidingSet` i `lossDecidingSet`: punkty za mecz
+         *     rozstrzygnięty w secie decydującym, czyli wygrany różnicą jednego
+         *     seta (3:2, 2:1). Pozostałe mecze dają `win` i `loss`. Oba pola są tam
+         *     wymagane, a w sporcie bez setów zabronione: brak albo nadmiar daje
+         *     `422` pod `points.winDecidingSet` albo `points.lossDecidingSet`.
+         *     Obowiązuje też porządek `loss ≤ lossDecidingSet < winDecidingSet ≤ win`,
+         *     a jego naruszenie daje `422` pod `points`.
          */
         Points: {
             win: number;
@@ -4036,6 +4166,44 @@ export interface components {
              */
             draw: number;
             loss: number;
+            /** @description Punkty za wygraną w secie decydującym. Tylko w sporcie z setami. */
+            winDecidingSet?: number;
+            /** @description Punkty za porażkę w secie decydującym. Tylko w sporcie z setami. */
+            lossDecidingSet?: number;
+        };
+        /**
+         * @description Format seta w sporcie z setami (#301): do ilu wygranych setów gra się
+         *     mecz, do ilu punktów set i set decydujący oraz jaką przewagą trzeba
+         *     wygrać set. Set decydujący to ostatni możliwy set meczu, o numerze
+         *     `2 × setsToWin − 1` (5. przy meczu do 3, grany przy 2:2, i 3. przy
+         *     meczu do 2, grany przy 1:1). Reguły zapisu setów opisuje `MatchUpdate`.
+         *
+         *     Przy zapisie (`TournamentUpdate.setFormat`) wartość spoza zakresu daje
+         *     `422` pod `setFormat.<pole>`, a `decidingSetPoints` większe od
+         *     `setPoints` daje `422` pod `setFormat.decidingSetPoints`.
+         */
+        SetFormat: {
+            /**
+             * @description Liczba wygranych setów, która kończy mecz.
+             * @enum {integer}
+             */
+            setsToWin: 2 | 3;
+            /** @description Próg punktów seta innego niż decydujący. */
+            setPoints: number;
+            /** @description Próg punktów seta decydującego, nie większy od `setPoints`. */
+            decidingSetPoints: number;
+            /**
+             * @description Przewaga, którą trzeba wygrać set. Przy `2` po wyrównaniu na progu
+             *     minus jeden (24:24) gra toczy się na przewagi, bez górnej granicy
+             *     (26:24, 31:29). Przy `1` set kończy się na progu (25:24).
+             * @enum {integer}
+             */
+            minLead: 1 | 2;
+        };
+        /** @description Wynik jednego seta w punktach (#301). */
+        SetScore: {
+            home: number;
+            away: number;
         };
         SportEventType: {
             code: string;
@@ -4058,24 +4226,39 @@ export interface components {
              * @description Czy zegar meczu biegnie w minutach (#297). Piłka nożna `true`:
              *     tablica pokazuje minutę („67′”). Koszykówka `false`: zegar staje
              *     przy każdym przerwaniu gry, więc tablica pokazuje część
-             *     („3. kwarta”) zamiast minuty.
+             *     („3. kwarta”) zamiast minuty. Siatkówka `false` przy jednej
+             *     części, więc tablica pokazuje samo „Na żywo”.
              */
             runningClock: boolean;
             defaultPoints: components["schemas"]["Points"];
             /**
              * @description Domyślna długość meczu w minutach, razem z przerwą po nim,
              *     kopiowana do turnieju przy zakładaniu (`Tournament.matchDuration`).
-             *     Wartości amatorskie: piłka nożna 60, koszykówka 40.
+             *     Wartości amatorskie: piłka nożna 60, koszykówka 40, siatkówka 90.
              */
             defaultMatchDuration: number;
             /**
              * @description Domyślny podział meczu na części, kopiowany do turnieju przy
              *     zakładaniu (`Tournament.periods`), wzorem `defaultMatchDuration`.
              *     Piłka nożna `{ count: 2, minutes: 45 }`, koszykówka
-             *     `{ count: 4, minutes: 10 }`. Z `defaultMatchDuration` się go nie
+             *     `{ count: 4, minutes: 10 }`, siatkówka `{ count: 1, minutes: null }`,
+             *     bo set nie ma czasu. Z `defaultMatchDuration` się go nie
              *     wylicza: tamta długość jest amatorska i zawiera przerwę.
              */
             defaultPeriods: components["schemas"]["MatchPeriods"];
+            /**
+             * @description Domyślny format seta, kopiowany do turnieju przy zakładaniu
+             *     (`Tournament.setFormat`), wzorem `defaultPeriods`. Siatkówka
+             *     `{ setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 }`,
+             *     piłka i koszykówka `null`.
+             *
+             *     Sport z formatem seta to **sport z setami** (#301): wynik meczu to
+             *     sety wygrane, remisu nie ma i dogrywki też nie, a mecz ma jedną
+             *     część bez czasu (`periods: { count: 1, minutes: null }`). Osobnej
+             *     flagi na to nie ma: reguły opisane jako „w sporcie z setami”
+             *     czytają właśnie ten warunek.
+             */
+            defaultSetFormat: components["schemas"]["SetFormat"] | null;
             eventTypes: components["schemas"]["SportEventType"][];
             /**
              * @description Kolejność tiebreaków, którą turniej dostaje przy zakładaniu.
@@ -4097,7 +4280,7 @@ export interface components {
             /**
              * @description Kody statystyk, według których liczy się klasyfikacja
              *     (`StatLeaderboard`). Pierwszy wpis to klasyfikacja domyślna:
-             *     piłka `goals`, kosz `points`.
+             *     piłka `goals`, kosz i siatkówka `points`.
              */
             availableStats: string[];
             /**
@@ -4135,6 +4318,16 @@ export interface components {
          *     pierwsze na liście turnieju. `score_against` stawia wyżej drużynę,
          *     która straciła mniej, pozostałe kryteria drużynę z wyższą wartością.
          *
+         *     `set_ratio` i `point_ratio` (#301, sport z setami) to ilorazy: sety
+         *     wygrane do przegranych (`scoreFor` do `scoreAgainst`) i punkty
+         *     w setach zdobyte do straconych (`rallyPointsFor` do
+         *     `rallyPointsAgainst`). Porównuje się je mnożeniem krzyżowym, bez
+         *     ułamków. Drużyna bez straconego seta (punktu) stoi wyżej niż każda ze
+         *     straconym, a z dwóch bez straconego wyżej stoi ta, która zdobyła
+         *     więcej; przy równej liczbie decyduje następne kryterium. Drużyna bez
+         *     rozegranego seta (0:0) ma iloraz zero, tak jak drużyna, która nie
+         *     wygrała żadnego.
+         *
          *     `head_to_head` to mini-tabela z zakończonych meczów między remisującymi
          *     drużynami, sortowana po punktach, bilansie i zdobyczach w tych meczach.
          *     Nie zagłębia się rekurencyjnie: drużyny, których mini-tabela nie
@@ -4143,7 +4336,7 @@ export interface components {
          *     niezakończony mecz między remisującymi.
          * @enum {string}
          */
-        TiebreakerCode: "points" | "head_to_head" | "score_diff" | "score_for" | "score_against" | "wins";
+        TiebreakerCode: "points" | "head_to_head" | "score_diff" | "score_for" | "score_against" | "wins" | "set_ratio" | "point_ratio";
         /**
          * @description Stan turnieju.
          *
@@ -4220,8 +4413,16 @@ export interface components {
              *     u siebie. Zmiana działa wstecz na wszystkie mecze turnieju: część
              *     zdarzenia liczy się przy odczycie z jego minuty
              *     (`PublicMatchEvent.period`), a w zdarzeniach nic się nie zapisuje.
+             *     W sporcie z setami zawsze `{ count: 1, minutes: null }`.
              */
             periods: components["schemas"]["MatchPeriods"];
+            /**
+             * @description Format seta turnieju (#301). Turniej dostaje go przy zakładaniu
+             *     jako kopię `SportConfig.defaultSetFormat`, a potem organizer zmienia
+             *     go u siebie, ale tylko do pierwszego wpisanego seta
+             *     (`TournamentUpdate.setFormat`). `null` w sporcie bez setów.
+             */
+            setFormat: components["schemas"]["SetFormat"] | null;
             teamsCount: number;
             /** Format: date-time */
             createdAt: string;
@@ -4248,8 +4449,26 @@ export interface components {
              * @description Podział meczu (`Tournament.periods`). Przychodzi w komplecie albo
              *     wcale; reguły i klucze błędów opisuje `MatchPeriods`. Zmiana
              *     przelicza relacje wszystkich meczów turnieju na stronie publicznej.
+             *     W sporcie z setami jedyna dopuszczalna wartość to
+             *     `{ count: 1, minutes: null }`, bo set nie ma czasu: inna daje `422`
+             *     pod `periods`.
              */
             periods?: components["schemas"]["MatchPeriods"];
+            /**
+             * @description Format seta (`Tournament.setFormat`, #301). Przychodzi w komplecie
+             *     albo wcale; zakresy i klucze błędów opisuje `SetFormat`.
+             *     W sporcie bez setów daje `422` pod `setFormat`.
+             *
+             *     **Blokada:** gdy w turnieju jest choć jeden mecz z wpisanym setem
+             *     (`Match.sets` niepuste), format różny od zapisanego daje `422` pod
+             *     `setFormat` z komunikatem „Format seta zmienisz tylko przed
+             *     pierwszym wynikiem.”. Format równy zapisanemu przechodzi, żeby
+             *     formularz ustawień dało się zapisać w całości. Format to reguła,
+             *     według której wyniki powstały, więc jego zmiana zrobiłaby
+             *     z wpisanych setów niepoprawne; punktacja i kryteria tylko wyniki
+             *     oceniają i dalej działają wstecz.
+             */
+            setFormat?: components["schemas"]["SetFormat"];
             /**
              * @description Branding jest zagnieżdżony tak samo jak w odczycie
              *     (`Tournament.branding`), żeby formularz panelu nie musiał go
@@ -4500,8 +4719,20 @@ export interface components {
              */
             homeTeam: components["schemas"]["TeamSummary"] | null;
             awayTeam: components["schemas"]["TeamSummary"] | null;
+            /**
+             * @description Zdobycze gospodarza. W sporcie z setami to sety wygrane, które
+             *     serwer liczy z `sets` (#301), a klient ich nie wysyła.
+             */
             homeScore: number | null;
+            /** @description Zdobycze gościa, w sporcie z setami sety wygrane (patrz `homeScore`). */
             awayScore: number | null;
+            /**
+             * @description Wyniki setów w kolejności rozegrania (#301). W sporcie z setami
+             *     lista, pusta przed pierwszym setem; w meczu `live` ostatni set może
+             *     być niedokończony. W sporcie bez setów `null`. Reguły zapisu
+             *     opisuje `MatchUpdate`.
+             */
+            sets: components["schemas"]["SetScore"][] | null;
             /**
              * @description Rzuty karne gospodarza. Niepuste wyłącznie wtedy, gdy mecz jest
              *     w fazie `knockout`, jest zakończony i `homeScore` równa się
@@ -4544,8 +4775,8 @@ export interface components {
             /**
              * @description Bieżąca część meczu `live` (#297), od 1. Wartość
              *     `Tournament.periods.count + 1` znaczy „Dogrywka / karne”
-             *     i występuje tylko w fazie `knockout`. `null` przy `scheduled`
-             *     i `finished`.
+             *     i występuje tylko w fazie `knockout`, a w sporcie z setami nigdy,
+             *     bo tam dogrywki nie ma. `null` przy `scheduled` i `finished`.
              *
              *     Zegar meczu liczy przeglądarka z `livePeriod`, `periodStartedAt`
              *     i `onBreak` oraz `PublicTournament.periods` i `runningClock`:
@@ -4625,6 +4856,45 @@ export interface components {
          *     powrót do `scheduled` z wynikiem. W sporcie bez remisów remis przy
          *     `finished` jest błędem wyniku, więc karne nie mają tam kiedy wejść.
          *
+         *     **Sety** (#301). W sporcie z setami wynik niesie `sets`, a serwer
+         *     liczy z niego `homeScore` i `awayScore` (sety wygrane). Wysłanie
+         *     `homeScore` albo `awayScore` daje tam `422` pod `homeScore`
+         *     („W meczu na sety wynik liczy się z setów.”), a wysłanie `sets`
+         *     w sporcie bez setów daje `422` pod `sets`. Lista przychodzi
+         *     w komplecie i zastępuje zapisaną.
+         *
+         *     Próg seta to `Tournament.setFormat.setPoints`, a seta decydującego
+         *     (numer `2 × setsToWin − 1`) `decidingSetPoints`. Set jest
+         *     **zakończony**, gdy przy progu P zwycięzca W i przegrany L spełniają:
+         *
+         *     | `minLead` | set zakończony | przykłady przy P = 25 |
+         *     |---|---|---|
+         *     | `2` | W = P i L ≤ P − 2 albo W > P i W − L = 2 | 25:23, 27:25 tak; 25:24, 28:25 nie |
+         *     | `1` | W = P i L ≤ P − 1 | 25:24 tak; 26:24 nie |
+         *
+         *     Set **niedokończony** to wynik, od którego gra może jeszcze trwać:
+         *     obie drużyny poniżej progu albo, przy `minLead: 2`, różnica co
+         *     najwyżej 1 na progu lub za nim (24:24, 25:24). Wynik ani zakończony,
+         *     ani niedokończony (26:22, 28:25) daje `422` pod `sets.{n}`, gdzie `n`
+         *     to indeks seta od 0, wzorem `tiebreakers.N`.
+         *
+         *     Spójność setów ze stanem, po scaleniu ciała z zapisanym meczem:
+         *
+         *     | stan | `sets` |
+         *     |---|---|
+         *     | `scheduled` | pusta lista |
+         *     | `live` | sety poza ostatnim zakończone, ostatni może być niedokończony |
+         *     | `finished` | wszystkie zakończone, jedna drużyna ma `setsToWin` setów |
+         *
+         *     W każdym stanie nie ma seta po rozstrzygnięciu meczu (gdy któraś
+         *     drużyna ma już `setsToWin` setów). Set niedokończony poza ostatnią
+         *     pozycją, niedokończony ostatni set meczu `finished` i set po
+         *     rozstrzygnięciu dają `422` pod `sets.{n}`. Sety przy `scheduled`
+         *     i mecz `finished` bez zwycięzcy dają `422` pod `sets`. Powrót do
+         *     `scheduled` nie czyści setów sam, tak jak wyniku: klient wysyła
+         *     `sets: []`. Remisu w setach nie ma, więc karne nie mają kiedy wejść,
+         *     a awans w drabince idzie po setach wygranych.
+         *
          *     Mecz bez obu drużyn (pusty slot drabinki) może być tylko `scheduled`:
          *     `live` albo `finished` daje `422` pod `status`. Termin i obiekt wolno
          *     mu ustawić.
@@ -4677,7 +4947,8 @@ export interface components {
          *     spoza `1…periods.count`, a w fazie `knockout` spoza
          *     `1…periods.count + 1` (dogrywka), też daje `422` pod `livePeriod`,
          *     tak samo `livePeriod` bez `periodRunning: true` i `periodRunning: true`
-         *     bez `livePeriod`. Pola części nadpisują
+         *     bez `livePeriod`. W sporcie z setami dogrywki nie ma, więc zakres to
+         *     `1…periods.count` także w fazie `knockout`. Pola części nadpisują
          *     zegar ustawiony przejściem stanu z tego samego ciała.
          *
          *     Bieżąca część to `livePeriod` po przejściu stanu z tego samego ciała
@@ -4694,11 +4965,13 @@ export interface components {
          *       trakcie przerwy ani po powrocie z `finished`.
          *     - W turnieju bez podziału jedyna część to `1` (startuje ją
          *       `scheduled` → `live`), a w fazie `knockout` po niej wolno
-         *       wystartować dogrywkę, część `2`.
+         *       wystartować dogrywkę, część `2` — poza sportem z setami.
          */
         MatchUpdate: {
             homeScore?: number | null;
             awayScore?: number | null;
+            /** @description Wyniki setów, tylko w sporcie z setami. Reguły w opisie `MatchUpdate`. */
+            sets?: components["schemas"]["SetScore"][];
             /** @description Rzuty karne gospodarza. Reguły w opisie `MatchUpdate`. */
             homePenalties?: number | null;
             /** @description Rzuty karne gościa. Reguły w opisie `MatchUpdate`. */
@@ -4827,6 +5100,11 @@ export interface components {
          *     **wszystkie** `events[].scoreAfter` oraz `periods[].homeScore`
          *     i `awayScore` są `null`: strona nie może pokazać bieżącego wyniku,
          *     który kończy się na innym niż wynik w nagłówku.
+         *
+         *     **Sport z setami** (#301). Wynik to sety, a zdarzenia (as, blok,
+         *     atak) to wybrane akcje, nie każdy punkt, więc żadne zdarzenie nie
+         *     zmienia wyniku: `events[].scoreAfter` jest zawsze `null`. Mecz ma
+         *     jedną część, więc `periods: []`, a wyniki setów niesie `sets`.
          */
         PublicMatchDetail: components["schemas"]["PublicMatch"] & {
             /**
@@ -4861,8 +5139,8 @@ export interface components {
              *     samobóju, który podnosi wynik **przeciwnika** drużyny
              *     `team`. Zdobycz to `SportEventType.value`, a zdarzenia liczą
              *     się w kolejności listy, także te bez minuty. `null` przy
-             *     kartce, faulu i przy niezgodności z wynikiem meczu (opis
-             *     `PublicMatchDetail`).
+             *     kartce, faulu, przy niezgodności z wynikiem meczu i przy
+             *     każdym zdarzeniu w sporcie z setami (opis `PublicMatchDetail`).
              */
             scoreAfter: components["schemas"]["ScoreSnapshot"] | null;
         };
@@ -4896,10 +5174,18 @@ export interface components {
             /** @description Zawsze zero w sporcie z `allowsDraw: false`, bo remis nie może w nim wystąpić. */
             drawn: number;
             lost: number;
-            /** @description Zdobycze drużyny: bramki w piłce, punkty w koszykówce. Nie mylić z `points`. */
+            /** @description Zdobycze drużyny: bramki w piłce, punkty w koszykówce, sety wygrane w siatkówce. Nie mylić z `points`. */
             scoreFor: number;
             scoreAgainst: number;
             scoreDifference: number;
+            /**
+             * @description Punkty w setach zdobyte przez drużynę: suma jej punktów ze
+             *     wszystkich setów zakończonych meczów tabeli (#301). `null`
+             *     w sporcie bez setów. Nie mylić z `points` ani ze `scoreFor`.
+             */
+            rallyPointsFor: number | null;
+            /** @description Punkty w setach stracone przez drużynę. `null` w sporcie bez setów. */
+            rallyPointsAgainst: number | null;
             /** @description Punkty za wyniki meczów, zgodnie z `Tournament.points`. Nigdy zdobycze. */
             points: number;
             /**
@@ -4933,7 +5219,8 @@ export interface components {
             groupName: string | null;
             /**
              * @description Nagłówek kolumny `scoreFor`:`scoreAgainst`, wyprowadzony ze sportu
-             *     turnieju: „Bramki" w piłce nożnej, „Punkty" w koszykówce. Pola w API
+             *     turnieju: „Bramki" w piłce nożnej, „Punkty" w koszykówce, „Sety"
+             *     w siatkówce. Pola w API
              *     nazywają się `score*` niezależnie od sportu — tak przewiduje
              *     [ADR-0003](../../docs/adr/0003-zdobycze-nazywaja-sie-score-nie-goals.md).
              *     To, że etykietę niesie odpowiedź, a nie mapowanie po stronie klienta,
@@ -4941,6 +5228,13 @@ export interface components {
              *     `StatLeaderboard.label` robi to samo dla klasyfikacji.
              */
             scoreLabel: string;
+            /**
+             * @description Nagłówek kolumny `rallyPointsFor`:`rallyPointsAgainst` (#301):
+             *     „Punkty w setach” w sporcie z setami, `null` w pozostałych, gdzie
+             *     tej kolumny nie ma. Jedzie z tabelą z tego samego powodu co
+             *     `scoreLabel` (ADR-0006).
+             */
+            rallyPointsLabel: string | null;
             /**
              * @description `SportConfig.allowsDraw` sportu turnieju. Mówi, czy tabela ma
              *     kolumnę remisów: w sporcie bez remisów `drawn` jest zawsze zerem
