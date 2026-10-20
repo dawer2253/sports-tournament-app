@@ -22,6 +22,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *   wyniki relacji są `null` (#188, reguła 11: zgodności API nie pilnuje),
  *   żeby bieżący wynik nie kończył się na innym niż wynik w nagłówku.
  * - Mecz `scheduled` nie ma relacji.
+ * - W sporcie z setami (#301) wynik to sety, a zdarzenia to wybrane akcje,
+ *   nie każdy punkt, więc żadne zdarzenie wyniku nie zmienia
+ *   (`scoreAfter: null`). Wyniki setów niesie `Match.sets`.
  *
  * Zdarzenia wczytuje `eagerLoad()` jednym zapytaniem, razem z zawodnikami
  * i drużynami; z tych samych `events` liczą się strzelcy.
@@ -85,7 +88,7 @@ final class MatchRelation
             ];
         }
 
-        $consistent = $home === $match->home_score && $away === $match->away_score;
+        $consistent = ! $sport->hasSets() && $home === $match->home_score && $away === $match->away_score;
 
         if (! $consistent) {
             $rows = array_map(fn (array $row): array => array_replace($row, ['scoreAfter' => null]), $rows);

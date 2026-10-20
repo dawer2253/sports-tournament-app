@@ -31,7 +31,11 @@ beforeEach(function () {
 function updateMatchLeague(string $sport = 'football', array $attributes = []): Tournament
 {
     $factory = Tournament::factory();
-    $tournament = ($sport === 'basketball' ? $factory->basketball() : $factory)->create($attributes);
+    $tournament = (match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    })->create($attributes);
     Stage::factory()->for($tournament)->create(['name' => 'Faza zasadnicza']);
     Team::factory()->for($tournament)->create(['name' => 'Wilki Bemowo']);
     Team::factory()->for($tournament)->create(['name' => 'Sokoły Ursus']);
@@ -491,4 +495,133 @@ it('przerwa w trakcie przerwy albo po powrocie z finished daje 422, a start nast
         ->assertValidResponse(200)
         ->assertJsonPath('data.livePeriod', 3)
         ->assertJsonPath('data.onBreak', false);
+});
+
+// --- sport z setami (#301) ---------------------------------------------------
+
+/** Mecz siatkówki `scheduled` z pustą listą setów, jak z generatora terminarza. */
+function updateMatchVolleyball(array $tournamentAttributes = []): GameMatch
+{
+    $match = updateMatchIn(updateMatchLeague('volleyball', $tournamentAttributes));
+    $match->update(['sets' => []]);
+
+    return $match;
+}
+
+/** @param list<array{int, int}> $scores */
+function updateMatchSets(array $scores): array
+{
+    return array_map(fn (array $score): array => ['home' => $score[0], 'away' => $score[1]], $scores);
+}
+
+it('w siatkówce zapisuje sety, a wynik to sety wygrane policzone przez serwer', function () {
+    $match = updateMatchVolleyball();
+
+    updateMatch($match, ['status' => 'finished', 'sets' => updateMatchSets([[25, 23], [27, 25], [23, 25], [25, 20]])])
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', 3)
+        ->assertJsonPath('data.awayScore', 1)
+        ->assertJsonPath('data.sets', updateMatchSets([[25, 23], [27, 25], [23, 25], [25, 20]]));
+
+    expect($match->refresh()->only(['home_score', 'away_score']))->toBe(['home_score' => 3, 'away_score' => 1]);
+});
+
+it('w siatkówce odrzuca set spoza reguł pod sets.{n}, a 27:25 i decydujący 15:13 przechodzą', function (array $scores, ?string $key) {
+    $response = updateMatch(updateMatchVolleyball(), ['status' => 'finished', 'sets' => updateMatchSets($scores)]);
+
+    $key === null
+        ? $response->assertValidResponse(200)
+        : $response->assertValidResponse(422)->assertJsonValidationErrors($key);
+})->with([
+    '25:23 i 27:25' => [[[25, 23], [27, 25], [25, 10]], null],
+    'decydujący 15:13' => [[[25, 23], [23, 25], [25, 21], [20, 25], [15, 13]], null],
+    '25:24' => [[[25, 24], [25, 10], [25, 10]], 'sets.0'],
+    '28:25' => [[[25, 10], [28, 25], [25, 10]], 'sets.1'],
+    'decydujący 15:14' => [[[25, 23], [23, 25], [25, 21], [20, 25], [15, 14]], 'sets.4'],
+    'bez zwycięzcy' => [[[25, 23], [23, 25]], 'sets'],
+    'set po rozstrzygnięciu' => [[[25, 10], [25, 10], [25, 10], [25, 10]], 'sets.3'],
+]);
+
+it('w siatkówce przy 2:2 piąty set gra się do 15', function () {
+    $match = updateMatchVolleyball();
+    $fourSets = [[25, 23], [23, 25], [25, 21], [20, 25]];
+
+    updateMatch($match, ['status' => 'finished', 'sets' => updateMatchSets([...$fourSets, [15, 9]])])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', 3)
+        ->assertJsonPath('data.awayScore', 2);
+
+    updateMatch($match, ['sets' => updateMatchSets([...$fourSets, [25, 9]])])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors', ['sets.4' => ['Set nie może skończyć się wynikiem 25:9: gra się do 15 pkt, a od 14:14 na przewagi.']]);
+});
+
+it('w siatkówce mecz trwający może mieć niedokończony ostatni set, który nie zmienia wyniku', function () {
+    $match = updateMatchVolleyball();
+
+    updateMatch($match, ['status' => 'live', 'sets' => updateMatchSets([[25, 21], [18, 25], [14, 12]])])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', 1)
+        ->assertJsonPath('data.awayScore', 1);
+
+    updateMatch($match, ['sets' => updateMatchSets([[26, 22]])])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('sets.0');
+});
+
+it('w siatkówce mecz do 2 setów kończy się na 2:1', function () {
+    $match = updateMatchVolleyball(['set_format' => ['setsToWin' => 2, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 2]]);
+
+    updateMatch($match, ['status' => 'finished', 'sets' => updateMatchSets([[25, 20], [20, 25], [15, 12]])])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', 2)
+        ->assertJsonPath('data.awayScore', 1);
+});
+
+it('w siatkówce przy przewadze 1 set kończy się na progu: 25:24 przechodzi, 26:24 daje 422', function () {
+    $match = updateMatchVolleyball(['set_format' => ['setsToWin' => 3, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 1]]);
+
+    updateMatch($match, ['status' => 'finished', 'sets' => updateMatchSets([[25, 24], [25, 24], [25, 24]])])->assertValidResponse(200);
+    updateMatch($match, ['sets' => updateMatchSets([[26, 24], [25, 24], [25, 24]])])->assertValidResponse(422)->assertJsonValidationErrors('sets.0');
+});
+
+it('w siatkówce stosuje próg seta z turnieju: sety do 21', function () {
+    $match = updateMatchVolleyball(['set_format' => ['setsToWin' => 3, 'setPoints' => 21, 'decidingSetPoints' => 15, 'minLead' => 2]]);
+
+    updateMatch($match, ['status' => 'finished', 'sets' => updateMatchSets([[21, 15], [21, 19], [21, 10]])])->assertValidResponse(200);
+    updateMatch($match, ['sets' => updateMatchSets([[25, 15], [21, 19], [21, 10]])])->assertValidResponse(422)->assertJsonValidationErrors('sets.0');
+});
+
+it('w siatkówce homeScore daje 422 pod homeScore', function () {
+    updateMatch(updateMatchVolleyball(), ['status' => 'live', 'homeScore' => 1, 'awayScore' => 0])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.homeScore.0', 'W meczu na sety wynik liczy się z setów.');
+});
+
+it('sety w piłce dają 422 pod sets', function () {
+    updateMatch(updateMatchIn(updateMatchLeague()), ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0, 'sets' => []])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.sets.0', 'Wyniki setów wpisuje się tylko w sporcie z setami.');
+});
+
+it('w siatkówce powrót do scheduled wymaga jawnego sets: [] i czyści wynik', function () {
+    $match = updateMatchVolleyball();
+    updateMatch($match, ['status' => 'live', 'sets' => updateMatchSets([[25, 20]])])->assertValidResponse(200);
+
+    updateMatch($match, ['status' => 'scheduled'])->assertValidResponse(422)->assertJsonValidationErrors('sets');
+
+    updateMatch($match, ['status' => 'scheduled', 'sets' => []])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', null)
+        ->assertJsonPath('data.awayScore', null)
+        ->assertJsonPath('data.sets', []);
+});
+
+it('w siatkówce samo przejście scheduled → live daje wynik 0:0 z pustej listy setów', function () {
+    updateMatch(updateMatchVolleyball(), ['status' => 'live'])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', 0)
+        ->assertJsonPath('data.awayScore', 0)
+        ->assertJsonPath('data.livePeriod', 1);
 });

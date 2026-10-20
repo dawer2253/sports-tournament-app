@@ -42,9 +42,28 @@ class TournamentResource extends JsonResource
             'tiebreakers' => $this->tiebreakers,
             'matchDuration' => $this->match_duration,
             'periods' => MatchPeriods::of($this->resource)->toArray(),
+            'setFormat' => $this->setFormat(),
             'teamsCount' => $this->teams_count,
             'createdAt' => $this->formatDate($this->created_at),
             'updatedAt' => $this->formatDate($this->updated_at),
+        ];
+    }
+
+    /**
+     * Format seta w kolejności pól z kontraktu: MySQL układa klucze JSON-a
+     * po swojemu (#301).
+     *
+     * @return array{setsToWin: int, setPoints: int, decidingSetPoints: int, minLead: int}|null
+     */
+    private function setFormat(): ?array
+    {
+        $format = $this->set_format;
+
+        return $format === null ? null : [
+            'setsToWin' => $format['setsToWin'],
+            'setPoints' => $format['setPoints'],
+            'decidingSetPoints' => $format['decidingSetPoints'],
+            'minLead' => $format['minLead'],
         ];
     }
 }

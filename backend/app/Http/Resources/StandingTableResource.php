@@ -35,6 +35,7 @@ class StandingTableResource extends JsonResource
             'groupId' => $table->group?->id,
             'groupName' => $table->group?->name,
             'scoreLabel' => $table->sport->scoreLabel(),
+            'rallyPointsLabel' => $table->sport->rallyPointsLabel(),
             'allowsDraw' => $table->sport->allowsDraw(),
             'tiebreakers' => array_map(fn (string $code): array => [
                 'code' => $code,
@@ -54,6 +55,8 @@ class StandingTableResource extends JsonResource
                 'scoreFor' => $row->scoreFor,
                 'scoreAgainst' => $row->scoreAgainst,
                 'scoreDifference' => $row->scoreDifference(),
+                'rallyPointsFor' => $row->rallyPointsFor,
+                'rallyPointsAgainst' => $row->rallyPointsAgainst,
                 'points' => $row->points,
                 'form' => $row->form(),
             ], $table->rows),

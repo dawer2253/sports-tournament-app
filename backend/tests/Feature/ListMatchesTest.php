@@ -61,6 +61,7 @@ it('oddaje mecz w kształcie z kontraktu', function () {
                 'awayScore' => 1,
                 'homePenalties' => null,
                 'awayPenalties' => null,
+                'sets' => null,
                 'status' => 'finished',
                 'kickoffAt' => '2026-09-06T10:00:00+00:00',
                 'venue' => ['id' => $venue->id, 'name' => 'Boisko Bemowo'],

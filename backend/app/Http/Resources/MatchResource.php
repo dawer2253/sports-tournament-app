@@ -42,6 +42,14 @@ class MatchResource extends JsonResource
             'awayScore' => $this->away_score,
             'homePenalties' => $this->home_penalties,
             'awayPenalties' => $this->away_penalties,
+            // Lista w sporcie z setami, `null` w pozostałych (#301): mecz
+            // dostaje ją przy powstaniu z generatora terminarza albo drabinki.
+            // MySQL układa klucze JSON-a po swojemu, więc kolejność `home`,
+            // `away` składamy tu.
+            'sets' => $this->sets === null ? null : array_map(
+                fn (array $set): array => ['home' => $set['home'], 'away' => $set['away']],
+                $this->sets,
+            ),
             'status' => $this->status,
             'kickoffAt' => $this->formatDate($this->kickoff_at),
             'venue' => $this->venue === null ? null : ['id' => $this->venue->id, 'name' => $this->venue->name],

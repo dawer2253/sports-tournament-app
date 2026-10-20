@@ -226,6 +226,7 @@ class ScheduleGenerator
     {
         $now = now();
         $rows = [];
+        $sets = GameMatch::initialSetsColumn($stage->tournament);
 
         foreach ($rounds as $index => $matches) {
             foreach ($matches as $number => $match) {
@@ -236,6 +237,7 @@ class ScheduleGenerator
                     'match_number' => $number + 1,
                     'home_team_id' => $match['home_team_id'],
                     'away_team_id' => $match['away_team_id'],
+                    'sets' => $sets,
                     'status' => 'scheduled',
                     'created_at' => $now,
                     'updated_at' => $now,

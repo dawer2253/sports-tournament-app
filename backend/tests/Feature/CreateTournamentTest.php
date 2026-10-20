@@ -103,6 +103,7 @@ it('kopiuje punktację i tiebreaki z domyślnych danego sportu', function (strin
 })->with([
     'piłka nożna' => ['football', ['win' => 3, 'draw' => 1, 'loss' => 0], ['points', 'head_to_head', 'score_diff', 'score_for']],
     'koszykówka' => ['basketball', ['win' => 2, 'draw' => 0, 'loss' => 1], ['points', 'head_to_head', 'score_diff']],
+    'siatkówka' => ['volleyball', ['win' => 3, 'draw' => 0, 'loss' => 0, 'winDecidingSet' => 2, 'lossDecidingSet' => 1], ['points', 'wins', 'set_ratio', 'point_ratio', 'head_to_head']],
 ]);
 
 // Długość meczu (#158) też jest kopią domyślnej dla sportu, literałem z przykładu
@@ -119,6 +120,7 @@ it('kopiuje długość meczu z domyślnej dla sportu', function (string $sportCo
 })->with([
     'piłka nożna' => ['football', 60],
     'koszykówka' => ['basketball', 40],
+    'siatkówka' => ['volleyball', 90],
 ]);
 
 // Logika wypełnienia z migracji (`MatchDurationBackfill`) wydzielona, bo
@@ -150,6 +152,7 @@ it('kopiuje podział meczu z domyślnego dla sportu', function (string $sportCod
 })->with([
     'piłka nożna' => ['football', ['count' => 2, 'minutes' => 45]],
     'koszykówka' => ['basketball', ['count' => 4, 'minutes' => 10]],
+    'siatkówka' => ['volleyball', ['count' => 1, 'minutes' => null]],
 ]);
 
 it('wypełnia istniejące turnieje podziałem meczu ze swojego sportu', function () {
@@ -244,3 +247,20 @@ it('nie ponawia zakładania przy naruszeniu unikatu innym niż slug', function (
     expect($attempts)->toBe(1)
         ->and(Tournament::count())->toBe(0);
 });
+
+// Format seta (#301) też jest kopią domyślnej dla sportu, literałem z przykładu
+// `GET /sports` w kontrakcie; sport bez setów ma `null`.
+it('kopiuje format seta z domyślnego dla sportu', function (string $sportCode, ?array $setFormat) {
+    actingAsOrganizer()
+        ->postJson('/api/v1/tournaments', [
+            'name' => 'Turniej testowy',
+            'sportId' => sport($sportCode)->id,
+            'format' => 'league',
+        ])
+        ->assertValidResponse(201)
+        ->assertJsonPath('data.setFormat', $setFormat);
+})->with([
+    'piłka nożna' => ['football', null],
+    'koszykówka' => ['basketball', null],
+    'siatkówka' => ['volleyball', ['setsToWin' => 3, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 2]],
+]);

@@ -442,3 +442,23 @@ it('rozkłada daty w trybie interval: cała kolejka fazy gra jednego dnia', func
         expect($days)->toHaveCount(1);
     }
 });
+
+// #301: mecz sportu z setami powstaje z pustą listą setów, a pozostałe z `null`
+// (`Match.sets` w kontrakcie). Generator wstawia hurtem, więc kolumnę ustawia sam.
+it('w siatkówce mecze terminarza mają pustą listę setów', function () {
+    $volleyball = Tournament::factory()->volleyball()->create();
+    Team::factory()->count(4)->for($volleyball)->create();
+    $stage = Stage::factory()->for($volleyball)->create();
+
+    generateSchedule($stage, 1)->assertCreated();
+
+    expect($stage->matches()->get()->pluck('sets')->unique()->values()->all())->toBe([[]]);
+});
+
+it('w piłce mecze terminarza mają sets: null', function () {
+    $stage = leagueWithTeams(4);
+
+    generateSchedule($stage, 1)->assertCreated();
+
+    expect($stage->matches()->get()->pluck('sets')->unique()->values()->all())->toBe([null]);
+});

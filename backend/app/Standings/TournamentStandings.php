@@ -29,7 +29,7 @@ final class TournamentStandings
     public static function of(Tournament $tournament, ?array $tiebreakers = null): array
     {
         $tiebreakers ??= $tournament->tiebreakers;
-        $calculator = new StandingsCalculator($tournament->points, $tiebreakers);
+        $calculator = new StandingsCalculator($tournament->points, $tiebreakers, $tournament->hasSets());
         $sport = $tournament->sport;
         $teams = $tournament->teams()->get();
 

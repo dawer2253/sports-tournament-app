@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Matches;
 
 use App\Matches\LiveClock;
+use App\Matches\SetScores;
 use App\Models\GameMatch;
 use App\Rules\Iso8601WithOffset;
 use Illuminate\Foundation\Http\FormRequest;
@@ -22,6 +23,10 @@ use Illuminate\Validation\Validator;
  *
  * Blokady awansu tu nie ma: zależy od meczów zależnych, więc sprawdza ją
  * `App\Matches\Advancement` w transakcji zapisu, pod blokadą ich wierszy.
+ *
+ * W sporcie z setami (#301) wynik niesie `sets`, a `homeScore` i `awayScore`
+ * liczy serwer (`scoreChanges()`), więc klient ich nie wysyła. Reguły setów
+ * żyją w `App\Matches\SetScores`.
  */
 class UpdateMatchRequest extends FormRequest
 {
@@ -37,6 +42,11 @@ class UpdateMatchRequest extends FormRequest
             'awayScore' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:999'],
             'homePenalties' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:99'],
             'awayPenalties' => ['sometimes', 'nullable', 'integer:strict', 'min:0', 'max:99'],
+            // Sety przychodzą w komplecie i zastępują zapisane (#301).
+            'sets' => ['sometimes', 'array', 'list', 'max:5'],
+            'sets.*' => ['array:home,away'],
+            'sets.*.home' => ['required', 'integer:strict', 'min:0', 'max:99'],
+            'sets.*.away' => ['required', 'integer:strict', 'min:0', 'max:99'],
             'status' => ['sometimes', 'string', Rule::in(GameMatch::STATUSES)],
             'kickoffAt' => ['sometimes', 'nullable', 'string', new Iso8601WithOffset],
             'venueId' => ['sometimes', 'nullable', 'integer:strict'],
@@ -53,6 +63,7 @@ class UpdateMatchRequest extends FormRequest
         return [
             $this->checkVenueOwnership(...),
             $this->checkScoreAgainstStatus(...),
+            $this->checkSets(...),
             $this->checkPenalties(...),
             $this->checkTeamsBeforeStart(...),
             $this->checkEventsBeforeScheduled(...),
@@ -91,6 +102,15 @@ class UpdateMatchRequest extends FormRequest
     private function checkPenalties(Validator $validator): void
     {
         if ($validator->errors()->hasAny(['status', 'homeScore', 'awayScore', 'homePenalties', 'awayPenalties'])) {
+            return;
+        }
+
+        // W sporcie z setami remisu nie ma, więc karne nie mają kiedy wejść.
+        if ($this->tournamentSetFormat() !== null) {
+            if ($this->input('homePenalties') !== null || $this->input('awayPenalties') !== null) {
+                $validator->errors()->add('homePenalties', 'W meczu na sety nie ma karnych.');
+            }
+
             return;
         }
 
@@ -136,7 +156,8 @@ class UpdateMatchRequest extends FormRequest
     /**
      * Pola części meczu (#297): tylko w meczu `live` po scaleniu stanu z ciała,
      * start części razem z jej numerem, a numer w `1…count` ustawień
-     * turnieju, w fazie `knockout` także `count + 1` (dogrywka). Start
+     * turnieju, w fazie `knockout` także `count + 1` (dogrywka) — poza
+     * sportem z setami, w którym dogrywki nie ma (#301). Start
      * przyjmuje wyłącznie następną część (bieżąca + 1), a przerwa wchodzi
      * tylko po części, która trwa i nie jest ostatnią — turniej bez podziału
      * (`count: 1`) przerwy więc nie ma, dogrywka też nie. Bieżąca część to ta
@@ -153,7 +174,8 @@ class UpdateMatchRequest extends FormRequest
         $running = $this->input('periodRunning');
         $period = $this->input('livePeriod');
         $count = $match->stage->tournament->period_count;
-        $last = $match->stage->type === 'knockout' ? $count + 1 : $count;
+        $overtime = $match->stage->type === 'knockout' && $this->tournamentSetFormat() === null;
+        $last = $overtime ? $count + 1 : $count;
         $status = $this->input('status', $match->status);
 
         // Zegar po samym przejściu stanu, bez pól części z ciała.
@@ -229,6 +251,16 @@ class UpdateMatchRequest extends FormRequest
             return;
         }
 
+        // W sporcie z setami wynik liczy serwer, a spójność ze stanem
+        // sprawdza `checkSets()`.
+        if ($this->tournamentSetFormat() !== null) {
+            if ($this->hasAny(['homeScore', 'awayScore'])) {
+                $validator->errors()->add('homeScore', 'W meczu na sety wynik liczy się z setów.');
+            }
+
+            return;
+        }
+
         $data = $this->validated();
         $match = $this->match();
 
@@ -256,6 +288,79 @@ class UpdateMatchRequest extends FormRequest
     }
 
     /**
+     * Sety po scaleniu ciała z zapisanym meczem (#301): lista z ciała albo
+     * zapisana, a stan z ciała albo zapisany. Reguły i klucze błędów
+     * (`sets.{n}` przy secie, `sets` przy meczu) opisuje `MatchUpdate`
+     * w kontrakcie. W sporcie bez setów `sets` daje `422`.
+     */
+    private function checkSets(Validator $validator): void
+    {
+        $format = $this->tournamentSetFormat();
+
+        if ($format === null) {
+            if ($this->has('sets')) {
+                $validator->errors()->add('sets', 'Wyniki setów wpisuje się tylko w sporcie z setami.');
+            }
+
+            return;
+        }
+
+        $setErrors = array_filter(
+            array_keys($validator->errors()->messages()),
+            fn (string $key): bool => $key === 'sets' || str_starts_with($key, 'sets.'),
+        );
+
+        if ($setErrors !== [] || $validator->errors()->has('status')) {
+            return;
+        }
+
+        foreach (SetScores::errors($this->mergedSets(), $this->mergedStatus(), $format) as $key => $message) {
+            $validator->errors()->add($key, $message);
+        }
+    }
+
+    /**
+     * Wynik meczu do zapisu w sporcie z setami: sety wygrane z setów po
+     * scaleniu, a przy `scheduled` `null`. W sporcie bez setów pusta tablica,
+     * bo wynik przychodzi wtedy wprost z ciała.
+     *
+     * @return array<string, mixed>
+     */
+    public function scoreChanges(): array
+    {
+        $format = $this->tournamentSetFormat();
+
+        if ($format === null) {
+            return [];
+        }
+
+        $sets = $this->mergedSets();
+        [$home, $away] = $this->mergedStatus() === 'scheduled' ? [null, null] : SetScores::won($sets, $format);
+
+        return ['sets' => $sets, 'home_score' => $home, 'away_score' => $away];
+    }
+
+    /**
+     * @return list<array{home: int, away: int}>
+     */
+    private function mergedSets(): array
+    {
+        if ($this->has('sets')) {
+            return array_map(
+                fn (array $set): array => ['home' => $set['home'], 'away' => $set['away']],
+                $this->input('sets'),
+            );
+        }
+
+        return $this->match()->sets ?? [];
+    }
+
+    private function mergedStatus(): string
+    {
+        return $this->input('status', $this->match()->status);
+    }
+
+    /**
      * @return array<string, string>
      */
     public function messages(): array
@@ -278,6 +383,18 @@ class UpdateMatchRequest extends FormRequest
             'livePeriod.integer' => 'Część meczu podaj liczbą całkowitą.',
             'livePeriod.min' => 'Części meczu liczą się od 1.',
             'periodRunning.boolean' => 'periodRunning to true albo false.',
+            'sets.array' => 'Sety podaj listą wyników: [{ home, away }, …].',
+            'sets.list' => 'Sety podaj listą wyników: [{ home, away }, …].',
+            'sets.max' => 'Mecz ma najwyżej 5 setów.',
+            'sets.*.array' => 'Wynik seta to { home, away }.',
+            'sets.*.home.required' => 'Podaj punkty obu drużyn w secie.',
+            'sets.*.away.required' => 'Podaj punkty obu drużyn w secie.',
+            'sets.*.home.integer' => 'Punkty w secie podaj liczbą całkowitą.',
+            'sets.*.away.integer' => 'Punkty w secie podaj liczbą całkowitą.',
+            'sets.*.home.min' => 'Punkty w secie nie mogą być ujemne.',
+            'sets.*.away.min' => 'Punkty w secie nie mogą być ujemne.',
+            'sets.*.home.max' => 'Set ma najwyżej 99 punktów.',
+            'sets.*.away.max' => 'Set ma najwyżej 99 punktów.',
         ];
     }
 
@@ -288,7 +405,7 @@ class UpdateMatchRequest extends FormRequest
      */
     public function advancementErrorKey(): string
     {
-        return $this->hasAny(['homeScore', 'awayScore', 'homePenalties', 'awayPenalties']) ? 'homeScore' : 'status';
+        return $this->hasAny(['homeScore', 'awayScore', 'homePenalties', 'awayPenalties', 'sets']) ? 'homeScore' : 'status';
     }
 
     public function match(): GameMatch
@@ -302,5 +419,15 @@ class UpdateMatchRequest extends FormRequest
     private function allowsDraw(): bool
     {
         return $this->match()->stage->tournament->sport->allowsDraw();
+    }
+
+    /**
+     * Format seta turnieju meczu, `null` w sporcie bez setów (#301).
+     *
+     * @return array{setsToWin: int, setPoints: int, decidingSetPoints: int, minLead: int}|null
+     */
+    private function tournamentSetFormat(): ?array
+    {
+        return $this->match()->stage->tournament->set_format;
     }
 }

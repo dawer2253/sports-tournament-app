@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'round_id', 'stage_id', 'group_id', 'match_number',
     'home_team_id', 'away_team_id',
-    'home_score', 'away_score', 'home_penalties', 'away_penalties',
+    'home_score', 'away_score', 'home_penalties', 'away_penalties', 'sets',
     'status', 'live_period', 'period_started_at', 'on_break', 'kickoff_at', 'venue_id',
     'winner_to_match_id', 'loser_to_match_id', 'advances_to_slot',
 ])]
@@ -68,10 +68,21 @@ class GameMatch extends Model
     {
         return [
             'kickoff_at' => 'datetime',
+            'sets' => 'array',
             'live_period' => 'integer',
             'period_started_at' => 'datetime',
             'on_break' => 'boolean',
         ];
+    }
+
+    /**
+     * Kolumna `sets` nowego meczu przy wstawianiu hurtem (`insert()` omija
+     * rzutowanie): w sporcie z setami pusta lista, w pozostałych `null`
+     * (`Match.sets` w kontrakcie, #301).
+     */
+    public static function initialSetsColumn(Tournament $tournament): ?string
+    {
+        return $tournament->hasSets() ? '[]' : null;
     }
 
     public function round(): BelongsTo

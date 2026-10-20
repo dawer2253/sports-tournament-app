@@ -29,7 +29,11 @@ beforeEach(function () {
 function standingsLeague(array $teamNames, string $sport = 'football', array $attributes = []): Tournament
 {
     $factory = Tournament::factory();
-    $tournament = ($sport === 'basketball' ? $factory->basketball() : $factory)->create($attributes);
+    $tournament = (match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    })->create($attributes);
     $stage = Stage::factory()->for($tournament)->create(['name' => 'Faza zasadnicza']);
     Round::factory()->for($stage)->create();
 
@@ -99,6 +103,8 @@ it('przed pierwszym meczem oddaje wszystkie drużyny fazy z zerami, alfabetyczni
             'scoreFor' => 0,
             'scoreAgainst' => 0,
             'scoreDifference' => 0,
+            'rallyPointsFor' => null,
+            'rallyPointsAgainst' => null,
             'points' => 0,
             'form' => [],
         ]);
@@ -143,6 +149,8 @@ it('liczy mecze, bilans i punkty według punktacji turnieju', function () {
         'scoreFor' => 5,
         'scoreAgainst' => 3,
         'scoreDifference' => 2,
+        'rallyPointsFor' => null,
+        'rallyPointsAgainst' => null,
         'points' => 6,
         'form' => ['win', 'draw'],
     ]);
@@ -526,4 +534,88 @@ it('remis rozstrzygany head_to_head nie zmienia formy', function () {
         ->and(standingsFormOf($response, 'Arka'))->toBe(['loss', 'win', 'draw'])
         ->and(standingsFormOf($response, 'Cracovia'))->toBe(['draw', 'draw']);
     standingsExpectFormMatchesRecord($response);
+});
+
+// --- sport z setami (#301) ---------------------------------------------------
+
+/**
+ * Mecz siatkówki w pierwszej kolejce z setami `[[25, 20], …]`; wynik to sety
+ * wygrane, jak po zapisie przez API.
+ *
+ * @param  list<array{int, int}>  $sets
+ */
+function standingsSetMatch(Tournament $tournament, string $home, string $away, array $sets): GameMatch
+{
+    $round = $tournament->stages()->firstOrFail()->rounds()->firstOrFail();
+
+    return GameMatch::factory()->for($round)->withSets($sets)->create([
+        'match_number' => (int) GameMatch::where('round_id', $round->id)->max('match_number') + 1,
+        'home_team_id' => standingsTeam($tournament, $home)->id,
+        'away_team_id' => standingsTeam($tournament, $away)->id,
+    ]);
+}
+
+/** @return array<string, array<string, mixed>> wiersze pierwszej tabeli po nazwie drużyny */
+function standingsRowsByName(TestResponse $response): array
+{
+    return collect($response->json('data.0.rows'))->keyBy('team.name')->all();
+}
+
+it('w siatkówce 3:1 daje 3 i 0 pkt, 3:2 daje 2 i 1, a wiersz niesie sety i punkty w setach', function () {
+    $tournament = standingsLeague(['Orlęta', 'Mewy', 'Czaple'], 'volleyball');
+    standingsSetMatch($tournament, 'Orlęta', 'Mewy', [[25, 20], [23, 25], [25, 22], [25, 19]]);
+    standingsSetMatch($tournament, 'Czaple', 'Mewy', [[25, 23], [23, 25], [25, 21], [20, 25], [15, 11]]);
+
+    $response = standingsOf($tournament)
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.0.scoreLabel', 'Sety')
+        ->assertJsonPath('data.0.rallyPointsLabel', 'Punkty w setach');
+    $rows = standingsRowsByName($response);
+
+    expect($rows['Orlęta'])->toMatchArray(['points' => 3, 'scoreFor' => 3, 'scoreAgainst' => 1, 'rallyPointsFor' => 98, 'rallyPointsAgainst' => 86])
+        ->and($rows['Czaple'])->toMatchArray(['points' => 2, 'scoreFor' => 3, 'scoreAgainst' => 2, 'rallyPointsFor' => 108, 'rallyPointsAgainst' => 105])
+        ->and($rows['Mewy'])->toMatchArray(['points' => 1, 'won' => 0, 'lost' => 2, 'scoreFor' => 3, 'scoreAgainst' => 6, 'rallyPointsFor' => 191, 'rallyPointsAgainst' => 206]);
+});
+
+it('w siatkówce drużyna bez meczu ma punkty w setach 0:0', function () {
+    $volleyball = standingsLeague(['Orlęta'], 'volleyball');
+
+    expect(standingsOf($volleyball)->assertValidResponse(200)->json('data.0.rows.0'))
+        ->toMatchArray(['rallyPointsFor' => 0, 'rallyPointsAgainst' => 0]);
+});
+
+it('w siatkówce zmiana punktacji po secie decydującym działa wstecz', function () {
+    $tournament = standingsLeague(['Orlęta', 'Mewy'], 'volleyball');
+    standingsSetMatch($tournament, 'Orlęta', 'Mewy', [[25, 23], [23, 25], [25, 21], [20, 25], [15, 11]]);
+
+    $tournament->update(['points' => ['win' => 3, 'draw' => 0, 'loss' => 0, 'winDecidingSet' => 3, 'lossDecidingSet' => 0]]);
+
+    expect(standingsOf($tournament)->assertValidResponse(200)->json('data.0.rows.*.points'))->toBe([3, 0]);
+});
+
+it('w siatkówce stosunek setów rozstrzyga remis punktowy, a drużyna bez straconego seta stoi wyżej', function () {
+    $tournament = standingsLeague(['Orlęta', 'Mewy', 'Czaple', 'Jaskółki'], 'volleyball', ['tiebreakers' => ['points', 'set_ratio']]);
+    standingsSetMatch($tournament, 'Mewy', 'Czaple', [[25, 20], [23, 25], [25, 22], [25, 19]]);
+    standingsSetMatch($tournament, 'Orlęta', 'Jaskółki', [[25, 20], [25, 22], [25, 19]]);
+
+    expect(standingsOrder(standingsOf($tournament)->assertValidResponse(200)))->toBe(['Orlęta', 'Mewy', 'Czaple', 'Jaskółki']);
+});
+
+it('w siatkówce 0:0 w setach ma iloraz zero, jak 0:3, a 1:3 stoi wyżej', function () {
+    $tournament = standingsLeague(['Orlęta', 'Mewy', 'Czaple', 'Jaskółki', 'Albatrosy'], 'volleyball', ['tiebreakers' => ['points', 'set_ratio']]);
+    standingsSetMatch($tournament, 'Orlęta', 'Mewy', [[25, 20], [25, 22], [25, 19]]);
+    standingsSetMatch($tournament, 'Czaple', 'Jaskółki', [[25, 20], [23, 25], [25, 22], [25, 19]]);
+
+    // Albatrosy bez meczu (0:0) i Mewy (0:3) remisują na stosunku setów, więc
+    // rozstrzyga nazwa; Jaskółki (1:3) stoją przed obiema.
+    expect(standingsOrder(standingsOf($tournament)->assertValidResponse(200)))->toBe(['Orlęta', 'Czaple', 'Jaskółki', 'Albatrosy', 'Mewy']);
+});
+
+it('w siatkówce stosunek punktów w setach rozstrzyga przy równym stosunku setów', function () {
+    $tournament = standingsLeague(['Orlęta', 'Mewy', 'Czaple', 'Jaskółki'], 'volleyball', ['tiebreakers' => ['points', 'set_ratio', 'point_ratio']]);
+    // Mewy: 3:1 w setach, 98:86 w punktach. Orlęta: 3:1, 100:95.
+    standingsSetMatch($tournament, 'Mewy', 'Czaple', [[25, 20], [23, 25], [25, 22], [25, 19]]);
+    standingsSetMatch($tournament, 'Orlęta', 'Jaskółki', [[25, 23], [25, 23], [25, 27], [25, 22]]);
+
+    expect(standingsOrder(standingsOf($tournament)->assertValidResponse(200)))->toBe(['Mewy', 'Orlęta', 'Jaskółki', 'Czaple']);
 });

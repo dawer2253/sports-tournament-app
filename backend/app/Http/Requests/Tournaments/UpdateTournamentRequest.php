@@ -15,8 +15,10 @@ use Illuminate\Validation\Validator;
  * ciało niczego nie rusza. Wysłane pole nie może być puste — stąd `required`
  * za `sometimes`.
  *
- * Poza powrotem do `draft` żadna reguła nie zależy od statusu turnieju ani od
- * zakończonych meczów: punktację i tiebreaki wolno zmieniać zawsze (#87).
+ * Poza powrotem do `draft` i formatem seta żadna reguła nie zależy od statusu
+ * turnieju ani od zakończonych meczów: punktację i tiebreaki wolno zmieniać
+ * zawsze (#87). Format seta zamyka się od pierwszego wpisanego seta (#301,
+ * ADR-0012).
  */
 class UpdateTournamentRequest extends TournamentRequest
 {
@@ -24,6 +26,12 @@ class UpdateTournamentRequest extends TournamentRequest
 
     /** Kolizja sluga — z walidacji i z wyścigu o unikalny indeks w kontrolerze. */
     public const SLUG_TAKEN_MESSAGE = 'Ten adres ma już inny turniej.';
+
+    /** Blokada formatu seta (ADR-0012), dosłownie z opisu `TournamentUpdate.setFormat`. */
+    public const SET_FORMAT_LOCKED_MESSAGE = 'Format seta zmienisz tylko przed pierwszym wynikiem.';
+
+    /** Punkty po secie decydującym: tylko w sporcie z setami (#301). */
+    private const DECIDING_SET_POINTS = ['winDecidingSet', 'lossDecidingSet'];
 
     /**
      * @return array<string, mixed>
@@ -50,6 +58,14 @@ class UpdateTournamentRequest extends TournamentRequest
             'periods' => ['sometimes', 'required', 'array'],
             'periods.count' => ['bail', 'required_with:periods', 'integer:strict', 'between:1,10'],
             'periods.minutes' => ['bail', 'nullable', 'integer:strict', 'between:1,150'],
+            // Format seta (#301) przychodzi w komplecie albo wcale, jak
+            // podział meczu. Sport bez setów, porządek progów i blokadę
+            // sprawdza `after()`.
+            'setFormat' => ['sometimes', 'required', 'array'],
+            'setFormat.setsToWin' => ['bail', 'required_with:setFormat', 'integer:strict', Rule::in([2, 3])],
+            'setFormat.setPoints' => ['bail', 'required_with:setFormat', 'integer:strict', 'between:5,50'],
+            'setFormat.decidingSetPoints' => ['bail', 'required_with:setFormat', 'integer:strict', 'between:5,50'],
+            'setFormat.minLead' => ['bail', 'required_with:setFormat', 'integer:strict', Rule::in([1, 2])],
             // `additionalProperties: false` w kontrakcie: `logoUrl` tu nie
             // występuje, bo logo wgrywa osobna trasa. Bez `required`, bo
             // kontrakt nie wymaga `primaryColor`, więc `{}` niczego nie zmienia.
@@ -69,6 +85,10 @@ class UpdateTournamentRequest extends TournamentRequest
                 },
             ],
             'points.loss' => $this->pointRules(),
+            // Wymagane w sporcie z setami i zabronione w pozostałych — to
+            // sprawdza `checkDecidingSetPoints()`, tu tylko typ i zakres.
+            'points.winDecidingSet' => ['bail', 'integer:strict', 'between:0,10'],
+            'points.lossDecidingSet' => ['bail', 'integer:strict', 'between:0,10'],
             ...$this->tiebreakerRules($this->sport()),
         ];
     }
@@ -97,7 +117,10 @@ class UpdateTournamentRequest extends TournamentRequest
         return [
             $this->checkReturnToDraft(...),
             $this->checkPointsOrder(...),
+            $this->checkDecidingSetPoints(...),
             $this->checkPeriodMinutes(...),
+            $this->checkPeriodsWithSets(...),
+            $this->checkSetFormat(...),
             $this->checkTiebreakersStartWithPoints(...),
         ];
     }
@@ -150,6 +173,115 @@ class UpdateTournamentRequest extends TournamentRequest
     }
 
     /**
+     * Punkty po secie decydującym (#301): w sporcie z setami oba wymagane,
+     * w pozostałych zabronione, a porządek to
+     * `loss ≤ lossDecidingSet < winDecidingSet ≤ win`.
+     */
+    private function checkDecidingSetPoints(Validator $validator): void
+    {
+        if (! $this->has('points')
+            || $validator->errors()->hasAny(['points', 'points.win', 'points.draw', 'points.loss', 'points.winDecidingSet', 'points.lossDecidingSet'])) {
+            return;
+        }
+
+        $sets = $this->sport()->hasSets();
+
+        foreach (self::DECIDING_SET_POINTS as $field) {
+            $given = $this->has("points.{$field}");
+
+            if ($sets && ! $given) {
+                $validator->errors()->add("points.{$field}", 'Podaj punkty za mecz rozstrzygnięty w secie decydującym.');
+            } elseif (! $sets && $given) {
+                $validator->errors()->add("points.{$field}", 'W tym sporcie nie ma setów.');
+            }
+        }
+
+        if (! $sets || $validator->errors()->hasAny(['points.winDecidingSet', 'points.lossDecidingSet'])) {
+            return;
+        }
+
+        $points = $this->input('points');
+
+        if ($points['loss'] > $points['lossDecidingSet']
+            || $points['lossDecidingSet'] >= $points['winDecidingSet']
+            || $points['winDecidingSet'] > $points['win']) {
+            $validator->errors()->add('points', 'Porażka w secie decydującym musi dawać co najmniej tyle co porażka i mniej niż wygrana w secie decydującym, a ta co najwyżej tyle co wygrana.');
+        }
+    }
+
+    /**
+     * W sporcie z setami mecz ma jedną część bez czasu (#301): set nie ma
+     * czasu, więc inny podział włączyłby w panelu przerwy i części, które nic
+     * tu nie znaczą.
+     */
+    private function checkPeriodsWithSets(Validator $validator): void
+    {
+        if (! $this->has('periods')
+            || ! $this->sport()->hasSets()
+            || $validator->errors()->hasAny(['periods', 'periods.count', 'periods.minutes'])) {
+            return;
+        }
+
+        if ($this->input('periods.count') !== 1 || $this->input('periods.minutes') !== null) {
+            $validator->errors()->add('periods', 'W sporcie z setami mecz nie dzieli się na części.');
+        }
+    }
+
+    /**
+     * Format seta (#301): tylko w sporcie z setami, próg seta decydującego nie
+     * większy od progu seta, a od pierwszego wpisanego seta w turnieju — bez
+     * zmiany. Ten sam format przechodzi, żeby formularz ustawień dało się
+     * zapisać w całości (ADR-0012).
+     */
+    private function checkSetFormat(Validator $validator): void
+    {
+        if (! $this->has('setFormat')) {
+            return;
+        }
+
+        if (! $this->sport()->hasSets()) {
+            $validator->errors()->add('setFormat', 'W tym sporcie nie ma setów.');
+
+            return;
+        }
+
+        if ($validator->errors()->hasAny(['setFormat', 'setFormat.setsToWin', 'setFormat.setPoints', 'setFormat.decidingSetPoints', 'setFormat.minLead'])) {
+            return;
+        }
+
+        $format = $this->setFormatInput();
+
+        if ($format['decidingSetPoints'] > $format['setPoints']) {
+            $validator->errors()->add('setFormat.decidingSetPoints', 'Set decydujący nie może być dłuższy od zwykłego.');
+
+            return;
+        }
+
+        $tournament = $this->tournament();
+
+        if ($format != $tournament->set_format && $tournament->hasEnteredSets()) {
+            $validator->errors()->add('setFormat', self::SET_FORMAT_LOCKED_MESSAGE);
+        }
+    }
+
+    /**
+     * Format seta z ciała w stałej kolejności kluczy, bez dodatkowych.
+     *
+     * @return array{setsToWin: int, setPoints: int, decidingSetPoints: int, minLead: int}
+     */
+    private function setFormatInput(): array
+    {
+        $input = $this->input('setFormat');
+
+        return [
+            'setsToWin' => $input['setsToWin'],
+            'setPoints' => $input['setPoints'],
+            'decidingSetPoints' => $input['decidingSetPoints'],
+            'minLead' => $input['minLead'],
+        ];
+    }
+
+    /**
      * Minuty części idą za liczbą części: przy jednej („bez podziału”) ich
      * nie ma, przy kilku są wymagane. Brak klucza `minutes` znaczy to samo
      * co `null`. Błąd siada pod `periods.minutes`, bo to minuty poprawia
@@ -194,6 +326,10 @@ class UpdateTournamentRequest extends TournamentRequest
             $attributes['period_minutes'] = $validated['periods']['minutes'] ?? null;
         }
 
+        if (Arr::has($validated, 'setFormat')) {
+            $attributes['set_format'] = $this->setFormatInput();
+        }
+
         if (Arr::has($validated, 'branding.primaryColor')) {
             $attributes['primary_color'] = $validated['branding']['primaryColor'];
         }
@@ -201,6 +337,10 @@ class UpdateTournamentRequest extends TournamentRequest
         if (Arr::has($validated, 'points')) {
             ['win' => $win, 'draw' => $draw, 'loss' => $loss] = $validated['points'];
             $attributes['points'] = ['win' => $win, 'draw' => $draw, 'loss' => $loss];
+
+            if ($this->sport()->hasSets()) {
+                $attributes['points'] += Arr::only($validated['points'], self::DECIDING_SET_POINTS);
+            }
         }
 
         return $attributes;
@@ -223,6 +363,13 @@ class UpdateTournamentRequest extends TournamentRequest
             'points.win' => 'punkty za wygraną',
             'points.draw' => 'punkty za remis',
             'points.loss' => 'punkty za porażkę',
+            'points.winDecidingSet' => 'punkty za wygraną w secie decydującym',
+            'points.lossDecidingSet' => 'punkty za porażkę w secie decydującym',
+            'setFormat' => 'format seta',
+            'setFormat.setsToWin' => 'liczba wygranych setów',
+            'setFormat.setPoints' => 'próg seta',
+            'setFormat.decidingSetPoints' => 'próg seta decydującego',
+            'setFormat.minLead' => 'przewaga',
             ...$this->tiebreakerAttributes(),
         ];
     }
@@ -241,6 +388,14 @@ class UpdateTournamentRequest extends TournamentRequest
             'periods.count.between' => 'Liczba części musi wynosić od 1 do 10.',
             'periods.minutes.integer' => 'Część trwa od 1 do 150 minut.',
             'periods.minutes.between' => 'Część trwa od 1 do 150 minut.',
+            'setFormat.setsToWin.in' => 'Mecz gra się do 2 albo 3 wygranych setów.',
+            'setFormat.setsToWin.integer' => 'Mecz gra się do 2 albo 3 wygranych setów.',
+            'setFormat.setPoints.integer' => 'Set gra się do 5–50 punktów.',
+            'setFormat.setPoints.between' => 'Set gra się do 5–50 punktów.',
+            'setFormat.decidingSetPoints.integer' => 'Set decydujący gra się do 5–50 punktów.',
+            'setFormat.decidingSetPoints.between' => 'Set decydujący gra się do 5–50 punktów.',
+            'setFormat.minLead.in' => 'Set wygrywa się przewagą 1 albo 2 punktów.',
+            'setFormat.minLead.integer' => 'Set wygrywa się przewagą 1 albo 2 punktów.',
             ...$this->tiebreakerMessages(),
         ];
     }

@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 #[Fillable([
     'user_id', 'sport_id', 'slug', 'name',
     'logo_path', 'primary_color', 'points', 'tiebreakers', 'match_duration',
-    'period_count', 'period_minutes', 'status',
+    'period_count', 'period_minutes', 'set_format', 'status',
 ])]
 class Tournament extends Model
 {
@@ -65,7 +65,7 @@ class Tournament extends Model
      *
      * @var list<string>
      */
-    public const TIEBREAKER_CODES = ['points', 'head_to_head', 'score_diff', 'score_for', 'score_against', 'wins'];
+    public const TIEBREAKER_CODES = ['points', 'head_to_head', 'score_diff', 'score_for', 'score_against', 'wins', 'set_ratio', 'point_ratio'];
 
     /**
      * Fazy, które powstają przy zakładaniu turnieju w danym formacie:
@@ -131,8 +131,8 @@ class Tournament extends Model
      * Zakłada turniej organizera jako szkic, razem z fazami wynikającymi
      * z formatu, w jednej transakcji.
      *
-     * Punktacja, tiebreaki, długość i podział meczu są kopią domyślnych dla
-     * sportu z chwili zakładania,
+     * Punktacja, tiebreaki, długość i podział meczu oraz format seta są kopią
+     * domyślnych dla sportu z chwili zakładania,
      * więc późniejsza zmiana w sporcie nie rusza istniejących turniejów.
      *
      * Slug bierze pierwszy wolny sufiks (`-2`, `-3`…). Sprawdzenie i zapis to
@@ -195,6 +195,7 @@ class Tournament extends Model
             'match_duration' => $sport->defaultMatchDuration(),
             'period_count' => $sport->defaultPeriods()['count'],
             'period_minutes' => $sport->defaultPeriods()['minutes'],
+            'set_format' => $sport->defaultSetFormat(),
             'status' => 'draft',
         ]);
 
@@ -262,7 +263,26 @@ class Tournament extends Model
             'match_duration' => 'integer',
             'period_count' => 'integer',
             'period_minutes' => 'integer',
+            'set_format' => 'array',
         ];
+    }
+
+    /**
+     * Turniej sportu z setami (#301): ma format seta. Format idzie z turnieju,
+     * a nie ze sportu, bo organizer zmienia go u siebie.
+     */
+    public function hasSets(): bool
+    {
+        return $this->set_format !== null;
+    }
+
+    /**
+     * Czy któryś mecz turnieju ma wpisany set. Od niego format seta jest
+     * zamknięty (ADR-0012, `TournamentUpdate.setFormat`).
+     */
+    public function hasEnteredSets(): bool
+    {
+        return $this->matches()->whereNotNull('matches.sets')->whereJsonLength('matches.sets', '>', 0)->exists();
     }
 
     public function user(): BelongsTo

@@ -25,7 +25,11 @@ function tournamentOfSport(string $sport): Tournament
 {
     $factory = Tournament::factory();
 
-    return ($sport === 'basketball' ? $factory->basketball() : $factory)->create();
+    return (match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    })->create();
 }
 
 function withStartedMatch(Tournament $tournament, string $status = 'finished'): Tournament
@@ -562,4 +566,123 @@ it('odrzuca niespójny podział meczu z polskim komunikatem pod właściwym pole
     'liczba części jako napis' => [['count' => '2', 'minutes' => 45], 'periods.count', 'Liczba części musi wynosić od 1 do 10.'],
     'minuty ponad 150' => [['count' => 2, 'minutes' => 151], 'periods.minutes', 'Część trwa od 1 do 150 minut.'],
     'minuty zero' => [['count' => 2, 'minutes' => 0], 'periods.minutes', 'Część trwa od 1 do 150 minut.'],
+]);
+
+// --- sport z setami (#301) ---------------------------------------------------
+
+const VOLLEYBALL_POINTS = ['win' => 3, 'draw' => 0, 'loss' => 0, 'winDecidingSet' => 2, 'lossDecidingSet' => 1];
+
+const VOLLEYBALL_SET_FORMAT = ['setsToWin' => 3, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 2];
+
+/** Turniej siatkówki z jednym meczem z wpisanym setem: format seta jest od niego zamknięty. */
+function volleyballWithEnteredSet(): Tournament
+{
+    $tournament = tournamentOfSport('volleyball');
+    GameMatch::factory()
+        ->for(Round::factory()->for(Stage::factory()->for($tournament)))
+        ->withSets([[25, 20]], 'live')
+        ->create();
+
+    return $tournament;
+}
+
+it('w siatkówce zmienia format seta i oddaje go w show', function () {
+    $tournament = tournamentOfSport('volleyball');
+    $format = ['setsToWin' => 2, 'setPoints' => 21, 'decidingSetPoints' => 15, 'minLead' => 1];
+
+    patchTournament($tournament, ['setFormat' => $format])
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.setFormat', $format);
+
+    expect($tournament->refresh()->set_format)->toEqual($format);
+});
+
+it('odrzuca format seta spoza zakresu pod jego polem', function (string $field, mixed $value) {
+    patchTournament(tournamentOfSport('volleyball'), ['setFormat' => [...VOLLEYBALL_SET_FORMAT, $field => $value]])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors("setFormat.{$field}");
+})->with([
+    'mecz do 4' => ['setsToWin', 4],
+    'set do 4' => ['setPoints', 4],
+    'set do 51' => ['setPoints', 51],
+    'decydujący do 4' => ['decidingSetPoints', 4],
+    'przewaga 3' => ['minLead', 3],
+    'tekst' => ['setsToWin', '3'],
+]);
+
+it('odrzuca set decydujący dłuższy od zwykłego', function () {
+    patchTournament(tournamentOfSport('volleyball'), ['setFormat' => [...VOLLEYBALL_SET_FORMAT, 'setPoints' => 15, 'decidingSetPoints' => 21]])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors(['setFormat.decidingSetPoints' => 'Set decydujący nie może być dłuższy od zwykłego.']);
+});
+
+it('po pierwszym wpisanym secie zmiana formatu daje 422, a ten sam format przechodzi', function () {
+    $tournament = volleyballWithEnteredSet();
+
+    patchTournament($tournament, ['setFormat' => [...VOLLEYBALL_SET_FORMAT, 'setsToWin' => 2]])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.setFormat.0', 'Format seta zmienisz tylko przed pierwszym wynikiem.');
+
+    patchTournament($tournament, ['setFormat' => VOLLEYBALL_SET_FORMAT, 'name' => 'Liga Siatkówki'])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.name', 'Liga Siatkówki');
+
+    expect($tournament->refresh()->set_format)->toEqual(VOLLEYBALL_SET_FORMAT);
+});
+
+it('punktacja i kryteria siatkówki zmieniają się także po wpisanym secie', function () {
+    patchTournament(volleyballWithEnteredSet(), [
+        'points' => [...VOLLEYBALL_POINTS, 'winDecidingSet' => 3],
+        'tiebreakers' => ['points', 'set_ratio'],
+    ])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.points.winDecidingSet', 3)
+        ->assertJsonPath('data.tiebreakers', ['points', 'set_ratio']);
+});
+
+it('format seta w piłce daje 422 pod setFormat', function () {
+    patchTournament(tournamentOfSport('football'), ['setFormat' => VOLLEYBALL_SET_FORMAT])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.setFormat.0', 'W tym sporcie nie ma setów.');
+});
+
+it('w siatkówce podział meczu inny niż jedna część daje 422 pod periods', function () {
+    patchTournament(tournamentOfSport('volleyball'), ['periods' => ['count' => 2, 'minutes' => 20]])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.periods.0', 'W sporcie z setami mecz nie dzieli się na części.');
+});
+
+it('w siatkówce przyjmuje podział meczu na jedną część bez czasu', function () {
+    patchTournament(tournamentOfSport('volleyball'), ['periods' => ['count' => 1, 'minutes' => null]])
+        ->assertValidResponse(200);
+});
+
+it('w siatkówce zapisuje punktację z punktami po secie decydującym', function () {
+    patchTournament(tournamentOfSport('volleyball'), ['points' => [...VOLLEYBALL_POINTS, 'winDecidingSet' => 3, 'lossDecidingSet' => 0]])
+        ->assertValidRequest()
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.points', ['win' => 3, 'draw' => 0, 'loss' => 0, 'winDecidingSet' => 3, 'lossDecidingSet' => 0]);
+});
+
+it('w siatkówce punktacja bez punktów po secie decydującym daje 422', function () {
+    patchTournament(tournamentOfSport('volleyball'), ['points' => ['win' => 3, 'draw' => 0, 'loss' => 0]])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors(['points.winDecidingSet', 'points.lossDecidingSet']);
+});
+
+it('w piłce punkty po secie decydującym dają 422', function () {
+    patchTournament(tournamentOfSport('football'), ['points' => ['win' => 3, 'draw' => 1, 'loss' => 0, 'winDecidingSet' => 2]])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors(['points.winDecidingSet' => 'W tym sporcie nie ma setów.']);
+});
+
+it('w siatkówce odrzuca punktację łamiącą porządek seta decydującego pod points', function (array $points) {
+    patchTournament(tournamentOfSport('volleyball'), ['points' => [...VOLLEYBALL_POINTS, ...$points]])
+        ->assertValidResponse(422)
+        ->assertJsonValidationErrors('points');
+})->with([
+    'porażka w decydującym poniżej porażki' => [['loss' => 1, 'lossDecidingSet' => 0, 'winDecidingSet' => 2]],
+    'porażka w decydującym równa wygranej w decydującym' => [['lossDecidingSet' => 2, 'winDecidingSet' => 2]],
+    'wygrana w decydującym ponad wygraną' => [['winDecidingSet' => 4]],
 ]);

@@ -36,7 +36,11 @@ beforeEach(function () {
 function matchPageTournament(string $sport = 'football', ?array $periods = null, string $status = 'active'): Tournament
 {
     $factory = Tournament::factory();
-    $tournament = ($sport === 'basketball' ? $factory->basketball() : $factory)->create([
+    $tournament = (match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    })->create([
         'status' => $status,
         ...($periods === null ? [] : ['period_count' => $periods[0], 'period_minutes' => $periods[1]]),
     ]);
@@ -395,4 +399,24 @@ it('liczba zapytań nie rośnie z liczbą zdarzeń', function () {
 
     expect(matchPage($tournament, $match)['events'])->toHaveCount(41)
         ->and($queries())->toBe($single);
+});
+
+// #301: w siatkówce wynik to sety, a zdarzenia to wybrane akcje, więc żadne
+// nie zmienia wyniku — także wtedy, gdy ich liczba przypadkiem równa się setom.
+it('w siatkówce żadne zdarzenie nie zmienia wyniku, a mecz nie ma części', function () {
+    $tournament = matchPageTournament('volleyball');
+    $match = matchPageMatch($tournament, [
+        'home_score' => 1,
+        'away_score' => 0,
+        'sets' => [['home' => 25, 'away' => 20]],
+        'status' => 'live',
+    ]);
+    matchPageEvents($match, [[matchPagePlayer($tournament, 'Orły Bielany', 'Kamil Lis'), 'ace', null]]);
+
+    $page = matchPage($tournament, $match);
+
+    expect(array_column($page['events'], 'scoreAfter'))->toBe([null])
+        ->and($page['periods'])->toBe([])
+        ->and($page['sets'])->toBe([['home' => 25, 'away' => 20]])
+        ->and($page['scorers'][0]['value'])->toBe(1);
 });

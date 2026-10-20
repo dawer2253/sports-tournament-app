@@ -28,29 +28,56 @@ final class StandingRow
 
     public int $points = 0;
 
+    /** Punkty w setach (#301); `null` w sporcie bez setów. */
+    public ?int $rallyPointsFor = null;
+
+    public ?int $rallyPointsAgainst = null;
+
     /** @var list<'win'|'draw'|'loss'> wyniki w kolejności doliczania */
     private array $results = [];
 
-    public function __construct(public readonly Team $team) {}
+    /**
+     * @param  bool  $sets  sport z setami: wiersz liczy punkty w setach, a mecz
+     *                      wygrany różnicą jednego seta daje punkty po secie
+     *                      decydującym
+     */
+    public function __construct(public readonly Team $team, private readonly bool $sets = false)
+    {
+        if ($sets) {
+            $this->rallyPointsFor = 0;
+            $this->rallyPointsAgainst = 0;
+        }
+    }
 
     /**
-     * Dolicza jeden zakończony mecz z perspektywy tej drużyny.
+     * Dolicza jeden zakończony mecz z perspektywy tej drużyny. W sporcie
+     * z setami zdobycze to sety wygrane, a `$rally` to punkty w setach
+     * `[zdobyte, stracone]`; mecz rozstrzygnięty różnicą jednego seta (3:2,
+     * 2:1) daje `winDecidingSet` i `lossDecidingSet` (#301).
      *
-     * @param  array{win: int, draw: int, loss: int}  $points
+     * @param  array{win: int, draw: int, loss: int, winDecidingSet?: int, lossDecidingSet?: int}  $points
+     * @param  array{int, int}|null  $rally
      */
-    public function record(int $scored, int $conceded, array $points): void
+    public function record(int $scored, int $conceded, array $points, ?array $rally = null): void
     {
         $this->played++;
         $this->scoreFor += $scored;
         $this->scoreAgainst += $conceded;
 
+        if ($this->sets) {
+            $this->rallyPointsFor += $rally[0] ?? 0;
+            $this->rallyPointsAgainst += $rally[1] ?? 0;
+        }
+
+        $decidingSet = $this->sets && abs($scored - $conceded) === 1;
+
         if ($scored > $conceded) {
             $this->won++;
-            $this->points += $points['win'];
+            $this->points += $decidingSet ? $points['winDecidingSet'] : $points['win'];
             $this->results[] = 'win';
         } elseif ($scored < $conceded) {
             $this->lost++;
-            $this->points += $points['loss'];
+            $this->points += $decidingSet ? $points['lossDecidingSet'] : $points['loss'];
             $this->results[] = 'loss';
         } else {
             $this->drawn++;

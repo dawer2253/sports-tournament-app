@@ -25,7 +25,15 @@ class Sport extends Model
     private const SCORE_LABELS = [
         'football' => 'Bramki',
         'basketball' => 'Punkty',
+        'volleyball' => 'Sety',
     ];
+
+    /**
+     * Nagłówek kolumny punktów w setach (`StandingTable.rallyPointsLabel`,
+     * #301), z tego samego powodu co `SCORE_LABELS` stała w kodzie. Tylko
+     * sport z setami ma tę kolumnę.
+     */
+    private const RALLY_POINTS_LABEL = 'Punkty w setach';
 
     protected function casts(): array
     {
@@ -62,6 +70,26 @@ class Sport extends Model
     public function defaultPeriods(): array
     {
         return $this->config['defaultPeriods'];
+    }
+
+    /**
+     * Domyślny format seta (#301), kopiowany do turnieju przy zakładaniu,
+     * wzorem `defaultPeriods()`. `null` w sporcie bez setów.
+     *
+     * @return array{setsToWin: int, setPoints: int, decidingSetPoints: int, minLead: int}|null
+     */
+    public function defaultSetFormat(): ?array
+    {
+        return $this->config['defaultSetFormat'];
+    }
+
+    /**
+     * Sport z setami (#301, ADR-0012): ma format seta. Wynik meczu to wtedy
+     * sety wygrane, remisu i dogrywki nie ma, a mecz ma jedną część bez czasu.
+     */
+    public function hasSets(): bool
+    {
+        return $this->defaultSetFormat() !== null;
     }
 
     /**
@@ -118,6 +146,11 @@ class Sport extends Model
         return self::SCORE_LABELS[$this->code];
     }
 
+    public function rallyPointsLabel(): ?string
+    {
+        return $this->hasSets() ? self::RALLY_POINTS_LABEL : null;
+    }
+
     /**
      * Etykieta kryterium z `config.tiebreakerLabels` (`StandingTable.tiebreakers`).
      * Turniej przyjmuje wyłącznie kryteria z `availableTiebreakers` sportu,
@@ -130,7 +163,7 @@ class Sport extends Model
 
     /**
      * Kody statystyk klasyfikacji (#190). Pierwszy wpis to klasyfikacja
-     * domyślna: piłka `goals`, kosz `points`.
+     * domyślna: piłka `goals`, kosz i siatkówka `points`.
      *
      * @return list<string>
      */

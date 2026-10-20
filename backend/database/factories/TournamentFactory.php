@@ -34,14 +34,26 @@ class TournamentFactory extends Factory
             'match_duration' => $sport->defaultMatchDuration(),
             'period_count' => $sport->defaultPeriods()['count'],
             'period_minutes' => $sport->defaultPeriods()['minutes'],
+            'set_format' => $sport->defaultSetFormat(),
             'status' => 'draft',
         ];
     }
 
+    /** Turniej siatkówki (#301): sport z setami, z formatem seta ze sportu. */
+    public function volleyball(): static
+    {
+        return $this->sport('volleyball');
+    }
+
     public function basketball(): static
     {
-        return $this->state(function () {
-            $sport = Sport::firstWhere('code', 'basketball');
+        return $this->sport('basketball');
+    }
+
+    private function sport(string $code): static
+    {
+        return $this->state(function () use ($code) {
+            $sport = Sport::firstWhere('code', $code);
 
             return [
                 'sport_id' => $sport->id,
@@ -50,6 +62,7 @@ class TournamentFactory extends Factory
                 'match_duration' => $sport->defaultMatchDuration(),
                 'period_count' => $sport->defaultPeriods()['count'],
                 'period_minutes' => $sport->defaultPeriods()['minutes'],
+                'set_format' => $sport->defaultSetFormat(),
             ];
         });
     }

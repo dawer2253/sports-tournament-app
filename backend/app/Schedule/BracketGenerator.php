@@ -291,6 +291,7 @@ class BracketGenerator
             'match_number' => $number,
             'home_team_id' => $home,
             'away_team_id' => $away,
+            'sets' => GameMatch::initialSetsColumn($stage->tournament),
             'status' => 'scheduled',
             'winner_to_match_id' => $winnerTo,
             'loser_to_match_id' => $loserTo,
