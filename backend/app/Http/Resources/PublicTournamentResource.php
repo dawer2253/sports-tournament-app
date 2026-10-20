@@ -50,11 +50,31 @@ class PublicTournamentResource extends JsonResource
             'periods' => MatchPeriods::of($this->resource)->toArray(),
             'matchDuration' => $this->match_duration,
             'runningClock' => $this->sport->runningClock(),
+            // Numer bieżącego seta (#302) liczy przeglądarka z `Match.sets`.
+            'setFormat' => $this->setFormat(),
             // Stan liczony, nie samo ustawienie organizera (#300).
             'registration' => [
                 'open' => $this->acceptsRegistrations(),
                 'deadline' => $this->formatDate($this->registration_deadline),
             ],
+        ];
+    }
+
+    /**
+     * Format seta w kolejności pól z kontraktu: MySQL układa klucze JSON-a
+     * po swojemu (#301).
+     *
+     * @return array{setsToWin: int, setPoints: int, decidingSetPoints: int, minLead: int}|null
+     */
+    private function setFormat(): ?array
+    {
+        $format = $this->set_format;
+
+        return $format === null ? null : [
+            'setsToWin' => $format['setsToWin'],
+            'setPoints' => $format['setPoints'],
+            'decidingSetPoints' => $format['decidingSetPoints'],
+            'minLead' => $format['minLead'],
         ];
     }
 }

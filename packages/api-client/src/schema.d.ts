@@ -5816,6 +5816,13 @@ export interface components {
              *     `stats`, bo strona publiczna nie widzi `GET /sports`.
              */
             runningClock: boolean;
+            /**
+             * @description Kopia `Tournament.setFormat` (#302). Z niego przeglądarka liczy
+             *     numer bieżącego seta z `Match.sets` („3. set”): ostatni set
+             *     niedokończony według progów formatu jest bieżący, rozstrzygnięty
+             *     daje następny. `null` w sporcie bez setów.
+             */
+            setFormat: components["schemas"]["SetFormat"] | null;
             registration: components["schemas"]["PublicRegistration"];
         };
         /**

@@ -421,6 +421,8 @@ meczu trzyma `Match.sets`, a wynik meczu to sety wygrane.
 
 Set nie jest częścią meczu (`Match period`), bo nie ma czasu.
 
+**Numer bieżącego seta** (#302) strona liczy z wpisanych wyników, a nie z pól części: to liczba setów w `Match.sets`, jeśli ostatni jest niedokończony, albo następny po rozstrzygniętym („3. set” przy 1:1 i wpisanych dwóch setach). Progi bierze z `PublicTournament.setFormat`. Gdy wynik meczu jest przesądzony, a mecz jeszcze trwa, przy „Na żywo” nie stoi nic. Przerwy między setami strona nie pokazuje.
+
 _Unikaj_: dogrywka i tie-break (o grze na przewagi), małe punkty (zamiast
 „punkty w setach”), część (o secie).
 

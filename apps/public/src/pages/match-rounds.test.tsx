@@ -310,7 +310,7 @@ describe('Wyniki', () => {
 describe('Zegar meczu na żywo (#297)', () => {
   const NOW = Date.parse('2026-10-18T11:20:00Z');
   /** Mecz trwający w 2. części, zaczętej 5 min 40 s przed „teraz”. */
-  const live = () =>
+  const live = (overrides: Partial<Parameters<typeof match>[2]> = {}) =>
     match(1, 1, {
       status: 'live',
       homeScore: 1,
@@ -318,6 +318,7 @@ describe('Zegar meczu na żywo (#297)', () => {
       livePeriod: 2,
       periodStartedAt: new Date(NOW - 340_000).toISOString(),
       onBreak: false,
+      ...overrides,
     });
   const row = async () => within(await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' }));
 
@@ -336,6 +337,18 @@ describe('Zegar meczu na żywo (#297)', () => {
     renderAt(`/t/${SLUG}/terminarz`);
 
     expect((await row()).getByText('2. kwarta')).toBeInTheDocument();
+  });
+
+  it('w sporcie z setami pokazuje numer seta z wpisanych wyników (#302)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: NOW });
+    const setFormat = { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 } as const;
+    publicApi({
+      data: tournament({ periods: { count: 1, minutes: null }, runningClock: false, setFormat }),
+      fixtures: [live({ livePeriod: 1, sets: [{ home: 25, away: 21 }, { home: 18, away: 25 }, { home: 14, away: 12 }] })],
+    });
+    renderAt(`/t/${SLUG}/terminarz`);
+
+    expect((await row()).getByText('3. set')).toBeInTheDocument();
   });
 
   it('minuta idzie po 30 s timerem przeglądarki, bez żądań ponad zwykłe odpytywanie', async () => {

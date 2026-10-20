@@ -35,8 +35,12 @@ const PUBLIC_PAGE_ROUTES = ['', '/standings', '/fixtures', '/results', '/leaderb
 function publicPageTournament(string $status = 'active', string $sport = 'football', array $attributes = []): Tournament
 {
     $factory = Tournament::factory();
-    $tournament = ($sport === 'basketball' ? $factory->basketball() : $factory)
-        ->create(['status' => $status, ...$attributes]);
+    $tournament = match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    };
+    $tournament = $tournament->create(['status' => $status, ...$attributes]);
     $stage = Stage::factory()->for($tournament)->create(['name' => 'Faza zasadnicza']);
     Round::factory()->for($stage)->create(['name' => 'Kolejka 1', 'order' => 1]);
     Round::factory()->for($stage)->create(['name' => 'Kolejka 2', 'order' => 2]);
@@ -638,6 +642,17 @@ it('turniej niesie podział meczu, długość meczu i runningClock sportu', func
 })->with([
     'piłka' => ['football', true],
     'kosz' => ['basketball', false],
+]);
+
+it('turniej niesie format seta: siatkówka kopię z ustawień, piłka null (#302)', function (string $sport, ?array $format) {
+    $tournament = publicPageTournament(sport: $sport);
+
+    publicPageGet($tournament->slug)
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.setFormat', $format);
+})->with([
+    'piłka' => ['football', null],
+    'siatkówka' => ['volleyball', ['setsToWin' => 3, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 2]],
 ]);
 
 it('terminarz, mecze fazy i strona meczu niosą część i start meczu trwającego', function () {
