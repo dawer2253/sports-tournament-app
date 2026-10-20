@@ -4674,7 +4674,8 @@ export interface components {
              *     tablica pokazuje minutę („67′”). Koszykówka `false`: zegar staje
              *     przy każdym przerwaniu gry, więc tablica pokazuje część
              *     („3. kwarta”) zamiast minuty. Siatkówka `false` przy jednej
-             *     części, więc tablica pokazuje samo „Na żywo”.
+             *     części, więc tablica pokazuje numer seta („3. set”, #302), liczony
+             *     z `Match.sets` i `PublicTournament.setFormat`.
              */
             runningClock: boolean;
             defaultPoints: components["schemas"]["Points"];

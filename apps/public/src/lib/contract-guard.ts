@@ -95,7 +95,7 @@ type ContractFitsMatchClock = Match extends MatchClockState ? true : never;
 
 export const contractFitsMatchClock: ContractFitsMatchClock = true;
 
-/** Turniej z kontraktu niesie ustawienia zegara (`periods`, `matchDuration`, `runningClock`) dla `MatchClockProvider`. */
+/** Turniej z kontraktu niesie ustawienia zegara (`periods`, `matchDuration`, `runningClock`, `setFormat`) dla `MatchClockProvider`. */
 type ContractFitsClockSettings = PublicTournament extends MatchClockSettings ? true : never;
 
 export const contractFitsClockSettings: ContractFitsClockSettings = true;

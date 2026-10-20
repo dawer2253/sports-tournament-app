@@ -146,15 +146,11 @@ function useClockSettings(tournament: PublicTournament | null | undefined): Matc
   const minutes = tournament?.periods.minutes ?? null;
   const matchDuration = tournament?.matchDuration ?? 0;
   const runningClock = tournament?.runningClock ?? false;
-  const { setsToWin, setPoints, decidingSetPoints, minLead } = tournament?.setFormat ?? {};
+  // Format seta jako napis, bo odpytanie turnieju podmienia obiekt, a zegary pod spodem mają się przeliczać tylko ze zmianą wartości.
+  const setFormat = JSON.stringify(tournament?.setFormat ?? null);
   return useMemo(
-    () => ({
-      periods: { count, minutes },
-      matchDuration,
-      runningClock,
-      setFormat: setsToWin === undefined ? null : { setsToWin, setPoints: setPoints!, decidingSetPoints: decidingSetPoints!, minLead: minLead! },
-    }),
-    [count, minutes, matchDuration, runningClock, setsToWin, setPoints, decidingSetPoints, minLead],
+    () => ({ periods: { count, minutes }, matchDuration, runningClock, setFormat: JSON.parse(setFormat) as MatchClockSettings['setFormat'] }),
+    [count, minutes, matchDuration, runningClock, setFormat],
   );
 }
 

@@ -69,7 +69,7 @@ export function periodLabelGenitive(number: number, count: number): string {
  * jest już przesądzony (ktoś ma wymaganą liczbę setów), bo wtedy nic się nie
  * rozgrywa. Set nie jest częścią meczu, więc nie ma przerwy ani minuty.
  */
-function currentSet(sets: readonly SetScore[], format: SetFormat): number | null {
+function currentSetNumber(sets: readonly SetScore[], format: SetFormat): number | null {
   if (Math.max(...setsWon(sets, format)) >= format.setsToWin) return null
   if (sets.length === 0) return 1
   const last = sets.length - 1
@@ -92,7 +92,7 @@ export function matchClock(state: MatchClockState, settings: MatchClockSettings,
   const { periods } = settings
   if (livePeriod === null) return null
   if (settings.setFormat) {
-    const set = currentSet(state.sets ?? [], settings.setFormat)
+    const set = currentSetNumber(state.sets ?? [], settings.setFormat)
     return set === null ? null : setLabel(set)
   }
   if (livePeriod > periods.count) return 'Dogrywka'
