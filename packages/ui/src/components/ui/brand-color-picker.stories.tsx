@@ -139,3 +139,36 @@ export const Blad: Story = {
     await expect(canvas.queryByText(/może być nieczytelny/)).not.toBeInTheDocument()
   },
 }
+
+/** Zmiana koloru z zewnątrz na paletę (reset formularza) zdejmuje „Własny”; wpisywanie w polu hex nie. */
+export const ResetZZewnatrz: Story = {
+  render: (args) => {
+    function WithReset() {
+      const [value, setValue] = React.useState('#1F7A45')
+      return (
+        <>
+          <BrandColorPicker {...args} value={value} onChange={setValue} />
+          <button type="button" onClick={() => setValue('#9B1C31')}>
+            Przywróć
+          </button>
+        </>
+      )
+    }
+    return <WithReset />
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('radio', { name: 'Własny' }))
+    const input = canvas.getByLabelText('Kolor (hex)')
+    await userEvent.clear(input)
+    // Wpisany hex równy palecie („Granat”) nie zamyka pola w trakcie pisania.
+    await userEvent.type(input, '#1D4E89')
+    await expect(canvas.getByLabelText('Kolor (hex)')).toHaveValue('#1D4E89')
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).toBeChecked()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Przywróć' }))
+    await expect(canvas.getByRole('radio', { name: 'Bordo' })).toBeChecked()
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).not.toBeChecked()
+    await expect(canvas.queryByLabelText('Kolor (hex)')).not.toBeInTheDocument()
+  },
+}

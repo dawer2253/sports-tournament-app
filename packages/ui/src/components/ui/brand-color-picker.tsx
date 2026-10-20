@@ -30,6 +30,10 @@ export const BRAND_PALETTES: readonly BrandPalette[] = [
   { name: 'Cegła', hex: '#B4471B' },
 ]
 
+/** Wspólny wygląd kafelka: palety i „Własny” mają się stylować razem. */
+const TILE_CLASS =
+  'grid cursor-pointer justify-items-center gap-1.5 rounded-lg border border-border p-2 text-xs transition-colors hover:bg-muted/50 has-checked:border-ring has-checked:bg-accent has-focus-visible:ring-3 has-focus-visible:ring-ring/50'
+
 /** Domyślny kolor turnieju, czyli paleta „Murawa”. */
 export const DEFAULT_BRAND_COLOR = BRAND_PALETTES[0]!.hex
 
@@ -73,6 +77,15 @@ export function BrandColorPicker({
   // „Własny” jest zaznaczony niezależnie od kliknięcia.
   const customActive = customPicked || !selected
 
+  // Zmiana koloru z zewnątrz (reset formularza, wczytanie zapisanych danych) na
+  // paletę zdejmuje wybór „Własny”. Zmiany z pola hex zostają: wpisanie hexa
+  // równego palecie nie może zamknąć pola w trakcie pisania.
+  const typedHere = React.useRef(false)
+  React.useEffect(() => {
+    if (!typedHere.current) setCustomPicked(false)
+    typedHere.current = false
+  }, [value])
+
   const lowContrast = isHexColor(value) && contrastRatio(value, BRAND_TEXT_LIGHT) < MIN_TEXT_CONTRAST
   const describedBy = [lowContrast && warningId, error && errorId].filter(Boolean).join(' ') || undefined
 
@@ -82,10 +95,7 @@ export function BrandColorPicker({
 
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
         {BRAND_PALETTES.map((palette) => (
-          <label
-            key={palette.hex}
-            className="grid cursor-pointer justify-items-center gap-1.5 rounded-lg border border-border p-2 text-xs transition-colors hover:bg-muted/50 has-checked:border-ring has-checked:bg-accent has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
-          >
+          <label key={palette.hex} className={TILE_CLASS}>
             <input
               type="radio"
               name={`${baseId}-palette`}
@@ -102,13 +112,12 @@ export function BrandColorPicker({
             {palette.name}
           </label>
         ))}
-        <label className="grid cursor-pointer justify-items-center gap-1.5 rounded-lg border border-border p-2 text-xs transition-colors hover:bg-muted/50 has-checked:border-ring has-checked:bg-accent has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+        <label className={TILE_CLASS}>
           <input
             type="radio"
             name={`${baseId}-palette`}
             value="custom"
             checked={customActive}
-            aria-controls={panelId}
             // Kolor nie zmienia się przy samym przejściu na „Własny”: pole hex startuje od bieżącego.
             onChange={() => setCustomPicked(true)}
             className="sr-only"
@@ -130,7 +139,10 @@ export function BrandColorPicker({
             <Input
               id={hexId}
               value={value}
-              onChange={(event) => onChange(event.target.value)}
+              onChange={(event) => {
+                typedHere.current = true
+                onChange(event.target.value)
+              }}
               placeholder={DEFAULT_BRAND_COLOR}
               spellCheck={false}
               autoComplete="off"
@@ -143,7 +155,10 @@ export function BrandColorPicker({
               aria-label="Wybierz kolor"
               // Natywny wybór koloru zna tylko poprawny hex małymi literami.
               value={isHexColor(value) ? value.toLowerCase() : '#000000'}
-              onChange={(event) => onChange(event.target.value.toUpperCase())}
+              onChange={(event) => {
+                typedHere.current = true
+                onChange(event.target.value.toUpperCase())
+              }}
               className="h-8 w-10 cursor-pointer rounded-lg border border-input bg-transparent p-0.5"
             />
           </div>
