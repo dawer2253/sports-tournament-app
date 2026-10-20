@@ -263,6 +263,11 @@ export interface BracketTreeProps<M extends PublicBracketMatch> {
   matchHref?: (match: M) => string
   /** Przejęcie kliknięcia w kafel, np. przez router. */
   onMatchNavigate?: (match: M) => void
+  /**
+   * Bez kafla mistrza nad finałem. Przegląd pokazuje mistrza własnym pasem
+   * nad drabiną, więc drugi kafel w drabince dublowałby go (#303).
+   */
+  hideChampion?: boolean
   className?: string
 }
 
@@ -297,6 +302,7 @@ export function BracketTree<M extends PublicBracketMatch>({
   timeZone,
   matchHref,
   onMatchNavigate,
+  hideChampion,
   className,
 }: BracketTreeProps<M>) {
   const [containerRef, width] = useWidth<HTMLDivElement>()
@@ -304,7 +310,7 @@ export function BracketTree<M extends PublicBracketMatch>({
   const [ownStart, setOwnStart] = React.useState<number | undefined>(undefined)
 
   const rounds = React.useMemo(() => bracketTree(matches), [matches])
-  const winner = React.useMemo(() => champion(matches), [matches])
+  const winner = React.useMemo(() => (hideChampion ? null : champion(matches)), [matches, hideChampion])
   const cols = Math.max(1, Math.min(bracketColumns(width), rounds.length))
   const maxIndex = Math.max(0, rounds.length - cols)
   const requested = start ?? ownStart ?? currentRoundOrder(matches) ?? 1

@@ -79,6 +79,9 @@ export const Zakonczony: Story = {
     const final = publicCupSeason.finished.matches.find((match) => match.round.name === 'Finał' && match.matchNumber === 1)!
     // Demo: finał 2:2, karne 5:4 dla gospodarza.
     await expect(canvas.getByRole('region', { name: 'Mistrz' })).toHaveTextContent(final.homeTeam!.name)
+    // Jeden mistrz: pas nad drabinką, bez drugiego kafla w drabince (#303).
+    await expect(canvas.getAllByRole('region', { name: 'Mistrz' })).toHaveLength(1)
+    await expect(canvas.queryByRole('status', { name: 'Mistrz' })).not.toBeInTheDocument()
     await expect(canvas.getByText('Ostatnia runda')).toBeInTheDocument()
     await expect(canvas.queryByRole('region', { name: 'Najbliższe mecze' })).not.toBeInTheDocument()
   },
