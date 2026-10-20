@@ -94,7 +94,7 @@ return Application::configure(basePath: dirname(__DIR__))
             404 => 'Nie znaleziono zasobu.',
             405 => 'Metoda niedozwolona dla tego zasobu.',
             413 => 'Przesłane dane są za duże.',
-            // Jedyny limiter stoi na zgłoszeniu drużyny (#300); framework
+            // Jedyny limit stoi na zgłoszeniu drużyny (#300); framework
             // mówi tu `Too Many Attempts.`, a `Retry-After` zostaje.
             429 => 'Zbyt wiele prób. Spróbuj ponownie później.',
             500 => 'Wewnętrzny błąd serwera.',

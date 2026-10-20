@@ -125,8 +125,9 @@ naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
 kolejnością, a nie obejście w kontrolerze.
 
 **429 oddaje tylko trasa z limiterem**: dziś jedna, zgłoszenie drużyny ze
-strony publicznej (#300, limiter `team-registrations` w `AppServiceProvider`).
-Tekst idzie przez tę samą mapę w `bootstrap/app.php` co reszta kodów — kolejny
+strony publicznej (#300). Limit liczy przyjęte zgłoszenia, a nie żądania, więc
+siedzi w `TeamRegistrationController::store()` (`RateLimiter` i
+`ThrottleRequestsException`), a nie w `throttle` na trasie. Tekst idzie przez tę samą mapę w `bootstrap/app.php` co reszta kodów — kolejny
 kod dokładaj **w tej samej mapie, nie w drugim `$exceptions->respond()`**, bo
 `respond()` podmienia jedyny callback zamiast go dokładać, więc drugi
 wyłączyłby całą mapę. Kontrakt wypisuje `429` (`TooManyRequests`) wyłącznie

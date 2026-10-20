@@ -8,6 +8,7 @@ use App\Models\Team;
 use App\Models\TeamRegistration;
 use App\Models\Tournament;
 use Illuminate\Testing\TestResponse;
+use Illuminate\Validation\ValidationException;
 use Spectator\Spectator;
 
 /*
@@ -191,6 +192,11 @@ it('odrzuca zawodnika bez imienia i numer spoza zakresu', function () {
     ]]))
         ->assertStatus(422)
         ->assertJsonValidationErrors(['players.0.name', 'players.1.number']);
+
+    // Kontrakt wymaga klucza `number` (może być `null`).
+    postRegistrationTo($tournament, registrationBody(['players' => [['name' => 'Paweł Lis']]]))
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['players.0.number']);
 });
 
 it('odrzuca zgłoszenie bez zgody na przetwarzanie danych', function (array $body) {
@@ -256,6 +262,22 @@ it('oddaje 429 po pięciu zgłoszeniach z jednego IP w godzinie, także do róż
     // Inne IP ma własny licznik.
     $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2']);
     postRegistrationTo($second, registrationBody(['teamName' => 'Drużyna 7']))->assertCreated();
+});
+
+it('nie liczy do limitu prób odrzuconych walidacją, a udawany sukces pola-pułapki liczy', function () {
+    $tournament = Tournament::factory()->openForRegistration()->create();
+
+    // Zgłaszający poprawia formularz sześć razy: `422` limitu nie zużywa.
+    foreach (range(1, 6) as $attempt) {
+        postRegistrationTo($tournament, registrationBody(['consent' => false]))->assertUnprocessable();
+    }
+    foreach (range(1, 4) as $n) {
+        postRegistrationTo($tournament, registrationBody(['teamName' => "Drużyna {$n}"]))->assertCreated();
+    }
+    postRegistrationTo($tournament, registrationBody(['website' => 'spam']))->assertCreated();
+
+    postRegistrationTo($tournament, registrationBody(['teamName' => 'Drużyna 5']))->assertValidResponse(429);
+    expect($tournament->registrations()->count())->toBe(4);
 });
 
 it('nie pokazuje danych zgłaszającego na stronie publicznej', function () {
@@ -508,6 +530,23 @@ it('odmawia przyjęcia w turnieju z meczem rozpoczętym pod kluczem teams', func
         ->assertJsonPath('errors.teams', ['Turniej ma rozegrane lub trwające mecze, więc nie można dodać drużyny.']);
 
     expect($registration->fresh()->status)->toBe('pending');
+});
+
+// Walidacja w Form Requeście idzie przed transakcją, więc wyścig dwóch
+// przyjęć odtwarzamy wprost na modelu: przyjęcie ze starym stanem przechodzi
+// walidację, a rozstrzyga je dopiero sprawdzenie pod blokadą.
+it('pod blokadą odmawia przyjęcia, które wyprzedziło inne przyjęcie', function () {
+    $tournament = Tournament::factory()->openForRegistration()->create();
+    $registration = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'Lwy Mokotów']);
+    $sameName = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'lwy mokotów']);
+    $stale = TeamRegistration::findOrFail($registration->id);
+
+    $registration->accept();
+
+    expect(fn () => $stale->accept())->toThrow(ValidationException::class, TeamRegistration::ALREADY_DECIDED_MESSAGE)
+        ->and(fn () => $sameName->accept())->toThrow(ValidationException::class, 'W tym turnieju jest już drużyna o tej nazwie.')
+        ->and($tournament->teams()->count())->toBe(1)
+        ->and($sameName->fresh()->status)->toBe('pending');
 });
 
 it('odmawia przyjęcia w turnieju z kompletem drużyn pod kluczem teams', function () {

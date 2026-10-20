@@ -39,8 +39,9 @@ class StoreTeamRegistrationRequest extends FormRequest
             'players.*' => ['array:name,number'],
             'players.*.name' => ['required', ...PlayerRequest::NAME_RULES],
             // Numer nie powtarza się w składzie; `null` z niczym nie koliduje,
-            // bo `nullable` pomija dla niego `distinct`.
-            'players.*.number' => [...PlayerRequest::NUMBER_RULES, 'distinct'],
+            // bo `nullable` pomija dla niego `distinct`. Klucz jest wymagany
+            // jak w kontrakcie (`TeamRegistrationPlayer`), wartość może być `null`.
+            'players.*.number' => ['present', ...PlayerRequest::NUMBER_RULES, 'distinct'],
             'consent' => ['required', 'boolean:strict', 'accepted'],
         ];
     }

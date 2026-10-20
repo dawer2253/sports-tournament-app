@@ -38,10 +38,9 @@ Route::prefix('/public/t/{slug}')->middleware(AddHttpValidators::class)->group(f
     Route::get('/leaderboard', [PublicTournamentController::class, 'leaderboard']);
     Route::get('/teams', [PublicTournamentController::class, 'teams']);
     // Jedyny zapis bez logowania (#300). Walidator HTTP grupy pomija go sam,
-    // bo działa tylko na metodach cache'owalnych; limiter stoi w
-    // `AppServiceProvider`.
-    Route::post('/registrations', [TeamRegistrationController::class, 'store'])
-        ->middleware('throttle:team-registrations');
+    // bo działa tylko na metodach cache'owalnych. Limit zgłoszeń liczy
+    // kontroler, nie `throttle` (powód przy `store()`).
+    Route::post('/registrations', [TeamRegistrationController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

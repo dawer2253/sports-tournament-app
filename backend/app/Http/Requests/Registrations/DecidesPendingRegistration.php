@@ -17,7 +17,7 @@ trait DecidesPendingRegistration
         $registration = $this->route('registration');
 
         if (! $registration->isPending()) {
-            $validator->errors()->add('registration', 'To zgłoszenie zostało już rozpatrzone.');
+            $validator->errors()->add('registration', TeamRegistration::ALREADY_DECIDED_MESSAGE);
         }
     }
 }
