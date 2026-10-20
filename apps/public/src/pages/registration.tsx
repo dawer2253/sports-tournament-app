@@ -1,4 +1,4 @@
-import type { ApiValidationError } from '@tournament/api-client';
+import { firstFieldErrors, isValidationError } from '@tournament/api-client';
 import {
   RegistrationClosed,
   RegistrationScreen,
@@ -10,7 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
-import { firstErrors, registrationBody } from '../lib/registration-body';
+import { registrationBody } from '../lib/registration-body';
 import { tabHref, useTournament } from './tournament-layout';
 
 const SEND_FAILED = 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie.';
@@ -42,8 +42,8 @@ export function RegistrationPage() {
         body: prepared.body,
       });
       if (data) return { sent: data.data.teamName };
-      if (response.status === 422) {
-        const errors = firstErrors((error as ApiValidationError).errors);
+      if (response.status === 422 && isValidationError(error)) {
+        const errors = firstFieldErrors(error);
         // Zapisy zamknęły się, odkąd strona pobrała turniej: odświeżony
         // turniej zdejmie pasek i formularz.
         if ('registration' in errors) void queryClient.invalidateQueries({ queryKey: ['public', slug] });

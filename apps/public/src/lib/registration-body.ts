@@ -36,8 +36,3 @@ export function registrationBody(draft: RegistrationDraft): { body: TeamRegistra
     },
   };
 }
-
-/** `errors` z odpowiedzi `422` → pierwszy komunikat pod każdym kluczem. */
-export function firstErrors(errors: Record<string, string[]> | undefined): RegistrationErrors {
-  return Object.fromEntries(Object.entries(errors ?? {}).map(([key, messages]) => [key, messages[0] ?? '']));
-}
