@@ -510,6 +510,19 @@ it('odmawia przyjęcia w turnieju z meczem rozpoczętym pod kluczem teams', func
     expect($registration->fresh()->status)->toBe('pending');
 });
 
+it('odmawia przyjęcia w turnieju z kompletem drużyn pod kluczem teams', function () {
+    $tournament = Tournament::factory()->openForRegistration()->create();
+    Team::factory()->count(Tournament::MAX_TEAMS)->for($tournament)->create();
+    $registration = TeamRegistration::factory()->for($tournament)->create();
+
+    acceptRegistration($registration)
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.teams', ['Turniej ma już 128 drużyn, to górny limit.']);
+
+    expect($tournament->teams()->count())->toBe(Tournament::MAX_TEAMS)
+        ->and($registration->fresh()->status)->toBe('pending');
+});
+
 it('odmawia przyjęcia i odrzucenia zgłoszenia już rozpatrzonego', function (string $state, string $action) {
     $tournament = Tournament::factory()->openForRegistration()->create();
     $registration = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'Lwy Mokotów']);

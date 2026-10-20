@@ -429,10 +429,10 @@ class DemoTournamentSeeder extends Seeder
             ],
         );
 
-        // Drużyna z przyjętego zgłoszenia znika z nim razem, więc wystarczy
-        // wyczyścić drużyny (na twardo, żeby nazwa nie wisiała w koszu)
-        // i resztę zgłoszeń.
-        $tournament->teams()->withTrashed()->forceDelete();
+        // Drużyny na twardo, żeby nazwa nie wisiała w koszu, i pojedynczo,
+        // przez model (`backend/AGENTS.md`, „Schemat i modele”); zawodników
+        // zabiera kaskada w bazie. Potem reszta zgłoszeń.
+        $tournament->teams()->withTrashed()->get()->each->forceDelete();
         $tournament->registrations()->delete();
         $tournament->stages()->delete();
 
