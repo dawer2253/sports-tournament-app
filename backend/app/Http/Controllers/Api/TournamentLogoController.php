@@ -27,6 +27,6 @@ class TournamentLogoController extends Controller
     /** Resource wymaga dociągniętych relacji i liczników (docblock TournamentResource). */
     private function resource(Tournament $tournament): TournamentResource
     {
-        return new TournamentResource($tournament->load('sport')->loadCount('teams'));
+        return new TournamentResource($tournament->load('sport')->loadCount(Tournament::resourceCounts()));
     }
 }

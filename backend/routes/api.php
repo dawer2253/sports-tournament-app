@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\StageController;
 use App\Http\Controllers\Api\StandingController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\TeamLogoController;
+use App\Http\Controllers\Api\TeamRegistrationController;
 use App\Http\Controllers\Api\TournamentController;
 use App\Http\Controllers\Api\TournamentLogoController;
 use App\Http\Controllers\Api\VenueController;
@@ -36,6 +37,10 @@ Route::prefix('/public/t/{slug}')->middleware(AddHttpValidators::class)->group(f
     Route::get('/matches/{match}', [PublicTournamentController::class, 'match']);
     Route::get('/leaderboard', [PublicTournamentController::class, 'leaderboard']);
     Route::get('/teams', [PublicTournamentController::class, 'teams']);
+    // Jedyny zapis bez logowania (#300). Walidator HTTP grupy pomija go sam,
+    // bo działa tylko na metodach cache'owalnych. Limit zgłoszeń liczy
+    // kontroler, nie `throttle` (powód przy `store()`).
+    Route::post('/registrations', [TeamRegistrationController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -111,6 +116,13 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'player');
     Route::delete('/players/{player}', [PlayerController::class, 'destroy'])
         ->can('manage', 'player');
+
+    Route::get('/tournaments/{tournament}/registrations', [TeamRegistrationController::class, 'index'])
+        ->can('manage', 'tournament');
+    Route::post('/registrations/{registration}/accept', [TeamRegistrationController::class, 'accept'])
+        ->can('manage', 'registration');
+    Route::post('/registrations/{registration}/reject', [TeamRegistrationController::class, 'reject'])
+        ->can('manage', 'registration');
 
     Route::get('/tournaments/{tournament}/venues', [VenueController::class, 'index'])
         ->can('manage', 'tournament');

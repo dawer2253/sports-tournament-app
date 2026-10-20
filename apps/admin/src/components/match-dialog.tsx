@@ -25,6 +25,7 @@ import { TextField } from '../components/text-field';
 import { api } from '../lib/api';
 import { advanceNote, bracketRow, type AdvanceNote } from '../lib/bracket';
 import { applyApiError } from '../lib/form-errors';
+import { toLocalInputValue, toOffsetIso } from '../lib/local-datetime';
 import { scheduleKeys, useVenues } from '../lib/schedule-queries';
 import { useSports } from '../lib/use-sports';
 
@@ -79,23 +80,6 @@ function periodAction(
 /** Pole liczby jako wartość dla API: pusty napis to `null`. */
 function toNumber(value: string): number | null {
   return value === '' ? null : Number(value);
-}
-
-/**
- * `datetime-local` trzyma czas lokalny bez offsetu, a API wymaga momentu
- * z offsetem (ADR-0008). Zamieniamy więc wartość pola na ISO w UTC; strefę
- * bierze przeglądarka, tak jak przy rozkładzie dat.
- */
-function toOffsetIso(localValue: string): string {
-  return new Date(localValue).toISOString();
-}
-
-/** Termin z API (UTC) na wartość `datetime-local` w strefie przeglądarki. */
-function toLocalInputValue(iso: string | null): string {
-  if (iso === null) return '';
-  const date = new Date(iso);
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export interface MatchDialogProps {

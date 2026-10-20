@@ -19,6 +19,8 @@ export interface ShellProps {
   onNavigate?: (key: PublicNavKey) => void
   /** Zakładki w kolejności; bez nich zakładki ligi (`LEAGUE_TABS`). */
   tabs?: readonly PublicNavKey[]
+  /** Pasek pod nagłówkiem na każdej zakładce, np. zapisy (`RegistrationBanner`, #300). */
+  banner?: React.ReactNode
   children: React.ReactNode
 }
 
@@ -152,7 +154,7 @@ function Footer({ slug }: { slug: string }) {
  * nazwą i zakładkami, pod nim treść ekranu i stopka. Kolor turnieju
  * (`branding.primaryColor`) trafia na korzeń przez `brandVars()`.
  */
-export function Shell({ tournament, active, navHref, onNavigate, tabs = LEAGUE_TABS, children }: ShellProps) {
+export function Shell({ tournament, active, navHref, onNavigate, tabs = LEAGUE_TABS, banner, children }: ShellProps) {
   const [open, setOpen] = React.useState(false)
 
   // Zmiana aktywnej zakładki to przejście na inną trasę: lista się zamyka.
@@ -177,6 +179,7 @@ export function Shell({ tournament, active, navHref, onNavigate, tabs = LEAGUE_T
   return (
     <SiteRoot primaryColor={tournament.branding.primaryColor}>
       <ShellHeader tournament={tournament} tabs={tabs} active={active} navHref={navHref} onNavigate={onNavigate} open={open} setOpen={setOpen} />
+      {banner}
       <main
         className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-4 pt-8 pb-24 sm:px-6 sm:pt-10"
         // Odnośnik w treści prowadzi na inną trasę: lista menu się zamyka.

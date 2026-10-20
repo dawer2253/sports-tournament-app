@@ -1,5 +1,6 @@
 import type { Points, Tournament, TournamentUpdate } from '@tournament/api-client';
 import { z } from 'zod';
+import { toLocalInputValue, toOffsetIso } from './local-datetime';
 
 /** Wzorzec sluga z `TournamentUpdate.slug` w `openapi.yaml`. */
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -53,6 +54,8 @@ export function tournamentSettingsSchema(allowsDraw: boolean) {
       // Podział meczu (#210). Pole minut znika przy „Bez podziału”, więc jego
       // wartość wtedy się nie liczy; przy kilku częściach jest wymagana.
       periods: z.object({ count: z.number().int().min(1).max(10), minutes: z.number().nullable() }),
+      // Zapisy (#300): termin to wartość pola `datetime-local`, `''` bez terminu.
+      registration: z.object({ open: z.boolean(), deadline: z.string() }),
     })
     .superRefine(({ points, periods }, ctx) => {
       // `null` i puste pole (`NaN`) dają ten sam komunikat co brak liczby.
@@ -87,7 +90,14 @@ export function tournamentSettingsValues(tournament: Tournament): TournamentSett
     matchDuration: tournament.matchDuration,
     periods: { ...tournament.periods },
     points: { ...tournament.points },
+    registration: { open: tournament.registration.open, deadline: toLocalInputValue(tournament.registration.deadline) },
   };
+}
+
+/** Czy pole terminu i zapisany termin to ten sam moment; puste pole to brak terminu. */
+function sameDeadline(local: string, saved: string | null): boolean {
+  if (local === '' || saved === null) return local === '' && saved === null;
+  return new Date(local).getTime() === new Date(saved).getTime();
 }
 
 function samePoints(a: Points, b: Points) {
@@ -123,5 +133,13 @@ export function tournamentSettingsUpdate(
   if (periods.count !== saved.periods.count || periods.minutes !== saved.periods.minutes) body.periods = periods;
   const points = allowsDraw ? values.points : { ...values.points, draw: 0 };
   if (!samePoints(points, saved.points)) body.points = points;
+  // Zapisy idą jak `branding`: tylko zmieniona część. Termin z pola dostaje
+  // offset przed wysłaniem (ADR-0008), a puste pole usuwa termin (`null`).
+  const registration: NonNullable<TournamentUpdate['registration']> = {};
+  if (values.registration.open !== saved.registration.open) registration.open = values.registration.open;
+  if (!sameDeadline(values.registration.deadline, saved.registration.deadline)) {
+    registration.deadline = values.registration.deadline === '' ? null : toOffsetIso(values.registration.deadline);
+  }
+  if (Object.keys(registration).length > 0) body.registration = registration;
   return body;
 }

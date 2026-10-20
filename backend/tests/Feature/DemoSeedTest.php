@@ -236,9 +236,10 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
 
     // Poddrzewo powstaje od nowa pod nowymi id (autoinkrement, patrz docblock
     // seedera), więc pilnujemy, że stare nie zostało obok: po jednej fazie
-    // na turniej, a w turnieju z grupami dwie (3 + 2 kolejki, 12 + 4 mecze).
+    // na turniej, a w turnieju z grupami dwie (3 + 2 kolejki, 12 + 4 mecze);
+    // turniej z zapisami ma fazę bez kolejek.
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
-        ->and(Stage::query()->count())->toBe(5)
+        ->and(Stage::query()->count())->toBe(6)
         ->and(Round::query()->count())->toBe(16)
         ->and(GameMatch::query()->count())->toBe(30)
         ->and($demo->matches()->count())->toBe(6);
@@ -487,4 +488,44 @@ it('nie dubluje turnieju z grupami przy powtórnym seedowaniu', function () {
         ->and($tournament->teams()->count())->toBe(8)
         ->and($tournament->teams()->whereNull('group_id')->count())->toBe(0)
         ->and($tournament->matches()->count())->toBe(16);
+});
+
+it('sieje turniej z otwartymi zapisami i zgłoszeniami zgodnymi z przykładem listy zgłoszeń', function () {
+    $tournament = Tournament::firstWhere('slug', 'liga-letnia-2026');
+
+    expect($tournament)->not->toBeNull()
+        ->and($tournament->user->email)->toBe('dawid@example.com')
+        ->and($tournament->acceptsRegistrations())->toBeTrue()
+        ->and($tournament->registration_deadline->isFuture())->toBeTrue()
+        ->and($tournament->teams()->pluck('name')->all())->toBe(['Żubry Targówek'])
+        ->and($tournament->teams()->sole()->players()->pluck('name')->all())->toBe(['Tomasz Zieliński']);
+
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $example = $spec['paths']['/tournaments/{tournament}/registrations']['get']['responses']['200']['content']['application/json']['example']['data'];
+    $withoutIds = fn (array $rows): array => array_map(
+        fn (array $row): array => array_intersect_key($row, array_flip(['teamName', 'status', 'contact', 'players'])),
+        $rows,
+    );
+
+    $response = actingAsOrganizer($tournament->user)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/registrations")
+        ->assertOk();
+
+    expect($withoutIds($response->json('data')))->toBe($withoutIds($example));
+
+    $this->getJson('/api/v1/public/t/liga-letnia-2026')
+        ->assertOk()
+        ->assertJsonPath('data.registration.open', true);
+});
+
+it('nie dubluje zgłoszeń ani drużyn turnieju z zapisami przy powtórnym seedowaniu', function () {
+    $this->seed();
+
+    $tournament = Tournament::firstWhere('slug', 'liga-letnia-2026');
+
+    expect(Tournament::query()->where('slug', 'liga-letnia-2026')->count())->toBe(1)
+        ->and($tournament->registrations()->count())->toBe(4)
+        ->and($tournament->registrations()->where('status', 'pending')->count())->toBe(2)
+        ->and($tournament->teams()->withTrashed()->count())->toBe(1)
+        ->and($tournament->stages()->count())->toBe(1);
 });

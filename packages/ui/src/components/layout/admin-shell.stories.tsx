@@ -53,7 +53,7 @@ function sidebarOf(canvasElement: HTMLElement) {
   return within(within(canvasElement).getByRole('navigation', { name: 'Panel' }))
 }
 
-const SECTIONS = ['Drużyny', 'Grupy', 'Obiekty', 'Ustawienia', 'Terminarz', 'Tabela', 'Drabinka', 'Statystyki']
+const SECTIONS = ['Drużyny', 'Zgłoszenia', 'Grupy', 'Obiekty', 'Ustawienia', 'Terminarz', 'Tabela', 'Drabinka', 'Statystyki']
 
 /**
  * Poza turniejem sidebar ma „Turnieje" i pod nimi bieżące turnieje, bez kart

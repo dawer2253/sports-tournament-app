@@ -1,6 +1,7 @@
 import type { PublicTournament } from '@tournament/api-client';
 import {
   MatchClockProvider,
+  RegistrationBanner,
   Shell,
   TournamentLoadError,
   TournamentLoading,
@@ -11,7 +12,7 @@ import {
   type PublicNavKey,
 } from '@tournament/ui/public';
 import { useEffect, useMemo } from 'react';
-import { Outlet, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
+import { Outlet, useMatch, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
 import { usePublicTournament } from '../lib/queries';
 
 /** Podtrasa zakładki pod `/t/:slug`, po polsku (#192). */
@@ -41,6 +42,25 @@ export function useTabNav(slug: string): { navHref: (key: PublicNavKey) => strin
 /** Adres strony meczu (#210). */
 export function matchHref(slug: string, matchId: number): string {
   return `/t/${slug}/mecze/${matchId}`;
+}
+
+/** Podtrasa formularza zgłoszenia drużyny (#300), po polsku jak zakładki. */
+export const REGISTRATION_PATH = 'zgloszenie';
+
+/** Adres formularza zgłoszenia drużyny. */
+export function registrationHref(slug: string): string {
+  return `/t/${slug}/${REGISTRATION_PATH}`;
+}
+
+/**
+ * Wejście w formularz zgłoszenia (#300) dla paska i kafla: termin i adres
+ * przy otwartych zapisach, `null` przy zamkniętych — wtedy wejścia nie ma.
+ */
+export function useRegistrationEntry(tournament: PublicTournament) {
+  const navigate = useNavigate();
+  if (!tournament.registration.open) return null;
+  const href = registrationHref(tournament.slug);
+  return { deadline: tournament.registration.deadline, href, onNavigate: () => void navigate(href) };
 }
 
 const FAILED = 'Nie udało się wczytać turnieju';
@@ -88,6 +108,7 @@ export function TournamentLayout() {
         // obie naraz (#268).
         tabs={publicTabs(tournament.data.stages)}
         active={active}
+        banner={<RegistrationBannerFor tournament={tournament.data} />}
         {...tabNav}
       >
         {/* Zegar meczów na żywo (#297) liczy przeglądarka z ustawień turnieju, co 30 s, bez nowych zapytań. */}
@@ -103,6 +124,16 @@ export function TournamentLayout() {
   if (failed) return <TournamentLoadError message={tournament.error.message} onRetry={() => void tournament.refetch()} />;
 
   return <TournamentLoading />;
+}
+
+/**
+ * Pasek zapisów (#300) na każdej zakładce przy otwartych zapisach. Na samym
+ * formularzu go nie ma: tam przycisk „Zgłoś drużynę” prowadziłby donikąd.
+ */
+function RegistrationBannerFor({ tournament }: { tournament: PublicTournament }) {
+  const entry = useRegistrationEntry(tournament);
+  const onForm = useMatch(`/t/:slug/${REGISTRATION_PATH}`) !== null;
+  return entry && !onForm ? <RegistrationBanner {...entry} /> : null;
 }
 
 /**

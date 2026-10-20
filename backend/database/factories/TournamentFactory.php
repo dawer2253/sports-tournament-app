@@ -35,7 +35,15 @@ class TournamentFactory extends Factory
             'period_count' => $sport->defaultPeriods()['count'],
             'period_minutes' => $sport->defaultPeriods()['minutes'],
             'status' => 'draft',
+            'registration_open' => false,
+            'registration_deadline' => null,
         ];
+    }
+
+    /** Turniej opublikowany z otwartymi zapisami (#300), bez terminu. */
+    public function openForRegistration(): static
+    {
+        return $this->state(['status' => 'active', 'registration_open' => true]);
     }
 
     public function basketball(): static

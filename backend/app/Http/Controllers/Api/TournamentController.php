@@ -39,7 +39,7 @@ class TournamentController extends Controller
 
         $tournaments = Tournament::whereBelongsTo($request->user())
             ->with('sport')
-            ->withCount('teams')
+            ->withCount(Tournament::resourceCounts())
             // `whereIn` przed `paginate()` — sedno ADR 0009: filtr zawęża
             // zapytanie, a nie pobraną stronę, więc `meta` mówi o zbiorze
             // już zawężonym.
@@ -71,14 +71,14 @@ class TournamentController extends Controller
             format: $request->validated('format'),
         );
 
-        return (new TournamentResource($tournament->load('sport')->loadCount('teams')))
+        return (new TournamentResource($tournament->load('sport')->loadCount(Tournament::resourceCounts())))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function show(Tournament $tournament): TournamentResource
     {
-        return new TournamentResource($tournament->load('sport')->loadCount('teams'));
+        return new TournamentResource($tournament->load('sport')->loadCount(Tournament::resourceCounts()));
     }
 
     /**
@@ -103,7 +103,7 @@ class TournamentController extends Controller
             ]);
         }
 
-        return new TournamentResource($tournament->load('sport')->loadCount('teams'));
+        return new TournamentResource($tournament->load('sport')->loadCount(Tournament::resourceCounts()));
     }
 
     /**

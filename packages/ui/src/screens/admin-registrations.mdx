@@ -1,0 +1,42 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Stories from './admin-registrations.stories'
+
+<Meta of={Stories} />
+
+# Zgłoszenia (Admin): specyfikacja
+
+Ekran, na którym organizer rozpatruje zgłoszenia drużyn wysłane ze strony publicznej turnieju.
+
+<Canvas of={Stories.Domyslny} />
+
+## Cel
+Pozwolić organizatorowi przyjąć zgłoszenie (wtedy powstaje drużyna ze składem) albo je odrzucić. Decyzje: [#300](https://github.com/dawer2253/sports-tournament-app/issues/300), słownik: „TeamRegistration” w `CONTEXT.md`.
+
+## Dane (wejście)
+- Nagłówek strony wspólny dla ekranów turnieju, aktywna karta „Zgłoszenia” z plakietką liczby oczekujących (`Tournament.registration.pendingCount`).
+- `registrations`: lista `RegistrationRow` (podzbiór `TeamRegistration` z kontraktu): nazwa drużyny, stan, dane zgłaszającego (`null` po odrzuceniu), skład, chwila zgłoszenia i decyzji.
+- Dane demo: `registrationRows` z `lib/demo-data.ts`, przepisane z przykładu `GET /tournaments/{tournament}/registrations`.
+
+## Reguły
+- Tablica to `RegistrationsBoard`, karta zgłoszenia to `RegistrationCard`.
+- Sekcja „Oczekujące” od najstarszego zgłoszenia, z akcjami „Przyjmij” i „Odrzuć”. Sekcja „Rozpatrzone” od najnowszej decyzji, z etykietą „Przyjęte” albo „Odrzucone”, bez akcji.
+- E-mail i telefon zgłaszającego to odnośniki `mailto:` i `tel:`. Skład to numer i imię i nazwisko; zawodnik bez numeru ma „–”.
+- Zgłoszenie odrzucone nie ma danych osobowych: zostaje sama nazwa i data decyzji.
+
+## Stany
+- **Oczekujące i rozpatrzone** (domyślny, powyżej).
+- **Uwaga i błąd przyjęcia**: przy turnieju z ustalonym składem grup albo terminarzem nad akcjami stoi uwaga o skutkach przyjęcia, a błąd przyjęcia (`422`: nazwa zajęta, komplet drużyn, mecz rozpoczęty) siada przy zgłoszeniu, którego dotyczy.
+- **Wszystkie rozpatrzone**: zdanie w miejscu oczekujących, bez plakietki przy karcie.
+- **Pusta**: pusty stan z jednym zdaniem — przy zapisach otwartych, że zgłoszenia pojawią się tutaj, przy zamkniętych, że otwiera się je w ustawieniach.
+
+<Canvas of={Stories.UwagaIBladPrzyjecia} />
+
+## Zachowanie
+- „Przyjmij” tworzy drużynę od razu, bez okna: to dodanie drużyny, które organizer i tak robi bez potwierdzenia, a błąd stoi przy zgłoszeniu.
+- „Odrzuć” idzie przez okno potwierdzenia, bo usuwa dane zgłaszającego i składu i nie da się go cofnąć.
+- Przyjąć i odrzucić można także po zamknięciu zapisów.
+
+## Otwarte pytania
+Rozstrzygnięte w #300:
+- Bez powodu odrzucenia i bez powiadomień: organizator kontaktuje się ze zgłaszającym sam.
+- Licznik oczekujących tylko przy karcie turnieju, nie na liście turniejów (PLAN §14).
