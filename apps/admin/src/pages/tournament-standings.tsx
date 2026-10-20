@@ -226,6 +226,7 @@ function StandingsSection({
                   rows={group ? withQualifiers(table.rows, group.qualifiers) : table.rows}
                   scoreLabel={table.scoreLabel}
                   allowsDraw={table.allowsDraw}
+                  rallyPointsLabel={table.rallyPointsLabel}
                   previousPositions={previousPositions}
                   emptyAction={teamsLink}
                 />

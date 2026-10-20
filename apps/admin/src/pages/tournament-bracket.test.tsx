@@ -27,6 +27,7 @@ const TOURNAMENT: Tournament = {
   tiebreakers: ['points'],
   matchDuration: 60,
   periods: { count: 2, minutes: 45 },
+  setFormat: null,
   teamsCount: 6,
   createdAt: '2026-09-01T10:00:00+00:00',
   updatedAt: '2026-09-01T10:00:00+00:00',
@@ -78,6 +79,7 @@ function match(
     awayScore: null,
     homePenalties: null,
     awayPenalties: null,
+    sets: null,
     status: 'scheduled',
     kickoffAt: null,
     venue: null,
@@ -142,6 +144,7 @@ function sport(id: number, code: Sport['code'], name: string, allowsDraw: boolea
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       defaultMatchDuration: 60,
       defaultPeriods: { count: 2, minutes: 45 },
+      defaultSetFormat: null,
       eventTypes: [{ code: 'goal', label: 'Bramka', hasPlayer: true, value: 1, stat: 'goals' }],
       defaultTiebreakers: ['points'],
       availableTiebreakers: ['points'],
@@ -937,6 +940,7 @@ function groupTable(group: typeof GROUP_A, ids: number[]): StandingTable {
     groupId: group.id,
     groupName: group.name,
     scoreLabel: 'Bramki',
+    rallyPointsLabel: null,
     allowsDraw: true,
     tiebreakers: [{ code: 'points', label: 'Punkty w tabeli' }],
     rows: ids.map((id, index) => {
@@ -951,6 +955,8 @@ function groupTable(group: typeof GROUP_A, ids: number[]): StandingTable {
         scoreFor: 0,
         scoreAgainst: 0,
         scoreDifference: 0,
+        rallyPointsFor: null,
+        rallyPointsAgainst: null,
         points: 6 - 3 * index,
         form: [],
       };
@@ -1219,5 +1225,29 @@ describe('Drabinka — playoff z grup, nieaktualne odczyty (#260)', () => {
       ),
     ).toBeInTheDocument();
     expect(within(dialog).queryByRole('list', { name: 'Rozstawienie (od najwyżej rozstawionej)' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Drabinka — sport z setami (#301)', () => {
+  it('w siatkówce po jedynej części nie ma przycisku „Dogrywka”', async () => {
+    server.use(
+      http.get(`${API}/tournaments/${TOURNAMENT.id}`, () =>
+        HttpResponse.json({
+          data: {
+            ...TOURNAMENT,
+            periods: { count: 1, minutes: null },
+            setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+            sport: { id: 3, code: 'volleyball', name: 'Siatkówka', allowsDraw: false },
+          },
+        }),
+      ),
+    );
+    serveMatches(liveSemi(1));
+    const { user } = renderBracket('?round=2');
+
+    const dialog = await openRow(user, 'Półfinał 1: Lwy Mokotów – Sokoły Ursus');
+    expect(await within(dialog).findByRole('button', { name: 'Dodaj set' })).toBeInTheDocument();
+    expect(within(dialog).queryByRole('button', { name: /^Dogrywka/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText(/^Karne /)).not.toBeInTheDocument();
   });
 });

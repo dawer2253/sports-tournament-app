@@ -13,6 +13,7 @@ const SAVED: Tournament = {
   tiebreakers: ['points'],
   matchDuration: 60,
   periods: { count: 2, minutes: 45 },
+  setFormat: null,
   teamsCount: 8,
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',

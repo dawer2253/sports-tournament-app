@@ -1,5 +1,5 @@
 import type { AdminMatch, Match, MatchEvent, Player, SportEventType, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
-import type { BracketMatch, BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, SeedingTeam, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { BracketMatch, BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, SeedingTeam, SetFormat, SetScore, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -108,3 +108,22 @@ export const contractFitsBracketScore: ContractFitsBracketScore = true;
 type ContractFitsBracketMatch = AdminMatch extends BracketMatch ? true : never;
 
 export const contractFitsBracketMatch: ContractFitsBracketMatch = true;
+
+/**
+ * Mecz z kontraktu niesie wyniki setów (#301) w kształcie, z którego
+ * `SetScoresField` i `setsWon` liczą wynik w setach. W `MatchRowData` pole jest
+ * opcjonalne, więc dopiero ten strażnik łapie zmianę jego nazwy.
+ */
+type ContractFitsMatchSets = AdminMatch extends { sets: readonly SetScore[] | null } ? true : never;
+
+export const contractFitsMatchSets: ContractFitsMatchSets = true;
+
+/** Format seta turnieju z kontraktu daje się podać `SetScoresField` i regułom seta (#301). */
+type ContractFitsSetFormat = NonNullable<Tournament['setFormat']> extends SetFormat ? true : never;
+
+export const contractFitsSetFormat: ContractFitsSetFormat = true;
+
+/** Wiersz tabeli z kontraktu niesie punkty w setach (#301) pod nazwami z `StandingsTableRow`. */
+type ContractFitsRallyPoints = StandingRow extends Required<Pick<StandingsTableRow, 'rallyPointsFor' | 'rallyPointsAgainst'>> ? true : never;
+
+export const contractFitsRallyPoints: ContractFitsRallyPoints = true;

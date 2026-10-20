@@ -16,7 +16,12 @@ import {
   formatKickoff,
   matchLabel,
   periodLabelGenitive,
+  setDraftsToScores,
+  setScoresToDrafts,
+  SetScoresField,
+  setsWon,
   toast,
+  type SetDraft,
 } from '@tournament/ui';
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
 import { useId, useState, type FormEvent } from 'react';
@@ -43,7 +48,13 @@ const NO_VENUE = 'none';
  * pod swoim polem), tak samo para karnych pod swoim blokiem (#216), termin
  * i obiekt przy swoich polach. Reszta idzie nad przyciskami.
  */
-const FIELDS = ['homeScore', 'awayScore', 'homePenalties', 'awayPenalties', 'kickoffAt', 'venueId'] as const;
+const FIELDS = ['homeScore', 'awayScore', 'homePenalties', 'awayPenalties', 'kickoffAt', 'venueId', 'sets'] as const;
+
+/**
+ * Klucze błędów pojedynczego seta (#301): `sets.{n}` z reguł seta i
+ * `sets.{n}.home`/`away` z reguł pola. Wszystkie siadają pod rzędem seta.
+ */
+const SET_FIELDS = Array.from({ length: 5 }, (_, index) => [`sets.${index}`, `sets.${index}.home`, `sets.${index}.away`]).flat();
 
 /** Zapisany zegar meczu (#297): stan i bieżąca część, jak przyszły z serwera. */
 type SavedClock = Pick<AdminMatch, 'status' | 'livePeriod' | 'periodStartedAt' | 'onBreak'>;
@@ -57,13 +68,15 @@ type PeriodBody = { periodRunning: false } | { livePeriod: number; periodRunning
  * przerwie i po powrocie z „Zakończony” (część nie biegnie); po ostatniej
  * części meczu pucharowego „Dogrywka / karne”, a w sporcie bez remisu (bez
  * karnych) „Dogrywka”. W lidze i grupie po ostatniej części, w dogrywce
- * i w turnieju bez podziału przed dogrywką przycisku nie ma.
+ * i w turnieju bez podziału przed dogrywką przycisku nie ma. W sporcie
+ * z setami dogrywki nie ma wcale (#301).
  */
 function periodAction(
   clock: SavedClock,
   periods: Tournament['periods'],
   knockout: boolean,
   allowsDraw: boolean,
+  hasSets: boolean,
 ): { label: string; body: PeriodBody } | null {
   const current = clock.livePeriod;
   if (clock.status !== 'live' || current === null || current > periods.count) return null;
@@ -73,7 +86,7 @@ function periodAction(
       ? { label: 'Przerwa', body: { periodRunning: false } }
       : { label: `Start ${periodLabelGenitive(next.livePeriod, periods.count)}`, body: next };
   }
-  return knockout ? { label: allowsDraw ? 'Dogrywka / karne' : 'Dogrywka', body: next } : null;
+  return knockout && !hasSets ? { label: allowsDraw ? 'Dogrywka / karne' : 'Dogrywka', body: next } : null;
 }
 
 /** Pole liczby jako wartość dla API: pusty napis to `null`. */
@@ -111,6 +124,11 @@ export interface MatchDialogProps {
   /** Podział meczu turnieju (`Tournament.periods`): z niego przycisk części meczu trwającego (#297). */
   periods: Tournament['periods'];
   /**
+   * Format seta turnieju (`Tournament.setFormat`, #301). Podany oznacza sport
+   * z setami: zamiast pól wyniku okno ma wpis kolejnych setów.
+   */
+  setFormat?: Tournament['setFormat'];
+  /**
    * Mecz drabinki (#228): nagłówek z etykietą pozycji, karne i notka przed
    * zapisem. `matches` to wtedy komplet meczów fazy, z którego liczą się
    * etykiety i krawędzie.
@@ -143,8 +161,23 @@ export interface MatchDialogProps {
  *
  * Mecz bez obu drużyn czeka na rywali: wynik, stan i zdarzenia są niedostępne,
  * a termin i obiekt zostają.
+ *
+ * W sporcie z setami (`setFormat`, #301) wynik wpisuje się setami
+ * (`SetScoresField`), a wynik w setach liczy się na bieżąco; do API jadą
+ * `sets`, bez `homeScore` i `awayScore`, które liczy serwer. Bez karnych,
+ * bez dogrywki i bez linii zgodności zdarzeń z wynikiem.
  */
-export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose, sportCode, periods, knockout = false }: MatchDialogProps) {
+export function MatchDialog({
+  match,
+  tournamentId,
+  matches,
+  onOpenMatch,
+  onClose,
+  sportCode,
+  periods,
+  setFormat = null,
+  knockout = false,
+}: MatchDialogProps) {
   const queryClient = useQueryClient();
   const venues = useVenues(tournamentId);
   const sports = useSports();
@@ -154,6 +187,8 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   const [awayScore, setAwayScore] = useState(match.awayScore?.toString() ?? '');
   const [homePenalties, setHomePenalties] = useState(match.homePenalties?.toString() ?? '');
   const [awayPenalties, setAwayPenalties] = useState(match.awayPenalties?.toString() ?? '');
+  const [sets, setSets] = useState<SetDraft[]>(setScoresToDrafts(match.sets));
+  const [setErrors, setSetErrors] = useState<Record<number, string | undefined>>({});
   const [kickoffAt, setKickoffAt] = useState(toLocalInputValue(match.kickoffAt));
   const [venueId, setVenueId] = useState(match.venue ? String(match.venue.id) : NO_VENUE);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
@@ -173,14 +208,19 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
   const row = knockout ? bracketRow(match, matches) : null;
   const home = match.homeTeam?.name ?? row?.home.source ?? 'Do ustalenia';
   const away = match.awayTeam?.name ?? row?.away.source ?? 'Do ustalenia';
-  const showsPenalties = knockout && allowsDraw && status === 'finished' && homeScore !== '' && homeScore === awayScore;
+  const hasSets = setFormat !== null;
+  const showsPenalties = !hasSets && knockout && allowsDraw && status === 'finished' && homeScore !== '' && homeScore === awayScore;
   const penalties = {
     homePenalties: showsPenalties ? toNumber(homePenalties) : null,
     awayPenalties: showsPenalties ? toNumber(awayPenalties) : null,
   };
-  const note = knockout
-    ? advanceNote(match, { status, homeScore: toNumber(homeScore), awayScore: toNumber(awayScore), ...penalties }, matches)
-    : null;
+  // W sporcie z setami wynik to sety wygrane z pól setów, liczone jak na serwerze.
+  const setScores = setDraftsToScores(sets);
+  const [homeSets, awaySets] = setFormat ? setsWon(setScores, setFormat) : [0, 0];
+  const score = hasSets
+    ? { homeScore: status === 'scheduled' ? null : homeSets, awayScore: status === 'scheduled' ? null : awaySets }
+    : { homeScore: toNumber(homeScore), awayScore: toNumber(awayScore) };
+  const note = knockout ? advanceNote(match, { status, ...score, ...penalties }, matches) : null;
 
   /**
    * „Rozpocznij mecz” z sekcji zdarzeń: od razu `PATCH` ze stanem `live`
@@ -192,11 +232,13 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     mutationFn: async () => {
       const result = await api.PATCH('/matches/{match}', {
         params: { path: { match: match.id } },
-        body: {
-          status: 'live',
-          homeScore: homeScore === '' ? 0 : Number(homeScore),
-          awayScore: awayScore === '' ? 0 : Number(awayScore),
-        },
+        body: hasSets
+          ? { status: 'live', sets: setScores }
+          : {
+              status: 'live',
+              homeScore: homeScore === '' ? 0 : Number(homeScore),
+              awayScore: awayScore === '' ? 0 : Number(awayScore),
+            },
       });
       if (result.data) return result.data.data;
       throw result.response.status === 422 && isValidationError(result.error) ? result.error : new Error(START_FAILED);
@@ -234,16 +276,21 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     },
     onError: (error) => showErrors(error, PERIOD_FAILED),
   });
-  const action = periodAction(savedClock, periods, knockout, allowsDraw);
+  const action = periodAction(savedClock, periods, knockout, allowsDraw, hasSets);
 
   function showErrors(error: unknown, fallback: string) {
     setFieldErrors({});
+    setSetErrors({});
     setFormError(undefined);
     applyApiError(
       error,
-      FIELDS,
+      [...FIELDS, ...SET_FIELDS],
       (field, { message }) => {
+        const set = /^sets\.(\d+)/.exec(field);
         if (field === 'root') setFormError(message);
+        else if (set) setSetErrors((current) => ({ ...current, [Number(set[1])]: message }));
+        // Błąd całego meczu w setach stoi pod setami, jak błąd pary pod wynikiem.
+        else if (field === 'sets') setFieldErrors((current) => ({ ...current, homeScore: message }));
         // Para wyników dzieli jeden komunikat pod blokiem `__ : __`.
         else if (field === 'homeScore' || field === 'awayScore') setFieldErrors((current) => ({ ...current, homeScore: message }));
         // Tak samo para karnych; przy ukrytych polach komunikat idzie nad przyciski.
@@ -266,10 +313,10 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
         params: { path: { match: match.id } },
         body: {
           status,
-          homeScore: toNumber(homeScore),
-          awayScore: toNumber(awayScore),
+          // W sporcie z setami wynik niesie lista setów, a sety wygrane liczy serwer.
+          ...(hasSets ? { sets: status === 'scheduled' ? [] : setScores } : { homeScore: toNumber(homeScore), awayScore: toNumber(awayScore) }),
           // Liga wysyła ciało jak dotąd; karne należą tylko do drabinki.
-          ...(knockout && penalties),
+          ...(knockout && !hasSets && penalties),
           kickoffAt: kickoffAt === '' ? null : toOffsetIso(kickoffAt),
           venueId: venueId === NO_VENUE ? null : Number(venueId),
         },
@@ -301,6 +348,12 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     setFieldErrors((current) =>
       current.homeScore || current.homePenalties ? { ...current, homeScore: undefined, homePenalties: undefined } : current,
     );
+    setSetErrors({});
+  }
+
+  function changeSets(next: SetDraft[]) {
+    setSets(next);
+    clearPairErrors();
   }
 
   function changePair(setValue: (value: string) => void, value: string) {
@@ -314,7 +367,9 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
     if (next === 'scheduled') {
       setHomeScore('');
       setAwayScore('');
-    } else if (next === 'live') {
+      // Mecz zaplanowany nie ma setów: API wymaga jawnego `sets: []`.
+      setSets([]);
+    } else if (next === 'live' && !hasSets) {
       // Mecz trwający potrzebuje obu wyników: puste pole dostaje zero, a wpisane
       // przez organizera zostaje (`0:0` na meczu bez wyniku).
       setHomeScore((value) => (value === '' ? '0' : value));
@@ -349,6 +404,7 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
           started={started}
           homeScore={homeScore}
           awayScore={awayScore}
+          scoreCheck={!hasSets}
           onStart={() => start.mutate()}
           starting={start.isPending}
         />
@@ -367,17 +423,29 @@ export function MatchDialog({ match, tournamentId, matches, onOpenMatch, onClose
         <div className="grid content-start gap-3">
           <div className="grid content-start gap-2">
             <div className="flex flex-wrap items-start gap-3">
-              <ScoreInputs
-                homeValue={homeScore}
-                awayValue={awayScore}
-                onHomeChange={(value) => changePair(setHomeScore, value)}
-                onAwayChange={(value) => changePair(setAwayScore, value)}
-                homeLabel={`Wynik ${home}`}
-                awayLabel={`Wynik ${away}`}
-                error={fieldErrors.homeScore}
-                errorId={scoreErrorId}
-                disabled={save.isPending || waiting}
-              />
+              {setFormat ? (
+                <SetScoresField
+                  sets={status === 'scheduled' ? [] : sets}
+                  onChange={changeSets}
+                  format={setFormat}
+                  homeName={home}
+                  awayName={away}
+                  setErrors={setErrors}
+                  disabled={save.isPending || waiting || status === 'scheduled'}
+                />
+              ) : (
+                <ScoreInputs
+                  homeValue={homeScore}
+                  awayValue={awayScore}
+                  onHomeChange={(value) => changePair(setHomeScore, value)}
+                  onAwayChange={(value) => changePair(setAwayScore, value)}
+                  homeLabel={`Wynik ${home}`}
+                  awayLabel={`Wynik ${away}`}
+                  error={fieldErrors.homeScore}
+                  errorId={scoreErrorId}
+                  disabled={save.isPending || waiting}
+                />
+              )}
               <MatchStatusToggle value={status} onChange={changeStatus} disabled={save.isPending || waiting} />
             </div>
             {action && (

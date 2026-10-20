@@ -9,6 +9,7 @@ import {
 } from '@tournament/api-client';
 import {
   BrandColorPicker,
+  cn,
   MatchPeriodsField,
   Button,
   Card,
@@ -21,6 +22,11 @@ import {
   Input,
   isHexColor,
   Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Separator,
   SettingsSection,
   Skeleton,
@@ -31,7 +37,7 @@ import {
 } from '@tournament/ui';
 import { AlertTriangle, Trash2, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
@@ -44,6 +50,7 @@ import {
   tournamentSettingsSchema,
   type TournamentSettingsValues,
 } from '../lib/tournament-settings-schema';
+import { useSetFormatLocked } from '../lib/use-set-format-locked';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
 
@@ -522,7 +529,16 @@ const POINT_FIELDS = [
   { key: 'win', label: 'Wygrana' },
   { key: 'draw', label: 'Remis' },
   { key: 'loss', label: 'Porażka' },
+  // Sport z setami (#301): mecz rozstrzygnięty różnicą jednego seta (3:2, 2:1).
+  { key: 'winDecidingSet', label: 'Wygrana w secie decydującym' },
+  { key: 'lossDecidingSet', label: 'Porażka w secie decydującym' },
 ] as const;
+
+/** Punkty po secie decydującym: tylko w sporcie z setami. */
+const DECIDING_SET_KEYS: readonly string[] = ['winDecidingSet', 'lossDecidingSet'];
+
+/** Zdanie blokady formatu seta, to samo co `422` z serwera (ADR-0012). */
+const SET_FORMAT_LOCKED = 'Format seta zmienisz tylko przed pierwszym wynikiem.';
 
 /**
  * Formularz ustawień z jednym „Zapisz zmiany". `PATCH` niesie tylko zmienione
@@ -536,7 +552,10 @@ const POINT_FIELDS = [
 function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sport }) {
   const queryClient = useQueryClient();
   const { allowsDraw, defaultPoints, tiebreakerLabels } = sport.config;
-  const schema = useMemo(() => tournamentSettingsSchema(allowsDraw), [allowsDraw]);
+  // Sport z setami (#301): format seta zamiast podziału meczu i punkty po secie decydującym.
+  const hasSets = sport.config.defaultSetFormat !== null;
+  const schema = useMemo(() => tournamentSettingsSchema(allowsDraw, hasSets), [allowsDraw, hasSets]);
+  const setFormatLocked = useSetFormatLocked(tournament.id, hasSets).data === true;
 
   const {
     control,
@@ -555,15 +574,23 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
   // W sporcie bez remisów pola „Remis" nie ma. Jego błąd z serwera nie
   // miałby gdzie usiąść, więc nie ma go też w `errorFields`: idzie nad przycisk.
-  const pointFields = POINT_FIELDS.filter(({ key }) => allowsDraw || key !== 'draw');
+  const pointFields = POINT_FIELDS.filter(({ key }) => (allowsDraw || key !== 'draw') && (hasSets || !DECIDING_SET_KEYS.includes(key)));
   const errorFields = [
     'name',
     'slug',
     'branding.primaryColor',
     'matchDuration',
-    'periods',
-    'periods.count',
-    'periods.minutes',
+    // W sporcie z setami podziału meczu nie ma na ekranie: jego błąd idzie nad przycisk.
+    ...(hasSets ? [] : (['periods', 'periods.count', 'periods.minutes'] as const)),
+    ...(hasSets
+      ? ([
+          'setFormat',
+          'setFormat.setsToWin',
+          'setFormat.setPoints',
+          'setFormat.decidingSetPoints',
+          'setFormat.minLead',
+        ] as const)
+      : []),
     'points',
     ...pointFields.map(({ key }) => `points.${key}` as const),
   ] as const;
@@ -608,7 +635,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
   }
 
   function restoreDefaultPoints() {
-    for (const { key } of POINT_FIELDS) {
+    for (const { key } of pointFields) {
       setValue(`points.${key}`, defaultPoints[key], { shouldDirty: true, shouldValidate: false });
     }
   }
@@ -705,7 +732,10 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
             <Separator />
 
-            <SettingsSection title="Rozgrywki" description="Długość meczu i jego podział na części.">
+            <SettingsSection
+              title="Rozgrywki"
+              description={hasSets ? 'Długość meczu i format seta.' : 'Długość meczu i jego podział na części.'}
+            >
               <div className="grid w-44 content-start gap-2">
                 <Label htmlFor="match-duration">Długość meczu (min)</Label>
                 <Input
@@ -724,22 +754,26 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   </p>
                 )}
               </div>
-              {/* Podział meczu (#210): strona meczu liczy z niego części relacji. */}
-              <Controller
-                control={control}
-                name="periods"
-                render={({ field }) => (
-                  <MatchPeriodsField
-                    value={field.value}
-                    onChange={field.onChange}
-                    fallbackMinutes={sport.config.defaultPeriods.minutes}
-                    errors={{
-                      count: errors.periods?.count?.message ?? errors.periods?.message,
-                      minutes: errors.periods?.minutes?.message,
-                    }}
-                  />
-                )}
-              />
+              {/* Podział meczu (#210): strona meczu liczy z niego części relacji.
+                  W sporcie z setami go nie ma: set nie ma czasu (#301). */}
+              {!hasSets && (
+                <Controller
+                  control={control}
+                  name="periods"
+                  render={({ field }) => (
+                    <MatchPeriodsField
+                      value={field.value}
+                      onChange={field.onChange}
+                      fallbackMinutes={sport.config.defaultPeriods.minutes}
+                      errors={{
+                        count: errors.periods?.count?.message ?? errors.periods?.message,
+                        minutes: errors.periods?.minutes?.message,
+                      }}
+                    />
+                  )}
+                />
+              )}
+              {hasSets && <SetFormatFields control={control} register={register} errors={errors} locked={setFormatLocked} />}
             </SettingsSection>
 
             <Separator />
@@ -755,7 +789,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                     .filter(Boolean)
                     .join(' ');
                   return (
-                    <div key={key} className="grid w-24 content-start gap-2">
+                    <div key={key} className={cn('grid content-start gap-2', DECIDING_SET_KEYS.includes(key) ? 'w-48' : 'w-24')}>
                       <Label htmlFor={`points-${key}`}>{label}</Label>
                       <Input
                         id={`points-${key}`}
@@ -825,5 +859,136 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
       <UnsavedChangesGuard when={isDirty} />
     </>
+  );
+}
+
+/** Wybór z listy formatu seta: liczba jako napis w `Select`, liczba w formularzu. */
+function NumberSelect({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  disabled,
+  error,
+}: {
+  id: string;
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  options: readonly { value: number; label: string }[];
+  disabled: boolean;
+  error?: string;
+}) {
+  return (
+    <div className="grid w-48 content-start gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select value={String(value)} onValueChange={(next) => onChange(Number(next))} disabled={disabled}>
+        <SelectTrigger id={id} aria-label={label} className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={String(option.value)}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * Format seta turnieju (#301, ADR-0012): do ilu wygranych setów, próg seta,
+ * próg seta decydującego i przewaga. Od pierwszego wpisanego seta pola są
+ * wyłączone ze zdaniem o blokadzie, tym samym, które daje serwer.
+ */
+function SetFormatFields({
+  control,
+  register,
+  errors,
+  locked,
+}: {
+  control: Control<TournamentSettingsValues>;
+  register: UseFormRegister<TournamentSettingsValues>;
+  errors: FieldErrors<TournamentSettingsValues>;
+  locked: boolean;
+}) {
+  const formatErrors = errors.setFormat;
+  const pointsField = (name: 'setPoints' | 'decidingSetPoints', label: string) => {
+    const error = formatErrors?.[name]?.message;
+    return (
+      <div className="grid w-48 content-start gap-2">
+        <Label htmlFor={`set-format-${name}`}>{label}</Label>
+        <Input
+          id={`set-format-${name}`}
+          type="number"
+          inputMode="numeric"
+          min={5}
+          max={50}
+          disabled={locked}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `set-format-${name}-error` : undefined}
+          {...register(`setFormat.${name}`, { valueAsNumber: true })}
+        />
+        {error && (
+          <p id={`set-format-${name}-error`} className="text-sm text-destructive">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div role="group" aria-labelledby="set-format-label" className="grid content-start gap-3">
+      <p id="set-format-label" className="text-sm font-medium">
+        Format seta
+      </p>
+      <div className="flex flex-wrap items-start gap-4">
+        <Controller
+          control={control}
+          name="setFormat.setsToWin"
+          render={({ field }) => (
+            <NumberSelect
+              id="set-format-sets-to-win"
+              label="Mecz do"
+              value={field.value}
+              onChange={field.onChange}
+              options={[
+                { value: 2, label: '2 wygranych setów' },
+                { value: 3, label: '3 wygranych setów' },
+              ]}
+              disabled={locked}
+              error={formatErrors?.setsToWin?.message}
+            />
+          )}
+        />
+        {pointsField('setPoints', 'Set do (pkt)')}
+        {pointsField('decidingSetPoints', 'Set decydujący do (pkt)')}
+        <Controller
+          control={control}
+          name="setFormat.minLead"
+          render={({ field }) => (
+            <NumberSelect
+              id="set-format-min-lead"
+              label="Przewaga"
+              value={field.value}
+              onChange={field.onChange}
+              options={[
+                { value: 2, label: '2 punkty (gra na przewagi)' },
+                { value: 1, label: '1 punkt' },
+              ]}
+              disabled={locked}
+              error={formatErrors?.minLead?.message}
+            />
+          )}
+        />
+      </div>
+      {locked && <p className="text-sm text-muted-foreground">{SET_FORMAT_LOCKED}</p>}
+      {formatErrors?.message && <p className="text-sm text-destructive">{formatErrors.message}</p>}
+    </div>
   );
 }

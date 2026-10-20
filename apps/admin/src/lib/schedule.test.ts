@@ -15,6 +15,7 @@ function match(id: number, order: number, matchNumber: number, overrides: Partia
     awayScore: null,
     homePenalties: null,
     awayPenalties: null,
+    sets: null,
     status: 'scheduled',
     kickoffAt: null,
     venue: null,
