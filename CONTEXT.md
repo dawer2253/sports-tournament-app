@@ -38,6 +38,11 @@ zakończonym. To ten, nad którym organizer jeszcze pracuje.
 _Unikaj_: „archiwalny” i „zarchiwizowany”. Archiwum nie jest osobnym stanem ani
 flagą. Turniej, który przestał być bieżący, jest po prostu zakończony.
 
+**Zapisy** to okres, w którym turniej przyjmuje zgłoszenia drużyn (patrz
+`TeamRegistration`). Otwiera je i zamyka organizer, opcjonalnie z terminem.
+Nawet przy otwartych zapisach zgłoszenie przechodzi tylko w turnieju trwającym,
+przed pierwszym meczem rozpoczętym i przed terminem.
+
 ## Slug
 
 Krótki, czytelny identyfikator turnieju używany w publicznym adresie. Unikalny
@@ -158,6 +163,10 @@ Uczestnik turnieju. Należy do jednego turnieju. Dwie drużyny o tej samej nazwi
 w dwóch turniejach to dwa niepowiązane byty. W obrębie jednego turnieju nazwa
 drużyny się nie powtarza.
 
+Drużynę dodaje organizer albo powstaje ona z przyjętego zgłoszenia (patrz
+`TeamRegistration`). W obu przypadkach obowiązują te same reguły i te same
+skutki opisane niżej.
+
 Usunięcie drużyny usuwa też jej mecze zaplanowane. Reszta terminarza zostaje
 bez zmian, nawet jeśli kolejka opustoszeje. Tak samo jest w grupie: grupa może
 po tym opustoszeć.
@@ -192,6 +201,30 @@ nie powtarza się w drużynie.
 
 Zawodnik nie istnieje bez drużyny, więc usunięcie drużyny usuwa jej zawodników.
 Zawodnicy jednej drużyny to jej skład (etykieta UI "skład").
+
+## TeamRegistration (zgłoszenie)
+
+Wniosek o udział drużyny w turnieju, wysłany ze strony publicznej w czasie
+zapisów przez osobę bez konta. Niesie nazwę drużyny, dane kontaktowe
+zgłaszającego i opcjonalny skład. Stany: oczekujące, przyjęte, odrzucone; o
+każdym rozstrzyga organizer, także po zamknięciu zapisów.
+
+**Zgłaszający** to osoba kontaktowa zgłoszenia (etykieta UI „Osoba
+kontaktowa”): ktokolwiek wysyła zgłoszenie w imieniu drużyny, np. trener albo
+kierownik. Nie jest zawodnikiem i nie musi być w składzie.
+
+Zgłoszenie nie jest drużyną: nie stoi w tabeli, w grupie ani w terminarzu
+i niczego w turnieju nie blokuje. Przyjęcie tworzy drużynę i zawodników ze
+składu według tych samych reguł, co dodanie drużyny przez organizatora, więc
+może się nie udać (np. nazwa zajęta w międzyczasie). Dwa oczekujące zgłoszenia
+mogą nosić tę samą nazwę; rozstrzyga to dopiero przyjęcie.
+
+Dane kontaktowe zna tylko organizer i nie przechodzą do drużyny. Odrzucenie
+je usuwa. Przyjęte zgłoszenie żyje tak długo jak jego drużyna: usunięcie
+drużyny usuwa też zgłoszenie razem z danymi.
+
+_Unikaj_: „rejestracja” — to założenie konta organizera. „Kapitan” dla
+zgłaszającego — kapitan to rola zawodnika na boisku, której model nie zna.
 
 ## Venue (obiekt)
 
