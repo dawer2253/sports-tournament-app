@@ -1,6 +1,7 @@
 import type { MatchRowData } from '../components/data/match-row-data'
 import { bracketLoserSide } from '../lib/bracket'
 import { formatKickoff, formatShortDay } from '../lib/kickoff'
+import { formatSets } from '../lib/sets'
 import { cn } from '../lib/utils'
 import { Anchor } from './anchor'
 import { Crest } from './crest'
@@ -106,10 +107,16 @@ export interface MatchRowProps {
  * czytnik ekranu i testy widzą każdy napis raz. Bez strzelców: są na stronie
  * meczu (#288). Cały wiersz to jeden odnośnik z nazwą „Gospodarz – Gość”,
  * a pozycja i grupa zostają w jego treści.
+ *
+ * W sporcie z setami (#301) okienka niosą sety wygrane, a pod nimi stoi linia
+ * wyników setów („25:20, 23:25, 25:18”): w szerokim układzie wyśrodkowana pod
+ * obiema drużynami, bo w kolumnie wyniku pięć setów się nie mieści, a na
+ * telefonie pod drużynami, nad pozycją.
  */
 export function MatchRow({ match, mode, showDay = false, timeZone, href, onNavigate }: MatchRowProps) {
   const label = match.bracket?.label ?? match.group
   const played = match.status !== 'scheduled'
+  const sets = played && match.sets && match.sets.length > 0 ? formatSets(match.sets) : null
   const score = (side: Side, row: string) => (
     <ScoreCell
       value={played ? scoreOf(match, side) : null}
@@ -141,10 +148,20 @@ export function MatchRow({ match, mode, showDay = false, timeZone, href, onNavig
         {score('away', 'row-start-2')}
       </span>
       <TeamCell match={match} side="away" className="col-start-2 row-start-2 lg:col-start-4 lg:row-start-1" />
+      {sets && (
+        <span
+          data-slot="match-sets"
+          className="col-span-2 col-start-2 row-start-3 text-pub-13 leading-tight text-muted-foreground tabular-nums lg:col-span-3 lg:col-start-2 lg:row-start-2 lg:text-center"
+        >
+          <span className="sr-only">Sety: </span>
+          {sets}
+        </span>
+      )}
       {/* Na telefonie pod drużynami stoi sama pozycja; obiekt dopiero w szerokim układzie. */}
       <span
         className={cn(
-          'col-span-2 col-start-2 row-start-3 gap-x-3 text-pub-13 leading-tight text-muted-foreground',
+          'col-span-2 col-start-2 gap-x-3 text-pub-13 leading-tight text-muted-foreground',
+          sets ? 'row-start-4' : 'row-start-3',
           label ? 'flex' : 'hidden lg:flex',
           'lg:col-span-1 lg:col-start-5 lg:row-start-1 lg:flex-col lg:items-end lg:text-right lg:text-pub-14',
         )}

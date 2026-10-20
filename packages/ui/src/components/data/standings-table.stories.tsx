@@ -7,6 +7,7 @@ import {
   standingsScoreLabel,
   standingsTablePreviewRows,
   standingsTableRows,
+  volleyballStandingsTableRows,
 } from '../../lib/demo-data'
 import { withQualifiers } from '../../lib/qualifiers'
 import { StandingsTable } from './standings-table'
@@ -146,5 +147,15 @@ export const Blad: Story = {
     await expect(canvas.getByText('Nie udało się wczytać tabeli')).toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: 'Spróbuj ponownie' }))
     await expect(args.onRetry).toHaveBeenCalled()
+  },
+}
+
+/** Siatkówka (#301): sety jako zdobycze i kolumna punktów w setach z etykietą z odpowiedzi. */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  args: { rows: volleyballStandingsTableRows, scoreLabel: 'Sety', allowsDraw: false, rallyPointsLabel: 'Punkty w setach' },
+  play: async ({ canvasElement }) => {
+    await expect(headers(canvasElement)).toEqual(['#', 'Drużyna', 'M', 'W', 'P', 'Sety', 'Punkty w setach', '+/−', 'Pkt'])
+    await expect(within(canvasElement).getByText('183:162')).toBeInTheDocument()
   },
 }

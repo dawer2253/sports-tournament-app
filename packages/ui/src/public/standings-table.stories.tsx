@@ -6,6 +6,8 @@ import {
   publicGroupStandings,
   publicStandingsRows,
   publicStandingsTiebreakers,
+  publicVolleyballStandingsRows,
+  publicVolleyballTiebreakers,
 } from '../lib/demo-data'
 import { withQualifiers } from '../lib/qualifiers'
 import { ownBrand } from '../test/brand'
@@ -155,5 +157,49 @@ export const PasMistrza: Story = {
         await expect({ sample, text: text.textContent, ok: ratio >= MIN_TEXT_CONTRAST }).toEqual({ sample, text: text.textContent, ok: true })
       }
     }
+  },
+}
+
+/**
+ * Siatkówka (#301): zdobycze to sety, za nimi kolumna punktów w setach
+ * z etykietą z odpowiedzi (`rallyPointsLabel`), bez remisów. Czaple stoją
+ * przed Mewami przy równych punktach i zwycięstwach: rozdziela je stosunek setów.
+ */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  args: { rows: publicVolleyballStandingsRows, scoreLabel: 'Sety', allowsDraw: false, rallyPointsLabel: 'Punkty w setach' },
+  render: (args) => (
+    <div className="flex flex-col gap-6 px-3">
+      <StandingsTable {...args} />
+      <TiebreakSentence tiebreakers={publicVolleyballTiebreakers} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const titles = canvas.getAllByRole('columnheader').map((header) => [header.textContent, header.querySelector('abbr')?.getAttribute('title') ?? null])
+    await expect(titles).toEqual([
+      ['#', 'Miejsce'],
+      ['Drużyna', null],
+      ['M', 'Mecze'],
+      ['W', 'Wygrane'],
+      ['P', 'Porażki'],
+      ['Sety', 'Sety zdobyte i stracone'],
+      ['Punkty w setach', 'Punkty w setach zdobyte i stracone'],
+      ['+/−', 'Bilans'],
+      ['Forma', 'Pięć ostatnich meczów, najnowszy z prawej'],
+      ['Pkt', 'Punkty'],
+    ])
+    await expect([...canvasElement.querySelectorAll('[data-slot="rally-points"]')].map((cell) => cell.textContent)).toEqual([
+      '183:162',
+      '183:188',
+      '155:161',
+      '195:205',
+    ])
+    await expect(
+      [...canvasElement.querySelectorAll('[data-slot="team-name"]')].map((name) => name.textContent),
+    ).toEqual(['Orlęta Wawer', 'Czaple Ursynów', 'Mewy Żoliborz', 'Jaskółki Targówek'])
+    await expect(
+      canvas.getByText('Przy równej liczbie punktów: zwycięstwa → stosunek setów → stosunek punktów w setach → bezpośredni mecz → nazwa drużyny (alfabetycznie).'),
+    ).toBeInTheDocument()
   },
 }

@@ -1712,3 +1712,73 @@ export const publicGroupsSeason = (() => {
 
 /** Klasyfikacja przed pierwszym zakończonym meczem: pusta. */
 export const emptyLeaderboard = (stat: string, label: string): Leaderboard => ({ stat, label, rows: [] })
+
+// --- Siatkówka (#301) ----------------------------------------------------------
+
+/**
+ * Tabela ligi siatkówki z przykładu `siatkowka` kontraktu i seeda demo
+ * (`liga-siatkowki-2026`): zdobycze to sety, a punkty w setach stoją w osobnej
+ * kolumnie. Czaple i Mewy mają po 3 pkt i jednym zwycięstwie, a rozdziela je
+ * stosunek setów (4:4 przed 3:4).
+ */
+export const publicVolleyballStandingsRows: PublicStandingsTableRow[] = [
+  { position: 1, team: { id: 501, name: 'Orlęta Wawer', logoUrl: null }, played: 2, won: 2, drawn: 0, lost: 0, scoreFor: 6, scoreAgainst: 2, scoreDifference: 4, rallyPointsFor: 183, rallyPointsAgainst: 162, points: 5, form: ['win', 'win'] },
+  { position: 2, team: { id: 503, name: 'Czaple Ursynów', logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 4, scoreAgainst: 4, scoreDifference: 0, rallyPointsFor: 183, rallyPointsAgainst: 188, points: 3, form: ['win', 'loss'] },
+  { position: 3, team: { id: 502, name: 'Mewy Żoliborz', logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 4, scoreDifference: -1, rallyPointsFor: 155, rallyPointsAgainst: 161, points: 3, form: ['loss', 'win'] },
+  { position: 4, team: { id: 504, name: 'Jaskółki Targówek', logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 3, scoreAgainst: 6, scoreDifference: -3, rallyPointsFor: 195, rallyPointsAgainst: 205, points: 1, form: ['loss', 'loss'] },
+]
+
+/** Ta sama tabela w panelu: bez formy. */
+export const volleyballStandingsTableRows: StandingsTableRow[] = publicVolleyballStandingsRows.map(({ form: _form, ...row }) => row)
+
+export const publicVolleyballTiebreakers = [
+  { code: 'points', label: 'Punkty w tabeli' },
+  { code: 'wins', label: 'Zwycięstwa' },
+  { code: 'set_ratio', label: 'Stosunek setów' },
+  { code: 'point_ratio', label: 'Stosunek punktów w setach' },
+  { code: 'head_to_head', label: 'Bezpośredni mecz' },
+]
+
+/** Ustawienia zegara siatkówki: jedna część bez czasu, bez biegnącego zegara, więc samo „Na żywo”. */
+export const volleyballClockSettings: MatchClockSettings = { periods: { count: 1, minutes: null }, matchDuration: 90, runningClock: false }
+
+const volleyballTeam = (id: number, name: string) => ({ id, name, logoUrl: null })
+
+/** Mecz siatkówki 3:2 z piątym setem do 15, jak mecz 3 przykładu `siatkowka`. */
+export const matchPageVolleyball: MatchPageData = {
+  ...pageBase(publicResults[0]!, 'finished'),
+  id: 5003,
+  homeTeam: volleyballTeam(501, 'Orlęta Wawer'),
+  awayTeam: volleyballTeam(504, 'Jaskółki Targówek'),
+  venue: { id: 51, name: 'Hala Targówek' },
+  homeScore: 3,
+  awayScore: 2,
+  sets: [
+    { home: 25, away: 23 },
+    { home: 23, away: 25 },
+    { home: 25, away: 21 },
+    { home: 20, away: 25 },
+    { home: 15, away: 11 },
+  ],
+  scorers: [],
+  events: [],
+  periods: [],
+}
+
+/** Mecz siatkówki trwający: 1:1 w setach, trzeci set niedokończony (14:12). */
+export const matchPageVolleyballLive: MatchPageData = {
+  ...matchPageVolleyball,
+  id: 5005,
+  status: 'live',
+  awayTeam: volleyballTeam(503, 'Czaple Ursynów'),
+  homeScore: 1,
+  awayScore: 1,
+  sets: [
+    { home: 25, away: 21 },
+    { home: 18, away: 25 },
+    { home: 14, away: 12 },
+  ],
+  livePeriod: 1,
+  periodStartedAt: DEMO_CLOCK_NOW.toISOString(),
+  onBreak: false,
+}

@@ -1,9 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import type { MatchRowData } from '../components/data/match-row-data'
-import { publicBasketballLists, publicCupLists, publicFixtures, publicResults, scheduleTimeZone } from '../lib/demo-data'
+import {
+  matchPageVolleyball,
+  matchPageVolleyballLive,
+  publicBasketballLists,
+  publicCupLists,
+  publicFixtures,
+  publicResults,
+  scheduleTimeZone,
+  volleyballClockSettings,
+} from '../lib/demo-data'
 import { expectLiveBadgeFits, expectNoSideScroll, expectScoreWindowsAligned, nameProblems } from '../test/match-list'
 import { desktop1280, phone375 } from '../test/viewport'
+import { MatchClockProvider } from './live'
 import { MatchRow, type MatchListMode } from './match-row'
 
 const meta = {
@@ -174,5 +184,55 @@ export const Odnosnik: Story = {
     await expect(args.onNavigate).not.toHaveBeenCalled()
     await userEvent.click(link)
     await expect(args.onNavigate).toHaveBeenCalledOnce()
+  },
+}
+
+/**
+ * Siatkówka (#301): okienka niosą sety wygrane, a pod nimi wyśrodkowana linia
+ * wyników setów. W meczu trwającym trzeci set jest niedokończony (14:12)
+ * i nie zmienia wyniku 1:1, a zegar siatkówki pokazuje samo „Na żywo”.
+ */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  render: () => (
+    <MatchClockProvider settings={volleyballClockSettings}>
+      <Rows
+        rows={[
+          { match: matchPageVolleyball, mode: 'results' },
+          { match: matchPageVolleyballLive, mode: 'fixtures' },
+        ]}
+        className="max-w-[1104px]"
+      />
+    </MatchClockProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    await expectScoreWindowsAligned(canvasElement)
+    const rows = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-row"]')]
+    const windows = (row: HTMLElement) => [...row.querySelectorAll('[data-slot="score-cell"]')].map((cell) => cell.textContent)
+    await expect(rows.map(windows)).toEqual([
+      ['3', '2'],
+      ['1', '1'],
+    ])
+    await expect(rows.map((row) => row.querySelector('[data-slot="match-sets"]')?.textContent)).toEqual([
+      'Sety: 25:23, 23:25, 25:21, 20:25, 15:11',
+      'Sety: 25:21, 18:25, 14:12',
+    ])
+    // Linia setów stoi pod okienkami, a nie obok nich.
+    const sets = rows[0]!.querySelector('[data-slot="match-sets"]')!.getBoundingClientRect()
+    const score = rows[0]!.querySelector('[data-slot="score-cell"]')!.getBoundingClientRect()
+    await expect(sets.top).toBeGreaterThanOrEqual(score.bottom)
+  },
+}
+
+/** Siatkówka na telefonie: linia setów pod drużynami, bez poziomego przewijania. */
+export const SiatkowkaTelefon: Story = {
+  name: 'Siatkówka, telefon',
+  ...phone375,
+  render: () => <Rows rows={[{ match: matchPageVolleyball, mode: 'results' }]} />,
+  play: async ({ canvasElement }) => {
+    await expectNoSideScroll()
+    const away = canvasElement.querySelectorAll<HTMLElement>('[data-slot="match-team"]')[1]!.getBoundingClientRect()
+    const sets = canvasElement.querySelector<HTMLElement>('[data-slot="match-sets"]')!.getBoundingClientRect()
+    await expect(sets.top).toBeGreaterThanOrEqual(away.bottom)
   },
 }

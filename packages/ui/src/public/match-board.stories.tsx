@@ -7,9 +7,13 @@ import {
   matchPageFinished,
   matchPageLive,
   matchPageScheduled,
+  matchPageVolleyball,
+  matchPageVolleyballLive,
   scheduleTimeZone,
+  volleyballClockSettings,
 } from '../lib/demo-data'
 import { phone375 } from '../test/viewport'
+import { MatchClockProvider } from './live'
 import { MatchBoard } from './match-board'
 
 const meta = {
@@ -217,5 +221,42 @@ export const Herby: Story = {
     await expect(crests[0]!.querySelector('img')).toHaveAttribute('src', demoTeamLogoUrl)
     await expect(crests[1]!.querySelector('img')).toBeNull()
     await expect(crests[1]!.querySelector('[data-slot="crest-fallback"]')).not.toBeNull()
+  },
+}
+
+/** Sety z tablicy jako „N. set H:A”. */
+function setsOf(canvasElement: HTMLElement) {
+  const list = within(canvasElement).getByRole('list', { name: 'Sety' })
+  return within(list).getAllByRole('listitem').map((item) => item.textContent)
+}
+
+/** Siatkówka 3:2 (#301): okienka niosą sety wygrane, a pod tablicą wszystkie pięć setów. */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  args: { match: matchPageVolleyball },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByLabelText('Wynik 3 : 2')).toBeInTheDocument()
+    await expect(setsOf(canvasElement)).toEqual(['1. set 25:23', '2. set 23:25', '3. set 25:21', '4. set 20:25', '5. set 15:11'])
+  },
+}
+
+/**
+ * Siatkówka na żywo: 1:1 w setach, a trzeci set niedokończony stoi na liście
+ * jako bieżący stan. Zegar siatkówki nie pokazuje minuty ani części.
+ */
+export const SiatkowkaNaZywo: Story = {
+  name: 'Siatkówka na żywo',
+  args: { match: matchPageVolleyballLive },
+  decorators: [
+    (Story) => (
+      <MatchClockProvider settings={volleyballClockSettings}>
+        <Story />
+      </MatchClockProvider>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByLabelText('Wynik 1 : 1')).toBeInTheDocument()
+    await expect(setsOf(canvasElement)).toEqual(['1. set 25:21', '2. set 18:25', '3. set 14:12'])
+    await expect(within(canvasElement).queryByText(/′|kwarta|część/)).toBeNull()
   },
 }

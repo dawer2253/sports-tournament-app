@@ -6,6 +6,7 @@ export * from './lib/bracket';
 export * from './lib/contrast';
 export * from './lib/group-composition';
 export * from './lib/kickoff';
+export * from './lib/sets';
 export * from './lib/match-clock';
 export * from './lib/plural';
 export * from './lib/qualifiers';
