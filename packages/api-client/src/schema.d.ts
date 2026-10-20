@@ -3614,10 +3614,12 @@ export interface paths {
          *     oczekujące zgłoszenia o tej samej nazwie przechodzą; rozstrzyga je
          *     dopiero przyjęcie. Błędy składu siadają pod `players` (ponad 50
          *     zawodników) i pod `players.N.name` / `players.N.number` (powtórzony
-         *     numer pod drugim z powtórzeń). Brak zgody daje `422` pod `consent`.
+         *     numer pod każdym z zawodników, którzy go mają). Brak zgody daje `422`
+         *     pod `consent`.
          *
          *     Jedno IP wysyła najwyżej 5 zgłoszeń na godzinę, do wszystkich
-         *     turniejów łącznie; kolejne dostaje `429`.
+         *     turniejów łącznie; kolejne dostaje `429`. Liczą się zgłoszenia
+         *     zapisane (`201`), a nie próby: odpowiedź `422` limitu nie zużywa.
          */
         post: {
             parameters: {
