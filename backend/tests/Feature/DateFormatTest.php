@@ -3,6 +3,7 @@
 use App\Models\GameMatch;
 use App\Models\Round;
 use App\Models\Stage;
+use App\Models\TeamRegistration;
 use App\Models\Tournament;
 use App\Models\User;
 use Illuminate\Support\Arr;
@@ -177,4 +178,28 @@ it('oddaje start części meczu trwającego w +00:00, w panelu i na stronie publ
 
     expectEveryDateInUtc($admin, ['data.0.periodStartedAt']);
     expectEveryDateInUtc($public, ['data.0.periodStartedAt']);
+});
+
+it('oddaje termin zapisów w panelu i na stronie publicznej w +00:00', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->openForRegistration()->create(['registration_deadline' => '2099-11-15 17:00:00']);
+
+    $admin = actingAsOrganizer($organizer)->getJson("/api/v1/tournaments/{$tournament->id}")->assertOk();
+    $public = $this->getJson("/api/v1/public/t/{$tournament->slug}")->assertOk();
+
+    expectEveryDateInUtc($admin, ['data.registration.deadline']);
+    expectEveryDateInUtc($public, ['data.registration.deadline']);
+});
+
+it('oddaje daty zgłoszeń z listy i z odrzucenia w +00:00', function () {
+    $organizer = User::factory()->create();
+    $tournament = Tournament::factory()->for($organizer)->create();
+    TeamRegistration::factory()->rejected()->for($tournament)->create();
+    $pending = TeamRegistration::factory()->for($tournament)->create();
+
+    $list = actingAsOrganizer($organizer)->getJson("/api/v1/tournaments/{$tournament->id}/registrations")->assertOk();
+    $rejected = actingAsOrganizer($organizer)->postJson("/api/v1/registrations/{$pending->id}/reject")->assertOk();
+
+    expectEveryDateInUtc($list, ['data.0.createdAt', 'data.0.decidedAt', 'data.1.createdAt']);
+    expectEveryDateInUtc($rejected, ['data.createdAt', 'data.decidedAt']);
 });

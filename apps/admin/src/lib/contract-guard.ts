@@ -1,5 +1,5 @@
-import type { AdminMatch, Match, MatchEvent, Player, SportEventType, StandingRow, Team, Tournament, Venue } from '@tournament/api-client';
-import type { BracketMatch, BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RosterPlayer, SeedingTeam, SetFormat, SetScore, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
+import type { AdminMatch, Match, MatchEvent, Player, SportEventType, StandingRow, Team, TeamRegistration, Tournament, Venue } from '@tournament/api-client';
+import type { BracketMatch, BracketScore, EventTypeOption, MatchEventRow, MatchRowData, PlayerRow, RegistrationRow, RosterPlayer, SeedingTeam, SetFormat, SetScore, StandingsTableRow, TeamRow, TournamentRow, VenueRow } from '@tournament/ui';
 
 /**
  * Strażnik zgodności typów wierszy z design systemu (`TournamentRow`,
@@ -45,6 +45,11 @@ export const contractFitsPlayerRow: ContractFitsPlayerRow = true;
 type ContractFitsVenueRow = Venue extends VenueRow ? true : never;
 
 export const contractFitsVenueRow: ContractFitsVenueRow = true;
+
+/** Zgłoszenie z kontraktu daje się pokazać w `RegistrationCard` (#300). */
+type ContractFitsRegistrationRow = TeamRegistration extends RegistrationRow ? true : never;
+
+export const contractFitsRegistrationRow: ContractFitsRegistrationRow = true;
 
 /** Wiersz tabeli z kontraktu daje się pokazać w `StandingsTable`. */
 type ContractFitsStandingsRow = StandingRow extends StandingsTableRow ? true : never;

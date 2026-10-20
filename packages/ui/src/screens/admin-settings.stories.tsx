@@ -163,3 +163,24 @@ export const SiatkowkaFormatZamkniety: Story = {
     await expect(canvas.getByLabelText('Wygrana w secie decydującym')).toBeEnabled()
   },
 }
+
+/**
+ * Zapisy (#300) otwarte w szkicu: przełącznik włączony, termin w polu,
+ * a pod przełącznikiem zdanie, że formularz pojawi się po opublikowaniu.
+ */
+export const ZapisyWSzkicu: Story = {
+  name: 'Zapisy w szkicu',
+  args: { status: 'draft', registration: { open: true, deadline: '2026-11-15T18:00' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const toggle = canvas.getByRole('switch', { name: 'Zapisy otwarte' })
+    await expect(toggle).toBeChecked()
+    await expect(toggle).toHaveAccessibleDescription('Turniej jest w szkicu: formularz pojawi się na stronie turnieju po opublikowaniu.')
+    await expect(canvas.getByLabelText('Termin zapisów (opcjonalnie)')).toHaveValue('2026-11-15T18:00')
+
+    // Wyłączenie zapisów zdejmuje zdanie: o szkicu nie ma już czego mówić.
+    await userEvent.click(toggle)
+    await expect(toggle).not.toBeChecked()
+    await expect(canvas.queryByText(/formularz pojawi się/)).not.toBeInTheDocument()
+  },
+}

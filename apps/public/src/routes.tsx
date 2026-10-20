@@ -4,11 +4,12 @@ import { FixturesPage } from './pages/fixtures';
 import { MatchPage } from './pages/match';
 import { NotFoundPage, SiteNotFoundPage } from './pages/not-found';
 import { OverviewPage } from './pages/overview';
+import { RegistrationPage } from './pages/registration';
 import { ResultsPage } from './pages/results';
 import { StandalonePage } from './pages/standalone-page';
 import { StandingsPage } from './pages/standings';
 import { StatsPage } from './pages/stats';
-import { TournamentLayout, type TabHandle } from './pages/tournament-layout';
+import { REGISTRATION_PATH, TournamentLayout, type TabHandle } from './pages/tournament-layout';
 
 /**
  * Drzewo tras strony publicznej, osobno od `main.tsx`: testy renderują
@@ -42,6 +43,8 @@ export const routes: RouteObject[] = [
       { path: 'statystyki', element: <StatsPage />, handle: { tab: 'stats' } satisfies TabHandle },
       // Strona meczu (#210) nie jest zakładką: shell niczego nie podświetla.
       { path: 'mecze/:matchId', element: <MatchPage /> },
+      // Formularz zgłoszenia drużyny (#300), też bez zakładki.
+      { path: REGISTRATION_PATH, element: <RegistrationPage /> },
       // Nieznana podtrasa: 404 aplikacji pod nagłówkiem turnieju, bez aktywnej zakładki.
       { path: '*', element: <NotFoundPage /> },
     ],

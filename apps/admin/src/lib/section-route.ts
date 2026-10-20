@@ -7,6 +7,7 @@ import type { AdminSectionKey } from '@tournament/ui';
  */
 export const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   teams: 'teams',
+  registrations: 'registrations',
   groups: 'groups',
   venues: 'venues',
   settings: 'settings',

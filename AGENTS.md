@@ -70,14 +70,18 @@ i playoffem — obsługują go publiczne `/public/t/{slug}`, `/standings`,
 `/matches`, `/fixtures` i `/results`, więc strona publiczna pokazuje wtedy
 dwie tabele grup z linią wyjścia i Drabinkę playoffu
 (`/t/grupy-osiedlowe-2026`). Ten turniej ma odpowiednik w seedzie demo
-(`grupy-osiedlowe-2026`). Czwarty, `Prefer: example=siatkowka`, oddaje
-ligę siatkówki, czyli sport z setami (#301) — obsługują go publiczne
+(`grupy-osiedlowe-2026`). Wszystkie trzy przełączniki obsługuje też publiczne
+`/teams` (drużyny turnieju do prezentacji na Przeglądzie przed terminarzem).
+Czwarty, `Prefer: example=zapisy`, oddaje turniej z otwartymi zapisami (#300)
+— obsługują go tylko publiczne `/public/t/{slug}` (strona pokazuje wtedy pasek
+„Zgłoś drużynę” i formularz) oraz panelowe `GET /tournaments/{tournament}`
+(plakietka oczekujących przy karcie „Zgłoszenia”; sama lista zgłoszeń ma
+jeden przykład i oddaje go zawsze). Ten turniej ma odpowiednik w seedzie demo
+(`liga-letnia-2026`). Piąty, `Prefer: example=siatkowka`, oddaje ligę siatkówki, czyli sport z setami (#301) — obsługują go publiczne
 `/public/t/{slug}`, `/standings`, `/fixtures`, `/results` i strona meczu,
 a w panelu turniej, terminarz i tabela. Wynik meczu to tam sety wygrane,
 `Match.sets` niesie wyniki setów, a tabela ma kolumnę punktów w setach. Ten
-turniej ma odpowiednik w seedzie demo (`liga-siatkowki-2026`). Przełączniki
-`koszykowka`, `puchar` i `grupy` obsługuje też publiczne `/teams` (drużyny
-turnieju do prezentacji na Przeglądzie przed terminarzem); `siatkowka` nie.
+turniej ma odpowiednik w seedzie demo (`liga-siatkowki-2026`).
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.

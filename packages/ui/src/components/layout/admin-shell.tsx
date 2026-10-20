@@ -1,7 +1,7 @@
 import * as React from 'react'
 import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Settings,
-  Trophy, Search, Bell, LogOut, GitFork, ListOrdered, Layers, Menu,
+  Trophy, Search, Bell, LogOut, GitFork, ListOrdered, Layers, Menu, Inbox,
 } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
@@ -19,7 +19,7 @@ import {
 } from '../ui/dropdown-menu'
 
 /** Sekcja turnieju, czyli jedna z kart pod tytułem strony. */
-export type AdminSectionKey = 'teams' | 'groups' | 'venues' | 'settings' | 'schedule' | 'standings' | 'bracket' | 'stats'
+export type AdminSectionKey = 'teams' | 'registrations' | 'groups' | 'venues' | 'settings' | 'schedule' | 'standings' | 'bracket' | 'stats'
 
 /**
  * Cel nawigacji panelu: lista turniejów (`dashboard`, pozycja „Turnieje"),
@@ -31,6 +31,7 @@ export type AdminNavKey = 'dashboard' | 'create' | AdminSectionKey
 /** Kolejność kart jest stała: pojawienie się treści nie przesuwa znanych kart. */
 const SECTIONS: { key: AdminSectionKey; label: string; icon: React.ElementType }[] = [
   { key: 'teams', label: 'Drużyny', icon: Users },
+  { key: 'registrations', label: 'Zgłoszenia', icon: Inbox },
   { key: 'groups', label: 'Grupy', icon: Layers },
   { key: 'venues', label: 'Obiekty', icon: MapPin },
   { key: 'settings', label: 'Ustawienia', icon: Settings },
@@ -134,6 +135,12 @@ export interface AdminShellProps {
    * w pucharze Terminarz jest nieczynny z innego powodu (#227).
    */
   navDisabledReason?: (key: AdminSectionKey) => string | undefined
+  /**
+   * Plakietka przy karcie sekcji: liczba i jej opis dla czytnika ekranu
+   * (np. `{ count: 2, label: '2 oczekujące' }` przy „Zgłoszeniach”, #300).
+   * Bez plakietki przy zerze — liczy się to, co czeka na organizera.
+   */
+  sectionBadge?: (key: AdminSectionKey) => { count: number; label: string } | undefined
   /** Przejęcie kliknięcia w nawigację, np. przez router. */
   onNavigate?: (key: AdminNavKey) => void
   /** Adres turnieju z listy w sidebarze, czyli jego domyślnej sekcji. */
@@ -143,7 +150,7 @@ export interface AdminShellProps {
   onLogout?: () => void
 }
 
-type NavProps = Pick<AdminShellProps, 'active' | 'navHref' | 'navDisabledReason' | 'onNavigate'>
+type NavProps = Pick<AdminShellProps, 'active' | 'navHref' | 'navDisabledReason' | 'sectionBadge' | 'onNavigate'>
 
 /**
  * Wspólna mechanika odnośników nawigacji: pozycji „Turnieje", turniejów
@@ -397,6 +404,7 @@ function SectionTabs(nav: NavProps) {
     <nav aria-label="Sekcje turnieju" className="-mb-px flex gap-1 overflow-x-auto">
       {SECTIONS.map(({ key, label, icon: Icon }) => {
         const { isActive, isDisabled, linkProps } = navLink(key, nav)
+        const badge = nav.sectionBadge?.(key)
         return (
           <a
             key={key}
@@ -406,6 +414,18 @@ function SectionTabs(nav: NavProps) {
           >
             <Icon className="size-4" />
             {label}
+            {badge && badge.count > 0 && (
+              <>
+                <span
+                  aria-hidden
+                  data-slot="section-badge"
+                  className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 font-medium text-primary-foreground tabular-nums"
+                >
+                  {badge.count}
+                </span>
+                <span className="sr-only">, {badge.label}</span>
+              </>
+            )}
           </a>
         )
       })}
@@ -555,12 +575,13 @@ export function AdminShell({
   user,
   navHref,
   navDisabledReason,
+  sectionBadge,
   onNavigate,
   tournamentHref,
   onOpenTournament,
   onLogout,
 }: AdminShellProps) {
-  const nav: NavProps = { active, navHref, navDisabledReason, onNavigate }
+  const nav: NavProps = { active, navHref, navDisabledReason, sectionBadge, onNavigate }
   const account = accountView(user)
   const sidebar: SidebarProps = { ...nav, account, tournaments, tournament, tournamentHref, onOpenTournament }
   // Samo `id` turnieju mówi, gdzie stoimy, ale nagłówka z niego nie złożymy:

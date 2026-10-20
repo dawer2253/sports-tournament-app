@@ -13,6 +13,8 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 abstract class TeamRequest extends FormRequest
 {
+    public const NAME_TAKEN_MESSAGE = 'W tym turnieju jest już drużyna o tej nazwie.';
+
     /** Turniej, wśród którego drużyn nazwa ma być unikalna. */
     abstract protected function tournament(): Tournament;
 
@@ -23,19 +25,30 @@ abstract class TeamRequest extends FormRequest
     }
 
     /**
+     * @return list<mixed>
+     */
+    protected function nameRules(): array
+    {
+        return self::nameRulesFor($this->tournament(), $this->ignoredTeam());
+    }
+
+    /**
      * Unikalność tylko wśród żywych drużyn turnieju, bo drużyna usunięta nie
      * blokuje nazwy. Wielkość liter pomija collation kolumny
      * (`utf8mb4_unicode_ci`), a spacje na brzegach obcina globalny
      * `TrimStrings` — żadne z nich nie wymaga tu własnego kodu.
      *
+     * Statycznie, bo tę samą nazwę sprawdza też zgłoszenie drużyny (#300),
+     * które nie jest drużyną i ma pole `teamName`.
+     *
      * @return list<mixed>
      */
-    protected function nameRules(): array
+    public static function nameRulesFor(Tournament $tournament, ?Team $ignored = null): array
     {
         return [
             'string',
             'max:120',
-            UniqueAmongLiveSiblings::rule('teams', 'name', 'tournament_id', $this->tournament(), $this->ignoredTeam()),
+            UniqueAmongLiveSiblings::rule('teams', 'name', 'tournament_id', $tournament, $ignored),
         ];
     }
 
@@ -45,7 +58,7 @@ abstract class TeamRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.unique' => 'W tym turnieju jest już drużyna o tej nazwie.',
+            'name.unique' => self::NAME_TAKEN_MESSAGE,
         ];
     }
 }

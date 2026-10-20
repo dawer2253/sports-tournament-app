@@ -36,6 +36,8 @@ class TournamentFactory extends Factory
             'period_minutes' => $sport->defaultPeriods()['minutes'],
             'set_format' => $sport->defaultSetFormat(),
             'status' => 'draft',
+            'registration_open' => false,
+            'registration_deadline' => null,
         ];
     }
 
@@ -43,6 +45,12 @@ class TournamentFactory extends Factory
     public function volleyball(): static
     {
         return $this->sport('volleyball');
+    }
+
+    /** Turniej opublikowany z otwartymi zapisami (#300), bez terminu. */
+    public function openForRegistration(): static
+    {
+        return $this->state(['status' => 'active', 'registration_open' => true]);
     }
 
     public function basketball(): static

@@ -29,6 +29,7 @@ const TOURNAMENT: Tournament = {
   periods: { count: 2, minutes: 45 },
   setFormat: null,
   teamsCount: 6,
+  registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+00:00',
   updatedAt: '2026-09-01T10:00:00+00:00',
 };

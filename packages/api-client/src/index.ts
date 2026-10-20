@@ -50,6 +50,12 @@ export type TiebreakerCode = Schemas['TiebreakerCode'];
 export type PublicTournament = Schemas['PublicTournament'];
 export type Branding = Schemas['Branding'];
 export type Points = Schemas['Points'];
+export type TournamentRegistration = Schemas['TournamentRegistration'];
+export type PublicRegistration = Schemas['PublicRegistration'];
+export type TeamRegistration = Schemas['TeamRegistration'];
+export type TeamRegistrationStatus = Schemas['TeamRegistrationStatus'];
+export type TeamRegistrationCreate = Schemas['TeamRegistrationCreate'];
+export type TeamRegistrationReceipt = Schemas['TeamRegistrationReceipt'];
 
 export type ApiError = Schemas['Error'];
 export type ApiValidationError = Schemas['ValidationError'];

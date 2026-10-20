@@ -6,6 +6,7 @@ import type { EventTypeOption, MatchEventRow, RosterPlayer } from '../components
 import type { MatchPageData, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
 import type { MatchCollision, MatchRowData, MatchRowTeam, MatchScorer } from '../components/data/match-row-data'
 import type { PlayerRow } from '../components/data/player-row'
+import type { RegistrationRow } from '../components/data/registration-row'
 import type { RoundSummary } from '../components/data/round-summary'
 import type { StandingsTableRow } from '../components/data/standings-table-row'
 import type { TeamRow } from '../components/data/team-row'
@@ -317,6 +318,52 @@ export const venueRows: VenueRow[] = [
   { id: 1, name: 'Boisko A', address: 'ul. Sportowa 1' },
   { id: 2, name: 'Boisko B', address: 'ul. Parkowa 12' },
   { id: 3, name: 'Hala Miejska', address: null },
+]
+
+// Zgłoszenia drużyn (#300) w kształcie `RegistrationRow`, przepisane
+// z przykładu `GET /tournaments/{tournament}/registrations`: odrzucone
+// (bez danych osobowych), przyjęte i dwa oczekujące, od najstarszego.
+export const registrationRows: RegistrationRow[] = [
+  {
+    id: 3,
+    teamName: 'Rysie Wola',
+    status: 'rejected',
+    contact: null,
+    players: [],
+    createdAt: '2026-10-02T09:15:00+00:00',
+    decidedAt: '2026-10-03T18:00:00+00:00',
+  },
+  {
+    id: 4,
+    teamName: 'Żubry Targówek',
+    status: 'accepted',
+    contact: { name: 'Tomasz Zieliński', email: 'tomasz.zielinski@example.com', phone: null },
+    players: [{ name: 'Tomasz Zieliński', number: 1 }],
+    createdAt: '2026-10-04T12:00:00+00:00',
+    decidedAt: '2026-10-05T08:30:00+00:00',
+  },
+  {
+    id: 5,
+    teamName: 'Lwy Mokotów',
+    status: 'pending',
+    contact: { name: 'Anna Wiśniewska', email: 'anna.wisniewska@example.com', phone: '+48 600 100 200' },
+    players: [
+      { name: 'Paweł Lis', number: 1 },
+      { name: 'Kamil Dąb', number: 9 },
+      { name: 'Igor Wrzos', number: null },
+    ],
+    createdAt: '2026-10-10T17:42:00+00:00',
+    decidedAt: null,
+  },
+  {
+    id: 6,
+    teamName: 'Smoki Ochota',
+    status: 'pending',
+    contact: { name: 'Michał Kruk', email: 'michal.kruk@example.com', phone: null },
+    players: [],
+    createdAt: '2026-10-12T08:05:00+00:00',
+    decidedAt: null,
+  },
 ]
 
 // Ustawienia turnieju w sporcie demo, w kształcie `SportConfig` z kontraktu

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\GuardsStartedMatches;
 use App\Models\Concerns\HasLogo;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,7 @@ use Illuminate\Support\Str;
     'user_id', 'sport_id', 'slug', 'name',
     'logo_path', 'primary_color', 'points', 'tiebreakers', 'match_duration',
     'period_count', 'period_minutes', 'set_format', 'status',
+    'registration_open', 'registration_deadline',
 ])]
 class Tournament extends Model
 {
@@ -197,6 +199,10 @@ class Tournament extends Model
             'period_minutes' => $sport->defaultPeriods()['minutes'],
             'set_format' => $sport->defaultSetFormat(),
             'status' => 'draft',
+            // Jawnie, bo świeży model nie zna domyślnych wartości kolumn,
+            // a odpowiedź `201` niesie zapisy.
+            'registration_open' => false,
+            'registration_deadline' => null,
         ]);
 
         foreach (self::STAGES_BY_FORMAT[$format] as $index => [$type, $stageName]) {
@@ -264,6 +270,8 @@ class Tournament extends Model
             'period_count' => 'integer',
             'period_minutes' => 'integer',
             'set_format' => 'array',
+            'registration_open' => 'boolean',
+            'registration_deadline' => 'datetime',
         ];
     }
 
@@ -283,6 +291,35 @@ class Tournament extends Model
     public function hasEnteredSets(): bool
     {
         return $this->matches()->whereNotNull('matches.sets')->whereJsonLength('matches.sets', '>', 0)->exists();
+    }
+
+    /**
+     * Liczniki, których wymaga `TournamentResource`, do `withCount()` na
+     * liście i `loadCount()` przy pojedynczym turnieju — jedna lista dla
+     * wszystkich odpowiedzi z turniejem.
+     *
+     * @return array<int|string, mixed>
+     */
+    public static function resourceCounts(): array
+    {
+        return [
+            'teams',
+            'registrations as pending_registrations_count' => fn (Builder $query) => $query->where('status', 'pending'),
+        ];
+    }
+
+    /**
+     * Czy formularz zgłoszenia przyjmie teraz zgłoszenie (`PublicRegistration.open`).
+     * Samo `registration_open` to ustawienie organizera; do przyjęcia trzeba
+     * jeszcze turnieju trwającego, przed terminem i przed pierwszym meczem
+     * rozpoczętym (`CONTEXT.md`, „Zapisy”). Nic nie zmienia ustawienia samo.
+     */
+    public function acceptsRegistrations(): bool
+    {
+        return $this->registration_open
+            && $this->status === 'active'
+            && ($this->registration_deadline === null || $this->registration_deadline->isFuture())
+            && ! $this->hasStartedMatches();
     }
 
     public function user(): BelongsTo
@@ -313,6 +350,11 @@ class Tournament extends Model
     public function venues(): HasMany
     {
         return $this->hasMany(Venue::class);
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(TeamRegistration::class);
     }
 
     public function matches(): HasManyThrough

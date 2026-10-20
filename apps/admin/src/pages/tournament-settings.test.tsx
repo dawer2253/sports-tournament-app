@@ -114,6 +114,7 @@ const FOOTBALL: Tournament = {
   periods: { count: 2, minutes: 45 },
   setFormat: null,
   teamsCount: 8,
+  registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
 };
@@ -413,6 +414,43 @@ describe('ustawienia turnieju: podział meczu (#210)', () => {
 
     expect(await screen.findByText('Część trwa od 1 do 150 minut.')).toBeInTheDocument();
     expect(minutesField()).toHaveAttribute('aria-invalid', 'true');
+  });
+});
+
+describe('ustawienia turnieju: zapisy (#300)', () => {
+  const toggle = () => screen.getByRole('switch', { name: 'Zapisy otwarte' });
+  const deadlineField = () => screen.getByLabelText('Termin zapisów (opcjonalnie)');
+
+  it('otwiera zapisy z terminem jednym „Zapisz zmiany” i wysyła termin z offsetem', async () => {
+    const bodies = tournamentApi(FOOTBALL);
+    const { user } = await renderSettings();
+
+    expect(toggle()).not.toBeChecked();
+    await user.click(toggle());
+    await user.type(deadlineField(), '2026-11-15T18:00');
+    await user.click(saveButton());
+
+    await waitFor(() =>
+      expect(bodies).toEqual([{ registration: { open: true, deadline: new Date('2026-11-15T18:00').toISOString() } }]),
+    );
+  });
+
+  it('w szkicu z otwartymi zapisami mówi, że formularz pojawi się po opublikowaniu', async () => {
+    tournamentApi({ ...FOOTBALL, status: 'draft', registration: { open: true, deadline: null, pendingCount: 0 } });
+    await renderSettings();
+
+    expect(toggle()).toHaveAccessibleDescription('Turniej jest w szkicu: formularz pojawi się na stronie turnieju po opublikowaniu.');
+  });
+
+  it('422 pod registration.deadline siada przy polu terminu', async () => {
+    tournamentApi(FOOTBALL, () => validationError({ 'registration.deadline': ['Podaj datę z offsetem, np. 2026-09-06T10:00:00+02:00.'] }));
+    const { user } = await renderSettings();
+
+    await user.type(deadlineField(), '2026-11-15T18:00');
+    await user.click(saveButton());
+
+    expect(await screen.findByText('Podaj datę z offsetem, np. 2026-09-06T10:00:00+02:00.')).toBeInTheDocument();
+    expect(deadlineField()).toHaveAttribute('aria-invalid', 'true');
   });
 });
 

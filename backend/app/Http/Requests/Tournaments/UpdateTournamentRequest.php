@@ -5,6 +5,7 @@ namespace App\Http\Requests\Tournaments;
 use App\Http\Requests\Tournaments\Concerns\ValidatesTiebreakers;
 use App\Models\Sport;
 use App\Models\Tournament;
+use App\Rules\Iso8601WithOffset;
 use Closure;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
@@ -71,6 +72,12 @@ class UpdateTournamentRequest extends TournamentRequest
             // kontrakt nie wymaga `primaryColor`, więc `{}` niczego nie zmienia.
             'branding' => ['sometimes', 'array:primaryColor'],
             'branding.primaryColor' => ['sometimes', 'required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            // Zapisy (#300), zagnieżdżone jak `branding`: zmienia się tylko
+            // to, co przyszło, a `pendingCount` liczy serwer. Termin z
+            // wymaganym offsetem (ADR-0008); `null` go usuwa.
+            'registration' => ['sometimes', 'array:open,deadline'],
+            'registration.open' => ['sometimes', 'required', 'boolean:strict'],
+            'registration.deadline' => ['sometimes', 'nullable', 'string', new Iso8601WithOffset],
             // Punktacja przychodzi w komplecie albo wcale.
             'points' => ['sometimes', 'required', 'array'],
             'points.win' => $this->pointRules(),
@@ -334,6 +341,15 @@ class UpdateTournamentRequest extends TournamentRequest
             $attributes['primary_color'] = $validated['branding']['primaryColor'];
         }
 
+        if (Arr::has($validated, 'registration.open')) {
+            $attributes['registration_open'] = $validated['registration']['open'];
+        }
+
+        if (Arr::has($validated, 'registration.deadline')) {
+            $deadline = $validated['registration']['deadline'];
+            $attributes['registration_deadline'] = $deadline === null ? null : Iso8601WithOffset::toUtc($deadline);
+        }
+
         if (Arr::has($validated, 'points')) {
             ['win' => $win, 'draw' => $draw, 'loss' => $loss] = $validated['points'];
             $attributes['points'] = ['win' => $win, 'draw' => $draw, 'loss' => $loss];
@@ -355,6 +371,9 @@ class UpdateTournamentRequest extends TournamentRequest
             'slug' => 'adres',
             'branding' => 'branding',
             'branding.primaryColor' => 'kolor',
+            'registration' => 'zapisy',
+            'registration.open' => 'zapisy otwarte',
+            'registration.deadline' => 'termin zapisów',
             'matchDuration' => 'długość meczu',
             'periods' => 'podział meczu',
             'periods.count' => 'liczba części',

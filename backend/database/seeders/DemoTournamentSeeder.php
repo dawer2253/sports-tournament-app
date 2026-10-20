@@ -423,6 +423,82 @@ class DemoTournamentSeeder extends Seeder
         $this->seedVolleyball($organizer);
         $this->seedCup($organizer);
         $this->seedGroupsPlayoff($organizer);
+        $this->seedRegistrations($organizer);
+    }
+
+    /**
+     * Piąty turniej demo (#300): „Liga Letnia 2026” pod `/t/liga-letnia-2026`,
+     * opublikowana, jeszcze bez terminarza, z otwartymi zapisami. Zgłoszenia
+     * są przepisane z przykładu `GET /tournaments/{tournament}/registrations`:
+     * jedno odrzucone, jedno przyjęte (z niego jedyna drużyna turnieju) i dwa
+     * oczekujące.
+     *
+     * Termin zapisów liczy się od chwili seedowania, a nie z przykładu
+     * kontraktu: stała data z przykładu kiedyś minie i demo pokazywałoby
+     * zapisy zamknięte.
+     *
+     * Przyjęte zgłoszenie idzie przez `accept()`, czyli tą samą drogą co
+     * panel, więc drużyna i jej skład powstają tak jak u organizatora.
+     */
+    private function seedRegistrations(User $organizer): void
+    {
+        $football = Sport::firstWhere('code', 'football');
+
+        $tournament = Tournament::updateOrCreate(
+            ['slug' => 'liga-letnia-2026'],
+            [
+                'user_id' => $organizer->id,
+                'sport_id' => $football->id,
+                'name' => 'Liga Letnia 2026',
+                'logo_path' => null,
+                'primary_color' => '#1F7A45',
+                'points' => $football->defaultPoints(),
+                'tiebreakers' => $football->defaultTiebreakers(),
+                'match_duration' => $football->defaultMatchDuration(),
+                'period_count' => $football->defaultPeriods()['count'],
+                'period_minutes' => $football->defaultPeriods()['minutes'],
+                'status' => 'active',
+                'registration_open' => true,
+                'registration_deadline' => now()->addMonth()->startOfHour(),
+            ],
+        );
+
+        // Drużyny na twardo, żeby nazwa nie wisiała w koszu, i pojedynczo,
+        // przez model (`backend/AGENTS.md`, „Schemat i modele”); zawodników
+        // zabiera kaskada w bazie. Potem reszta zgłoszeń.
+        $tournament->teams()->withTrashed()->get()->each->forceDelete();
+        $tournament->registrations()->delete();
+        $tournament->stages()->delete();
+
+        $tournament->stages()->create(['type' => 'league', 'name' => 'Faza zasadnicza', 'order' => 1]);
+
+        $tournament->registrations()->create(['team_name' => 'Rysie Wola'])->reject();
+
+        $tournament->registrations()->create([
+            'team_name' => 'Żubry Targówek',
+            'contact_name' => 'Tomasz Zieliński',
+            'contact_email' => 'tomasz.zielinski@example.com',
+            'players' => [['name' => 'Tomasz Zieliński', 'number' => 1]],
+        ])->accept();
+
+        $tournament->registrations()->create([
+            'team_name' => 'Lwy Mokotów',
+            'contact_name' => 'Anna Wiśniewska',
+            'contact_email' => 'anna.wisniewska@example.com',
+            'contact_phone' => '+48 600 100 200',
+            'players' => [
+                ['name' => 'Paweł Lis', 'number' => 1],
+                ['name' => 'Kamil Dąb', 'number' => 9],
+                ['name' => 'Igor Wrzos', 'number' => null],
+            ],
+        ]);
+
+        $tournament->registrations()->create([
+            'team_name' => 'Smoki Ochota',
+            'contact_name' => 'Michał Kruk',
+            'contact_email' => 'michal.kruk@example.com',
+            'players' => [],
+        ]);
     }
 
     /**

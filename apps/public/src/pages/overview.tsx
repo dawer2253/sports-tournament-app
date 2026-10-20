@@ -3,6 +3,7 @@ import {
   LoadError,
   OverviewLoading,
   OverviewScreen,
+  RegistrationTile,
   TeamsShowcase,
   overviewBracketStage,
   overviewRounds,
@@ -13,7 +14,7 @@ import {
 import { useNavigate } from 'react-router';
 import { useFixtures, useLeaderboard, useResults, useStandings, useTeams } from '../lib/queries';
 import { useRounds } from './match-rounds';
-import { matchHref, useTabNav, useTournament } from './tournament-layout';
+import { matchHref, useRegistrationEntry, useTabNav, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 import { useGroups } from './use-groups';
 
@@ -50,6 +51,17 @@ function loadable<T, R>(query: QueryLike<T>, map: (data: T) => R): Loadable<R> {
  * tylko do pierwszej odpowiedzi źródeł, z których widać stan turnieju.
  */
 export function OverviewPage() {
+  const entry = useRegistrationEntry(useTournament());
+  return (
+    <>
+      {/* Zapisy otwarte (#300): kafel nad treścią Przeglądu, także przed terminarzem. */}
+      {entry && <RegistrationTile {...entry} />}
+      <OverviewContent />
+    </>
+  );
+}
+
+function OverviewContent() {
   const tournament = useTournament();
   const { slug } = tournament;
   const navigate = useNavigate();

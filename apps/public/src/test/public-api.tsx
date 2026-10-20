@@ -38,6 +38,7 @@ export function tournament(overrides: Partial<PublicTournament> = {}): PublicTou
     periods: { count: 2, minutes: 45 },
     matchDuration: 60,
     runningClock: true,
+    registration: { open: false, deadline: null },
     ...overrides,
   };
 }

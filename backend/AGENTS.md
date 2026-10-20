@@ -124,13 +124,16 @@ nieprzesłonięte. Błąd, który ma zostawić
 naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
 kolejnością, a nie obejście w kontrolerze.
 
-**429 celowo nie ma**, bo nie ma limitera, a kontrakt nie opisuje zachowań,
-których backend nie realizuje. Kto doda pierwszy `throttle`, dokłada razem
-z nim wpis w mapie w `bootstrap/app.php` — **w tej samej mapie, nie w drugim
-`$exceptions->respond()`**, bo `respond()` podmienia jedyny callback zamiast go
-dokładać, więc drugi wyłączyłby całą mapę — komponent w `components/responses`,
-wzmiankę w `info.description` i test w `ErrorResponsesTest` (framework mówi
-tu `Too Many Attempts.`).
+**429 oddaje tylko endpoint z limitem**: dziś jeden, zgłoszenie drużyny ze
+strony publicznej (#300). Limit liczy zapisane zgłoszenia, a nie żądania, więc
+siedzi w `TeamRegistrationController::store()` (`RateLimiter`
+i `ThrottleRequestsException`), a nie w `throttle` na trasie. Tekst idzie przez
+tę samą mapę w `bootstrap/app.php` co reszta kodów — kolejny kod dokładaj
+**w tej samej mapie, nie w drugim `$exceptions->respond()`**, bo `respond()`
+podmienia jedyny callback zamiast go dokładać, więc drugi wyłączyłby całą
+mapę. Kontrakt wypisuje `429` (`TooManyRequests`) wyłącznie przy ścieżce, która
+ma limit, więc nowy limit — w kontrolerze czy jako `throttle` — to także wpis
+`429` przy jego ścieżce w `openapi.yaml`.
 
 ## Schemat i modele
 
@@ -215,7 +218,7 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
   konto z dostępem. **Policy sprawdza wyłącznie własność.** Ograniczenie ze
   statusu turnieju to reguła domenowa i daje 422, nie 403 — kontrakt definiuje
   `Forbidden` jako zasób innego organizera.
-- **Policy per model**: `TeamPolicy`, `PlayerPolicy`, `VenuePolicy`, `StagePolicy`, `GroupPolicy`, wykrywane
+- **Policy per model**: `TeamPolicy`, `PlayerPolicy`, `VenuePolicy`, `StagePolicy`, `GroupPolicy`, `TeamRegistrationPolicy`, wykrywane
   automatycznie jak [`TournamentPolicy`](app/Policies/TournamentPolicy.php),
   bez `Gate::policy()`. Każda ma jedną metodę `manage`, delegującą przez
   relację do `TournamentPolicy`; zawodnik idzie przez drużynę. Reguła własności
@@ -223,7 +226,7 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
   nie wcześniej.
 - **Cudzy zasób daje 403**, także na płaskich ścieżkach (`/teams/{team}`,
   `/players/{player}`, `/venues/{venue}`, `/teams/{team}/logo`,
-  `/stages/{stage}/schedule`, `/groups/{group}`).
+  `/stages/{stage}/schedule`, `/groups/{group}`, `/registrations/{registration}/accept`).
 - **Zasób usunięty miękko daje 404, także cudzy**, bo wiązanie modelu rusza
   przed `can` i nie widzi usuniętych. **Zawodnik z usuniętą miękko drużyną też
   ma dawać 404**: wiązanie zawodnika wymaga żywej drużyny. Bez tego policy
@@ -243,7 +246,7 @@ CRUD. Rozstrzygnięcie i odrzucone warianty: komentarz zamykający
 
 **Wzorca pilnuje [`SubtreeAuthorizationTest`](tests/Feature/SubtreeAuthorizationTest.php).**
 Bierze z routera każdą trasę pod `auth:sanctum` z parametrem `{tournament}`,
-`{team}`, `{player}`, `{venue}`, `{stage}` albo `{group}` i sprawdza 403 dla obcego organizera
+`{team}`, `{player}`, `{venue}`, `{stage}`, `{group}` albo `{registration}` i sprawdza 403 dla obcego organizera
 z pustym ciałem, 404 po miękkim usunięciu i 401 bez tokenu. Sprawdza też wprost,
 że trasa ma `->can('manage', …)`: same odpowiedzi tego nie dowodzą, bo na `GET`
 i na trasie zapisu z samymi polami `sometimes` `Gate::authorize` w kontrolerze

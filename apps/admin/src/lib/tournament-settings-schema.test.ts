@@ -15,6 +15,7 @@ const SAVED: Tournament = {
   periods: { count: 2, minutes: 45 },
   setFormat: null,
   teamsCount: 8,
+  registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
 };
@@ -108,5 +109,28 @@ describe('tournamentSettingsUpdate', () => {
     expect(tournamentSettingsUpdate({ ...valid, points: { win: 3, draw: 5, loss: 1 } }, saved, false)).toEqual({
       points: { win: 3, draw: 0, loss: 1 },
     });
+  });
+
+  // Zapisy (#300): tylko zmieniona część, termin z offsetem (ADR-0008).
+  it('wysyła samo open, gdy zmienił się tylko przełącznik zapisów', () => {
+    expect(tournamentSettingsUpdate({ ...valid, registration: { open: true, deadline: '' } }, SAVED, true)).toEqual({
+      registration: { open: true },
+    });
+  });
+
+  it('wysyła termin z pola jako moment z offsetem, a puste pole jako null', () => {
+    expect(tournamentSettingsUpdate({ ...valid, registration: { open: false, deadline: '2026-11-15T18:00' } }, SAVED, true)).toEqual({
+      registration: { deadline: new Date('2026-11-15T18:00').toISOString() },
+    });
+
+    const saved = { ...SAVED, registration: { open: true, deadline: '2026-11-15T17:00:00+00:00', pendingCount: 2 } };
+    expect(tournamentSettingsUpdate({ ...tournamentSettingsValues(saved), registration: { open: true, deadline: '' } }, saved, true)).toEqual({
+      registration: { deadline: null },
+    });
+  });
+
+  it('nie wysyła terminu, który jest tym samym momentem co zapisany', () => {
+    const saved = { ...SAVED, registration: { open: true, deadline: '2026-11-15T17:00:00+00:00', pendingCount: 0 } };
+    expect(tournamentSettingsUpdate(tournamentSettingsValues(saved), saved, true)).toEqual({});
   });
 });
