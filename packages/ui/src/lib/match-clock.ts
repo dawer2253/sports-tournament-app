@@ -5,7 +5,7 @@
  * „Match period (część meczu)”.
  */
 
-import { isSetComplete, maxSets, setThreshold, setsWon, type SetFormat, type SetScore } from './sets'
+import { currentSetNumber, type SetFormat, type SetScore } from './sets'
 
 /** Podział meczu na części (`MatchPeriods` z kontraktu). `minutes` jest `null` tylko przy jednej części. */
 export type MatchPeriods = { count: number; minutes: number | null }
@@ -20,12 +20,12 @@ export type MatchClockState = {
   sets?: readonly SetScore[] | null
 }
 
-/** Ustawienia turnieju, z których liczy się zegar (`PublicTournament.periods`, `matchDuration`, `runningClock`). */
+/** Ustawienia turnieju, z których liczy się zegar (`PublicTournament.periods`, `matchDuration`, `runningClock`, `setFormat`). */
 export type MatchClockSettings = {
   periods: MatchPeriods
   /** Długość meczu: regulaminowy koniec jedynej części w turnieju bez podziału. */
   matchDuration: number
-  /** Czy zegar biegnie w minutach (piłka); bez niego tablica pokazuje część („3. kwarta”). */
+  /** Czy zegar biegnie w minutach (piłka); bez niego tablica pokazuje część („3. kwarta”); w sporcie z setami numer seta. */
   runningClock: boolean
   /** Format seta (`PublicTournament.setFormat`); niepusty to sport z setami, gdzie zegar pokazuje set, nie część. */
   setFormat?: SetFormat | null
@@ -64,22 +64,9 @@ export function periodLabelGenitive(number: number, count: number): string {
 }
 
 /**
- * Numer bieżącego seta (#302, wariant A): liczba wpisanych setów, jeśli ostatni
- * jest niedokończony, albo następny po rozstrzygniętym. `null`, gdy wynik meczu
- * jest już przesądzony (ktoś ma wymaganą liczbę setów), bo wtedy nic się nie
- * rozgrywa. Set nie jest częścią meczu, więc nie ma przerwy ani minuty.
- */
-function currentSetNumber(sets: readonly SetScore[], format: SetFormat): number | null {
-  if (Math.max(...setsWon(sets, format)) >= format.setsToWin) return null
-  if (sets.length === 0) return 1
-  const last = sets.length - 1
-  const done = isSetComplete(sets[last]!, setThreshold(last, format), format.minLead)
-  return Math.min(done ? sets.length + 1 : sets.length, maxSets(format))
-}
-
-/**
- * Napis przy „Na żywo”: minuta („67′”, „45+3′”), „Przerwa”, część („3. kwarta”)
- * albo „Dogrywka”. `null` znaczy samo „Na żywo” bez dopisku: mecz po powrocie
+ * Napis przy „Na żywo”: minuta („67′”, „45+3′”), „Przerwa”, część („3. kwarta”),
+ * „Dogrywka” albo, w sporcie z setami, numer bieżącego seta („3. set”, #302;
+ * `currentSetNumber`, bez przerwy i minuty, bo set nie jest częścią meczu). `null` znaczy samo „Na żywo” bez dopisku: mecz po powrocie
  * z zakończonego, zapomniany mecz (30 minut ponad koniec części) albo dane bez
  * części.
  *
