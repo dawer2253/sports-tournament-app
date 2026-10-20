@@ -98,14 +98,24 @@ describe('trasa turnieju', () => {
     expect(screen.getByText('Nie ma takiego turnieju')).toBeInTheDocument();
   });
 
-  it('inny błąd turnieju pokazuje komunikat z odpowiedzi', async () => {
+  it('błąd serwera nie pokazuje surowego komunikatu z odpowiedzi', async () => {
     server.use(
       http.get(`${API}/public/t/:slug`, () => HttpResponse.json({ message: 'Usługa chwilowo niedostępna.' }, { status: 503 })),
     );
     renderAt(`/t/${SLUG}`);
 
     expect(await screen.findByText('Nie udało się wczytać turnieju')).toBeInTheDocument();
-    expect(screen.getByText('Usługa chwilowo niedostępna.')).toBeInTheDocument();
+    expect(screen.getByText('Serwer odpowiedział błędem. Spróbuj ponownie za chwilę.')).toBeInTheDocument();
+    expect(screen.queryByText('Usługa chwilowo niedostępna.')).not.toBeInTheDocument();
+  });
+
+  it('błąd sieci pokazuje polski komunikat zamiast „Failed to fetch”', async () => {
+    server.use(http.get(`${API}/public/t/:slug`, () => HttpResponse.error()));
+    renderAt(`/t/${SLUG}`);
+
+    expect(await screen.findByText('Nie udało się wczytać turnieju')).toBeInTheDocument();
+    expect(screen.getByText('Nie możemy połączyć się z serwerem. Sprawdź internet i spróbuj ponownie.')).toBeInTheDocument();
+    expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
   });
 
   it('nieznana podtrasa daje stronę 404 pod nagłówkiem turnieju', async () => {
@@ -182,7 +192,7 @@ describe('trasa turnieju', () => {
     renderAt(`/t/${SLUG}/wyniki`);
 
     expect(await screen.findByText('Nie udało się wczytać wyników')).toBeInTheDocument();
-    expect(screen.getByText('Usługa chwilowo niedostępna.')).toBeInTheDocument();
+    expect(screen.getByText('Serwer odpowiedział błędem. Spróbuj ponownie za chwilę.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Spróbuj ponownie' }));
 
     expect(await screen.findByRole('heading', { name: 'Terminarz jeszcze nie jest ułożony' })).toBeInTheDocument();

@@ -10,6 +10,7 @@ import {
 } from '@tournament/ui/public';
 import { useNavigate } from 'react-router';
 import { useStageMatches, useStandings } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 import { tabHref, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 import { useGroups } from './use-groups';
@@ -60,7 +61,7 @@ export function StandingsPage() {
       <LoadError
         title="Tabela"
         label="tabeli"
-        message={failed.message}
+        message={loadErrorMessage(failed)}
         onRetry={() => {
           if (standings.error) void standings.refetch();
           if (stageMatches.error) void stageMatches.refetch();

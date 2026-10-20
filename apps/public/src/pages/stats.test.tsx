@@ -153,7 +153,7 @@ describe('Statystyki', () => {
     renderAt(`/t/${SLUG}/statystyki`);
 
     const fouls = await screen.findByRole('region', { name: 'Faule' });
-    expect(await within(fouls).findByRole('alert')).toHaveTextContent('Usługa chwilowo niedostępna.');
+    expect(await within(fouls).findByRole('alert')).toHaveTextContent('Serwer odpowiedział błędem');
     expect(within(fouls).getByRole('button', { name: 'Spróbuj ponownie' })).toBeInTheDocument();
     expect(bodyRows()).toEqual([['1', expect.stringMatching(/Zawodnik 1/), '40']]);
   });
@@ -162,7 +162,7 @@ describe('Statystyki', () => {
     publicApi({ data: BASKETBALL, leaderboards: (stat) => (stat === null ? LEADERBOARD_ERROR : basketballBoards(stat)) });
     renderAt(`/t/${SLUG}/statystyki`);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Usługa chwilowo niedostępna.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Serwer odpowiedział błędem');
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 

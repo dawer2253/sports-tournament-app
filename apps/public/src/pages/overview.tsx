@@ -13,6 +13,7 @@ import {
 } from '@tournament/ui/public';
 import { useNavigate } from 'react-router';
 import { useFixtures, useLeaderboard, useResults, useStandings, useTeams } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 import { useRounds } from './match-rounds';
 import { matchHref, useRegistrationEntry, useTabNav, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
@@ -28,7 +29,7 @@ interface QueryLike<T> {
 /** Stan zapytania dla sekcji ekranu: dane wygrywają z błędem odświeżenia w tle. */
 function loadable<T, R>(query: QueryLike<T>, map: (data: T) => R): Loadable<R> {
   if (query.data !== undefined) return { status: 'ready', data: map(query.data) };
-  if (query.error) return { status: 'error', message: query.error.message, onRetry: () => void query.refetch() };
+  if (query.error) return { status: 'error', message: loadErrorMessage(query.error), onRetry: () => void query.refetch() };
   return { status: 'loading' };
 }
 
@@ -99,7 +100,7 @@ function OverviewContent() {
     if (failed) {
       return {
         status: 'error',
-        message: failed.message,
+        message: loadErrorMessage(failed),
         onRetry: () => {
           if (!fixtures.data) void fixtures.refetch();
           if (!results.data) void results.refetch();
@@ -116,7 +117,7 @@ function OverviewContent() {
 
   if (noSchedule) {
     if (teams.data) return <TeamsShowcase teams={teams.data} />;
-    if (teams.error) return <LoadError label="drużyn" message={teams.error.message} onRetry={() => void teams.refetch()} />;
+    if (teams.error) return <LoadError label="drużyn" message={loadErrorMessage(teams.error)} onRetry={() => void teams.refetch()} />;
     return <OverviewLoading />;
   }
 

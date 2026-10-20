@@ -14,6 +14,7 @@ import {
 import { useEffect, useMemo } from 'react';
 import { Outlet, useMatch, useMatches, useNavigate, useOutletContext, useParams } from 'react-router';
 import { usePublicTournament } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 
 /** Podtrasa zakładki pod `/t/:slug`, po polsku (#192). */
 const TAB_PATHS: Record<PublicNavKey, string> = {
@@ -121,7 +122,7 @@ export function TournamentLayout() {
 
   if (notFound) return <TournamentNotFound path={`/t/${slug}`} />;
 
-  if (failed) return <TournamentLoadError message={tournament.error.message} onRetry={() => void tournament.refetch()} />;
+  if (failed) return <TournamentLoadError message={loadErrorMessage(tournament.error)} onRetry={() => void tournament.refetch()} />;
 
   return <TournamentLoading />;
 }

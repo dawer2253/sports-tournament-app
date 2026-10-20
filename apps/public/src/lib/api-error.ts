@@ -15,3 +15,15 @@ export class ApiError extends Error {
 export function isNotFound(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404;
 }
+
+const NETWORK_FAILED = 'Nie możemy połączyć się z serwerem. Sprawdź internet i spróbuj ponownie.';
+const SERVER_FAILED = 'Serwer odpowiedział błędem. Spróbuj ponownie za chwilę.';
+
+/**
+ * Komunikat ekranu błędu dla kibica. `error.message` nie nadaje się na ekran:
+ * z `fetch` to angielskie „Failed to fetch”, z serwera — tekst techniczny.
+ * `ApiError` znaczy, że serwer odpowiedział; każdy inny wyjątek to brak połączenia.
+ */
+export function loadErrorMessage(error: unknown): string {
+  return error instanceof ApiError ? SERVER_FAILED : NETWORK_FAILED;
+}
