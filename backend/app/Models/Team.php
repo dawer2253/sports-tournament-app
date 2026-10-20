@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -76,6 +77,9 @@ class Team extends Model
                 // Mecze drabinki znikają kaskadą z rundami.
                 Round::query()->whereIn('stage_id', $team->bracketStages()->modelKeys())->delete();
                 $team->matchesQuery()->where('status', 'scheduled')->delete();
+                // Przyjęte zgłoszenie żyje tak długo jak jego drużyna, razem
+                // z danymi zgłaszającego (#300, `CONTEXT.md`).
+                $team->registration()->delete();
             }
         });
     }
@@ -117,6 +121,12 @@ class Team extends Model
     public function players(): HasMany
     {
         return $this->hasMany(Player::class);
+    }
+
+    /** Zgłoszenie, z którego przyjęcia powstała drużyna, jeśli takie było. */
+    public function registration(): HasOne
+    {
+        return $this->hasOne(TeamRegistration::class);
     }
 
     public function homeMatches(): HasMany

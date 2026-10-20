@@ -9,8 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Wymaga załadowanego `sport` i policzonego `teams_count` — resource nie
- * dociąga ich sam, żeby lista turniejów nie robiła zapytania na wiersz.
+ * Wymaga załadowanego `sport` i liczników z `Tournament::resourceCounts()` —
+ * resource nie dociąga ich sam, żeby lista turniejów nie robiła zapytania na
+ * wiersz.
  *
  * @mixin Tournament
  */
@@ -43,6 +44,11 @@ class TournamentResource extends JsonResource
             'matchDuration' => $this->match_duration,
             'periods' => MatchPeriods::of($this->resource)->toArray(),
             'teamsCount' => $this->teams_count,
+            'registration' => [
+                'open' => $this->registration_open,
+                'deadline' => $this->formatDate($this->registration_deadline),
+                'pendingCount' => $this->pending_registrations_count,
+            ],
             'createdAt' => $this->formatDate($this->created_at),
             'updatedAt' => $this->formatDate($this->updated_at),
         ];

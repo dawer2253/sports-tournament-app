@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\FormatsDates;
 use App\Matches\MatchPeriods;
 use App\Models\Tournament;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PublicTournamentResource extends JsonResource
 {
+    use FormatsDates;
+
     /**
      * @return array<string, mixed>
      */
@@ -47,6 +50,11 @@ class PublicTournamentResource extends JsonResource
             'periods' => MatchPeriods::of($this->resource)->toArray(),
             'matchDuration' => $this->match_duration,
             'runningClock' => $this->sport->runningClock(),
+            // Stan liczony, nie samo ustawienie organizera (#300).
+            'registration' => [
+                'open' => $this->acceptsRegistrations(),
+                'deadline' => $this->formatDate($this->registration_deadline),
+            ],
         ];
     }
 }

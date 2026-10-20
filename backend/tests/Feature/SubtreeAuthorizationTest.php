@@ -7,6 +7,7 @@ use App\Models\Player;
 use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
+use App\Models\TeamRegistration;
 use App\Models\Tournament;
 use App\Models\User;
 use App\Models\Venue;
@@ -44,7 +45,7 @@ beforeEach(function () {
 });
 
 /** Parametry, których obecność czyni trasę częścią poddrzewa turnieju. */
-const SUBTREE_PARAMETERS = ['tournament', 'team', 'player', 'venue', 'stage', 'group', 'match', 'event'];
+const SUBTREE_PARAMETERS = ['tournament', 'team', 'player', 'venue', 'stage', 'group', 'match', 'event', 'registration'];
 
 /**
  * Trasy pod `auth:sanctum` bez parametru z poddrzewa. Każda inna trasa pod
@@ -86,6 +87,9 @@ function subtreeFactories(): array
             ->for(Stage::factory()->group()->for(Tournament::factory()->for($owner)))
             ->create(),
         'venue' => fn (User $owner): Venue => Venue::factory()
+            ->for(Tournament::factory()->for($owner))
+            ->create(),
+        'registration' => fn (User $owner): TeamRegistration => TeamRegistration::factory()
             ->for(Tournament::factory()->for($owner))
             ->create(),
         // Zdarzenie ma tylko mecz rozpoczęty (#188), więc i fabryka buduje je

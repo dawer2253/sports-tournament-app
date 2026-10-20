@@ -76,8 +76,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Przy `APP_DEBUG` 500 zostaje z `exception` i `trace` (i bez
         // `Log::debug` niżej — tekst i tak jest w odpowiedzi); pozostałe kody
         // je tracą, bo nie niosły nic poza napisem stałym albo tekstem, który
-        // i tak ląduje w logu (401 oddawał sam komunikat, research §6). Pułapki
-        // i 429: `backend/AGENTS.md`.
+        // i tak ląduje w logu (401 oddawał sam komunikat, research §6). Pułapki:
+        // `backend/AGENTS.md`.
         //
         // Teksty są przykładami z `components/responses` — pilnuje tego
         // `ErrorResponsesTest`.
@@ -94,6 +94,9 @@ return Application::configure(basePath: dirname(__DIR__))
             404 => 'Nie znaleziono zasobu.',
             405 => 'Metoda niedozwolona dla tego zasobu.',
             413 => 'Przesłane dane są za duże.',
+            // Jedyny limiter stoi na zgłoszeniu drużyny (#300); framework
+            // mówi tu `Too Many Attempts.`, a `Retry-After` zostaje.
+            429 => 'Zbyt wiele prób. Spróbuj ponownie później.',
             500 => 'Wewnętrzny błąd serwera.',
             503 => 'Usługa chwilowo niedostępna.',
         ];

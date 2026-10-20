@@ -13,6 +13,27 @@ use Illuminate\Foundation\Http\FormRequest;
  */
 abstract class PlayerRequest extends FormRequest
 {
+    /**
+     * Imię i nazwisko bez unikalności: dwóch Kowalskich w jednej drużynie to
+     * normalny stan (decyzja #80). Stała, bo te same reguły obowiązują skład
+     * zgłoszenia drużyny (#300), z którego przyjęcie tworzy zawodników.
+     *
+     * @var list<string>
+     */
+    public const NAME_RULES = ['string', 'max:120'];
+
+    /**
+     * Numer bez unikalności, którą dokłada każde miejsce po swojemu: drużyna
+     * wśród żywych zawodników, skład zgłoszenia wśród pozycji składu.
+     * `nullable` pomija dla `null` resztę reguł.
+     *
+     * `integer:strict`, bo kontrakt mówi `integer`, a zwykłe `integer`
+     * przepuszcza `"9"` i `true` — i to one wróciłyby w odpowiedzi.
+     *
+     * @var list<string>
+     */
+    public const NUMBER_RULES = ['nullable', 'integer:strict', 'between:0,999'];
+
     /** Drużyna, wśród której zawodników numer ma być unikalny. */
     abstract protected function team(): Team;
 
@@ -23,31 +44,23 @@ abstract class PlayerRequest extends FormRequest
     }
 
     /**
-     * Imię i nazwisko bez unikalności: dwóch Kowalskich w jednej drużynie to
-     * normalny stan (decyzja #80).
-     *
      * @return list<mixed>
      */
     protected function nameRules(): array
     {
-        return ['string', 'max:120'];
+        return self::NAME_RULES;
     }
 
     /**
      * Numer jest unikalny tylko wśród żywych zawodników drużyny, a `null`
-     * z niczym nie koliduje — `nullable` pomija dla niego resztę reguł.
-     *
-     * `integer:strict`, bo kontrakt mówi `integer`, a zwykłe `integer`
-     * przepuszcza `"9"` i `true` — i to one wróciłyby w odpowiedzi.
+     * z niczym nie koliduje.
      *
      * @return list<mixed>
      */
     protected function numberRules(): array
     {
         return [
-            'nullable',
-            'integer:strict',
-            'between:0,999',
+            ...self::NUMBER_RULES,
             UniqueAmongLiveSiblings::rule('players', 'number', 'team_id', $this->team(), $this->ignoredPlayer()),
         ];
     }
