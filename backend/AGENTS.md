@@ -124,15 +124,16 @@ nieprzesłonięte. Błąd, który ma zostawić
 naprawdę potrzebuje innego komunikatu, to zmiana kontraktu idąca normalną
 kolejnością, a nie obejście w kontrolerze.
 
-**429 oddaje tylko trasa z limiterem**: dziś jedna, zgłoszenie drużyny ze
-strony publicznej (#300). Limit liczy przyjęte zgłoszenia, a nie żądania, więc
-siedzi w `TeamRegistrationController::store()` (`RateLimiter` i
-`ThrottleRequestsException`), a nie w `throttle` na trasie. Tekst idzie przez tę samą mapę w `bootstrap/app.php` co reszta kodów — kolejny
-kod dokładaj **w tej samej mapie, nie w drugim `$exceptions->respond()`**, bo
-`respond()` podmienia jedyny callback zamiast go dokładać, więc drugi
-wyłączyłby całą mapę. Kontrakt wypisuje `429` (`TooManyRequests`) wyłącznie
-przy trasie, która ma limiter, więc nowy `throttle` to także wpis `429` przy
-jego ścieżce w `openapi.yaml`.
+**429 oddaje tylko endpoint z limitem**: dziś jeden, zgłoszenie drużyny ze
+strony publicznej (#300). Limit liczy zapisane zgłoszenia, a nie żądania, więc
+siedzi w `TeamRegistrationController::store()` (`RateLimiter`
+i `ThrottleRequestsException`), a nie w `throttle` na trasie. Tekst idzie przez
+tę samą mapę w `bootstrap/app.php` co reszta kodów — kolejny kod dokładaj
+**w tej samej mapie, nie w drugim `$exceptions->respond()`**, bo `respond()`
+podmienia jedyny callback zamiast go dokładać, więc drugi wyłączyłby całą
+mapę. Kontrakt wypisuje `429` (`TooManyRequests`) wyłącznie przy ścieżce, która
+ma limit, więc nowy limit — w kontrolerze czy jako `throttle` — to także wpis
+`429` przy jego ścieżce w `openapi.yaml`.
 
 ## Schemat i modele
 

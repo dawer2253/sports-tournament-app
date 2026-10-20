@@ -2,13 +2,11 @@
 
 namespace App\Models;
 
-use App\Http\Requests\Teams\TeamRequest;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Zgłoszenie drużyny do turnieju (#300, `TeamRegistration` w `CONTEXT.md`).
@@ -66,27 +64,12 @@ class TeamRegistration extends Model
     /**
      * Tworzy drużynę i zawodników ze składu, w jednej transakcji ze zmianą
      * stanu zgłoszenia: albo powstaje wszystko, albo nic. Dane zgłaszającego
-     * do drużyny nie przechodzą.
-     *
-     * Walidacja w Form Requeście idzie przed transakcją, więc dwa równoległe
-     * przyjęcia (to samo zgłoszenie z dwóch kart albo dwa zgłoszenia o tej
-     * samej nazwie) przeszłyby ją oba. Blokada wiersza turnieju ustawia
-     * przyjęcia w jednym turnieju w kolejce, a stan i nazwa sprawdzają się
-     * pod nią jeszcze raz, z tymi samymi kluczami błędów co w walidacji.
+     * do drużyny nie przechodzą. Reguły przyjęcia sprawdza wywołujący, pod
+     * blokadą turnieju (`TeamRegistrationController::accept()`).
      */
     public function accept(): Team
     {
         return DB::transaction(function (): Team {
-            Tournament::query()->whereKey($this->tournament_id)->lockForUpdate()->first();
-            $this->refresh();
-
-            if (! $this->isPending()) {
-                throw ValidationException::withMessages(['registration' => self::ALREADY_DECIDED_MESSAGE]);
-            }
-            if ($this->tournament->teams()->where('name', $this->team_name)->exists()) {
-                throw ValidationException::withMessages(['name' => TeamRequest::NAME_TAKEN_MESSAGE]);
-            }
-
             $team = $this->tournament->teams()->create(['name' => $this->team_name]);
 
             foreach ($this->players ?? [] as $player) {

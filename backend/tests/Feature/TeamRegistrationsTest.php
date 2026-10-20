@@ -7,8 +7,9 @@ use App\Models\Stage;
 use App\Models\Team;
 use App\Models\TeamRegistration;
 use App\Models\Tournament;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
-use Illuminate\Validation\ValidationException;
 use Spectator\Spectator;
 
 /*
@@ -532,21 +533,56 @@ it('odmawia przyjęcia w turnieju z meczem rozpoczętym pod kluczem teams', func
     expect($registration->fresh()->status)->toBe('pending');
 });
 
-// Walidacja w Form Requeście idzie przed transakcją, więc wyścig dwóch
-// przyjęć odtwarzamy wprost na modelu: przyjęcie ze starym stanem przechodzi
-// walidację, a rozstrzyga je dopiero sprawdzenie pod blokadą.
-it('pod blokadą odmawia przyjęcia, które wyprzedziło inne przyjęcie', function () {
+/**
+ * Wyścig dwóch przyjęć: żądanie przechodzi walidację w Form Requeście, a tuż
+ * po założeniu blokady turnieju (zapytanie `for update`) wchodzi „równoległe”
+ * przyjęcie, które właśnie się zatwierdziło. Rozstrzyga je dopiero walidacja
+ * pod blokadą.
+ */
+function acceptRacingWith(TeamRegistration $registration, Closure $concurrent): TestResponse
+{
+    $done = false;
+    DB::listen(function (QueryExecuted $query) use (&$done, $concurrent): void {
+        if (! $done && str_contains($query->sql, 'for update')) {
+            $done = true;
+            $concurrent();
+        }
+    });
+
+    return acceptRegistration($registration);
+}
+
+it('pod blokadą odmawia przyjęcia nazwy, którą w międzyczasie zajęło inne przyjęcie', function () {
     $tournament = Tournament::factory()->openForRegistration()->create();
-    $registration = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'Lwy Mokotów']);
-    $sameName = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'lwy mokotów']);
-    $stale = TeamRegistration::findOrFail($registration->id);
+    $first = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'Lwy Mokotów']);
+    $second = TeamRegistration::factory()->for($tournament)->create(['team_name' => 'lwy mokotów']);
 
-    $registration->accept();
+    acceptRacingWith($second, fn () => $first->accept())
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.name', ['W tym turnieju jest już drużyna o tej nazwie.']);
 
-    expect(fn () => $stale->accept())->toThrow(ValidationException::class, TeamRegistration::ALREADY_DECIDED_MESSAGE)
-        ->and(fn () => $sameName->accept())->toThrow(ValidationException::class, 'W tym turnieju jest już drużyna o tej nazwie.')
-        ->and($tournament->teams()->count())->toBe(1)
-        ->and($sameName->fresh()->status)->toBe('pending');
+    expect($second->fresh()->status)->toBe('pending');
+});
+
+it('pod blokadą odmawia przyjęcia zgłoszenia, które w międzyczasie rozpatrzono', function () {
+    $tournament = Tournament::factory()->openForRegistration()->create();
+    $registration = TeamRegistration::factory()->for($tournament)->create();
+
+    acceptRacingWith($registration, fn () => TeamRegistration::findOrFail($registration->id)->reject())
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.registration', [TeamRegistration::ALREADY_DECIDED_MESSAGE]);
+
+    expect($tournament->teams()->count())->toBe(0);
+});
+
+it('pod blokadą odmawia przyjęcia, gdy w międzyczasie turniej zapełnił się drużynami', function () {
+    $tournament = Tournament::factory()->openForRegistration()->create();
+    Team::factory()->count(Tournament::MAX_TEAMS - 1)->for($tournament)->create();
+    $registration = TeamRegistration::factory()->for($tournament)->create();
+
+    acceptRacingWith($registration, fn () => $tournament->teams()->create(['name' => 'Ostatnia wolna']))
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.teams', ['Turniej ma już 128 drużyn, to górny limit.']);
 });
 
 it('odmawia przyjęcia w turnieju z kompletem drużyn pod kluczem teams', function () {
@@ -572,8 +608,8 @@ it('odmawia przyjęcia i odrzucenia zgłoszenia już rozpatrzonego', function (s
     $response
         ->assertValidResponse(422)
         ->assertExactJson([
-            'message' => 'To zgłoszenie zostało już rozpatrzone.',
-            'errors' => ['registration' => ['To zgłoszenie zostało już rozpatrzone.']],
+            'message' => TeamRegistration::ALREADY_DECIDED_MESSAGE,
+            'errors' => ['registration' => [TeamRegistration::ALREADY_DECIDED_MESSAGE]],
         ]);
 
     expect($tournament->teams()->count())->toBe($state === 'accepted' ? 1 : 0);

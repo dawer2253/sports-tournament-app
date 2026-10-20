@@ -58,6 +58,20 @@ class AcceptTeamRegistrationRequest extends TeamRequest
         return StoreTeamRequest::admissionChecks($this->tournament());
     }
 
+    /**
+     * Te same reguły jeszcze raz, już pod blokadą turnieju
+     * (`TeamRegistrationController::accept()`). Pierwsza walidacja idzie przed
+     * transakcją, więc dwa równoległe przyjęcia — to samo zgłoszenie z dwóch
+     * kart albo dwa zgłoszenia o tej samej nazwie — przeszłyby ją oba.
+     * Walidator jest zapamiętany po pierwszym razie, więc trzeba go zbudować
+     * od nowa na świeżym stanie bazy.
+     */
+    public function validateAgain(): void
+    {
+        $this->validator = null;
+        $this->validateResolved();
+    }
+
     protected function tournament(): Tournament
     {
         return $this->registration()->tournament;

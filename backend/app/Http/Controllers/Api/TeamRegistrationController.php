@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
@@ -33,6 +34,9 @@ class TeamRegistrationController extends Controller
      * Zmienia się razem z kontraktem.
      */
     public const SUBMISSIONS_PER_HOUR = 5;
+
+    /** Okno limitu zgłoszeń: godzina. */
+    private const LIMIT_WINDOW_SECONDS = 3600;
 
     /**
      * Pole-pułapka idzie przed walidacją: bot dostaje zwykłe `201`, nic się
@@ -57,7 +61,7 @@ class TeamRegistrationController extends Controller
         }
 
         if (filled($request->input('website'))) {
-            RateLimiter::hit($limiterKey, 3600);
+            RateLimiter::hit($limiterKey, self::LIMIT_WINDOW_SECONDS);
             $teamName = $request->input('teamName');
 
             return $this->receipt(is_string($teamName) ? $teamName : '');
@@ -74,10 +78,10 @@ class TeamRegistrationController extends Controller
             'contact_phone' => $data['contactPhone'] ?? null,
             'players' => array_map(fn (array $player): array => [
                 'name' => $player['name'],
-                'number' => $player['number'] ?? null,
+                'number' => $player['number'],
             ], $data['players'] ?? []),
         ]);
-        RateLimiter::hit($limiterKey, 3600);
+        RateLimiter::hit($limiterKey, self::LIMIT_WINDOW_SECONDS);
 
         return $this->receipt($registration->team_name);
     }
@@ -100,9 +104,21 @@ class TeamRegistrationController extends Controller
         );
     }
 
+    /**
+     * Blokada wiersza turnieju ustawia przyjęcia w jednym turnieju w kolejce,
+     * a pod nią reguły przyjęcia sprawdzają się jeszcze raz na świeżym stanie
+     * (`AcceptTeamRegistrationRequest::validateAgain()`): te same klucze błędów,
+     * także dla kompletu drużyn i meczu rozpoczętego.
+     */
     public function accept(AcceptTeamRegistrationRequest $request, TeamRegistration $registration): JsonResponse
     {
-        $team = $registration->accept();
+        $team = DB::transaction(function () use ($request, $registration): Team {
+            Tournament::query()->whereKey($registration->tournament_id)->lockForUpdate()->first();
+            $registration->refresh();
+            $request->validateAgain();
+
+            return $registration->accept();
+        });
 
         return (new TeamResource($team->loadCount(Team::resourceCounts())))
             ->response()
