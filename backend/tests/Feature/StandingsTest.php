@@ -577,6 +577,20 @@ it('w siatkówce 3:1 daje 3 i 0 pkt, 3:2 daje 2 i 1, a wiersz niesie sety i punk
         ->and($rows['Mewy'])->toMatchArray(['points' => 1, 'won' => 0, 'lost' => 2, 'scoreFor' => 3, 'scoreAgainst' => 6, 'rallyPointsFor' => 191, 'rallyPointsAgainst' => 206]);
 });
 
+it('w siatkówce meczu do 2 setów 2:1 daje 2 i 1 pkt, a 2:0 daje 3 i 0', function () {
+    $tournament = standingsLeague(['Orlęta', 'Mewy', 'Czaple'], 'volleyball', [
+        'set_format' => ['setsToWin' => 2, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 2],
+    ]);
+    standingsSetMatch($tournament, 'Orlęta', 'Mewy', [[25, 20], [20, 25], [15, 12]]);
+    standingsSetMatch($tournament, 'Czaple', 'Mewy', [[25, 20], [25, 18]]);
+
+    $rows = standingsRowsByName(standingsOf($tournament)->assertValidResponse(200));
+
+    expect($rows['Orlęta']['points'])->toBe(2)
+        ->and($rows['Czaple']['points'])->toBe(3)
+        ->and($rows['Mewy']['points'])->toBe(1);
+});
+
 it('w siatkówce drużyna bez meczu ma punkty w setach 0:0', function () {
     $volleyball = standingsLeague(['Orlęta'], 'volleyball');
 

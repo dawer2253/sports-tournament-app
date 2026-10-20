@@ -37,13 +37,13 @@ final class StandingRow
     private array $results = [];
 
     /**
-     * @param  bool  $sets  sport z setami: wiersz liczy punkty w setach, a mecz
-     *                      wygrany różnicą jednego seta daje punkty po secie
-     *                      decydującym
+     * @param  bool  $hasSets  sport z setami: wiersz liczy punkty w setach, a mecz
+     *                         wygrany różnicą jednego seta daje punkty po secie
+     *                         decydującym
      */
-    public function __construct(public readonly Team $team, private readonly bool $sets = false)
+    public function __construct(public readonly Team $team, private readonly bool $hasSets = false)
     {
-        if ($sets) {
+        if ($hasSets) {
             $this->rallyPointsFor = 0;
             $this->rallyPointsAgainst = 0;
         }
@@ -64,12 +64,12 @@ final class StandingRow
         $this->scoreFor += $scored;
         $this->scoreAgainst += $conceded;
 
-        if ($this->sets) {
+        if ($this->hasSets) {
             $this->rallyPointsFor += $rally[0] ?? 0;
             $this->rallyPointsAgainst += $rally[1] ?? 0;
         }
 
-        $decidingSet = $this->sets && abs($scored - $conceded) === 1;
+        $decidingSet = $this->hasSets && abs($scored - $conceded) === 1;
 
         if ($scored > $conceded) {
             $this->won++;

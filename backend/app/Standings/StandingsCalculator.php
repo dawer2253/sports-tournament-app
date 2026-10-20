@@ -41,12 +41,12 @@ final readonly class StandingsCalculator
     /**
      * @param  array{win: int, draw: int, loss: int, winDecidingSet?: int, lossDecidingSet?: int}  $points  punktacja turnieju
      * @param  list<string>  $tiebreakers  kody `TiebreakerCode` w kolejności
-     * @param  bool  $sets  sport z setami (`Tournament::hasSets()`)
+     * @param  bool  $hasSets  sport z setami (`Tournament::hasSets()`)
      */
     public function __construct(
         private array $points,
         private array $tiebreakers,
-        private bool $sets = false,
+        private bool $hasSets = false,
     ) {}
 
     /**
@@ -91,7 +91,7 @@ final readonly class StandingsCalculator
         $rows = [];
 
         foreach ($teams as $team) {
-            $rows[$team->id] = new StandingRow($team, $this->sets);
+            $rows[$team->id] = new StandingRow($team, $this->hasSets);
         }
 
         foreach ($finished as $match) {
@@ -102,7 +102,7 @@ final readonly class StandingsCalculator
                 continue;
             }
 
-            $rally = $this->sets ? SetScores::rallyPoints($match->sets ?? []) : null;
+            $rally = $this->hasSets ? SetScores::rallyPoints($match->sets ?? []) : null;
 
             $home->record($match->home_score, $match->away_score, $this->points, $rally);
             $away->record($match->away_score, $match->home_score, $this->points, $rally === null ? null : [$rally[1], $rally[0]]);

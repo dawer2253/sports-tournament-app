@@ -69,6 +69,11 @@ Odrzucone:
   działa, i pokazywać pola wyłączone.
 - Organizator, który pomylił format, musi usunąć wyniki setów (wrócić mecze
   do „Zaplanowany”), zanim go poprawi.
+- Reguły seta (próg, set decydujący, gra na przewagi, sety wygrane) żyją
+  dwa razy: na serwerze (`App\Matches\SetScores`) i w `packages/ui/src/lib/sets.ts`,
+  bo okno meczu liczy wynik w setach na bieżąco, przed zapisem. Wzorem
+  `lib/match-clock.ts` prawdą jest serwer; zmiana reguły idzie w obu miejscach
+  razem z ich testami (`SetScoresTest.php`, `sets.test.ts`).
 - Sport z setami nie ma dogrywki ani podziału meczu na czas. Kod, który
   sprawdza dogrywkę albo części meczu, musi pytać o format seta.
 - Gdyby kiedyś trzeba było odpytywać pojedyncze sety (np. statystyka „sety

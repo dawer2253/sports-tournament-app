@@ -75,8 +75,9 @@ ligę siatkówki, czyli sport z setami (#301) — obsługują go publiczne
 `/public/t/{slug}`, `/standings`, `/fixtures`, `/results` i strona meczu,
 a w panelu turniej, terminarz i tabela. Wynik meczu to tam sety wygrane,
 `Match.sets` niesie wyniki setów, a tabela ma kolumnę punktów w setach. Ten
-turniej ma odpowiednik w seedzie demo (`liga-siatkowki-2026`). Wszystkie trzy przełączniki obsługuje też publiczne
-`/teams` (drużyny turnieju do prezentacji na Przeglądzie przed terminarzem).
+turniej ma odpowiednik w seedzie demo (`liga-siatkowki-2026`). Przełączniki
+`koszykowka`, `puchar` i `grupy` obsługuje też publiczne `/teams` (drużyny
+turnieju do prezentacji na Przeglądzie przed terminarzem); `siatkowka` nie.
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.
@@ -176,7 +177,7 @@ pokaże kilku tygodni stabilnej zieleni.
   `Closes #16`, bo GitHub nie rozpoznaje polskiego (patrz
   [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)).
 - Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `Admin:`,
-  `Public:`, `API:`, `CI:`, `Design:`, `Init:`, `Backend:`, `Docs:`).
+  `Public:`, `API:`, `CI:`, `Design:`, `Init:`, `Backend:`, `Docs:`, `E2E:`).
   `Admin:` i `Public:` to zmiany w `apps/admin` i `apps/public`; `DS:` zostaje
   dla `packages/ui`. Zmiana obejmująca aplikację i design system bierze prefiks
   tego obszaru, w którym leży jej sedno.
