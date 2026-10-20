@@ -237,10 +237,11 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
     // Poddrzewo powstaje od nowa pod nowymi id (autoinkrement, patrz docblock
     // seedera), więc pilnujemy, że stare nie zostało obok: po jednej fazie
     // na turniej, a w turnieju z grupami dwie (3 + 2 kolejki, 12 + 4 mecze).
+    // Liga siatkówki (#301) ma trzy kolejki po dwa mecze.
     expect(Tournament::query()->where('slug', 'liga-osiedlowa-2026')->count())->toBe(1)
-        ->and(Stage::query()->count())->toBe(5)
-        ->and(Round::query()->count())->toBe(16)
-        ->and(GameMatch::query()->count())->toBe(30)
+        ->and(Stage::query()->count())->toBe(6)
+        ->and(Round::query()->count())->toBe(19)
+        ->and(GameMatch::query()->count())->toBe(36)
         ->and($demo->matches()->count())->toBe(6);
 });
 
@@ -487,4 +488,88 @@ it('nie dubluje turnieju z grupami przy powtórnym seedowaniu', function () {
         ->and($tournament->teams()->count())->toBe(8)
         ->and($tournament->teams()->whereNull('group_id')->count())->toBe(0)
         ->and($tournament->matches()->count())->toBe(16);
+});
+
+// --- liga siatkówki (#301) ---------------------------------------------------
+
+function demoSeedVolleyballExample(string $path): array
+{
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+
+    return $spec['paths'][$path]['get']['responses']['200']['content']['application/json']['examples']['siatkowka']['value']['data'];
+}
+
+/**
+ * Mecze siatkówki jako napisy bez id: para, stan, sety wygrane i wyniki setów.
+ *
+ * @param  list<array<string, mixed>>  $matches
+ * @return list<string>
+ */
+function demoSeedVolleyballMatches(array $matches): array
+{
+    return array_map(fn (array $match): string => implode(' | ', [
+        "{$match['round']['name']} {$match['matchNumber']}",
+        "{$match['homeTeam']['name']} – {$match['awayTeam']['name']}",
+        "{$match['status']} ".json_encode([$match['homeScore'], $match['awayScore']]),
+        implode(', ', array_map(fn (array $set): string => "{$set['home']}:{$set['away']}", $match['sets'])),
+        (string) $match['kickoffAt'],
+    ]), $matches);
+}
+
+/**
+ * Wiersze tabeli siatkówki jako napisy bez id drużyn.
+ *
+ * @param  array<string, mixed>  $table
+ * @return list<string>
+ */
+function demoSeedVolleyballRows(array $table): array
+{
+    return array_map(fn (array $row): string => sprintf(
+        '%d. %s %d %d-%d sety %d:%d punkty w setach %d:%d pkt %d',
+        $row['position'], $row['team']['name'], $row['played'], $row['won'], $row['lost'],
+        $row['scoreFor'], $row['scoreAgainst'], $row['rallyPointsFor'], $row['rallyPointsAgainst'], $row['points'],
+    ), $table['rows']);
+}
+
+it('sieje ligę siatkówki z tabelą zgodną z przykładem siatkowka: stosunek setów rozdziela Czaple i Mewy', function () {
+    $tables = $this->getJson('/api/v1/public/t/liga-siatkowki-2026/standings')->assertOk()->json('data');
+    $promised = demoSeedVolleyballExample('/public/t/{slug}/standings');
+
+    expect(demoSeedVolleyballRows($tables[0]))->toBe(demoSeedVolleyballRows($promised[0]))
+        ->and($tables[0]['scoreLabel'])->toBe('Sety')
+        ->and($tables[0]['rallyPointsLabel'])->toBe('Punkty w setach')
+        ->and(array_column($tables[0]['rows'], 'points'))->toBe([5, 3, 3, 1])
+        ->and(array_column(array_column($tables[0]['rows'], 'team'), 'name'))
+        ->toBe(['Orlęta Wawer', 'Czaple Ursynów', 'Mewy Żoliborz', 'Jaskółki Targówek']);
+});
+
+it('sieje mecze siatkówki zgodne z przykładami siatkowka wyników i terminarza', function () {
+    $results = $this->getJson('/api/v1/public/t/liga-siatkowki-2026/results')->assertOk()->json('data');
+    $fixtures = $this->getJson('/api/v1/public/t/liga-siatkowki-2026/fixtures')->assertOk()->json('data');
+
+    expect(demoSeedVolleyballMatches($results))->toBe(demoSeedVolleyballMatches(demoSeedVolleyballExample('/public/t/{slug}/results')))
+        ->and(demoSeedVolleyballMatches($fixtures))->toBe(demoSeedVolleyballMatches(demoSeedVolleyballExample('/public/t/{slug}/fixtures')));
+});
+
+it('sieje zdarzenia meczu 3 siatkówki zgodne z przykładem siatkowka strony meczu', function () {
+    $tournament = Tournament::firstWhere('slug', 'liga-siatkowki-2026');
+    $match = $tournament->matches()->where('matches.status', 'finished')->where('home_score', 3)->where('away_score', 2)->firstOrFail();
+    $promised = demoSeedVolleyballExample('/public/t/{slug}/matches/{match}');
+
+    $page = $this->getJson("/api/v1/public/t/liga-siatkowki-2026/matches/{$match->id}")->assertOk()->json('data');
+    $events = fn (array $events): array => array_map(
+        fn (array $event): string => "{$event['team']['name']} {$event['player']['name']} {$event['type']} ".json_encode($event['scoreAfter']),
+        $events,
+    );
+
+    expect($events($page['events']))->toBe($events($promised['events']))
+        ->and($page['sets'])->toBe($promised['sets'])
+        ->and($page['periods'])->toBe([]);
+});
+
+it('nie dubluje ligi siatkówki przy powtórnym seedowaniu', function () {
+    $this->seed();
+
+    expect(Tournament::query()->where('slug', 'liga-siatkowki-2026')->count())->toBe(1)
+        ->and(Tournament::firstWhere('slug', 'liga-siatkowki-2026')->matches()->count())->toBe(6);
 });

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Groups\GroupComposition;
 use App\Matches\Advancement;
+use App\Matches\SetScores;
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use App\Models\Player;
@@ -22,8 +23,9 @@ use Illuminate\Database\Seeder;
 /**
  * Turniej demo: „Liga Osiedlowa 2026" pod `/t/liga-osiedlowa-2026`, a obok
  * niego, od #176, „Liga Koszykówki 2026" pod `/t/liga-koszykowki-2026`, od
- * #234 „Puchar Osiedlowy 2026" pod `/t/puchar-osiedlowy-2026` i, od #268,
- * „Grupy Osiedlowe 2026" pod `/t/grupy-osiedlowe-2026`.
+ * #234 „Puchar Osiedlowy 2026" pod `/t/puchar-osiedlowy-2026`, od #268
+ * „Grupy Osiedlowe 2026" pod `/t/grupy-osiedlowe-2026` i, od #301, „Liga
+ * Siatkówki 2026" pod `/t/liga-siatkowki-2026`.
  *
  * To te same turnieje, które serwuje mock kontraktu — dane są przepisane
  * z przykładów w `packages/api-contract/openapi.yaml`, żeby `apps/public`
@@ -137,6 +139,37 @@ class DemoTournamentSeeder extends Seeder
 
     /** Drużyny ligi koszykówki, w kolejności z przykładu (id 4 i 5 w mocku). */
     private const BASKETBALL_TEAMS = ['Żubry Wola', 'Rysie Mokotów'];
+
+    /**
+     * Liga siatkówki demo (#301), przepisana z przykładów `siatkowka`
+     * w kontrakcie: cztery drużyny (id 6–9 w mocku), dwie kolejki rozegrane,
+     * w trzeciej mecz trwa, a drugi czeka. Są w niej mecze 3:0, 3:1 i 3:2,
+     * a Czaple i Mewy mają po 3 pkt i jednym zwycięstwie, więc rozdziela je
+     * stosunek setów (4:4 przed 3:4), choć Mewy wygrały mecz bezpośredni.
+     *
+     * Mecze: [kolejka, numer, gospodarz, gość, sety, stan, termin (UTC)].
+     */
+    private const VOLLEYBALL_MATCHES = [
+        [1, 1, 'Orlęta Wawer', 'Mewy Żoliborz', [[25, 19], [25, 21], [25, 17]], 'finished', '2026-09-05 15:00:00'],
+        [1, 2, 'Czaple Ursynów', 'Jaskółki Targówek', [[25, 22], [22, 25], [25, 20], [25, 23]], 'finished', '2026-09-05 17:00:00'],
+        [2, 1, 'Orlęta Wawer', 'Jaskółki Targówek', [[25, 23], [23, 25], [25, 21], [20, 25], [15, 11]], 'finished', '2026-09-12 15:00:00'],
+        [2, 2, 'Mewy Żoliborz', 'Czaple Ursynów', [[25, 20], [23, 25], [25, 22], [25, 19]], 'finished', '2026-09-12 17:00:00'],
+        [3, 1, 'Orlęta Wawer', 'Czaple Ursynów', [[25, 21], [18, 25], [14, 12]], 'live', '2026-09-19 15:00:00'],
+        [3, 2, 'Jaskółki Targówek', 'Mewy Żoliborz', [], 'scheduled', '2026-09-19 17:00:00'],
+    ];
+
+    /** Drużyny ligi siatkówki, w kolejności z przykładu (id 6–9 w mocku). */
+    private const VOLLEYBALL_TEAMS = ['Orlęta Wawer', 'Mewy Żoliborz', 'Czaple Ursynów', 'Jaskółki Targówek'];
+
+    /**
+     * Zdarzenia meczu 3 (Orlęta – Jaskółki) z przykładu `siatkowka` strony
+     * meczu: [drużyna, zawodnik, typ]. Bez minut, bo set nie ma czasu.
+     */
+    private const VOLLEYBALL_EVENTS = [
+        ['Orlęta Wawer', 'Kamil Lis', 'ace'],
+        ['Jaskółki Targówek', 'Ola Kruk', 'attack'],
+        ['Orlęta Wawer', 'Kamil Lis', 'block'],
+    ];
 
     /**
      * Składy koszykarzy: drużyna => [nazwisko, numer, pozycja]. Na świeżej
@@ -387,6 +420,7 @@ class DemoTournamentSeeder extends Seeder
         }
 
         $this->seedBasketball($organizer);
+        $this->seedVolleyball($organizer);
         $this->seedCup($organizer);
         $this->seedGroupsPlayoff($organizer);
     }
@@ -623,6 +657,94 @@ class DemoTournamentSeeder extends Seeder
             $this->seedBasketballEvents($match, [
                 [$squads[$home], $homeScore],
                 [$squads[$away], $awayScore],
+            ]);
+        }
+    }
+
+    /**
+     * Liga siatkówki demo (#301), wzorem ligi koszykówki: poddrzewo powstaje
+     * od zera przy każdym seedowaniu. Wynik meczu to sety wygrane, liczone
+     * tak samo jak przy zapisie przez API (`SetScores::won()`).
+     */
+    private function seedVolleyball(User $organizer): void
+    {
+        $volleyball = Sport::firstWhere('code', 'volleyball');
+        $format = $volleyball->defaultSetFormat();
+
+        $tournament = Tournament::updateOrCreate(
+            ['slug' => 'liga-siatkowki-2026'],
+            [
+                'user_id' => $organizer->id,
+                'sport_id' => $volleyball->id,
+                'name' => 'Liga Siatkówki 2026',
+                'logo_path' => null,
+                'primary_color' => '#1F7A45',
+                'points' => $volleyball->defaultPoints(),
+                'tiebreakers' => $volleyball->defaultTiebreakers(),
+                'match_duration' => $volleyball->defaultMatchDuration(),
+                'period_count' => $volleyball->defaultPeriods()['count'],
+                'period_minutes' => $volleyball->defaultPeriods()['minutes'],
+                'set_format' => $format,
+                'status' => 'active',
+            ],
+        );
+
+        $tournament->stages()->delete();
+
+        $stage = $tournament->stages()->create([
+            'type' => 'league',
+            'name' => 'Faza zasadnicza',
+            'order' => 1,
+        ]);
+
+        $venue = Venue::updateOrCreate(
+            ['tournament_id' => $tournament->id, 'name' => 'Hala Targówek'],
+            ['address' => 'ul. Kondratowicza 20, Warszawa'],
+        );
+
+        $teams = [];
+        foreach (self::VOLLEYBALL_TEAMS as $teamName) {
+            $teams[$teamName] = Team::updateOrCreate(
+                ['tournament_id' => $tournament->id, 'name' => $teamName],
+                ['group_id' => null, 'logo_path' => null],
+            );
+        }
+
+        $rounds = [];
+        $matches = [];
+        foreach (self::VOLLEYBALL_MATCHES as [$roundNumber, $number, $home, $away, $scores, $status, $kickoff]) {
+            $rounds[$roundNumber] ??= $stage->rounds()->create(['name' => "Kolejka {$roundNumber}", 'order' => $roundNumber]);
+            $sets = array_map(fn (array $score): array => ['home' => $score[0], 'away' => $score[1]], $scores);
+            [$homeSets, $awaySets] = SetScores::won($sets, $format);
+
+            $matches[] = GameMatch::create([
+                'round_id' => $rounds[$roundNumber]->id,
+                'stage_id' => $stage->id,
+                'group_id' => null,
+                'match_number' => $number,
+                'home_team_id' => $teams[$home]->id,
+                'away_team_id' => $teams[$away]->id,
+                'home_score' => $status === 'scheduled' ? null : $homeSets,
+                'away_score' => $status === 'scheduled' ? null : $awaySets,
+                'sets' => $sets,
+                'status' => $status,
+                'live_period' => $status === 'live' ? 1 : null,
+                'period_started_at' => $status === 'live' ? now()->subMinutes(40) : null,
+                'on_break' => false,
+                'kickoff_at' => $kickoff,
+                'venue_id' => $venue->id,
+            ]);
+        }
+
+        foreach (self::VOLLEYBALL_EVENTS as [$teamName, $playerName, $type]) {
+            $player = Player::updateOrCreate(['team_id' => $teams[$teamName]->id, 'name' => $playerName]);
+
+            MatchEvent::create([
+                'match_id' => $matches[2]->id,
+                'team_id' => $player->team_id,
+                'player_id' => $player->id,
+                'type' => $type,
+                'minute' => null,
             ]);
         }
     }
