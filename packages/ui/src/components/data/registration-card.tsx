@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { formatKickoff } from '../../lib/kickoff'
 import { Badge } from '../ui/badge'
 import { Card, CardContent } from '../ui/card'
 import { Heading } from '../ui/typography'
@@ -17,14 +16,14 @@ export interface RegistrationCardProps {
   /** „Przyjmij” i „Odrzuć” przy zgłoszeniu oczekującym. */
   actions?: React.ReactNode
   /** Uwaga nad akcjami, np. o skutkach przyjęcia po ustaleniu grup. */
-  note?: React.ReactNode
+  note?: string
   /** Błąd przyjęcia albo odrzucenia, przy zgłoszeniu, którego dotyczy. */
   error?: string
 }
 
-/** „10 paź, 19:42” bez dnia tygodnia: przy zgłoszeniu liczy się kiedy, nie jaki to dzień. */
-function when(iso: string, timeZone?: string): string {
-  return formatKickoff(iso, { timeZone }).replace(/^[^,]+, /, '')
+/** Chwila zgłoszenia albo decyzji, „10 paź, 19:42”: bez dnia tygodnia, bo liczy się kiedy, nie jaki to dzień. */
+function formatDecisionTime(iso: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(iso))
 }
 
 /**
@@ -49,8 +48,8 @@ export function RegistrationCard({ registration, timeZone, actions, note, error 
             {decision && <Badge variant={decision.variant}>{decision.label}</Badge>}
             <span>
               {decision && registration.decidedAt
-                ? `${decision.label} ${when(registration.decidedAt, timeZone)}`
-                : `Zgłoszone ${when(registration.createdAt, timeZone)}`}
+                ? `${decision.label} ${formatDecisionTime(registration.decidedAt, timeZone)}`
+                : `Zgłoszone ${formatDecisionTime(registration.createdAt, timeZone)}`}
             </span>
           </div>
         </div>
@@ -95,7 +94,7 @@ export function RegistrationCard({ registration, timeZone, actions, note, error 
             <p className="text-sm text-muted-foreground">Bez składu — zawodników dopiszesz po przyjęciu.</p>
           ))}
 
-        {note}
+        {note && <p className="text-sm text-muted-foreground">{note}</p>}
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
         {error && (
           <p role="alert" className="text-sm text-destructive">

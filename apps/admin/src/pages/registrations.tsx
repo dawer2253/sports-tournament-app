@@ -108,7 +108,7 @@ export function RegistrationsPage() {
         registrations={registrations.data}
         emptyDescription={registrationsEmptyDescription(tournament.registration.open)}
         pendingCard={(registration) => ({
-          note: note && <p className="text-sm text-muted-foreground">{note}</p>,
+          note,
           error: errors[registration.id],
           actions: (
             <>

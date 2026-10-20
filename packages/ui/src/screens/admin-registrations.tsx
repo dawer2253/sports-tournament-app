@@ -27,7 +27,7 @@ export function AdminRegistrations({ registrations = registrationRows, open = tr
         timeZone={scheduleTimeZone}
         emptyDescription={registrationsEmptyDescription(open)}
         pendingCard={(registration) => ({
-          note: note && <p className="text-sm text-muted-foreground">{note}</p>,
+          note,
           error: registration === pending[0] ? error : undefined,
           actions: (
             <>
