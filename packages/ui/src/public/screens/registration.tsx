@@ -100,6 +100,17 @@ export function RegistrationScreen({ deadline, timeZone, errors = NO_ERRORS, for
       draft.players.map((player, at) => (at === index ? { ...player, ...patch } : player)),
     )
 
+  // Błędy z API wskazują zawodnika pozycją (`players.1.number`). Po usunięciu
+  // wiersza pozycje się przesuwają, więc do następnej odpowiedzi błędy
+  // zawodników znikają, zamiast przeskoczyć na kogoś innego.
+  const [playerErrorsStale, setPlayerErrorsStale] = React.useState(false)
+  const [lastErrors, setLastErrors] = React.useState(errors)
+  if (lastErrors !== errors) {
+    setLastErrors(errors)
+    setPlayerErrorsStale(false)
+  }
+  const playerError = (index: number, field: 'name' | 'number') => (playerErrorsStale ? undefined : errors[`players.${index}.${field}`])
+
   // Wiersz składu ma stały klucz, a nie pozycję: po usunięciu wiersza pola
   // pozostałych zawodników zostają ze swoją treścią i fokusem.
   const nextRowKey = React.useRef(initialDraft.players.length)
@@ -116,17 +127,6 @@ export function RegistrationScreen({ deadline, timeZone, errors = NO_ERRORS, for
     setRowKeys((keys) => keys.filter((_, at) => at !== index))
     setPlayerErrorsStale(true)
   }
-
-  // Błędy z API wskazują zawodnika pozycją (`players.1.number`). Po usunięciu
-  // wiersza pozycje się przesuwają, więc do następnej odpowiedzi błędy
-  // zawodników znikają, zamiast przeskoczyć na kogoś innego.
-  const [playerErrorsStale, setPlayerErrorsStale] = React.useState(false)
-  const [lastErrors, setLastErrors] = React.useState(errors)
-  if (lastErrors !== errors) {
-    setLastErrors(errors)
-    setPlayerErrorsStale(false)
-  }
-  const playerError = (index: number, field: 'name' | 'number') => (playerErrorsStale ? undefined : errors[`players.${index}.${field}`])
 
   return (
     <section aria-labelledby={headId} data-slot="registration" className="flex flex-col gap-8">
