@@ -965,6 +965,24 @@ describe('ustawienia turnieju: sport z setami (#301)', () => {
     expect(await screen.findByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).toBeInTheDocument();
   });
 
+  it('wpisany set na drugiej stronie meczów trwających też zamyka format', async () => {
+    tournamentApi(VOLLEYBALL);
+    server.use(
+      http.get(`${API}/tournaments/:id/matches`, ({ request }) => {
+        const query = new URL(request.url).searchParams;
+        if (query.get('status') === 'finished') {
+          return HttpResponse.json({ data: [], meta: { currentPage: 1, lastPage: 1, perPage: 1, total: 0 } });
+        }
+        const page = Number(query.get('page') ?? 1);
+        const data = [{ id: page, sets: page === 2 ? [{ home: 25, away: 20 }] : [] }];
+        return HttpResponse.json({ data, meta: { currentPage: page, lastPage: 2, perPage: 200, total: 201 } });
+      }),
+    );
+    await renderSettings();
+
+    expect(await screen.findByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).toBeInTheDocument();
+  });
+
   it('mecz trwający bez wpisanego seta nie zamyka formatu', async () => {
     tournamentApi(VOLLEYBALL);
     volleyballMatches({ liveSets: [0] });
