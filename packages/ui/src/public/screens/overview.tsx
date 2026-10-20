@@ -325,7 +325,7 @@ export function OverviewScreen<M extends OverviewMatch, B extends PublicBracketM
                 return (
                   <div className="flex flex-col gap-6">
                     {champion && <ChampionBand team={champion} />}
-                    <BracketTree<B> matches={matches} timeZone={timeZone} matchHref={matchHref} onMatchNavigate={onMatchNavigate} />
+                    <BracketTree<B> matches={matches} timeZone={timeZone} matchHref={matchHref} onMatchNavigate={onMatchNavigate} hideChampion />
                   </div>
                 )
               }}

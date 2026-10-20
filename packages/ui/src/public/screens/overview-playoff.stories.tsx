@@ -55,6 +55,9 @@ export const Zakonczony: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
     await expect(canvas.getByRole('region', { name: 'Mistrz' })).toBeInTheDocument()
+    // Jeden mistrz: pas nad drabinką, bez drugiego kafla w drabince (#303).
+    await expect(canvas.getAllByRole('region', { name: 'Mistrz' })).toHaveLength(1)
+    await expect(canvas.queryByRole('status', { name: 'Mistrz' })).not.toBeInTheDocument()
     await expect(canvas.getByText('Ostatnia runda')).toBeInTheDocument()
   },
 }
