@@ -2990,9 +2990,10 @@ paths:
                 zapisy:
                   summary: Turniej z otwartymi zapisami
                   description: |
-                    Turniej opublikowany, jeszcze bez drużyn i bez terminarza,
-                    z otwartymi zapisami i terminem (#300). Ma odpowiednik
-                    w seedzie demo (`liga-letnia-2026`).
+                    Turniej opublikowany, jeszcze bez terminarza, z jedną
+                    drużyną z przyjętego zgłoszenia, otwartymi zapisami
+                    i terminem (#300). Ma odpowiednik w seedzie demo
+                    (`liga-letnia-2026`).
                   value:
                     data:
                       name: Liga Letnia 2026
