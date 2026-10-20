@@ -49,7 +49,8 @@ export function RegistrationPage() {
         if ('registration' in errors) void queryClient.invalidateQueries({ queryKey: ['public', slug] });
         return { errors };
       }
-      return { errors: {}, formError: error?.message ?? SEND_FAILED };
+      // Tylko 429 niesie komunikat dla kibica (limit prób); reszta to tekst techniczny.
+      return { errors: {}, formError: response.status === 429 && error?.message ? error.message : SEND_FAILED };
     },
     onSuccess: setOutcome,
     onError: () => setOutcome({ errors: {}, formError: SEND_FAILED }),
