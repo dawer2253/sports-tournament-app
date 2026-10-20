@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ListOrdered } from 'lucide-react'
 import * as React from 'react'
+import { formatRallyPoints } from '../../lib/sets'
 import { cn } from '../../lib/utils'
 import { TeamLogo } from '../layout/team-logo'
 import { Badge } from '../ui/badge'
@@ -125,7 +126,7 @@ function standingsColumns(
             id: 'rallyPoints',
             header: rallyPointsLabel,
             meta: { className: 'w-28 text-center tabular-nums text-muted-foreground' },
-            cell: ({ row }) => `${row.original.rallyPointsFor ?? 0}:${row.original.rallyPointsAgainst ?? 0}`,
+            cell: ({ row }) => formatRallyPoints(row.original),
           }),
         ]),
     helper.accessor('scoreDifference', {

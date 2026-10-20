@@ -1,4 +1,5 @@
 import { plural } from '../lib/plural'
+import { formatRallyPoints } from '../lib/sets'
 import { withQualifiers } from '../lib/qualifiers'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
@@ -35,15 +36,15 @@ const NUM = 'text-right tabular-nums text-muted-foreground'
 /**
  * Kolumny stałe, więc liczby nie skaczą między wierszami ani tabelami. Grupa
  * (`compact`) nie ma zdobyczy i formy, bo dwie tabele stoją obok siebie.
- * Sport z setami (`rally`, #301) dokłada za setami kolumnę punktów w setach,
+ * Sport z setami (`hasRallyPoints`, #301) dokłada za setami kolumnę punktów w setach,
  * a remisów nie ma.
  */
-function gridColumns(compact: boolean, allowsDraw: boolean, rally: boolean) {
+function gridColumns(compact: boolean, allowsDraw: boolean, hasRallyPoints: boolean) {
   const desktop = compact
     ? allowsDraw
       ? '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_3rem]'
       : '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3rem_3rem]'
-    : rally
+    : hasRallyPoints
       ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_4rem_6.5rem_3.5rem_6rem_3.5rem]'
       : allowsDraw
         ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_2.75rem_5.5rem_3.5rem_8rem_3.5rem]'
@@ -89,8 +90,8 @@ export interface StandingsTableProps {
  *   „, wychodzi z grupy” przy miejscu.
  */
 export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel = null, compact = false, group = false, label }: StandingsTableProps) {
-  const rally = !compact && rallyPointsLabel !== null
-  const grid = gridColumns(compact, allowsDraw, rally)
+  const hasRallyPoints = !compact && rallyPointsLabel !== null
+  const grid = gridColumns(compact, allowsDraw, hasRallyPoints)
   const wide = wideCell(compact)
   const anyPlayed = rows.some((row) => row.played > 0)
 
@@ -120,7 +121,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel 
             <Abbr title={`${scoreLabel} zdobyte i stracone`}>{scoreLabel}</Abbr>
           </span>
         )}
-        {rally && (
+        {hasRallyPoints && (
           <span role="columnheader" className={cn(wide, 'text-center whitespace-nowrap')}>
             <Abbr title={`${rallyPointsLabel} zdobyte i stracone`}>{rallyPointsLabel}</Abbr>
           </span>
@@ -193,9 +194,9 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel 
                 {row.scoreFor}:{row.scoreAgainst}
               </span>
             )}
-            {rally && (
+            {hasRallyPoints && (
               <span role="cell" data-slot="rally-points" className={cn(wide, 'text-center tabular-nums text-muted-foreground')}>
-                {row.rallyPointsFor ?? 0}:{row.rallyPointsAgainst ?? 0}
+                {formatRallyPoints(row)}
               </span>
             )}
             <span role="cell" className={NUM}>

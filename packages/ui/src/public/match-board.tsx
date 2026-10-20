@@ -3,7 +3,7 @@ import { Penalties } from '../components/data/penalties'
 import { scorerSides, type ScorerLine } from '../components/data/scorer-lines'
 import { bracketLoserSide, bracketWinnerSide } from '../lib/bracket'
 import { formatKickoff } from '../lib/kickoff'
-import type { SetScore } from '../lib/sets'
+import { playedSets, type SetScore } from '../lib/sets'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
 import { LiveClock, LiveTag } from './live'
@@ -154,7 +154,7 @@ export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
   const loser = bracketLoserSide(match)
   const scorers = scorerSides(match, { limit: Infinity })
   const hasScorers = !scheduled && scorers.home.length + scorers.away.length > 0
-  const sets = !scheduled && match.sets && match.sets.length > 0 ? match.sets : null
+  const sets = playedSets(match)
 
   return (
     <section

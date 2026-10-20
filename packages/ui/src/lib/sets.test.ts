@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatSets, isSetComplete, maxSets, setThreshold, setsWon, type SetFormat } from './sets'
+import { formatRallyPoints, formatSets, isSetComplete, maxSets, playedSets, setThreshold, setsWon, type SetFormat } from './sets'
 
 /** Format domyślny siatkówki: mecz do 3 setów, set do 25, decydujący do 15, przewaga 2. */
 const VOLLEYBALL: SetFormat = { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 }
@@ -68,5 +68,20 @@ describe('reguły seta (te same co na serwerze, #301)', () => {
         VOLLEYBALL,
       ),
     ).toEqual([3, 2])
+  })
+})
+
+describe('playedSets i formatRallyPoints', () => {
+  it('sety pokazuje tylko mecz rozpoczęty z co najmniej jednym setem', () => {
+    const sets = [{ home: 25, away: 20 }]
+    expect(playedSets({ status: 'finished', sets })).toBe(sets)
+    expect(playedSets({ status: 'live', sets: [] })).toBeNull()
+    expect(playedSets({ status: 'scheduled', sets })).toBeNull()
+    expect(playedSets({ status: 'finished', sets: null })).toBeNull()
+  })
+
+  it('punkty w setach jako zdobyte:stracone, a brak wartości jako zero', () => {
+    expect(formatRallyPoints({ rallyPointsFor: 183, rallyPointsAgainst: 162 })).toBe('183:162')
+    expect(formatRallyPoints({})).toBe('0:0')
   })
 })

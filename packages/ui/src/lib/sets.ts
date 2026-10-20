@@ -75,3 +75,17 @@ export function setDraftsToScores(drafts: readonly SetDraft[]): SetScore[] {
 export function setScoresToDrafts(sets: readonly SetScore[] | null | undefined): SetDraft[] {
   return (sets ?? []).map((set) => ({ home: String(set.home), away: String(set.away) }))
 }
+
+/**
+ * Sety meczu do pokazania przy wyniku: tylko mecz rozpoczęty z co najmniej
+ * jednym setem. Wspólne dla wierszy meczu panelu i strony oraz tablicy meczu.
+ */
+export function playedSets(match: { status: string; sets?: readonly SetScore[] | null }): readonly SetScore[] | null {
+  return match.status !== 'scheduled' && match.sets && match.sets.length > 0 ? match.sets : null
+}
+
+/** Punkty w setach wiersza tabeli jako „zdobyte:stracone” (`StandingRow.rallyPoints*`). */
+export function formatRallyPoints(row: { rallyPointsFor?: number | null; rallyPointsAgainst?: number | null }): string {
+  return `${row.rallyPointsFor ?? 0}:${row.rallyPointsAgainst ?? 0}`
+}
+

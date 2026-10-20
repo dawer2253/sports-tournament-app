@@ -1,7 +1,7 @@
 import type { MatchRowData } from '../components/data/match-row-data'
 import { bracketLoserSide } from '../lib/bracket'
 import { formatKickoff, formatShortDay } from '../lib/kickoff'
-import { formatSets } from '../lib/sets'
+import { formatSets, playedSets } from '../lib/sets'
 import { cn } from '../lib/utils'
 import { Anchor } from './anchor'
 import { Crest } from './crest'
@@ -116,7 +116,8 @@ export interface MatchRowProps {
 export function MatchRow({ match, mode, showDay = false, timeZone, href, onNavigate }: MatchRowProps) {
   const label = match.bracket?.label ?? match.group
   const played = match.status !== 'scheduled'
-  const sets = played && match.sets && match.sets.length > 0 ? formatSets(match.sets) : null
+  const setScores = playedSets(match)
+  const sets = setScores ? formatSets(setScores) : null
   const score = (side: Side, row: string) => (
     <ScoreCell
       value={played ? scoreOf(match, side) : null}

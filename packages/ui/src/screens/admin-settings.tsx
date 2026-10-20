@@ -7,14 +7,16 @@ import { BrandColorPicker, DEFAULT_BRAND_COLOR } from '../components/ui/brand-co
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { MatchPeriodsField } from '../components/ui/match-periods-field'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Separator } from '../components/ui/separator'
 import { SettingsSection } from '../components/ui/settings-section'
+import { SetFormatField } from '../components/data/set-format-field'
 import { TiebreakerList } from '../components/data/tiebreaker-list'
 import { TournamentStatusCard } from '../components/data/tournament-status-card'
 import type { TournamentRow } from '../components/data/tournament-row'
 import { TournamentLogo } from '../components/layout/tournament-logo'
 import { demoPeriods, sportSettings, tournament } from '../lib/demo-data'
+import type { SetFormat } from '../lib/sets'
+import { cn } from '../lib/utils'
 
 /** Panel zna adres strony publicznej z `VITE_PUBLIC_URL` (#91 pkt 3). */
 const PUBLIC_ORIGIN = 'http://localhost:5174'
@@ -49,6 +51,7 @@ export function AdminSettings({
   const [slug, setSlug] = React.useState(initialSlug)
   const [points, setPoints] = React.useState(config.defaultPoints)
   const [periods, setPeriods] = React.useState<{ count: number; minutes: number | null }>(demoPeriods[sport])
+  const [setFormat, setSetFormat] = React.useState<SetFormat | undefined>(config.setFormat)
   // Jak w `ImageWithFallback`: pamiętamy adres, który zawiódł, a nie flagę.
   const [failedLogoUrl, setFailedLogoUrl] = React.useState<string | null>(null)
 
@@ -159,13 +162,13 @@ export function AdminSettings({
                 <div className="flex flex-wrap items-start gap-4">
                   <div className="grid w-44 content-start gap-2">
                     <Label htmlFor="match-duration">Długość meczu (min)</Label>
-                    <Input id="match-duration" type="number" min={10} max={600} defaultValue={{ football: 60, basketball: 40, volleyball: 90 }[sport]} />
+                    <Input id="match-duration" type="number" min={10} max={600} defaultValue={config.defaultMatchDuration} />
                   </div>
                 </div>
                 {/* Podział meczu (#210): strona meczu liczy z niego części relacji.
                     W sporcie z setami go nie ma, jest format seta (#301). */}
-                {config.setFormat ? (
-                  <SetFormatDemo format={config.setFormat} locked={setFormatLocked} />
+                {setFormat ? (
+                  <SetFormatField value={setFormat} onChange={setSetFormat} locked={setFormatLocked} />
                 ) : (
                   <MatchPeriodsField value={periods} onChange={setPeriods} fallbackMinutes={demoPeriods[sport].minutes} />
                 )}
@@ -176,7 +179,7 @@ export function AdminSettings({
               <SettingsSection title="Punktacja" description="Punkty w tabeli za wynik meczu i kolejność rozstrzygania remisów.">
                 <div className="flex flex-wrap items-end gap-4">
                   {pointFields.map((field) => (
-                    <div key={field.key} className={field.key.endsWith('DecidingSet') ? 'w-48 space-y-2' : 'w-24 space-y-2'}>
+                    <div key={field.key} className={cn('space-y-2', field.key.endsWith('DecidingSet') ? 'w-48' : 'w-24')}>
                       <Label htmlFor={`points-${field.key}`}>{field.label}</Label>
                       <Input
                         id={`points-${field.key}`}
@@ -225,63 +228,5 @@ export function AdminSettings({
         </Card>
       </div>
     </TournamentShellDemo>
-  )
-}
-
-/**
- * Format seta w ustawieniach sportu z setami (#301), jak `SetFormatFields`
- * w `apps/admin`: mecz do 2 albo 3 wygranych setów, progi seta i seta
- * decydującego, przewaga. Od pierwszego wpisanego seta pola są wyłączone
- * ze zdaniem o blokadzie (ADR-0012).
- */
-function SetFormatDemo({
-  format,
-  locked,
-}: {
-  format: { setsToWin: number; setPoints: number; decidingSetPoints: number; minLead: number }
-  locked: boolean
-}) {
-  const choice = (id: string, label: string, value: number, options: { value: number; label: string }[]) => (
-    <div className="grid w-48 content-start gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Select defaultValue={String(value)} disabled={locked}>
-        <SelectTrigger id={id} aria-label={label} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={String(option.value)}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  )
-  const points = (id: string, label: string, value: number) => (
-    <div className="grid w-48 content-start gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="number" min={5} max={50} defaultValue={value} disabled={locked} />
-    </div>
-  )
-  return (
-    <div role="group" aria-labelledby="set-format-label" className="grid content-start gap-3">
-      <p id="set-format-label" className="text-sm font-medium">
-        Format seta
-      </p>
-      <div className="flex flex-wrap items-start gap-4">
-        {choice('set-format-sets-to-win', 'Mecz do', format.setsToWin, [
-          { value: 2, label: '2 wygranych setów' },
-          { value: 3, label: '3 wygranych setów' },
-        ])}
-        {points('set-format-set-points', 'Set do (pkt)', format.setPoints)}
-        {points('set-format-deciding', 'Set decydujący do (pkt)', format.decidingSetPoints)}
-        {choice('set-format-min-lead', 'Przewaga', format.minLead, [
-          { value: 2, label: '2 punkty (gra na przewagi)' },
-          { value: 1, label: '1 punkt' },
-        ])}
-      </div>
-      {locked && <p className="text-sm text-muted-foreground">Format seta zmienisz tylko przed pierwszym wynikiem.</p>}
-    </div>
   )
 }

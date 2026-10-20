@@ -22,12 +22,8 @@ import {
   Input,
   isHexColor,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Separator,
+  SetFormatField,
   SettingsSection,
   Skeleton,
   TiebreakerList,
@@ -37,7 +33,7 @@ import {
 } from '@tournament/ui';
 import { AlertTriangle, Trash2, Upload } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Controller, useForm, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 import { SKIP_UNSAVED_GUARD, UnsavedChangesGuard } from '../components/unsaved-changes-guard';
 import { api } from '../lib/api';
@@ -537,9 +533,6 @@ const POINT_FIELDS = [
 /** Punkty po secie decydującym: tylko w sporcie z setami. */
 const DECIDING_SET_KEYS: readonly string[] = ['winDecidingSet', 'lossDecidingSet'];
 
-/** Zdanie blokady formatu seta, to samo co `422` z serwera (ADR-0012). */
-const SET_FORMAT_LOCKED = 'Format seta zmienisz tylko przed pierwszym wynikiem.';
-
 /**
  * Formularz ustawień z jednym „Zapisz zmiany". `PATCH` niesie tylko zmienione
  * pola (`tournamentSettingsUpdate`), a odpowiedź wraca do `['tournament', id]`, więc
@@ -773,7 +766,30 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   )}
                 />
               )}
-              {hasSets && <SetFormatFields control={control} register={register} errors={errors} locked={setFormatLocked} />}
+              {/* Format seta (#301, ADR-0012): od pierwszego wpisanego seta zamknięty. */}
+              {hasSets && (
+                <Controller
+                  control={control}
+                  name="setFormat"
+                  render={({ field }) =>
+                    field.value ? (
+                      <SetFormatField
+                        value={field.value}
+                        onChange={field.onChange}
+                        locked={setFormatLocked}
+                        errors={{
+                          setsToWin: errors.setFormat?.setsToWin?.message,
+                          setPoints: errors.setFormat?.setPoints?.message,
+                          decidingSetPoints: errors.setFormat?.decidingSetPoints?.message ?? errors.setFormat?.message,
+                          minLead: errors.setFormat?.minLead?.message,
+                        }}
+                      />
+                    ) : (
+                      <></>
+                    )
+                  }
+                />
+              )}
             </SettingsSection>
 
             <Separator />
@@ -859,136 +875,5 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
       <UnsavedChangesGuard when={isDirty} />
     </>
-  );
-}
-
-/** Wybór z listy formatu seta: liczba jako napis w `Select`, liczba w formularzu. */
-function NumberSelect({
-  id,
-  label,
-  value,
-  onChange,
-  options,
-  disabled,
-  error,
-}: {
-  id: string;
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  options: readonly { value: number; label: string }[];
-  disabled: boolean;
-  error?: string;
-}) {
-  return (
-    <div className="grid w-48 content-start gap-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Select value={String(value)} onValueChange={(next) => onChange(Number(next))} disabled={disabled}>
-        <SelectTrigger id={id} aria-label={label} className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={String(option.value)}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-    </div>
-  );
-}
-
-/**
- * Format seta turnieju (#301, ADR-0012): do ilu wygranych setów, próg seta,
- * próg seta decydującego i przewaga. Od pierwszego wpisanego seta pola są
- * wyłączone ze zdaniem o blokadzie, tym samym, które daje serwer.
- */
-function SetFormatFields({
-  control,
-  register,
-  errors,
-  locked,
-}: {
-  control: Control<TournamentSettingsValues>;
-  register: UseFormRegister<TournamentSettingsValues>;
-  errors: FieldErrors<TournamentSettingsValues>;
-  locked: boolean;
-}) {
-  const formatErrors = errors.setFormat;
-  const pointsField = (name: 'setPoints' | 'decidingSetPoints', label: string) => {
-    const error = formatErrors?.[name]?.message;
-    return (
-      <div className="grid w-48 content-start gap-2">
-        <Label htmlFor={`set-format-${name}`}>{label}</Label>
-        <Input
-          id={`set-format-${name}`}
-          type="number"
-          inputMode="numeric"
-          min={5}
-          max={50}
-          disabled={locked}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `set-format-${name}-error` : undefined}
-          {...register(`setFormat.${name}`, { valueAsNumber: true })}
-        />
-        {error && (
-          <p id={`set-format-${name}-error`} className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div role="group" aria-labelledby="set-format-label" className="grid content-start gap-3">
-      <p id="set-format-label" className="text-sm font-medium">
-        Format seta
-      </p>
-      <div className="flex flex-wrap items-start gap-4">
-        <Controller
-          control={control}
-          name="setFormat.setsToWin"
-          render={({ field }) => (
-            <NumberSelect
-              id="set-format-sets-to-win"
-              label="Mecz do"
-              value={field.value}
-              onChange={field.onChange}
-              options={[
-                { value: 2, label: '2 wygranych setów' },
-                { value: 3, label: '3 wygranych setów' },
-              ]}
-              disabled={locked}
-              error={formatErrors?.setsToWin?.message}
-            />
-          )}
-        />
-        {pointsField('setPoints', 'Set do (pkt)')}
-        {pointsField('decidingSetPoints', 'Set decydujący do (pkt)')}
-        <Controller
-          control={control}
-          name="setFormat.minLead"
-          render={({ field }) => (
-            <NumberSelect
-              id="set-format-min-lead"
-              label="Przewaga"
-              value={field.value}
-              onChange={field.onChange}
-              options={[
-                { value: 2, label: '2 punkty (gra na przewagi)' },
-                { value: 1, label: '1 punkt' },
-              ]}
-              disabled={locked}
-              error={formatErrors?.minLead?.message}
-            />
-          )}
-        />
-      </div>
-      {locked && <p className="text-sm text-muted-foreground">{SET_FORMAT_LOCKED}</p>}
-      {formatErrors?.message && <p className="text-sm text-destructive">{formatErrors.message}</p>}
-    </div>
   );
 }

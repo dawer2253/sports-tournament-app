@@ -19,6 +19,7 @@ import type { StandingsTableRow as PublicStandingsTableRow } from '../public/sta
 import { bracketPosition, bracketSeedPositions, bracketSize, bracketWinnerSide, type BracketMatch } from './bracket'
 import { formatRoundDates } from './kickoff'
 import { periodLabel, type MatchClockSettings } from './match-clock'
+import type { SetFormat } from './sets'
 
 export type MatchStatus = 'scheduled' | 'live' | 'finished'
 
@@ -328,7 +329,9 @@ export type DemoSportSettings = {
   /** W sporcie z setami (#301) także punkty za wygraną i porażkę w secie decydującym. */
   defaultPoints: { win: number; draw: number; loss: number; winDecidingSet?: number; lossDecidingSet?: number }
   /** `SportConfig.defaultSetFormat`: format seta sportu z setami, w pozostałych brak. */
-  setFormat?: { setsToWin: number; setPoints: number; decidingSetPoints: number; minLead: number }
+  setFormat?: SetFormat
+  /** `SportConfig.defaultMatchDuration`: długość meczu w minutach razem z przerwą. */
+  defaultMatchDuration: number
   /** `StandingTable.rallyPointsLabel`: kolumna punktów w setach, tylko w sporcie z setami. */
   rallyPointsLabel?: string
   tiebreakers: TiebreakerItem[]
@@ -346,6 +349,7 @@ export const sportSettings: Record<'football' | 'basketball' | 'volleyball', Dem
     name: 'Piłka nożna',
     allowsDraw: true,
     defaultPoints: { win: 3, draw: 1, loss: 0 },
+    defaultMatchDuration: 60,
     tiebreakers: [
       { code: 'points', label: 'Punkty w tabeli' },
       { code: 'head_to_head', label: 'Bezpośredni mecz' },
@@ -365,6 +369,7 @@ export const sportSettings: Record<'football' | 'basketball' | 'volleyball', Dem
     name: 'Koszykówka',
     allowsDraw: false,
     defaultPoints: { win: 2, draw: 0, loss: 1 },
+    defaultMatchDuration: 40,
     tiebreakers: [
       { code: 'points', label: 'Punkty w tabeli' },
       { code: 'head_to_head', label: 'Bezpośredni mecz' },
@@ -384,6 +389,7 @@ export const sportSettings: Record<'football' | 'basketball' | 'volleyball', Dem
     allowsDraw: false,
     defaultPoints: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 },
     setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+    defaultMatchDuration: 90,
     rallyPointsLabel: 'Punkty w setach',
     tiebreakers: [
       { code: 'points', label: 'Punkty w tabeli' },
