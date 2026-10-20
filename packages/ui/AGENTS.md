@@ -185,7 +185,9 @@ pkt 8 zastępuje tu trójkę plików panelu.
   `teams-showcase.tsx`: prezentacja drużyn przed terminarzem; wybór etapu
   w `overview-stage.ts`), zegar meczu na żywo (#297: `MatchClockProvider`
   i `LiveClock` w `live.tsx`, kontekst w `match-clock-context.ts`, reguły
-  w `lib/match-clock.ts`) i ekrany w `screens/`. Panelowy `MatchRow`
+  w `lib/match-clock.ts`), zapisy (#300: `registration.tsx` z paskiem pod
+  nagłówkiem, który shell przyjmuje propem `banner`, i kaflem Przeglądu;
+  pola formularza strony w `fields.tsx`) i ekrany w `screens/`. Panelowy `MatchRow`
   z `components/data` zostaje dla panelu.
 - **Barrel** `src/public/index.ts`, import `@tournament/ui/public`, nazwy bez
   przedrostka. Re-eksportuje logikę, której strona potrzebuje (`brandVars`,
