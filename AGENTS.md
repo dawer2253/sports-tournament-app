@@ -70,7 +70,12 @@ i playoffem — obsługują go publiczne `/public/t/{slug}`, `/standings`,
 `/matches`, `/fixtures` i `/results`, więc strona publiczna pokazuje wtedy
 dwie tabele grup z linią wyjścia i Drabinkę playoffu
 (`/t/grupy-osiedlowe-2026`). Ten turniej ma odpowiednik w seedzie demo
-(`grupy-osiedlowe-2026`). Wszystkie trzy przełączniki obsługuje też publiczne
+(`grupy-osiedlowe-2026`). Czwarty, `Prefer: example=siatkowka`, oddaje
+ligę siatkówki, czyli sport z setami (#301) — obsługują go publiczne
+`/public/t/{slug}`, `/standings`, `/fixtures`, `/results` i strona meczu,
+a w panelu turniej, terminarz i tabela. Wynik meczu to tam sety wygrane,
+`Match.sets` niesie wyniki setów, a tabela ma kolumnę punktów w setach. Ten
+turniej ma odpowiednik w seedzie demo (`liga-siatkowki-2026`). Wszystkie trzy przełączniki obsługuje też publiczne
 `/teams` (drużyny turnieju do prezentacji na Przeglądzie przed terminarzem).
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
