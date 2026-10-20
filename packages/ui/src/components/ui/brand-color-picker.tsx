@@ -77,14 +77,22 @@ export function BrandColorPicker({
   // „Własny” jest zaznaczony niezależnie od kliknięcia.
   const customActive = customPicked || !selected
 
-  // Zmiana koloru z zewnątrz (reset formularza, wczytanie zapisanych danych) na
-  // paletę zdejmuje wybór „Własny”. Zmiany z pola hex zostają: wpisanie hexa
-  // równego palecie nie może zamknąć pola w trakcie pisania.
-  const typedHere = React.useRef(false)
+  // Ostatni kolor, który komponent sam oddał. Inna wartość w `value` to zmiana
+  // z zewnątrz (reset formularza, wczytanie zapisanych danych): na paletę zdejmuje
+  // wybór „Własny”. Zmiany z pola hex zostają, bo `customPicked` jest wtedy ustawione.
+  const emitted = React.useRef(value)
   React.useEffect(() => {
-    if (!typedHere.current) setCustomPicked(false)
-    typedHere.current = false
+    if (value !== emitted.current) {
+      emitted.current = value
+      setCustomPicked(false)
+    }
   }, [value])
+
+  function emit(hex: string, custom: boolean) {
+    emitted.current = hex
+    setCustomPicked(custom)
+    onChange(hex)
+  }
 
   const lowContrast = isHexColor(value) && contrastRatio(value, BRAND_TEXT_LIGHT) < MIN_TEXT_CONTRAST
   const describedBy = [lowContrast && warningId, error && errorId].filter(Boolean).join(' ') || undefined
@@ -101,10 +109,7 @@ export function BrandColorPicker({
               name={`${baseId}-palette`}
               value={palette.hex}
               checked={!customActive && selected === palette}
-              onChange={() => {
-                setCustomPicked(false)
-                onChange(palette.hex)
-              }}
+              onChange={() => emit(palette.hex, false)}
               className="sr-only"
             />
             {/* Kolor palety to dane (zapisany hex), nie token motywu. */}
@@ -139,10 +144,7 @@ export function BrandColorPicker({
             <Input
               id={hexId}
               value={value}
-              onChange={(event) => {
-                typedHere.current = true
-                onChange(event.target.value)
-              }}
+              onChange={(event) => emit(event.target.value, true)}
               placeholder={DEFAULT_BRAND_COLOR}
               spellCheck={false}
               autoComplete="off"
@@ -155,10 +157,7 @@ export function BrandColorPicker({
               aria-label="Wybierz kolor"
               // Natywny wybór koloru zna tylko poprawny hex małymi literami.
               value={isHexColor(value) ? value.toLowerCase() : '#000000'}
-              onChange={(event) => {
-                typedHere.current = true
-                onChange(event.target.value.toUpperCase())
-              }}
+              onChange={(event) => emit(event.target.value.toUpperCase(), true)}
               className="h-8 w-10 cursor-pointer rounded-lg border border-input bg-transparent p-0.5"
             />
           </div>

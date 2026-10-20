@@ -46,7 +46,7 @@ export const Paleta: Story = {
 
     // Sześć palet i kafelek „Własny”, który otwiera pole hex.
     const radios = canvas.getAllByRole('radio')
-    await expect(radios).toHaveLength(7)
+    await expect(radios).toHaveLength(BRAND_PALETTES.length + 1)
     await expect(canvas.getByRole('radio', { name: 'Własny' })).not.toBeChecked()
     await expect(canvas.getByRole('radio', { name: 'Murawa' })).toBeChecked()
     await expect(canvas.queryByLabelText('Kolor (hex)')).not.toBeInTheDocument()
@@ -170,5 +170,19 @@ export const ResetZZewnatrz: Story = {
     await expect(canvas.getByRole('radio', { name: 'Bordo' })).toBeChecked()
     await expect(canvas.getByRole('radio', { name: 'Własny' })).not.toBeChecked()
     await expect(canvas.queryByLabelText('Kolor (hex)')).not.toBeInTheDocument()
+  },
+}
+
+/** Hex wczytany spoza palet: dopisanie hexa równego palecie nie zamyka pola w trakcie pisania. */
+export const SpozaPaletDoPaleta: Story = {
+  args: { value: '#123456' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const input = canvas.getByLabelText('Kolor (hex)')
+    await userEvent.clear(input)
+    await userEvent.type(input, '#1D4E89')
+    await expect(canvas.getByLabelText('Kolor (hex)')).toHaveValue('#1D4E89')
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).toBeChecked()
+    await expect(canvas.getByRole('radio', { name: 'Granat' })).not.toBeChecked()
   },
 }
