@@ -30,7 +30,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Kolor z palety: zaznaczona paleta, tryb zaawansowany schowany, bez ostrzeżenia. */
+/** Kolor z palety: zaznaczona paleta, pole hex schowane, bez ostrzeżenia. */
 export const Paleta: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
@@ -44,8 +44,10 @@ export const Paleta: Story = {
     }
     await expect(contrastRatio('#FFFFFF', '#000000')).toBe(21)
 
+    // Sześć palet i kafelek „Własny”, który otwiera pole hex.
     const radios = canvas.getAllByRole('radio')
-    await expect(radios).toHaveLength(6)
+    await expect(radios).toHaveLength(7)
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).not.toBeChecked()
     await expect(canvas.getByRole('radio', { name: 'Murawa' })).toBeChecked()
     await expect(canvas.queryByLabelText('Kolor (hex)')).not.toBeInTheDocument()
     await expect(canvas.queryByText(/może być nieczytelny/)).not.toBeInTheDocument()
@@ -68,16 +70,16 @@ export const PaletaMalymiLiterami: Story = {
   },
 }
 
-/** Hex spoza palet otwiera tryb zaawansowany i nie zaznacza żadnej palety. */
+/** Hex spoza palet zaznacza kafelek „Własny”, otwiera pole hex i nie zaznacza żadnej palety. */
 export const SpozaPalet: Story = {
   args: { value: '#123456' },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    for (const radio of canvas.getAllByRole('radio')) {
-      await expect(radio).not.toBeChecked()
+    for (const palette of BRAND_PALETTES) {
+      await expect(canvas.getByRole('radio', { name: palette.name })).not.toBeChecked()
     }
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).toBeChecked()
     await expect(canvas.getByLabelText('Kolor (hex)')).toHaveValue('#123456')
-    await expect(canvas.getByRole('button', { name: 'Zaawansowane' })).toHaveAttribute('aria-expanded', 'true')
   },
 }
 
@@ -99,13 +101,17 @@ export const SlabyKontrast: Story = {
   },
 }
 
-/** Pole hex w trybie zaawansowanym oddaje wpisaną wartość. */
-export const Zaawansowane: Story = {
+/** Kafelek „Własny” otwiera pole hex z bieżącym kolorem i oddaje wpisaną wartość. */
+export const Wlasny: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await userEvent.click(canvas.getByRole('button', { name: 'Zaawansowane' }))
+    await userEvent.click(canvas.getByRole('radio', { name: 'Własny' }))
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).toBeChecked()
+    await expect(canvas.getByRole('radio', { name: 'Murawa' })).not.toBeChecked()
     const input = canvas.getByLabelText('Kolor (hex)')
     await expect(input).toHaveValue('#1F7A45')
+    // Samo przejście na „Własny” niczego nie zmienia w formularzu.
+    await expect(args.onChange).not.toHaveBeenCalled()
     // Ostrzeżenie stoi pod polem hex, więc jego brak sprawdzamy przy otwartym polu.
     await expect(canvas.queryByText(/może być nieczytelny/)).not.toBeInTheDocument()
     await expect(canvas.getByLabelText('Wybierz kolor')).toHaveAttribute('type', 'color')
@@ -113,9 +119,11 @@ export const Zaawansowane: Story = {
     await userEvent.clear(input)
     await userEvent.type(input, '#0A0A0A')
     await expect(args.onChange).toHaveBeenLastCalledWith('#0A0A0A')
-    for (const radio of canvas.getAllByRole('radio')) {
-      await expect(radio).not.toBeChecked()
-    }
+
+    // Powrót do palety chowa pole hex.
+    await userEvent.click(canvas.getByRole('radio', { name: 'Granat' }))
+    await expect(canvas.queryByLabelText('Kolor (hex)')).not.toBeInTheDocument()
+    await expect(canvas.getByRole('radio', { name: 'Własny' })).not.toBeChecked()
   },
 }
 

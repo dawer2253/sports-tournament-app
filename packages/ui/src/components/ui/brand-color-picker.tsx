@@ -1,8 +1,7 @@
 import * as React from 'react'
-import { AlertTriangle, ChevronDown } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { BRAND_TEXT_LIGHT, contrastRatio, isHexColor, MIN_TEXT_CONTRAST } from '../../lib/contrast'
 import { cn } from '../../lib/utils'
-import { Button } from './button'
 import { Input } from './input'
 import { Label } from './label'
 
@@ -46,10 +45,10 @@ export interface BrandColorPickerProps {
 }
 
 /**
- * Wybór koloru wiodącego turnieju: sześć palet i tryb zaawansowany z polem hex.
+ * Wybór koloru wiodącego turnieju: sześć palet i kafelek „Własny” z polem hex.
  *
  * Nazwa palety nigdzie się nie zapisuje — paletę rozpoznajemy po hexie bez
- * względu na wielkość liter, a hex spoza palet otwiera tryb zaawansowany.
+ * względu na wielkość liter, a hex spoza palet zaznacza „Własny”.
  * Słaby kontrast z bielą daje ostrzeżenie, nie błąd: kontrakt przyjmuje każdy
  * `#RRGGBB`, więc komponent niczego nie blokuje.
  */
@@ -64,15 +63,15 @@ export function BrandColorPicker({
   const generatedId = React.useId()
   const baseId = id ?? generatedId
   const hexId = `${baseId}-hex`
-  const panelId = `${baseId}-advanced`
+  const panelId = `${baseId}-custom`
   const warningId = `${baseId}-warning`
   const errorId = `${baseId}-error`
 
   const selected = BRAND_PALETTES.find((palette) => palette.hex.toLowerCase() === value.toLowerCase())
-  const [advancedOpen, setAdvancedOpen] = React.useState(false)
-  // Wartość spoza palet nie ma gdzie się pokazać poza polem hex, więc wtedy tryb
-  // zaawansowany jest otwarty niezależnie od przełącznika.
-  const showAdvanced = advancedOpen || !selected
+  const [customPicked, setCustomPicked] = React.useState(false)
+  // Wartość spoza palet nie ma gdzie się pokazać poza polem hex, więc wtedy
+  // „Własny” jest zaznaczony niezależnie od kliknięcia.
+  const customActive = customPicked || !selected
 
   const lowContrast = isHexColor(value) && contrastRatio(value, BRAND_TEXT_LIGHT) < MIN_TEXT_CONTRAST
   const describedBy = [lowContrast && warningId, error && errorId].filter(Boolean).join(' ') || undefined
@@ -81,7 +80,7 @@ export function BrandColorPicker({
     <fieldset data-slot="brand-color-picker" className={cn('grid gap-3', className)}>
       <legend className="mb-2 text-sm leading-none font-medium">{label}</legend>
 
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
         {BRAND_PALETTES.map((palette) => (
           <label
             key={palette.hex}
@@ -91,8 +90,11 @@ export function BrandColorPicker({
               type="radio"
               name={`${baseId}-palette`}
               value={palette.hex}
-              checked={selected === palette}
-              onChange={() => onChange(palette.hex)}
+              checked={!customActive && selected === palette}
+              onChange={() => {
+                setCustomPicked(false)
+                onChange(palette.hex)
+              }}
               className="sr-only"
             />
             {/* Kolor palety to dane (zapisany hex), nie token motywu. */}
@@ -100,25 +102,28 @@ export function BrandColorPicker({
             {palette.name}
           </label>
         ))}
+        <label className="grid cursor-pointer justify-items-center gap-1.5 rounded-lg border border-border p-2 text-xs transition-colors hover:bg-muted/50 has-checked:border-ring has-checked:bg-accent has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+          <input
+            type="radio"
+            name={`${baseId}-palette`}
+            value="custom"
+            checked={customActive}
+            aria-controls={panelId}
+            // Kolor nie zmienia się przy samym przejściu na „Własny”: pole hex startuje od bieżącego.
+            onChange={() => setCustomPicked(true)}
+            className="sr-only"
+          />
+          {/* Kolor to dane (wpisany hex), nie token motywu; bez poprawnego hexa zostaje obwódka. */}
+          <span
+            aria-hidden
+            className="size-8 rounded-full border border-dashed border-muted-foreground"
+            style={customActive && isHexColor(value) ? { backgroundColor: value } : undefined}
+          />
+          Własny
+        </label>
       </div>
 
-      <div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          aria-expanded={showAdvanced}
-          aria-controls={panelId}
-          // Bez zaznaczonej palety schowanie pola ukryłoby jedyne miejsce z wartością.
-          disabled={!selected}
-          onClick={() => setAdvancedOpen(!showAdvanced)}
-        >
-          Zaawansowane
-          <ChevronDown className={cn('size-4 transition-transform', showAdvanced && 'rotate-180')} />
-        </Button>
-      </div>
-
-      {showAdvanced && (
+      {customActive && (
         <div id={panelId} className="grid gap-1.5">
           <Label htmlFor={hexId}>Kolor (hex)</Label>
           <div className="flex items-center gap-2">
