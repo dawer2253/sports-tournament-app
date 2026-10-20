@@ -13,7 +13,7 @@ export function useMatchClock(state: Partial<MatchClockState> | null | undefined
   const clock = useContext(MatchClockContext)
   if (!clock || !state || state.livePeriod == null) return null
   return matchClock(
-    { livePeriod: state.livePeriod, periodStartedAt: state.periodStartedAt ?? null, onBreak: state.onBreak ?? false },
+    { livePeriod: state.livePeriod, periodStartedAt: state.periodStartedAt ?? null, onBreak: state.onBreak ?? false, sets: state.sets },
     clock.settings,
     clock.now,
   )

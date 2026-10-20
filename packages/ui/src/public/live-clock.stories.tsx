@@ -8,6 +8,7 @@ import {
   matchPageLive,
   publicFixtures,
   scheduleTimeZone,
+  volleyballClockSettings,
 } from '../lib/demo-data'
 import type { MatchClockSettings, MatchClockState } from '../lib/match-clock'
 import { nameProblems } from '../test/match-list'
@@ -148,6 +149,34 @@ export const KoszWKwarcie: Story = {
   name: 'Kosz w kwarcie',
   render: () => <Everywhere clock={running(3, 4)} settings={demoClockSettings.basketball} />,
   play: async ({ canvasElement }) => expectClockEverywhere(canvasElement, '3. kwarta'),
+}
+
+/** Siatkówka w 1. secie, jeszcze bez wpisanego wyniku: „1. set” w tym samym zapisie co kwarta. */
+export const SiatkowkaPierwszySet: Story = {
+  name: 'Siatkówka, 1. set',
+  render: () => <Everywhere clock={{ ...running(1, 4), sets: [] }} settings={volleyballClockSettings} />,
+  play: async ({ canvasElement }) => expectClockEverywhere(canvasElement, '1. set'),
+}
+
+/** Siatkówka przy 2:2: piąty, decydujący set niedokończony (8:6) to „5. set”. */
+export const SiatkowkaPiatySet: Story = {
+  name: 'Siatkówka, 5. set',
+  render: () => (
+    <Everywhere
+      clock={{
+        ...running(1, 4),
+        sets: [
+          { home: 25, away: 20 },
+          { home: 22, away: 25 },
+          { home: 25, away: 23 },
+          { home: 20, away: 25 },
+          { home: 8, away: 6 },
+        ],
+      }}
+      settings={volleyballClockSettings}
+    />
+  ),
+  play: async ({ canvasElement }) => expectClockEverywhere(canvasElement, '5. set'),
 }
 
 /** Część po ostatniej w meczu pucharowym: „Dogrywka” bez minuty. */

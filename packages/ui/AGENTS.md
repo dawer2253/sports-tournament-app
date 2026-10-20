@@ -185,7 +185,8 @@ pkt 8 zastępuje tu trójkę plików panelu.
   `teams-showcase.tsx`: prezentacja drużyn przed terminarzem; wybór etapu
   w `overview-stage.ts`), zegar meczu na żywo (#297: `MatchClockProvider`
   i `LiveClock` w `live.tsx`, kontekst w `match-clock-context.ts`, reguły
-  w `lib/match-clock.ts`), zapisy (#300: `registration.tsx` z paskiem pod
+  w `lib/match-clock.ts`, a w sporcie z setami numer seta z `currentSetNumber`
+  w `lib/sets.ts`, #302), zapisy (#300: `registration.tsx` z paskiem pod
   nagłówkiem, który shell przyjmuje propem `banner`, i kaflem Przeglądu;
   pola formularza strony w `fields.tsx`) i ekrany w `screens/`. Panelowy `MatchRow`
   z `components/data` zostaje dla panelu.

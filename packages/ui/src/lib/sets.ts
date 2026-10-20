@@ -63,6 +63,20 @@ export function setsWon(sets: readonly SetScore[], format: SetFormat): [number, 
   return [home, away]
 }
 
+/**
+ * Numer bieżącego seta meczu trwającego (#302): liczba wpisanych setów, jeśli
+ * ostatni jest niedokończony, albo następny po rozstrzygniętym („3. set” przy
+ * 1:1 i dwóch wpisanych). `null`, gdy wynik meczu jest już przesądzony (ktoś
+ * ma wymaganą liczbę setów), bo wtedy nic się nie rozgrywa.
+ */
+export function currentSetNumber(sets: readonly SetScore[], format: SetFormat): number | null {
+  if (Math.max(...setsWon(sets, format)) >= format.setsToWin) return null
+  if (sets.length === 0) return 1
+  const last = sets.length - 1
+  const done = isSetComplete(sets[last]!, setThreshold(last, format), format.minLead)
+  return done ? sets.length + 1 : sets.length
+}
+
 /** Set w polach formularza: wartości jako napisy, pusty napis to zero przy zapisie. */
 export type SetDraft = { home: string; away: string }
 

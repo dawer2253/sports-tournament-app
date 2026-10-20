@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { matchClock, periodLabel, periodLabelGenitive, type MatchClockSettings, type MatchClockState } from './match-clock'
+import { matchClock, periodLabel, setLabel, periodLabelGenitive, type MatchClockSettings, type MatchClockState } from './match-clock'
 
 const KICKOFF = Date.parse('2026-09-27T10:00:00Z')
 const minute = 60_000
@@ -101,5 +101,55 @@ describe('zegar meczu', () => {
   it('mecz bez części (dane sprzed zegara) albo z błędną datą pokazuje samo „Na żywo”', () => {
     expect(matchClock({ livePeriod: null, periodStartedAt: null, onBreak: false }, football, after(KICKOFF, 5))).toBeNull()
     expect(matchClock({ livePeriod: 1, periodStartedAt: 'nie data', onBreak: false }, football, after(KICKOFF, 5))).toBeNull()
+  })
+})
+
+describe('numer seta w sporcie z setami (#302)', () => {
+  const volleyball: MatchClockSettings = {
+    periods: { count: 1, minutes: null },
+    matchDuration: 90,
+    runningClock: false,
+    setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+  }
+  const live = (sets: { home: number; away: number }[] | null): MatchClockState => ({
+    livePeriod: 1,
+    periodStartedAt: new Date(KICKOFF).toISOString(),
+    onBreak: false,
+    sets,
+  })
+  const now = after(KICKOFF, 5)
+
+  it('ma etykietę w mianowniku', () => {
+    expect(setLabel(3)).toBe('3. set')
+  })
+
+  it('bez wpisanych setów to 1. set', () => {
+    expect(matchClock(live(null), volleyball, now)).toBe('1. set')
+    expect(matchClock(live([]), volleyball, now)).toBe('1. set')
+  })
+
+  it('niedokończony set to bieżący numer', () => {
+    expect(matchClock(live([{ home: 25, away: 21 }, { home: 18, away: 25 }, { home: 14, away: 12 }]), volleyball, now)).toBe('3. set')
+  })
+
+  it('rozstrzygnięty set przy 1:1 daje następny', () => {
+    expect(matchClock(live([{ home: 25, away: 21 }, { home: 18, away: 25 }]), volleyball, now)).toBe('3. set')
+  })
+
+  it('gra na przewagi trwa w tym samym secie, a 5. set liczy się do progu 15', () => {
+    expect(matchClock(live([{ home: 25, away: 24 }]), volleyball, now)).toBe('1. set')
+    const two = [{ home: 25, away: 20 }, { home: 22, away: 25 }, { home: 25, away: 23 }, { home: 20, away: 25 }]
+    expect(matchClock(live(two), volleyball, now)).toBe('5. set')
+    expect(matchClock(live([...two, { home: 14, away: 13 }]), volleyball, now)).toBe('5. set')
+  })
+
+  it('przesądzony wynik meczu to samo „Na żywo”, bez nieistniejącego 4. seta', () => {
+    const won = [{ home: 25, away: 20 }, { home: 25, away: 20 }, { home: 25, away: 20 }]
+    expect(matchClock(live(won), volleyball, now)).toBeNull()
+  })
+
+  it('bez zegara meczu (brak części) nie ma numeru seta, a koszykówka zostaje przy kwartach', () => {
+    expect(matchClock({ ...live([]), livePeriod: null }, volleyball, now)).toBeNull()
+    expect(matchClock({ ...running(3, KICKOFF), sets: null }, basketball, now)).toBe('3. kwarta')
   })
 })

@@ -3170,6 +3170,7 @@ paths:
                       periods: { count: 2, minutes: 45 }
                       matchDuration: 60
                       runningClock: true
+                      setFormat: null
                       registration: { open: false, deadline: null }
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
@@ -3189,6 +3190,7 @@ paths:
                       periods: { count: 4, minutes: 10 }
                       matchDuration: 40
                       runningClock: false
+                      setFormat: null
                       registration: { open: false, deadline: null }
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
@@ -3199,8 +3201,8 @@ paths:
                   summary: Turniej siatkarski
                   description: |
                     Liga siatkówki z seedu demo (`liga-siatkowki-2026`). Jedna część
-                    bez czasu i `runningClock: false`, więc mecz trwający ma samo
-                    „Na żywo”.
+                    bez czasu i `runningClock: false`, więc mecz trwający ma przy
+                    „Na żywo” numer seta (`setFormat`), a nie minutę.
                   value:
                     data:
                       name: Liga Siatkówki 2026
@@ -3211,6 +3213,7 @@ paths:
                       periods: { count: 1, minutes: null }
                       matchDuration: 90
                       runningClock: false
+                      setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 }
                       registration: { open: false, deadline: null }
                       stages:
                         - { id: 1, type: league, name: Faza zasadnicza, order: 1, groups: [] }
@@ -3233,6 +3236,7 @@ paths:
                       periods: { count: 2, minutes: 45 }
                       matchDuration: 60
                       runningClock: true
+                      setFormat: null
                       registration: { open: false, deadline: null }
                       stages:
                         - { id: 2, type: knockout, name: Faza pucharowa, order: 1, groups: [] }
@@ -3257,6 +3261,7 @@ paths:
                       periods: { count: 2, minutes: 45 }
                       matchDuration: 60
                       runningClock: true
+                      setFormat: null
                       registration: { open: false, deadline: null }
                       stages:
                         - id: 3
@@ -3288,6 +3293,7 @@ paths:
                       periods: { count: 2, minutes: 45 }
                       matchDuration: 60
                       runningClock: true
+                      setFormat: null
                       registration: { open: true, deadline: '2026-11-15T17:00:00+00:00' }
                       stages:
                         - { id: 5, type: league, name: Faza zasadnicza, order: 1, groups: [] }
@@ -5780,7 +5786,8 @@ components:
             tablica pokazuje minutę („67′”). Koszykówka `false`: zegar staje
             przy każdym przerwaniu gry, więc tablica pokazuje część
             („3. kwarta”) zamiast minuty. Siatkówka `false` przy jednej
-            części, więc tablica pokazuje samo „Na żywo”.
+            części, więc tablica pokazuje numer seta („3. set”, #302), liczony
+            z `Match.sets` i `PublicTournament.setFormat`.
         defaultPoints: { $ref: '#/components/schemas/Points' }
         defaultMatchDuration:
           type: integer
@@ -7078,7 +7085,7 @@ components:
 
     PublicTournament:
       type: object
-      required: [name, slug, status, sport, branding, stages, stats, periods, matchDuration, runningClock, registration]
+      required: [name, slug, status, sport, branding, stages, stats, periods, matchDuration, runningClock, setFormat, registration]
       properties:
         name: { type: string }
         slug: { type: string }
@@ -7128,6 +7135,15 @@ components:
             `SportConfig.runningClock` sportu turnieju (#297). W bazie turnieju
             tego pola nie ma: serwer bierze je z konfiguracji sportu, wzorem
             `stats`, bo strona publiczna nie widzi `GET /sports`.
+        setFormat:
+          oneOf:
+            - $ref: '#/components/schemas/SetFormat'
+            - type: 'null'
+          description: |
+            Kopia `Tournament.setFormat` (#302). Z niego przeglądarka liczy
+            numer bieżącego seta z `Match.sets` („3. set”): ostatni set
+            niedokończony według progów formatu jest bieżący, rozstrzygnięty
+            daje następny. `null` w sporcie bez setów.
         registration: { $ref: '#/components/schemas/PublicRegistration' }
 
     PublicRegistration:

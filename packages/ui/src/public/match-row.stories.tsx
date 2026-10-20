@@ -190,7 +190,7 @@ export const Odnosnik: Story = {
 /**
  * Siatkówka (#301): okienka niosą sety wygrane, a pod nimi wyśrodkowana linia
  * wyników setów. W meczu trwającym trzeci set jest niedokończony (14:12)
- * i nie zmienia wyniku 1:1, a zegar siatkówki pokazuje samo „Na żywo”.
+ * i nie zmienia wyniku 1:1, a przy „Na żywo” stoi „3. set” (#302).
  */
 export const Siatkowka: Story = {
   name: 'Siatkówka',
@@ -217,6 +217,7 @@ export const Siatkowka: Story = {
       'Sety: 25:23, 23:25, 25:21, 20:25, 15:11',
       'Sety: 25:21, 18:25, 14:12',
     ])
+    await expect(rows.map((row) => [...row.querySelectorAll('[data-slot="live-clock"]')].map((clock) => clock.textContent))).toEqual([[], ['3. set']])
     // Linia setów stoi pod okienkami, a nie obok nich.
     const sets = rows[0]!.querySelector('[data-slot="match-sets"]')!.getBoundingClientRect()
     const score = rows[0]!.querySelector('[data-slot="score-cell"]')!.getBoundingClientRect()

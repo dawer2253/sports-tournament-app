@@ -1820,8 +1820,13 @@ export const publicVolleyballTiebreakers = [
   { code: 'head_to_head', label: 'Bezpośredni mecz' },
 ]
 
-/** Ustawienia zegara siatkówki: jedna część bez czasu, bez biegnącego zegara, więc samo „Na żywo”. */
-export const volleyballClockSettings: MatchClockSettings = { periods: { count: 1, minutes: null }, matchDuration: 90, runningClock: false }
+/** Ustawienia zegara siatkówki: jedna część bez czasu i format seta, więc przy „Na żywo” stoi numer seta (#302). */
+export const volleyballClockSettings: MatchClockSettings = {
+  periods: { count: 1, minutes: null },
+  matchDuration: 90,
+  runningClock: false,
+  setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+}
 
 const volleyballTeam = (id: number, name: string) => ({ id, name, logoUrl: null })
 

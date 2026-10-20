@@ -242,7 +242,7 @@ export const Siatkowka: Story = {
 
 /**
  * Siatkówka na żywo: 1:1 w setach, a trzeci set niedokończony stoi na liście
- * jako bieżący stan. Zegar siatkówki nie pokazuje minuty ani części.
+ * jako bieżący stan. Zegar siatkówki pokazuje numer seta, nie minutę ani część (#302).
  */
 export const SiatkowkaNaZywo: Story = {
   name: 'Siatkówka na żywo',
@@ -257,6 +257,7 @@ export const SiatkowkaNaZywo: Story = {
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByLabelText('Wynik 1 : 1')).toBeInTheDocument()
     await expect(setsOf(canvasElement)).toEqual(['1. set 25:21', '2. set 18:25', '3. set 14:12'])
+    await expect(canvasElement.querySelector('[data-slot="live-clock"]')).toHaveTextContent('3. set')
     await expect(within(canvasElement).queryByText(/′|kwarta|część/)).toBeNull()
   },
 }

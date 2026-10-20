@@ -5,6 +5,8 @@
  * „Match period (część meczu)”.
  */
 
+import { currentSetNumber, type SetFormat, type SetScore } from './sets'
+
 /** Podział meczu na części (`MatchPeriods` z kontraktu). `minutes` jest `null` tylko przy jednej części. */
 export type MatchPeriods = { count: number; minutes: number | null }
 
@@ -14,15 +16,19 @@ export type MatchClockState = {
   /** ISO 8601 z offsetem; `null` w przerwie i po powrocie z zakończonego. */
   periodStartedAt: string | null
   onBreak: boolean
+  /** Wyniki setów (`Match.sets`); w sporcie z setami z nich wychodzi numer bieżącego seta (#302). */
+  sets?: readonly SetScore[] | null
 }
 
-/** Ustawienia turnieju, z których liczy się zegar (`PublicTournament.periods`, `matchDuration`, `runningClock`). */
+/** Ustawienia turnieju, z których liczy się zegar (`PublicTournament.periods`, `matchDuration`, `runningClock`, `setFormat`). */
 export type MatchClockSettings = {
   periods: MatchPeriods
   /** Długość meczu: regulaminowy koniec jedynej części w turnieju bez podziału. */
   matchDuration: number
-  /** Czy zegar biegnie w minutach (piłka); bez niego tablica pokazuje część („3. kwarta”). */
+  /** Czy zegar biegnie w minutach (piłka); bez niego tablica pokazuje część („3. kwarta”); w sporcie z setami numer seta. */
   runningClock: boolean
+  /** Format seta (`PublicTournament.setFormat`); niepusty to sport z setami, gdzie zegar pokazuje set, nie część. */
+  setFormat?: SetFormat | null
 }
 
 /** Co ile przeglądarka przelicza minutę. */
@@ -47,14 +53,20 @@ export function periodLabel(number: number, count: number): string {
   return `${number}. ${(NOUNS[count] ?? FALLBACK_NOUN)[0]}`
 }
 
+/** Etykieta seta w mianowniku: „3. set”. */
+export function setLabel(number: number): string {
+  return `${number}. set`
+}
+
 /** Etykieta części w dopełniaczu, do przycisku panelu: „Start 2. połowy”, „2. kwarty”. */
 export function periodLabelGenitive(number: number, count: number): string {
   return `${number}. ${(NOUNS[count] ?? FALLBACK_NOUN)[1]}`
 }
 
 /**
- * Napis przy „Na żywo”: minuta („67′”, „45+3′”), „Przerwa”, część („3. kwarta”)
- * albo „Dogrywka”. `null` znaczy samo „Na żywo” bez dopisku: mecz po powrocie
+ * Napis przy „Na żywo”: minuta („67′”, „45+3′”), „Przerwa”, część („3. kwarta”),
+ * „Dogrywka” albo, w sporcie z setami, numer bieżącego seta („3. set”, #302;
+ * `currentSetNumber`, bez przerwy i minuty, bo set nie jest częścią meczu). `null` znaczy samo „Na żywo” bez dopisku: mecz po powrocie
  * z zakończonego, zapomniany mecz (30 minut ponad koniec części) albo dane bez
  * części.
  *
@@ -66,6 +78,10 @@ export function matchClock(state: MatchClockState, settings: MatchClockSettings,
   const { livePeriod, periodStartedAt, onBreak } = state
   const { periods } = settings
   if (livePeriod === null) return null
+  if (settings.setFormat) {
+    const set = currentSetNumber(state.sets ?? [], settings.setFormat)
+    return set === null ? null : setLabel(set)
+  }
   if (livePeriod > periods.count) return 'Dogrywka'
   if (onBreak) return 'Przerwa'
   if (periodStartedAt === null) return null
