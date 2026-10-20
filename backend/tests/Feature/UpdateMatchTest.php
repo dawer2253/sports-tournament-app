@@ -625,3 +625,9 @@ it('w siatkówce samo przejście scheduled → live daje wynik 0:0 z pustej list
         ->assertJsonPath('data.awayScore', 0)
         ->assertJsonPath('data.livePeriod', 1);
 });
+
+it('sety w koszykówce dają 422 pod sets', function () {
+    updateMatch(updateMatchIn(updateMatchLeague('basketball')), ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0, 'sets' => []])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.sets.0', 'Wyniki setów wpisuje się tylko w sporcie z setami.');
+});
