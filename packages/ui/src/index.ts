@@ -73,6 +73,7 @@ export * from './components/data/round-tabs';
 export * from './components/data/seeding-list';
 export * from './components/data/seeding-team';
 export * from './components/data/score-inputs';
+export * from './components/data/set-scores-field';
 export * from './components/data/standings-table';
 export * from './components/data/standings-table-row';
 export * from './components/data/team-row';
