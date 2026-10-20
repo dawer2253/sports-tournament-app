@@ -3040,7 +3040,8 @@ paths:
         pod `consent`.
 
         Jedno IP wysyła najwyżej 5 zgłoszeń na godzinę, do wszystkich
-        turniejów łącznie; kolejne dostaje `429`.
+        turniejów łącznie; kolejne dostaje `429`. Liczą się zgłoszenia
+        przyjęte (`201`), a nie próby: odpowiedź `422` limitu nie zużywa.
       security: []
       requestBody:
         required: true
