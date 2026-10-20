@@ -25,8 +25,13 @@ const registrationKeys = {
 const ACCEPT_FAILED = 'Nie udało się przyjąć zgłoszenia. Spróbuj ponownie.';
 const REJECT_FAILED = 'Nie udało się odrzucić zgłoszenia. Spróbuj ponownie.';
 
-/** Komunikat błędu decyzji: z `422` pierwszy błąd (`name`, `teams`, `registration`), inaczej treść odpowiedzi. */
+/**
+ * Komunikat błędu decyzji: z `422` pierwszy błąd (`name`, `teams`,
+ * `registration`), inaczej treść odpowiedzi. `fetch` bez odpowiedzi (sieć)
+ * odrzuca `TypeError` z angielskim komunikatem przeglądarki, więc daje `fallback`.
+ */
 function decisionError(error: unknown, fallback: string): string {
+  if (error instanceof TypeError) return fallback;
   if (isValidationError(error)) return Object.values(firstFieldErrors(error))[0] || error.message;
   return apiErrorMessage(error) || fallback;
 }
@@ -157,7 +162,7 @@ function AcceptButton({
     },
     // Zgłoszenie mogło zniknąć albo zmienić się w tle: lista pokaże stan z API.
     onError: async (error) => {
-      onError(error instanceof TypeError ? ACCEPT_FAILED : decisionError(error, ACCEPT_FAILED));
+      onError(decisionError(error, ACCEPT_FAILED));
       await queryClient.invalidateQueries({ queryKey: registrationKeys.list(tournament.id) });
     },
   });
@@ -184,6 +189,11 @@ function RejectDialog({ tournament, registration, onClose }: { tournament: Tourn
       onClose();
       await queryClient.invalidateQueries({ queryKey: ['tournament', tournament.id] });
     },
+    // Jak przy przyjęciu: zgłoszenie mogło zmienić się w tle (np. rozpatrzone
+    // w innej karcie), więc lista pod oknem pokaże stan z API.
+    onError: async () => {
+      await queryClient.invalidateQueries({ queryKey: registrationKeys.list(tournament.id) });
+    },
   });
 
   return (
@@ -196,7 +206,7 @@ function RejectDialog({ tournament, registration, onClose }: { tournament: Tourn
       confirmLabel="Odrzuć zgłoszenie"
       description="Dane osoby kontaktowej i skład zostaną usunięte. Zostanie sama nazwa drużyny z datą decyzji. Tego nie da się cofnąć."
       pending={reject.isPending}
-      error={reject.isError ? (reject.error instanceof TypeError ? REJECT_FAILED : decisionError(reject.error, REJECT_FAILED)) : undefined}
+      error={reject.isError ? decisionError(reject.error, REJECT_FAILED) : undefined}
       onConfirm={() => reject.mutate()}
     />
   );
