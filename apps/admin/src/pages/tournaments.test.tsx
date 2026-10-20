@@ -27,6 +27,7 @@ const TOURNAMENT = {
   points: { win: 3, draw: 1, loss: 0 },
   tiebreakers: ['points'],
   teamsCount: 3,
+  registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
 };
@@ -39,6 +40,7 @@ const TOURNAMENT_2 = {
   status: 'draft',
   sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false },
   teamsCount: 8,
+  registration: { open: false, deadline: null, pendingCount: 0 },
 };
 
 /** Wypisuje id z adresu, żeby test mógł je odczytać z ekranu. */

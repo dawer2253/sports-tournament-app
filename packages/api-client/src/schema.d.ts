@@ -513,6 +513,11 @@ export interface paths {
                          *             "minutes": 10
                          *           },
                          *           "teamsCount": 8,
+                         *           "registration": {
+                         *             "open": false,
+                         *             "deadline": null,
+                         *             "pendingCount": 0
+                         *           },
                          *           "createdAt": "2026-09-10T07:00:00+00:00",
                          *           "updatedAt": "2026-09-10T07:00:00+00:00"
                          *         },
@@ -548,6 +553,11 @@ export interface paths {
                          *             "minutes": 45
                          *           },
                          *           "teamsCount": 3,
+                         *           "registration": {
+                         *             "open": false,
+                         *             "deadline": null,
+                         *             "pendingCount": 0
+                         *           },
                          *           "createdAt": "2026-09-01T08:00:00+00:00",
                          *           "updatedAt": "2026-09-14T16:30:00+00:00"
                          *         }
@@ -639,6 +649,11 @@ export interface paths {
                          *           "minutes": 45
                          *         },
                          *         "teamsCount": 0,
+                         *         "registration": {
+                         *           "open": false,
+                         *           "deadline": null,
+                         *           "pendingCount": 0
+                         *         },
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
                          *       }
@@ -670,11 +685,13 @@ export interface paths {
         };
         /**
          * Szczegóły turnieju
-         * @description Przykłady są dwa, po jednym na sport: `pilka` (domyślny) i `koszykowka`.
+         * @description Przykłady sportów są dwa: `pilka` (domyślny) i `koszykowka`.
          *     Mock zwraca drugi po wysłaniu nagłówka `Prefer: example=koszykowka` —
          *     ten sam przełącznik obsługuje listę meczów i tabelę, więc w panelu
          *     przestawia naraz turniej, terminarz i tabelę. Turniej koszykarski to
-         *     ten z seedu demo (`liga-koszykowki-2026`).
+         *     ten z seedu demo (`liga-koszykowki-2026`). Trzeci, po
+         *     `Prefer: example=zapisy`, to turniej z otwartymi zapisami
+         *     i oczekującymi zgłoszeniami z listy `GET /tournaments/{tournament}/registrations`.
          */
         get: {
             parameters: {
@@ -885,6 +902,11 @@ export interface paths {
                          *           "minutes": 45
                          *         },
                          *         "teamsCount": 0,
+                         *         "registration": {
+                         *           "open": false,
+                         *           "deadline": null,
+                         *           "pendingCount": 0
+                         *         },
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
                          *       }
@@ -957,6 +979,11 @@ export interface paths {
                          *           "minutes": 45
                          *         },
                          *         "teamsCount": 0,
+                         *         "registration": {
+                         *           "open": false,
+                         *           "deadline": null,
+                         *           "pendingCount": 0
+                         *         },
                          *         "createdAt": "2026-09-01T08:00:00+00:00",
                          *         "updatedAt": "2026-09-01T08:00:00+00:00"
                          *       }
@@ -2021,6 +2048,9 @@ export interface paths {
          *
          *     Drużyna dodana po wygenerowaniu drabinki w niej nie stoi, więc usuwa
          *     się jak w lidze.
+         *
+         *     Drużyna utworzona z przyjętego zgłoszenia zabiera ze sobą to zgłoszenie
+         *     razem z danymi zgłaszającego (`TeamRegistration`).
          */
         delete: {
             parameters: {
@@ -2659,6 +2689,298 @@ export interface paths {
         };
         trace?: never;
     };
+    "/tournaments/{tournament}/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Zgłoszenia drużyn w turnieju
+         * @description Od najstarszego: `createdAt` rosnąco, a zgłoszenia z tej samej chwili
+         *     rozstrzyga `id`, też rosnąco. Zgłoszenie przyjęte, którego drużynę
+         *     organizer potem usunął, znika razem z nią, więc na liście go nie ma.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /**
+                     * @description Zawęża listę do podanych stanów, np. `pending`. Bez parametru
+                     *     odpowiedź obejmuje wszystkie zgłoszenia turnieju.
+                     *
+                     *     Wartość spoza `TeamRegistrationStatus`, powtórzona albo pusta daje
+                     *     `422`, jak filtr listy turniejów (ADR-0009).
+                     * @example [
+                     *       "pending"
+                     *     ]
+                     */
+                    status?: components["schemas"]["TeamRegistrationStatus"][];
+                };
+                header?: never;
+                path: {
+                    tournament: components["parameters"]["TournamentId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Pełna lista zgłoszeń, bez stronicowania, opcjonalnie zawężona do podanych stanów */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": [
+                         *         {
+                         *           "id": 3,
+                         *           "tournamentId": 5,
+                         *           "teamName": "Rysie Wola",
+                         *           "status": "rejected",
+                         *           "contact": null,
+                         *           "players": [],
+                         *           "teamId": null,
+                         *           "createdAt": "2026-10-02T09:15:00+00:00",
+                         *           "decidedAt": "2026-10-03T18:00:00+00:00"
+                         *         },
+                         *         {
+                         *           "id": 4,
+                         *           "tournamentId": 5,
+                         *           "teamName": "Żubry Targówek",
+                         *           "status": "accepted",
+                         *           "contact": {
+                         *             "name": "Tomasz Zieliński",
+                         *             "email": "tomasz.zielinski@example.com",
+                         *             "phone": null
+                         *           },
+                         *           "players": [
+                         *             {
+                         *               "name": "Tomasz Zieliński",
+                         *               "number": 1
+                         *             }
+                         *           ],
+                         *           "teamId": 9,
+                         *           "createdAt": "2026-10-04T12:00:00+00:00",
+                         *           "decidedAt": "2026-10-05T08:30:00+00:00"
+                         *         },
+                         *         {
+                         *           "id": 5,
+                         *           "tournamentId": 5,
+                         *           "teamName": "Lwy Mokotów",
+                         *           "status": "pending",
+                         *           "contact": {
+                         *             "name": "Anna Wiśniewska",
+                         *             "email": "anna.wisniewska@example.com",
+                         *             "phone": "+48 600 100 200"
+                         *           },
+                         *           "players": [
+                         *             {
+                         *               "name": "Paweł Lis",
+                         *               "number": 1
+                         *             },
+                         *             {
+                         *               "name": "Kamil Dąb",
+                         *               "number": 9
+                         *             },
+                         *             {
+                         *               "name": "Igor Wrzos",
+                         *               "number": null
+                         *             }
+                         *           ],
+                         *           "teamId": null,
+                         *           "createdAt": "2026-10-10T17:42:00+00:00",
+                         *           "decidedAt": null
+                         *         },
+                         *         {
+                         *           "id": 6,
+                         *           "tournamentId": 5,
+                         *           "teamName": "Smoki Ochota",
+                         *           "status": "pending",
+                         *           "contact": {
+                         *             "name": "Michał Kruk",
+                         *             "email": "michal.kruk@example.com",
+                         *             "phone": null
+                         *           },
+                         *           "players": [],
+                         *           "teamId": null,
+                         *           "createdAt": "2026-10-12T08:05:00+00:00",
+                         *           "decidedAt": null
+                         *         }
+                         *       ]
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["TeamRegistration"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                422: components["responses"]["ValidationError"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrations/{registration}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registration: components["parameters"]["RegistrationId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Przyjmij zgłoszenie
+         * @description Tworzy drużynę o nazwie ze zgłoszenia i jej zawodników ze składu,
+         *     według tych samych reguł co `POST /tournaments/{tournament}/teams`:
+         *     nazwa zajęta przez drużynę turnieju daje `422` pod `name`, a turniej
+         *     z meczem rozegranym albo trwającym albo z kompletem 128 drużyn —
+         *     `422` pod `teams`. Wtedy nic się nie zapisuje, a zgłoszenie dalej
+         *     czeka. Dane kontaktowe zgłaszającego do drużyny nie przechodzą.
+         *
+         *     Przyjęcie nie zależy od zapisów: organizer przyjmuje zgłoszenie
+         *     także wtedy, gdy zapisy są już zamknięte albo minął ich termin.
+         *     Drużyna dochodzi jak każda inna, więc po ustaleniu składu grup nie ma
+         *     grupy, a istniejący terminarz jej nie obejmuje.
+         *
+         *     Zgłoszenie już rozpatrzone (przyjęte albo odrzucone) daje `422` pod
+         *     `registration`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    registration: components["parameters"]["RegistrationId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Drużyna utworzona ze zgłoszenia */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 10,
+                         *         "tournamentId": 5,
+                         *         "name": "Lwy Mokotów",
+                         *         "logoUrl": null,
+                         *         "groupId": null,
+                         *         "playersCount": 3,
+                         *         "scheduledMatchesCount": 0
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["Team"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Zgłoszenie już rozpatrzone albo złamana reguła dodania drużyny */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrations/{registration}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registration: components["parameters"]["RegistrationId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Odrzuć zgłoszenie
+         * @description Odrzuca zgłoszenie i od razu usuwa dane osobowe: kontakt
+         *     zgłaszającego i skład. Zostają nazwa drużyny i chwila decyzji.
+         *     Zgłoszenie już rozpatrzone daje `422` pod `registration`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    registration: components["parameters"]["RegistrationId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Zgłoszenie po odrzuceniu */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 6,
+                         *         "tournamentId": 5,
+                         *         "teamName": "Smoki Ochota",
+                         *         "status": "rejected",
+                         *         "contact": null,
+                         *         "players": [],
+                         *         "teamId": null,
+                         *         "createdAt": "2026-10-12T08:05:00+00:00",
+                         *         "decidedAt": "2026-10-13T19:20:00+00:00"
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["TeamRegistration"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                422: components["responses"]["ValidationError"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tournaments/{tournament}/matches": {
         parameters: {
             query?: {
@@ -3201,7 +3523,10 @@ export interface paths {
          *     `group` i fazą `knockout`: ten sam przełącznik daje jego tabele grup
          *     w `/standings` i mecze w `/matches`, `/fixtures` i `/results`.
          *     Wszystkie cztery przełączniki obsługuje też `/teams`: drużyny tych
-         *     samych turniejów.
+         *     samych turniejów. Piąty, `Prefer: example=zapisy`, to turniej
+         *     z otwartymi zapisami (#300) i działa tylko tutaj: inne trasy go nie
+         *     znają, a strona publiczna potrzebuje z niego tylko
+         *     `registration`, żeby pokazać formularz zgłoszenia.
          */
         get: {
             parameters: {
@@ -3249,6 +3574,126 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/t/{slug}/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                 *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                 *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                 *     że turniej istnieje.
+                 */
+                slug: components["parameters"]["Slug"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Zgłoś drużynę
+         * @description Zgłoszenie drużyny przez zgłaszającego bez konta (#300). Powstaje
+         *     zgłoszenie oczekujące, które organizer przyjmuje albo odrzuca
+         *     w panelu; drużyna powstaje dopiero z przyjęcia. Odpowiedź nie niesie
+         *     danych osobowych. To zapis, więc bez walidatora HTTP.
+         *
+         *     Przyjmuje tylko przy otwartych zapisach (`PublicRegistration.open`).
+         *     Inaczej — zapisy zamknięte, termin minął, turniej `finished` albo
+         *     z meczem rozegranym lub trwającym — `422` pod `registration`. Turniej
+         *     z kompletem 128 drużyn też daje `422` pod `registration`.
+         *
+         *     Nazwa jest sprawdzana jak przy `POST /tournaments/{tournament}/teams`:
+         *     nazwa zajęta przez drużynę turnieju daje `422` pod `teamName`. Dwa
+         *     oczekujące zgłoszenia o tej samej nazwie przechodzą; rozstrzyga je
+         *     dopiero przyjęcie. Błędy składu siadają pod `players` (ponad 50
+         *     zawodników) i pod `players.N.name` / `players.N.number` (powtórzony
+         *     numer pod drugim z powtórzeń). Brak zgody daje `422` pod `consent`.
+         *
+         *     Jedno IP wysyła najwyżej 5 zgłoszeń na godzinę, do wszystkich
+         *     turniejów łącznie; kolejne dostaje `429`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /**
+                     * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
+                     *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
+                     *     samym komunikatem co dla nieznanego sluga, żeby odpowiedź nie zdradzała,
+                     *     że turniej istnieje.
+                     */
+                    slug: components["parameters"]["Slug"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "teamName": "Lwy Mokotów",
+                     *       "contactName": "Anna Wiśniewska",
+                     *       "contactEmail": "anna.wisniewska@example.com",
+                     *       "contactPhone": "+48 600 100 200",
+                     *       "players": [
+                     *         {
+                     *           "name": "Paweł Lis",
+                     *           "number": 1
+                     *         },
+                     *         {
+                     *           "name": "Kamil Dąb",
+                     *           "number": 9
+                     *         },
+                     *         {
+                     *           "name": "Igor Wrzos",
+                     *           "number": null
+                     *         }
+                     *       ],
+                     *       "consent": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TeamRegistrationCreate"];
+                };
+            };
+            responses: {
+                /** @description Zgłoszenie przyjęte do rozpatrzenia */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "teamName": "Lwy Mokotów"
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["TeamRegistrationReceipt"];
+                        };
+                    };
+                };
+                404: components["responses"]["NotFound"];
+                /** @description Zapisy zamknięte albo dane nie przeszły walidacji */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ValidationError"];
+                    };
+                };
+                429: components["responses"]["TooManyRequests"];
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -4223,10 +4668,33 @@ export interface components {
              */
             periods: components["schemas"]["MatchPeriods"];
             teamsCount: number;
+            registration: components["schemas"]["TournamentRegistration"];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        /**
+         * @description Zapisy turnieju w panelu (`CONTEXT.md`, „Zapisy”). `open` i `deadline`
+         *     to ustawienia organizera, nie stan liczony: zapisy włączone w szkicu
+         *     albo po terminie zostają `open: true`, choć formularz na stronie
+         *     publicznej ich nie przyjmie (`PublicRegistration.open`). Nowy turniej
+         *     ma zapisy zamknięte i bez terminu.
+         */
+        TournamentRegistration: {
+            /** @description Czy organizer otworzył zapisy. */
+            open: boolean;
+            /**
+             * Format: date-time
+             * @description Chwila, od której zgłoszenia nie są przyjmowane. `null`, gdy
+             *     zapisy nie mają terminu.
+             */
+            deadline: string | null;
+            /**
+             * @description Liczba zgłoszeń oczekujących na decyzję organizera, do plakietki
+             *     zakładki „Zgłoszenia”.
+             */
+            pendingCount: number;
         };
         TournamentCreate: {
             name: string;
@@ -4260,6 +4728,23 @@ export interface components {
              */
             branding?: {
                 primaryColor?: string;
+            };
+            /**
+             * @description Zapisy (`Tournament.registration`), zagnieżdżone jak w odczycie.
+             *     Zmienia się tylko to, co przyszło. Zapisywalne są `open`
+             *     i `deadline`; `pendingCount` liczy serwer. Zamknięcie zapisów nie
+             *     rusza zgłoszeń oczekujących — organizer dalej je przyjmuje
+             *     i odrzuca.
+             */
+            registration?: {
+                open?: boolean;
+                /**
+                 * Format: date-time
+                 * @description **Wymagany offset** (np. `+02:00` albo `Z`): data bez offsetu
+                 *     daje `422` pod `registration.deadline` (ADR-0008). Backend
+                 *     przelicza wartość na UTC. `null` usuwa termin.
+                 */
+                deadline?: string | null;
             };
             points?: components["schemas"]["Points"];
             /**
@@ -5035,6 +5520,97 @@ export interface components {
              *     `stats`, bo strona publiczna nie widzi `GET /sports`.
              */
             runningClock: boolean;
+            registration: components["schemas"]["PublicRegistration"];
+        };
+        /**
+         * @description Zapisy na stronie publicznej (#300). Strona pokazuje wejście
+         *     w formularz zgłoszenia tylko przy `open: true`.
+         */
+        PublicRegistration: {
+            /**
+             * @description Czy formularz przyjmie zgłoszenie teraz. Stan liczony, nie samo
+             *     ustawienie organizera: `true` wtedy i tylko wtedy, gdy organizer
+             *     otworzył zapisy, turniej jest `active`, nie ma meczu rozegranego
+             *     ani trwającego, a termin (jeśli jest) jeszcze nie minął.
+             */
+            open: boolean;
+            /**
+             * Format: date-time
+             * @description Termin zapisów (`TournamentRegistration.deadline`), `null` bez terminu.
+             */
+            deadline: string | null;
+        };
+        /**
+         * @description Stan zgłoszenia: oczekujące (`pending`), przyjęte (`accepted`)
+         *     i odrzucone (`rejected`). O każdym rozstrzyga organizer, raz.
+         * @enum {string}
+         */
+        TeamRegistrationStatus: "pending" | "accepted" | "rejected";
+        /** @description Zawodnik ze składu zgłoszenia. Bez pozycji — organizer dopisze ją po przyjęciu. */
+        TeamRegistrationPlayer: {
+            name: string;
+            number: number | null;
+        };
+        /** @description Dane kontaktowe zgłaszającego (`CONTEXT.md`, „TeamRegistration”). */
+        TeamRegistrationContact: {
+            name: string;
+            /** Format: email */
+            email: string;
+            phone: string | null;
+        };
+        /**
+         * @description Zgłoszenie drużyny w panelu. Dane osobowe (kontakt i skład) zna tylko
+         *     organizer turnieju; odrzucenie je usuwa, więc zgłoszenie odrzucone ma
+         *     `contact: null` i pusty `players`.
+         */
+        TeamRegistration: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            tournamentId: number;
+            teamName: string;
+            status: components["schemas"]["TeamRegistrationStatus"];
+            /** @description Dane zgłaszającego; `null` w zgłoszeniu odrzuconym. */
+            contact: components["schemas"]["TeamRegistrationContact"] | null;
+            /** @description Skład ze zgłoszenia, w kolejności podanej przez zgłaszającego. */
+            players: components["schemas"]["TeamRegistrationPlayer"][];
+            /**
+             * Format: int64
+             * @description Drużyna utworzona z przyjętego zgłoszenia; `null` w pozostałych.
+             */
+            teamId: number | null;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description Chwila przyjęcia albo odrzucenia; `null` w zgłoszeniu oczekującym.
+             */
+            decidedAt: string | null;
+        };
+        TeamRegistrationCreate: {
+            teamName: string;
+            /** @description Imię i nazwisko zgłaszającego. */
+            contactName: string;
+            /** Format: email */
+            contactEmail: string;
+            contactPhone?: string | null;
+            /**
+             * @description Skład, opcjonalny. Najwyżej 50 zawodników (limit składu drużyny),
+             *     a numer nie powtarza się w składzie; `null` z niczym nie koliduje.
+             */
+            players?: components["schemas"]["TeamRegistrationPlayer"][];
+            /** @description Zgoda na przetwarzanie danych zgłaszającego przez organizatora. Musi być `true`. */
+            consent: boolean;
+            /**
+             * @description Pole-pułapka na boty. Formularz go nie pokazuje, więc ma zostać
+             *     puste. Zgłoszenie z wypełnionym polem dostaje zwykłe `201`, ale nie
+             *     zostaje zapisane.
+             */
+            website?: string | null;
+        };
+        /** @description Potwierdzenie przyjęcia zgłoszenia do rozpatrzenia, bez danych osobowych. */
+        TeamRegistrationReceipt: {
+            teamName: string;
         };
     };
     responses: {
@@ -5164,6 +5740,22 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description Przekroczony limit żądań; po ilu sekundach spróbować ponownie, mówi nagłówek `Retry-After` */
+        TooManyRequests: {
+            headers: {
+                /** @description Liczba sekund do ponownej próby */
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "message": "Zbyt wiele prób. Spróbuj ponownie później."
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Dane nie przeszły walidacji */
         ValidationError: {
             headers: {
@@ -5221,6 +5813,7 @@ export interface components {
         GroupId: number;
         MatchId: number;
         MatchEventId: number;
+        RegistrationId: number;
         /**
          * @description Slug turnieju. Turniej w `draft` jest traktowany jak nieistniejący:
          *     każda trasa `/public/t/{slug}*` odpowiada wtedy tym samym `404`, z tym
