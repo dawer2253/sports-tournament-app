@@ -28,6 +28,8 @@ export interface StandingsScreenTable {
   qualifiers: number | null
   scoreLabel: string
   allowsDraw: boolean
+  /** `StandingTable.rallyPointsLabel` (#301): kolumna punktów w setach w sporcie z setami. */
+  rallyPointsLabel?: string | null
   tiebreakers: readonly StandingsTiebreaker[]
 }
 
@@ -159,7 +161,13 @@ export function StandingsScreen({ format, stageName, tables, status, schedule, o
       <PageHead eyebrow={stageName} title={title} meta={<LeagueFacts schedule={schedule} finished={finished} timeZone={timeZone} />} />
       <section aria-label={stageName} className="flex flex-col gap-6">
         {champion && <ChampionBand row={champion} scoreLabel={table.scoreLabel} />}
-        <StandingsTable rows={table.rows} scoreLabel={table.scoreLabel} allowsDraw={table.allowsDraw} label={`Tabela, ${stageName}`} />
+        <StandingsTable
+          rows={table.rows}
+          scoreLabel={table.scoreLabel}
+          allowsDraw={table.allowsDraw}
+          rallyPointsLabel={table.rallyPointsLabel}
+          label={`Tabela, ${stageName}`}
+        />
         <TiebreakSentence tiebreakers={tiebreakers} />
       </section>
     </>

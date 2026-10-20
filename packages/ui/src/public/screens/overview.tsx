@@ -60,6 +60,8 @@ export interface OverviewLeagueTable {
   rows: readonly StandingsTableRow[]
   scoreLabel: string
   allowsDraw: boolean
+  /** `StandingTable.rallyPointsLabel` (#301): kolumna punktów w setach w sporcie z setami. */
+  rallyPointsLabel?: string | null
 }
 
 export interface OverviewScreenProps<M extends OverviewMatch = OverviewMatch, B extends PublicBracketMatch = PublicBracketMatch> {
@@ -293,7 +295,13 @@ export function OverviewScreen<M extends OverviewMatch, B extends PublicBracketM
                 return (
                   <div className="flex flex-col gap-6">
                     {champion && <ChampionBand row={champion} scoreLabel={data.scoreLabel} />}
-                    <StandingsTable rows={data.rows} scoreLabel={data.scoreLabel} allowsDraw={data.allowsDraw} label="Tabela" />
+                    <StandingsTable
+                      rows={data.rows}
+                      scoreLabel={data.scoreLabel}
+                      allowsDraw={data.allowsDraw}
+                      rallyPointsLabel={data.rallyPointsLabel}
+                      label="Tabela"
+                    />
                   </div>
                 )
               }}
