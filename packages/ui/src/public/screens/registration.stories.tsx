@@ -75,8 +75,8 @@ export const Pusty: Story = {
       website: '',
     })
     // Pole-pułapka jest w formularzu, ale poza drzewem dostępności i kolejnością fokusu.
-    await expect(canvas.queryByRole('textbox', { name: 'Strona internetowa' })).not.toBeInTheDocument()
-    await expect(canvasElement.querySelector('input[name="website"]')).toHaveAttribute('tabindex', '-1')
+    await expect(canvas.queryByRole('textbox', { name: 'Nie wypełniaj tego pola' })).not.toBeInTheDocument()
+    await expect(canvasElement.querySelector('input[name="ta-check"]')).toHaveAttribute('tabindex', '-1')
   },
 }
 
@@ -119,6 +119,12 @@ export const BledyWalidacji: Story = {
     await expect(canvas.getByRole('checkbox')).toHaveAccessibleDescription('Zaznacz zgodę na przetwarzanie danych.')
     // Pole bez błędu nie udaje błędnego.
     await expect(canvas.getByLabelText('Telefon (opcjonalnie)')).not.toHaveAttribute('aria-invalid')
+
+    // Po usunięciu wiersza błędy zawodników znikają, zamiast przeskoczyć na
+    // kolejnego: zostaje Kamil Dąb ze swoim numerem i bez cudzego błędu.
+    await userEvent.click(canvas.getByRole('button', { name: 'Usuń zawodnika 1' }))
+    await expect(canvas.getByLabelText('Zawodnik 1')).toHaveValue('Kamil Dąb')
+    await expect(canvas.getByLabelText('Numer zawodnika 1')).not.toHaveAttribute('aria-invalid')
   },
 }
 

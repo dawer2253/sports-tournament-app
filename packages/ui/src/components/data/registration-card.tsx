@@ -22,7 +22,7 @@ export interface RegistrationCardProps {
 }
 
 /** Chwila zgłoszenia albo decyzji, „10 paź, 19:42”: bez dnia tygodnia, bo liczy się kiedy, nie jaki to dzień. */
-function formatDecisionTime(iso: string, timeZone?: string): string {
+function formatRegistrationMoment(iso: string, timeZone?: string): string {
   return new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(iso))
 }
 
@@ -46,10 +46,11 @@ export function RegistrationCard({ registration, timeZone, actions, note, error 
           </Heading>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {decision && <Badge variant={decision.variant}>{decision.label}</Badge>}
+            {/* Przy decyzji etykietę niesie plakietka, więc obok stoi sama data. */}
             <span>
               {decision && registration.decidedAt
-                ? `${decision.label} ${formatDecisionTime(registration.decidedAt, timeZone)}`
-                : `Zgłoszone ${formatDecisionTime(registration.createdAt, timeZone)}`}
+                ? formatRegistrationMoment(registration.decidedAt, timeZone)
+                : `Zgłoszone ${formatRegistrationMoment(registration.createdAt, timeZone)}`}
             </span>
           </div>
         </div>
@@ -91,7 +92,9 @@ export function RegistrationCard({ registration, timeZone, actions, note, error 
               </ul>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">Bez składu — zawodników dopiszesz po przyjęciu.</p>
+            <p className="text-sm text-muted-foreground">
+              {decision ? 'Bez składu.' : 'Bez składu — zawodników dopiszesz po przyjęciu.'}
+            </p>
           ))}
 
         {note && <p className="text-sm text-muted-foreground">{note}</p>}

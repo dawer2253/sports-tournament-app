@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { Input } from './input'
 import { Label } from './label'
 import { Switch } from './switch'
@@ -46,46 +47,48 @@ export interface RegistrationFieldProps {
  * żeby dało się go ustawić przed otwarciem.
  */
 export function RegistrationField({ value, onChange, errors = {}, notice, disabled }: RegistrationFieldProps) {
+  const id = React.useId()
+  const ids = { open: `${id}-open`, notice: `${id}-notice`, openError: `${id}-open-error`, deadline: `${id}-deadline`, hint: `${id}-hint`, deadlineError: `${id}-deadline-error` }
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
         <div className="flex items-center gap-3">
           <Switch
-            id="registration-open"
+            id={ids.open}
             checked={value.open}
             disabled={disabled}
-            aria-describedby={[notice && 'registration-notice', errors.open && 'registration-open-error'].filter(Boolean).join(' ') || undefined}
+            aria-describedby={[notice && ids.notice, errors.open && ids.openError].filter(Boolean).join(' ') || undefined}
             onCheckedChange={(open) => onChange({ ...value, open })}
           />
-          <Label htmlFor="registration-open">Zapisy otwarte</Label>
+          <Label htmlFor={ids.open}>Zapisy otwarte</Label>
         </div>
         {notice && (
-          <p id="registration-notice" className="text-sm text-muted-foreground">
+          <p id={ids.notice} className="text-sm text-muted-foreground">
             {notice}
           </p>
         )}
         {errors.open && (
-          <p id="registration-open-error" className="text-sm text-destructive">
+          <p id={ids.openError} className="text-sm text-destructive">
             {errors.open}
           </p>
         )}
       </div>
       <div className="grid w-60 content-start gap-2">
-        <Label htmlFor="registration-deadline">Termin zapisów (opcjonalnie)</Label>
+        <Label htmlFor={ids.deadline}>Termin zapisów (opcjonalnie)</Label>
         <Input
-          id="registration-deadline"
+          id={ids.deadline}
           type="datetime-local"
           value={value.deadline}
           disabled={disabled}
           aria-invalid={errors.deadline ? true : undefined}
-          aria-describedby={['registration-deadline-hint', errors.deadline && 'registration-deadline-error'].filter(Boolean).join(' ')}
+          aria-describedby={[ids.hint, errors.deadline && ids.deadlineError].filter(Boolean).join(' ')}
           onChange={(event) => onChange({ ...value, deadline: event.target.value })}
         />
-        <p id="registration-deadline-hint" className="text-xs text-muted-foreground">
+        <p id={ids.hint} className="text-xs text-muted-foreground">
           Po tej chwili formularz nie przyjmie zgłoszenia. Puste pole: bez terminu.
         </p>
         {errors.deadline && (
-          <p id="registration-deadline-error" className="text-sm text-destructive">
+          <p id={ids.deadlineError} className="text-sm text-destructive">
             {errors.deadline}
           </p>
         )}

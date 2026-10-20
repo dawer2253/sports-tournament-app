@@ -46,6 +46,9 @@ export const EMPTY_REGISTRATION: RegistrationDraft = {
 /** Błędy pod kluczami z kontraktu → komunikat pod polem. */
 export type RegistrationErrors = Readonly<Record<string, string>>
 
+/** Brak błędów jako jeden obiekt: ekran porównuje `errors` z poprzednimi, więc nowe `{}` przy każdym renderze wyglądałoby na nową odpowiedź. */
+const NO_ERRORS: RegistrationErrors = {}
+
 const FIELD_KEYS = ['teamName', 'contactName', 'contactEmail', 'contactPhone', 'consent', 'players']
 
 /** Czy błąd ma swoje pole w formularzu; reszta (np. `registration`) idzie nad formularz. */
@@ -82,7 +85,7 @@ export interface RegistrationScreenProps {
  * wiersz po wierszu) i zgoda. Błędy z API stoją pod polami, a błąd bez
  * pola i komunikat zbiorczy w tablicy nad formularzem (`role="alert"`).
  */
-export function RegistrationScreen({ deadline, timeZone, errors = {}, formError, submitting = false, onSubmit, initialDraft = EMPTY_REGISTRATION }: RegistrationScreenProps) {
+export function RegistrationScreen({ deadline, timeZone, errors = NO_ERRORS, formError, submitting = false, onSubmit, initialDraft = EMPTY_REGISTRATION }: RegistrationScreenProps) {
   const [draft, setDraft] = React.useState(initialDraft)
   const headId = React.useId()
   const until = registrationDeadline(deadline, timeZone)
@@ -96,6 +99,34 @@ export function RegistrationScreen({ deadline, timeZone, errors = {}, formError,
       'players',
       draft.players.map((player, at) => (at === index ? { ...player, ...patch } : player)),
     )
+
+  // Wiersz składu ma stały klucz, a nie pozycję: po usunięciu wiersza pola
+  // pozostałych zawodników zostają ze swoją treścią i fokusem.
+  const nextRowKey = React.useRef(initialDraft.players.length)
+  const [rowKeys, setRowKeys] = React.useState(() => initialDraft.players.map((_, index) => index))
+  const addPlayer = () => {
+    set('players', [...draft.players, { name: '', number: '' }])
+    setRowKeys((keys) => [...keys, nextRowKey.current++])
+  }
+  const removePlayer = (index: number) => {
+    set(
+      'players',
+      draft.players.filter((_, at) => at !== index),
+    )
+    setRowKeys((keys) => keys.filter((_, at) => at !== index))
+    setPlayerErrorsStale(true)
+  }
+
+  // Błędy z API wskazują zawodnika pozycją (`players.1.number`). Po usunięciu
+  // wiersza pozycje się przesuwają, więc do następnej odpowiedzi błędy
+  // zawodników znikają, zamiast przeskoczyć na kogoś innego.
+  const [playerErrorsStale, setPlayerErrorsStale] = React.useState(false)
+  const [lastErrors, setLastErrors] = React.useState(errors)
+  if (lastErrors !== errors) {
+    setLastErrors(errors)
+    setPlayerErrorsStale(false)
+  }
+  const playerError = (index: number, field: 'name' | 'number') => (playerErrorsStale ? undefined : errors[`players.${index}.${field}`])
 
   return (
     <section aria-labelledby={headId} data-slot="registration" className="flex flex-col gap-8">
@@ -172,12 +203,12 @@ export function RegistrationScreen({ deadline, timeZone, errors = {}, formError,
               {draft.players.map((player, index) => {
                 const n = index + 1
                 return (
-                  <li key={index} data-slot="registration-player" className="grid grid-cols-[minmax(0,1fr)_5.5rem] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_6rem_auto]">
+                  <li key={rowKeys[index]} data-slot="registration-player" className="grid grid-cols-[minmax(0,1fr)_5.5rem] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_6rem_auto]">
                     <TextField
                       label={`Zawodnik ${n}`}
                       maxLength={120}
                       value={player.name}
-                      error={errors[`players.${index}.name`]}
+                      error={playerError(index, 'name')}
                       onChange={(event) => setPlayer(index, { name: event.target.value })}
                     />
                     <TextField
@@ -186,18 +217,13 @@ export function RegistrationScreen({ deadline, timeZone, errors = {}, formError,
                       inputMode="numeric"
                       maxLength={3}
                       value={player.number}
-                      error={errors[`players.${index}.number`]}
+                      error={playerError(index, 'number')}
                       onChange={(event) => setPlayer(index, { number: event.target.value })}
                     />
                     <Button
                       aria-label={`Usuń zawodnika ${n}`}
                       className="col-span-2 justify-self-start sm:col-span-1 sm:mt-[1.875rem]"
-                      onClick={() =>
-                        set(
-                          'players',
-                          draft.players.filter((_, at) => at !== index),
-                        )
-                      }
+                      onClick={() => removePlayer(index)}
                     >
                       Usuń
                     </Button>
@@ -208,18 +234,20 @@ export function RegistrationScreen({ deadline, timeZone, errors = {}, formError,
           )}
           {errors.players && <FieldError id={`${headId}-sklad-blad`}>{errors.players}</FieldError>}
           {draft.players.length < REGISTRATION_MAX_PLAYERS && (
-            <Button className="self-start" onClick={() => set('players', [...draft.players, { name: '', number: '' }])}>
+            <Button className="self-start" onClick={addPlayer}>
               Dodaj zawodnika
             </Button>
           )}
         </FormSection>
 
         {/* Pole-pułapka (#300): poza ekranem i poza kolejnością fokusu, więc
-            wypełnia je tylko bot. Czytniki ekranu go nie widzą. */}
+            wypełnia je tylko bot. Czytniki ekranu go nie widzą. Nazwa i etykieta
+            nie przypominają niczego, co przeglądarka umie uzupełnić sama —
+            uzupełnione przez nią „website” po cichu przepadłoby jako spam. */}
         <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
           <label>
-            Strona internetowa
-            <input name="website" tabIndex={-1} autoComplete="off" value={draft.website} onChange={(event) => set('website', event.target.value)} />
+            Nie wypełniaj tego pola
+            <input name="ta-check" tabIndex={-1} autoComplete="off" value={draft.website} onChange={(event) => set('website', event.target.value)} />
           </label>
         </div>
 
