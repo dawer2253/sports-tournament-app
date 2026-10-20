@@ -25,6 +25,13 @@ type ConfirmDeleteDialogProps = {
   /** Skutek usunięcia. */
   description?: ReactNode
   /**
+   * Pytanie zamiast „Usunąć {entity} „{name}”?” i napis przycisku zamiast
+   * „Usuń {entity}”, gdy nieodwracalna akcja nie jest usunięciem bytu, np.
+   * odrzucenie zgłoszenia, które kasuje dane zgłaszającego (#300).
+   */
+  title?: ReactNode
+  confirmLabel?: string
+  /**
    * Usunięcie tak dotkliwe, że trzeba przepisać nazwę (cały turniej). Przycisk
    * działa dopiero przy zgodności po `trim()`, z rozróżnianiem wielkości liter.
    */
@@ -66,6 +73,8 @@ function ConfirmDeleteContent({
   entity,
   name,
   description,
+  title,
+  confirmLabel,
   confirmByName,
   confirmDisabled,
   error,
@@ -79,9 +88,7 @@ function ConfirmDeleteContent({
   return (
     <>
       <DialogHeader>
-        <DialogTitle>
-          Usunąć {entity} „{name}”?
-        </DialogTitle>
+        <DialogTitle>{title ?? <>Usunąć {entity} „{name}”?</>}</DialogTitle>
         {description && <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
       <DialogError>{error}</DialogError>
@@ -113,7 +120,7 @@ function ConfirmDeleteContent({
             disabled={!confirmed}
             onClick={onConfirm}
           >
-            Usuń {entity}
+            {confirmLabel ?? `Usuń ${entity}`}
           </PendingButton>
         )}
       </DialogFooter>

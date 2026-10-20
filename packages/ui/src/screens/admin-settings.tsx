@@ -7,6 +7,7 @@ import { BrandColorPicker, DEFAULT_BRAND_COLOR } from '../components/ui/brand-co
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { MatchPeriodsField } from '../components/ui/match-periods-field'
+import { REGISTRATION_DESCRIPTION, RegistrationField, registrationNotice, type RegistrationFieldValue } from '../components/ui/registration-field'
 import { Separator } from '../components/ui/separator'
 import { SettingsSection } from '../components/ui/settings-section'
 import { TiebreakerList } from '../components/data/tiebreaker-list'
@@ -26,6 +27,8 @@ export interface AdminSettingsProps {
   primaryColor?: string
   /** Slug w polu formularza. Zapisany slug to ten z danych demo. */
   slug?: string
+  /** Zapisy w polu formularza (#300). */
+  registration?: RegistrationFieldValue
 }
 
 /**
@@ -39,12 +42,14 @@ export function AdminSettings({
   logoUrl = null,
   primaryColor = DEFAULT_BRAND_COLOR,
   slug: initialSlug = tournament.slug,
+  registration: initialRegistration = { open: false, deadline: '' },
 }: AdminSettingsProps) {
   const config = sportSettings[sport]
   const [color, setColor] = React.useState(primaryColor)
   const [slug, setSlug] = React.useState(initialSlug)
   const [points, setPoints] = React.useState(config.defaultPoints)
   const [periods, setPeriods] = React.useState<{ count: number; minutes: number | null }>(demoPeriods[sport])
+  const [registration, setRegistration] = React.useState<RegistrationFieldValue>(initialRegistration)
   // Jak w `ImageWithFallback`: pamiętamy adres, który zawiódł, a nie flagę.
   const [failedLogoUrl, setFailedLogoUrl] = React.useState<string | null>(null)
 
@@ -183,6 +188,12 @@ export function AdminSettings({
                   </div>
                   <TiebreakerList items={config.tiebreakers} />
                 </div>
+              </SettingsSection>
+
+              <Separator />
+
+              <SettingsSection title="Zapisy" description={REGISTRATION_DESCRIPTION}>
+                <RegistrationField value={registration} onChange={setRegistration} notice={registrationNotice(status, registration.open)} />
               </SettingsSection>
             </CardContent>
             <CardFooter className="justify-end">
