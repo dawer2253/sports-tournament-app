@@ -347,6 +347,13 @@ kolejności:
 - Dwumecz w pucharze (mecz i rewanż w parze). Zmienia model krawędzi, bo
   zwycięzca wynika z sumy dwóch meczów, więc wymaga nowego ADR. W S4 para to
   jeden mecz (#211, #234).
+- Powiadomienia e-mail o zgłoszeniu drużyny (dla zgłaszającego i dla
+  organizatora) i publiczny link statusu zgłoszenia. Przy zapisach z #300
+  zgłaszający dowiaduje się o decyzji tylko od organizatora (#300).
+- Licznik oczekujących zgłoszeń na liście turniejów organizatora. Przy #300
+  stoi tylko przy zakładce „Zgłoszenia” w turnieju (#300).
+- Zgłoszenia do turnieju w szkicu. Wymagają wyjątku od `404` dla szkicu,
+  więc idą razem z podglądem strony publicznej przed publikacją (#300).
 
 ---
 
