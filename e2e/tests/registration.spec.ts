@@ -48,10 +48,9 @@ test('zgłaszający zgłasza drużynę na stronie publicznej, a organizator przy
     await expect(page.getByRole('region', { name: 'Rozpatrzone' }).getByRole('article', { name: teamName })).toBeVisible();
   });
 
-  await test.step('drużyna stoi na liście drużyn panelu, z zawodnikiem ze zgłoszenia', async () => {
+  await test.step('drużyna stoi na liście drużyn panelu, a jej skład ma zawodnika ze zgłoszenia', async () => {
     await page.getByRole('navigation', { name: 'Sekcje turnieju' }).getByRole('link', { name: 'Drużyny' }).click();
-    const row = page.getByRole('row', { name: new RegExp(teamName) });
-    await expect(row).toBeVisible();
-    await expect(row).toContainText('1');
+    await page.getByRole('link', { name: teamName }).click();
+    await expect(page.getByRole('row', { name: /Paweł Lis/ })).toContainText('9');
   });
 });
