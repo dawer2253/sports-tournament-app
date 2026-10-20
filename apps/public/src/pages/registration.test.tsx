@@ -110,6 +110,19 @@ describe('Zgłoszenie drużyny: formularz', () => {
     expect(bodies).toEqual([]);
   });
 
+  it('błąd serwera (500) pokazuje ogólny komunikat, nie surowy message', async () => {
+    publicApi({ data: open() });
+    registrationApi(() => HttpResponse.json({ message: 'SQLSTATE[HY000]: General error' }, { status: 500 }));
+    const user = userEvent.setup();
+    renderAt(FORM);
+
+    await fillRequired(user);
+    await user.click(screen.getByRole('button', { name: 'Wyślij zgłoszenie' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nie udało się wysłać zgłoszenia. Spróbuj ponownie.');
+    expect(screen.queryByText(/SQLSTATE/)).not.toBeInTheDocument();
+  });
+
   it('pokazuje treść 429 nad formularzem', async () => {
     publicApi({ data: open() });
     registrationApi(() => HttpResponse.json({ message: 'Zbyt wiele prób. Spróbuj ponownie później.' }, { status: 429 }));

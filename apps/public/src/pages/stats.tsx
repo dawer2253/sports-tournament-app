@@ -1,6 +1,7 @@
 import { LoadError, NoStats, StatsLoading, StatsScreen, type StatBoard } from '@tournament/ui/public';
 import { useSearchParams } from 'react-router';
 import { useLeaderboards } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 import { tabHref, useTournament } from './tournament-layout';
 
 /**
@@ -39,7 +40,7 @@ export function StatsPage() {
   const main = leaderboards[index]!;
   if (!main.data) {
     if (main.error) {
-      return <LoadError title="Statystyki" label="klasyfikacji" message={main.error.message} onRetry={() => void main.refetch()} />;
+      return <LoadError title="Statystyki" label="klasyfikacji" message={loadErrorMessage(main.error)} onRetry={() => void main.refetch()} />;
     }
     return <StatsLoading />;
   }
@@ -49,7 +50,7 @@ export function StatsPage() {
       const query = leaderboards[position]!;
       if (query.data) return [stat.code, { status: 'ready', leaderboard: query.data }];
       if (query.error) {
-        return [stat.code, { status: 'error', message: query.error.message, onRetry: () => void query.refetch() }];
+        return [stat.code, { status: 'error', message: loadErrorMessage(query.error), onRetry: () => void query.refetch() }];
       }
       return [stat.code, { status: 'loading' }];
     }),

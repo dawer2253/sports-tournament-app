@@ -3,6 +3,7 @@ import { FixturesScreen, groupByRound, LoadError, MatchListLoading, ResultsScree
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useFixtures, useResults } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 import { matchHref, useTabNav, useTournament } from './tournament-layout';
 import { useBracketRows } from './use-bracket';
 import { useGroups } from './use-groups';
@@ -55,7 +56,7 @@ export function MatchRounds({ mode }: { mode: 'fixtures' | 'results' }) {
       return (
         <LoadError
           label={LABELS[mode]}
-          message={error.message}
+          message={loadErrorMessage(error)}
           onRetry={() => {
             if (!fixtures.data) void fixtures.refetch();
             if (!results.data) void results.refetch();

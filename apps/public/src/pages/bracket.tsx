@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { useStandings } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 import { matchHref, useTabNav, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 import { useGroups } from './use-groups';
@@ -78,7 +79,7 @@ export function BracketPage() {
 
   if (!matches.data) {
     return matches.error ? (
-      <LoadError title="Drabinka" label="drabinki" message={matches.error.message} onRetry={() => void matches.refetch()} />
+      <LoadError title="Drabinka" label="drabinki" message={loadErrorMessage(matches.error)} onRetry={() => void matches.refetch()} />
     ) : (
       <BracketLoading />
     );

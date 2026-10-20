@@ -1,6 +1,7 @@
 import { LoadError, MatchLoading, MatchNotFound, MatchScreen } from '@tournament/ui/public';
 import { useNavigate, useParams } from 'react-router';
 import { usePublicMatch } from '../lib/queries';
+import { loadErrorMessage } from '../lib/api-error';
 import { tabHref, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
 
@@ -27,7 +28,7 @@ export function MatchPage() {
   }
 
   if (!match.data) {
-    if (match.error) return <LoadError label="meczu" message={match.error.message} onRetry={() => void match.refetch()} />;
+    if (match.error) return <LoadError label="meczu" message={loadErrorMessage(match.error)} onRetry={() => void match.refetch()} />;
     return <MatchLoading />;
   }
 
