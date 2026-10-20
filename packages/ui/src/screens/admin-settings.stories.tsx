@@ -109,7 +109,7 @@ export const LogoNieLadujeSie: Story = {
   },
 }
 
-/** Kolor spoza palet ze słabym kontrastem: tryb zaawansowany i ostrzeżenie. */
+/** Kolor spoza palet ze słabym kontrastem: zaznaczony „Własny”, otwarte pole hex i ostrzeżenie. */
 export const SlabyKontrast: Story = {
   args: { primaryColor: '#F2C94C' },
   play: async ({ canvasElement }) => {
