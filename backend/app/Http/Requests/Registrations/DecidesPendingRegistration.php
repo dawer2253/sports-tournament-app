@@ -11,6 +11,20 @@ use Illuminate\Validation\Validator;
  */
 trait DecidesPendingRegistration
 {
+    /**
+     * Te same reguły jeszcze raz, już pod blokadą turnieju
+     * (`TeamRegistrationController::decide()`). Pierwsza walidacja idzie przed
+     * transakcją, więc dwie równoległe decyzje — przyjęcie i odrzucenie tego
+     * samego zgłoszenia albo przyjęcia dwóch zgłoszeń o tej samej nazwie —
+     * przeszłyby ją obie. Walidator jest zapamiętany po pierwszym razie, więc
+     * trzeba go zbudować od nowa na świeżym stanie bazy.
+     */
+    public function validateAgain(): void
+    {
+        $this->validator = null;
+        $this->validateResolved();
+    }
+
     private function checkPending(Validator $validator): void
     {
         /** @var TeamRegistration $registration */

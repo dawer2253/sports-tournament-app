@@ -12,6 +12,7 @@ use App\Http\Resources\TeamResource;
 use App\Models\Team;
 use App\Models\TeamRegistration;
 use App\Models\Tournament;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
@@ -104,21 +105,9 @@ class TeamRegistrationController extends Controller
         );
     }
 
-    /**
-     * Blokada wiersza turnieju ustawia przyjęcia w jednym turnieju w kolejce,
-     * a pod nią reguły przyjęcia sprawdzają się jeszcze raz na świeżym stanie
-     * (`AcceptTeamRegistrationRequest::validateAgain()`): te same klucze błędów,
-     * także dla kompletu drużyn i meczu rozpoczętego.
-     */
     public function accept(AcceptTeamRegistrationRequest $request, TeamRegistration $registration): JsonResponse
     {
-        $team = DB::transaction(function () use ($request, $registration): Team {
-            Tournament::query()->whereKey($registration->tournament_id)->lockForUpdate()->first();
-            $registration->refresh();
-            $request->validateAgain();
-
-            return $registration->accept();
-        });
+        $team = $this->decide($request, $registration, fn (): Team => $registration->accept());
 
         return (new TeamResource($team->loadCount(Team::resourceCounts())))
             ->response()
@@ -127,9 +116,32 @@ class TeamRegistrationController extends Controller
 
     public function reject(RejectTeamRegistrationRequest $request, TeamRegistration $registration): TeamRegistrationResource
     {
-        $registration->reject();
+        $this->decide($request, $registration, fn () => $registration->reject());
 
         return new TeamRegistrationResource($registration);
+    }
+
+    /**
+     * Decyzja pod blokadą wiersza turnieju: decyzje w jednym turnieju idą
+     * w kolejce, a pod blokadą reguły sprawdzają się jeszcze raz na świeżym
+     * stanie (`DecidesPendingRegistration::validateAgain()`), z tymi samymi
+     * kluczami błędów — przy przyjęciu także dla kompletu drużyn i meczu
+     * rozpoczętego.
+     *
+     * @template T
+     *
+     * @param  Closure(): T  $decision
+     * @return T
+     */
+    private function decide(AcceptTeamRegistrationRequest|RejectTeamRegistrationRequest $request, TeamRegistration $registration, Closure $decision): mixed
+    {
+        return DB::transaction(function () use ($request, $registration, $decision): mixed {
+            Tournament::query()->whereKey($registration->tournament_id)->lockForUpdate()->first();
+            $registration->refresh();
+            $request->validateAgain();
+
+            return $decision();
+        });
     }
 
     private function receipt(string $teamName): JsonResponse

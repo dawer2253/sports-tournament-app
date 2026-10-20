@@ -65,7 +65,7 @@ class TeamRegistration extends Model
      * Tworzy drużynę i zawodników ze składu, w jednej transakcji ze zmianą
      * stanu zgłoszenia: albo powstaje wszystko, albo nic. Dane zgłaszającego
      * do drużyny nie przechodzą. Reguły przyjęcia sprawdza wywołujący, pod
-     * blokadą turnieju (`TeamRegistrationController::accept()`).
+     * blokadą turnieju (`TeamRegistrationController::decide()`).
      */
     public function accept(): Team
     {

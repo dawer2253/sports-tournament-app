@@ -539,7 +539,7 @@ it('odmawia przyjęcia w turnieju z meczem rozpoczętym pod kluczem teams', func
  * przyjęcie, które właśnie się zatwierdziło. Rozstrzyga je dopiero walidacja
  * pod blokadą.
  */
-function acceptRacingWith(TeamRegistration $registration, Closure $concurrent): TestResponse
+function racingWith(Closure $concurrent): void
 {
     $done = false;
     DB::listen(function (QueryExecuted $query) use (&$done, $concurrent): void {
@@ -548,9 +548,31 @@ function acceptRacingWith(TeamRegistration $registration, Closure $concurrent): 
             $concurrent();
         }
     });
+}
+
+function acceptRacingWith(TeamRegistration $registration, Closure $concurrent): TestResponse
+{
+    racingWith($concurrent);
 
     return acceptRegistration($registration);
 }
+
+it('pod blokadą odmawia odrzucenia zgłoszenia, które w międzyczasie przyjęto', function () {
+    $tournament = Tournament::factory()->openForRegistration()->create();
+    $registration = TeamRegistration::factory()->for($tournament)->create(['players' => [['name' => 'Paweł Lis', 'number' => 1]]]);
+
+    racingWith(fn () => TeamRegistration::findOrFail($registration->id)->accept());
+
+    rejectRegistration($registration)
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.registration', [TeamRegistration::ALREADY_DECIDED_MESSAGE]);
+
+    // Całe żądanie odrzucenia się wycofuje, więc nie zostaje ani zgłoszenie
+    // „odrzucone” przy drużynie, ani skasowany skład.
+    expect($registration->fresh())
+        ->status->toBe('pending')
+        ->players->toBe([['name' => 'Paweł Lis', 'number' => 1]]);
+});
 
 it('pod blokadą odmawia przyjęcia nazwy, którą w międzyczasie zajęło inne przyjęcie', function () {
     $tournament = Tournament::factory()->openForRegistration()->create();
