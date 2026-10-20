@@ -2,6 +2,7 @@ import { AlertTriangle, Check, ChevronRight, MapPin } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cva } from 'class-variance-authority'
 import { formatKickoff } from '../../lib/kickoff'
+import { formatSets } from '../../lib/sets'
 import { cn, isModifiedClick } from '../../lib/utils'
 import { LiveMarker } from '../layout/live-marker'
 import { Badge } from '../ui/badge'
@@ -255,6 +256,21 @@ export function MatchRow({
       <span className="col-start-2 row-start-2 flex match-row-wide:col-start-3 match-row-wide:row-start-1">
         <Score match={match} />
       </span>
+      {/* Sport z setami (#301): wyniki setów pod polem wyniku, set po secie,
+          bo w kolumnie wyniku pięć setów w jednej linii się nie mieści. */}
+      {match.status !== 'scheduled' && match.sets && match.sets.length > 0 && (
+        <span
+          data-slot="match-sets"
+          className="col-start-2 row-start-3 flex flex-wrap justify-center gap-x-1.5 text-xs text-muted-foreground tabular-nums match-row-wide:col-start-3 match-row-wide:row-start-2"
+        >
+          <span className="sr-only">Sety: {formatSets(match.sets)}</span>
+          {match.sets.map((set, index) => (
+            <span key={index} aria-hidden>
+              {set.home}:{set.away}
+            </span>
+          ))}
+        </span>
+      )}
       <span
         data-slot="match-team"
         className={cn(

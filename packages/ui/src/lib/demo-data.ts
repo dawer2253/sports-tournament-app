@@ -325,7 +325,12 @@ export const venueRows: VenueRow[] = [
 export type DemoSportSettings = {
   name: string
   allowsDraw: boolean
-  defaultPoints: { win: number; draw: number; loss: number }
+  /** W sporcie z setami (#301) także punkty za wygraną i porażkę w secie decydującym. */
+  defaultPoints: { win: number; draw: number; loss: number; winDecidingSet?: number; lossDecidingSet?: number }
+  /** `SportConfig.defaultSetFormat`: format seta sportu z setami, w pozostałych brak. */
+  setFormat?: { setsToWin: number; setPoints: number; decidingSetPoints: number; minLead: number }
+  /** `StandingTable.rallyPointsLabel`: kolumna punktów w setach, tylko w sporcie z setami. */
+  rallyPointsLabel?: string
   tiebreakers: TiebreakerItem[]
   /**
    * `availableTiebreakers` z etykietami, w kolejności sportu: z tego
@@ -336,7 +341,7 @@ export type DemoSportSettings = {
   scoreLabel: string
 }
 
-export const sportSettings: Record<'football' | 'basketball', DemoSportSettings> = {
+export const sportSettings: Record<'football' | 'basketball' | 'volleyball', DemoSportSettings> = {
   football: {
     name: 'Piłka nożna',
     allowsDraw: true,
@@ -373,6 +378,28 @@ export const sportSettings: Record<'football' | 'basketball', DemoSportSettings>
       { code: 'wins', label: 'Zwycięstwa' },
     ],
     scoreLabel: 'Punkty',
+  },
+  volleyball: {
+    name: 'Siatkówka',
+    allowsDraw: false,
+    defaultPoints: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 },
+    setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+    rallyPointsLabel: 'Punkty w setach',
+    tiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'wins', label: 'Zwycięstwa' },
+      { code: 'set_ratio', label: 'Stosunek setów' },
+      { code: 'point_ratio', label: 'Stosunek punktów w setach' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+    ],
+    availableTiebreakers: [
+      { code: 'points', label: 'Punkty w tabeli' },
+      { code: 'wins', label: 'Zwycięstwa' },
+      { code: 'set_ratio', label: 'Stosunek setów' },
+      { code: 'point_ratio', label: 'Stosunek punktów w setach' },
+      { code: 'head_to_head', label: 'Bezpośredni mecz' },
+    ],
+    scoreLabel: 'Sety',
   },
 }
 
@@ -1123,6 +1150,7 @@ function pageBase(match: ScheduleDemoMatch, status: MatchPageData['status']) {
 export const demoPeriods = {
   football: { count: 2, minutes: 45 },
   basketball: { count: 4, minutes: 10 },
+  volleyball: { count: 1, minutes: null },
 } as const
 
 /** Ustawienia zegara demo (#297): podział meczu, długość i `runningClock` sportu, jak w `PublicTournament`. */

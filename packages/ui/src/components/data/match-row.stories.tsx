@@ -573,3 +573,42 @@ export const GrupaIPlayoffNaTelefonie: Story = {
     await expectColumns(canvasElement, 3)
   },
 }
+
+/** Mecz siatkówki 3:2 (#301): w polu wyniku sety wygrane, pod nim wyniki setów. */
+const volleyball: MatchRowData = {
+  ...finished,
+  id: 997,
+  homeScore: 3,
+  awayScore: 2,
+  sets: [
+    { home: 25, away: 23 },
+    { home: 23, away: 25 },
+    { home: 25, away: 21 },
+    { home: 20, away: 25 },
+    { home: 15, away: 11 },
+  ],
+}
+
+/** Siatkówka: wyniki setów stoją pod polem wyniku i nie wychodzą poza wiersz, także na telefonie. */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  args: { match: volleyball },
+  play: async ({ canvasElement }) => {
+    const sets = canvasElement.querySelector<HTMLElement>('[data-slot="match-sets"]')!
+    await expect(sets).toHaveTextContent('Sety: 25:23, 23:25, 25:21, 20:25, 15:11')
+    const score = canvasElement.querySelector<HTMLElement>('[data-slot="match-score"]')!.getBoundingClientRect()
+    await expect(sets.getBoundingClientRect().top).toBeGreaterThanOrEqual(score.bottom)
+  },
+}
+
+export const SiatkowkaTelefon: Story = {
+  name: 'Siatkówka, telefon',
+  ...phone375,
+  args: { match: volleyball },
+  play: async ({ canvasElement }) => {
+    const row = canvasElement.querySelector<HTMLElement>('[data-slot="match-row"]')!.getBoundingClientRect()
+    const sets = canvasElement.querySelector<HTMLElement>('[data-slot="match-sets"]')!.getBoundingClientRect()
+    await expect(sets.left).toBeGreaterThanOrEqual(row.left)
+    await expect(sets.right).toBeLessThanOrEqual(row.right)
+  },
+}

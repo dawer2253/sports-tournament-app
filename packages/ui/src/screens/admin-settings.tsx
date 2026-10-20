@@ -7,6 +7,7 @@ import { BrandColorPicker, DEFAULT_BRAND_COLOR } from '../components/ui/brand-co
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { MatchPeriodsField } from '../components/ui/match-periods-field'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Separator } from '../components/ui/separator'
 import { SettingsSection } from '../components/ui/settings-section'
 import { TiebreakerList } from '../components/data/tiebreaker-list'
@@ -26,6 +27,8 @@ export interface AdminSettingsProps {
   primaryColor?: string
   /** Slug w polu formularza. Zapisany slug to ten z danych demo. */
   slug?: string
+  /** Sport z setami (#301): w turnieju wpisano już set, więc format seta jest zamknięty. */
+  setFormatLocked?: boolean
 }
 
 /**
@@ -39,6 +42,7 @@ export function AdminSettings({
   logoUrl = null,
   primaryColor = DEFAULT_BRAND_COLOR,
   slug: initialSlug = tournament.slug,
+  setFormatLocked = false,
 }: AdminSettingsProps) {
   const config = sportSettings[sport]
   const [color, setColor] = React.useState(primaryColor)
@@ -55,6 +59,13 @@ export function AdminSettings({
     // W sporcie bez remisów pola nie ma, a aplikacja wysyła `draw: 0` (#91 pkt 7).
     ...(config.allowsDraw ? [{ key: 'draw' as const, label: 'Remis' }] : []),
     { key: 'loss', label: 'Porażka' },
+    // Sport z setami (#301): mecz rozstrzygnięty różnicą jednego seta.
+    ...(config.setFormat
+      ? [
+          { key: 'winDecidingSet' as const, label: 'Wygrana w secie decydującym' },
+          { key: 'lossDecidingSet' as const, label: 'Porażka w secie decydującym' },
+        ]
+      : []),
   ]
 
   return (
@@ -141,15 +152,23 @@ export function AdminSettings({
 
               <Separator />
 
-              <SettingsSection title="Rozgrywki" description="Długość meczu i jego podział na części.">
+              <SettingsSection
+                title="Rozgrywki"
+                description={config.setFormat ? 'Długość meczu i format seta.' : 'Długość meczu i jego podział na części.'}
+              >
                 <div className="flex flex-wrap items-start gap-4">
                   <div className="grid w-44 content-start gap-2">
                     <Label htmlFor="match-duration">Długość meczu (min)</Label>
-                    <Input id="match-duration" type="number" min={10} max={600} defaultValue={sport === 'basketball' ? 40 : 60} />
+                    <Input id="match-duration" type="number" min={10} max={600} defaultValue={{ football: 60, basketball: 40, volleyball: 90 }[sport]} />
                   </div>
                 </div>
-                {/* Podział meczu (#210): strona meczu liczy z niego części relacji. */}
-                <MatchPeriodsField value={periods} onChange={setPeriods} fallbackMinutes={demoPeriods[sport].minutes} />
+                {/* Podział meczu (#210): strona meczu liczy z niego części relacji.
+                    W sporcie z setami go nie ma, jest format seta (#301). */}
+                {config.setFormat ? (
+                  <SetFormatDemo format={config.setFormat} locked={setFormatLocked} />
+                ) : (
+                  <MatchPeriodsField value={periods} onChange={setPeriods} fallbackMinutes={demoPeriods[sport].minutes} />
+                )}
               </SettingsSection>
 
               <Separator />
@@ -157,13 +176,13 @@ export function AdminSettings({
               <SettingsSection title="Punktacja" description="Punkty w tabeli za wynik meczu i kolejność rozstrzygania remisów.">
                 <div className="flex flex-wrap items-end gap-4">
                   {pointFields.map((field) => (
-                    <div key={field.key} className="w-24 space-y-2">
+                    <div key={field.key} className={field.key.endsWith('DecidingSet') ? 'w-48 space-y-2' : 'w-24 space-y-2'}>
                       <Label htmlFor={`points-${field.key}`}>{field.label}</Label>
                       <Input
                         id={`points-${field.key}`}
                         type="number"
                         min={0}
-                        value={points[field.key]}
+                        value={points[field.key] ?? 0}
                         onChange={(event) => setPoints({ ...points, [field.key]: Number(event.target.value) })}
                       />
                     </div>
@@ -206,5 +225,63 @@ export function AdminSettings({
         </Card>
       </div>
     </TournamentShellDemo>
+  )
+}
+
+/**
+ * Format seta w ustawieniach sportu z setami (#301), jak `SetFormatFields`
+ * w `apps/admin`: mecz do 2 albo 3 wygranych setów, progi seta i seta
+ * decydującego, przewaga. Od pierwszego wpisanego seta pola są wyłączone
+ * ze zdaniem o blokadzie (ADR-0012).
+ */
+function SetFormatDemo({
+  format,
+  locked,
+}: {
+  format: { setsToWin: number; setPoints: number; decidingSetPoints: number; minLead: number }
+  locked: boolean
+}) {
+  const choice = (id: string, label: string, value: number, options: { value: number; label: string }[]) => (
+    <div className="grid w-48 content-start gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Select defaultValue={String(value)} disabled={locked}>
+        <SelectTrigger id={id} aria-label={label} className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={String(option.value)}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+  const points = (id: string, label: string, value: number) => (
+    <div className="grid w-48 content-start gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} type="number" min={5} max={50} defaultValue={value} disabled={locked} />
+    </div>
+  )
+  return (
+    <div role="group" aria-labelledby="set-format-label" className="grid content-start gap-3">
+      <p id="set-format-label" className="text-sm font-medium">
+        Format seta
+      </p>
+      <div className="flex flex-wrap items-start gap-4">
+        {choice('set-format-sets-to-win', 'Mecz do', format.setsToWin, [
+          { value: 2, label: '2 wygranych setów' },
+          { value: 3, label: '3 wygranych setów' },
+        ])}
+        {points('set-format-set-points', 'Set do (pkt)', format.setPoints)}
+        {points('set-format-deciding', 'Set decydujący do (pkt)', format.decidingSetPoints)}
+        {choice('set-format-min-lead', 'Przewaga', format.minLead, [
+          { value: 2, label: '2 punkty (gra na przewagi)' },
+          { value: 1, label: '1 punkt' },
+        ])}
+      </div>
+      {locked && <p className="text-sm text-muted-foreground">Format seta zmienisz tylko przed pierwszym wynikiem.</p>}
+    </div>
   )
 }
