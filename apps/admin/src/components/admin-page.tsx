@@ -1,6 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import type { Tournament } from '@tournament/api-client';
-import { AdminShell, isKnockoutOnly, Skeleton, type AdminNavKey, type AdminSectionKey } from '@tournament/ui';
+import {
+  AdminShell,
+  isKnockoutOnly,
+  pendingRegistrationsBadge,
+  Skeleton,
+  type AdminNavKey,
+  type AdminSectionKey,
+} from '@tournament/ui';
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { api } from '../lib/api';
@@ -147,6 +154,10 @@ export function AdminPage(props: AdminPageProps) {
       tournaments={tournaments}
       navHref={(key) => navRoute(key, openId, knockoutOnly)}
       navDisabledReason={(key) => (key === 'schedule' && knockoutOnly ? 'W pucharze terminarzem jest Drabinka' : undefined)}
+      // Oczekujące zgłoszenia (#300) przy karcie „Zgłoszenia”; liczy je API w turnieju.
+      sectionBadge={(key) =>
+        key === 'registrations' && tournament ? pendingRegistrationsBadge(tournament.registration.pendingCount) : undefined
+      }
       onNavigate={(key) => {
         const route = navRoute(key, openId, knockoutOnly);
         if (route) void navigate(route);

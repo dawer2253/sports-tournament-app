@@ -10,6 +10,9 @@ import {
 import {
   BrandColorPicker,
   MatchPeriodsField,
+  REGISTRATION_DESCRIPTION,
+  RegistrationField,
+  registrationNotice,
   Button,
   Card,
   CardContent,
@@ -566,6 +569,8 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
     'periods.minutes',
     'points',
     ...pointFields.map(({ key }) => `points.${key}` as const),
+    'registration.open',
+    'registration.deadline',
   ] as const;
 
   async function onSubmit(values: TournamentSettingsValues) {
@@ -806,6 +811,24 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   }))}
                 />
               </div>
+            </SettingsSection>
+
+            <Separator />
+
+            {/* Zapisy (#300): zgłoszenia przychodzą do karty „Zgłoszenia”. */}
+            <SettingsSection title="Zapisy" description={REGISTRATION_DESCRIPTION}>
+              <Controller
+                control={control}
+                name="registration"
+                render={({ field }) => (
+                  <RegistrationField
+                    value={field.value}
+                    onChange={field.onChange}
+                    notice={registrationNotice(tournament.status, field.value.open)}
+                    errors={{ open: errors.registration?.open?.message, deadline: errors.registration?.deadline?.message }}
+                  />
+                )}
+              />
             </SettingsSection>
 
             {/* Błąd, którego nie da się przypiąć do pola. */}

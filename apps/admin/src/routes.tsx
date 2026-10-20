@@ -2,6 +2,7 @@ import { Navigate, type RouteObject } from 'react-router';
 import { getToken } from './lib/session';
 import { DEFAULT_SECTION } from './lib/section-route';
 import { LoginPage } from './pages/login';
+import { RegistrationsPage } from './pages/registrations';
 import { TeamPage } from './pages/team';
 import { TeamsPage } from './pages/teams';
 import { TournamentBracketPage } from './pages/tournament-bracket';
@@ -62,6 +63,7 @@ export const routes: RouteObject[] = [
       // Skład jest dzieckiem turnieju, a nie listy: lista nie ma `Outlet`, a skład
       // zastępuje ją w całości, z tą samą aktywną kartą „Drużyny” (#89 pkt 3).
       { path: 'teams/:teamId', element: <TeamPage /> },
+      { path: 'registrations', element: <RegistrationsPage /> },
       { path: 'groups', element: <TournamentGroupsPage /> },
       { path: 'venues', element: <TournamentVenuesPage /> },
       { path: 'settings', element: <TournamentSettingsPage /> },

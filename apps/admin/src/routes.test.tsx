@@ -29,6 +29,7 @@ const TOURNAMENT = {
   points: { win: 2, draw: 0, loss: 1 },
   tiebreakers: ['points'],
   teamsCount: 8,
+  registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+02:00',
   updatedAt: '2026-09-01T10:00:00+02:00',
 };
@@ -170,6 +171,7 @@ describe('trasy turnieju', () => {
     }
     expect(sectionTabs().getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Drużyny',
+      'Zgłoszenia',
       'Grupy',
       'Obiekty',
       'Ustawienia',
