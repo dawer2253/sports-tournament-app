@@ -26,6 +26,7 @@ const TOURNAMENT: Tournament = {
   tiebreakers: ['points', 'score_diff'],
   matchDuration: 60,
   periods: { count: 2, minutes: 45 },
+  setFormat: null,
   teamsCount: 4,
   registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+00:00',
@@ -60,6 +61,7 @@ function match(order: number, matchNumber: number, home: number, away: number, o
     awayScore: null,
     homePenalties: null,
     awayPenalties: null,
+    sets: null,
     status: 'scheduled',
     kickoffAt: null,
     venue: null,
@@ -121,6 +123,7 @@ const SPORTS: Sport[] = [
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       defaultMatchDuration: 60,
       defaultPeriods: { count: 2, minutes: 45 },
+      defaultSetFormat: null,
       eventTypes: [
         { code: 'goal', label: 'Bramka', hasPlayer: true, value: 1, stat: 'goals' },
         { code: 'own_goal', label: 'Bramka samobójcza', hasPlayer: true, value: 1, stat: null },
@@ -1086,5 +1089,134 @@ describe('Terminarz — faza grupowa (#258)', () => {
     // Dwie grupy po dwie drużyny: jedna kolejka i dwa mecze na spotkanie.
     expect(within(dialog).getByText('1 kolejka, 2 mecze')).toBeInTheDocument();
     expect(within(dialog).getByText('2 kolejki, 4 mecze')).toBeInTheDocument();
+  });
+});
+
+/** Turniej siatkówki (#301): sport z setami, format seta z przykładu `GET /sports`. */
+function serveVolleyball() {
+  server.use(
+    http.get(`${API}/tournaments/${TOURNAMENT.id}`, () =>
+      HttpResponse.json({
+        data: {
+          ...TOURNAMENT,
+          sport: { id: 3, code: 'volleyball', name: 'Siatkówka', allowsDraw: false },
+          points: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 },
+          periods: { count: 1, minutes: null },
+          setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+        },
+      }),
+    ),
+    http.get(`${API}/sports`, () =>
+      HttpResponse.json({
+        data: [
+          ...SPORTS,
+          {
+            id: 3,
+            code: 'volleyball',
+            name: 'Siatkówka',
+            config: {
+              ...SPORTS[0]!.config,
+              allowsDraw: false,
+              runningClock: false,
+              defaultPoints: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 },
+              defaultPeriods: { count: 1, minutes: null },
+              defaultSetFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+              eventTypes: [{ code: 'ace', label: 'As serwisowy', hasPlayer: true, value: 1, stat: 'points' }],
+              availableStats: ['points'],
+              statLabels: { points: 'Punkty' },
+            },
+          },
+        ],
+      }),
+    ),
+  );
+}
+
+describe('Terminarz — okno meczu siatkówki (#301)', () => {
+  it('zamiast pól wyniku wpisuje sety, liczy wynik w setach i wysyła sets bez homeScore', async () => {
+    serveVolleyball();
+    const matches = [match(1, 1, 1, 2, { sets: [] })];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect(within(dialog).queryByLabelText('Wynik Wilki Bemowo')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: 'Trwa' }));
+    const add = within(dialog).getByRole('button', { name: 'Dodaj set' });
+    await user.click(add);
+    await user.type(within(dialog).getByLabelText('1. set, Wilki Bemowo'), '25');
+    await user.type(within(dialog).getByLabelText('1. set, Sokoły Ursus'), '20');
+    await user.click(add);
+    await user.type(within(dialog).getByLabelText('2. set, Wilki Bemowo'), '18');
+    await user.type(within(dialog).getByLabelText('2. set, Sokoły Ursus'), '12');
+
+    // Drugi set trwa, więc wynik w setach to 1 : 0.
+    expect(within(dialog).getByText('1 : 0')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({
+      status: 'live',
+      sets: [
+        { home: 25, away: 20 },
+        { home: 18, away: 12 },
+      ],
+    });
+    expect(bodies[0]).not.toHaveProperty('homeScore');
+    expect(bodies[0]).not.toHaveProperty('awayScore');
+  });
+
+  it('błąd pod sets.1 stoi pod drugim setem i opisuje jego pola', async () => {
+    serveVolleyball();
+    const sets = [
+      { home: 25, away: 20 },
+      { home: 25, away: 24 },
+    ];
+    serveMatches([match(1, 1, 1, 2, { status: 'live', homeScore: 1, awayScore: 0, sets, livePeriod: 1 })]);
+    const message = 'Set nie jest zakończony. Trwać może tylko ostatni set meczu trwającego.';
+    server.use(http.patch(MATCH_PATCH_URL, () => HttpResponse.json({ message, errors: { 'sets.1': [message] } }, { status: 422 })));
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zakończony' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(dialog).findByText(message)).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('2. set, Wilki Bemowo')).toHaveAccessibleDescription(message);
+    expect(within(dialog).getByLabelText('1. set, Wilki Bemowo')).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('„Zaplanowany” czyści sety i wysyła sets: []', async () => {
+    serveVolleyball();
+    const matches = [match(1, 1, 1, 2, { status: 'live', homeScore: 1, awayScore: 0, sets: [{ home: 25, away: 20 }], livePeriod: 1 })];
+    serveMatches(matches);
+    const bodies = serveSave(matches);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(dialog).getByRole('radio', { name: 'Zaplanowany' }));
+    expect(within(dialog).queryByLabelText('1. set, Wilki Bemowo')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ status: 'scheduled', sets: [] });
+  });
+});
+
+describe('Terminarz — zdarzenia meczu siatkówki (#301)', () => {
+  it('nie ma linii zgodności zdarzeń z wynikiem, bo wynik to sety', async () => {
+    serveVolleyball();
+    serveMatches([match(1, 1, 1, 2, { status: 'live', homeScore: 1, awayScore: 0, sets: [{ home: 25, away: 20 }], livePeriod: 1 })]);
+    // Dwa asy gospodarza przy wyniku 1:0: w piłce taki rozjazd pokazałby linię.
+    serveEvents([
+      event(1, 1, { type: 'ace', typeLabel: 'As serwisowy', minute: null }),
+      event(2, 1, { type: 'ace', typeLabel: 'As serwisowy', minute: null }),
+    ]);
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    expect((await within(dialog).findAllByText('As serwisowy')).length).toBeGreaterThan(1);
+    expect(within(dialog).queryByLabelText('Zgodność wyniku')).not.toBeInTheDocument();
   });
 });

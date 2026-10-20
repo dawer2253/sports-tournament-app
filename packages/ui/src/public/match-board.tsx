@@ -3,6 +3,7 @@ import { Penalties } from '../components/data/penalties'
 import { scorerSides, type ScorerLine } from '../components/data/scorer-lines'
 import { bracketLoserSide, bracketWinnerSide } from '../lib/bracket'
 import { formatKickoff } from '../lib/kickoff'
+import { playedSets, type SetScore } from '../lib/sets'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
 import { LiveClock, LiveTag } from './live'
@@ -94,6 +95,26 @@ function Score({ match, loser, timeZone }: { match: MatchPageMatch; loser: Side 
   )
 }
 
+/**
+ * Wyniki setów pod tablicą (#301): „1. set 25:23” po kolei, z wynikiem
+ * zwycięzcy seta pogrubionym. W meczu trwającym ostatni set to bieżący stan.
+ */
+function Sets({ sets }: { sets: readonly SetScore[] }) {
+  return (
+    <ol aria-label="Sety" data-slot="match-board-sets" className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-pub-16">
+      {sets.map((set, index) => (
+        <li key={index} className="whitespace-nowrap">
+          <span className="text-pub-14 text-muted-foreground">{index + 1}. set</span>{' '}
+          <span className="pub-num">
+            <span className={cn(set.home > set.away && 'font-semibold')}>{set.home}</span>:
+            <span className={cn(set.away > set.home && 'font-semibold')}>{set.away}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
 function Scorers({ lines, team }: { lines: ScorerLine[]; team: string }) {
   if (lines.length === 0) return <span />
   return (
@@ -123,6 +144,8 @@ function Scorers({ lines, team }: { lines: ScorerLine[]; team: string }) {
  * - Strzelcy wszyscy (`limit: Infinity`, #192), z samobójem u przeciwnika
  *   strzelca i dopiskiem „(sam.)” (`scorerSides`, #208).
  * - Region nazwany parą: „Mecz: Gospodarz – Gość”.
+ * - W sporcie z setami (#301) okienka niosą sety wygrane, a pod tablicą stoją
+ *   wyniki setów (`Sets`).
  */
 export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
   const home = teamName(match.homeTeam)
@@ -131,6 +154,7 @@ export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
   const loser = bracketLoserSide(match)
   const scorers = scorerSides(match, { limit: Infinity })
   const hasScorers = !scheduled && scorers.home.length + scorers.away.length > 0
+  const sets = playedSets(match)
 
   return (
     <section
@@ -154,6 +178,7 @@ export function MatchBoard({ match, timeZone, className }: MatchBoardProps) {
         </div>
         <Team team={match.awayTeam} side="away" dim={loser === 'away'} />
       </div>
+      {sets && <Sets sets={sets} />}
       {hasScorers && (
         <div className="grid grid-cols-2 gap-x-6 border-t border-hairline pt-5 sm:gap-x-8">
           <Scorers lines={scorers.home} team={home} />

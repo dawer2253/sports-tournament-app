@@ -29,6 +29,7 @@ const TOURNAMENT: Tournament = {
   tiebreakers: ['points', 'score_diff'],
   matchDuration: 60,
   periods: { count: 2, minutes: 45 },
+  setFormat: null,
   teamsCount: 1,
   registration: { open: true, deadline: '2026-11-15T17:00:00+00:00', pendingCount: 2 },
   createdAt: '2026-10-01T08:00:00+00:00',

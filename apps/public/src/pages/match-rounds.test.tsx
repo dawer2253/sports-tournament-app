@@ -356,3 +356,28 @@ describe('Zegar meczu na żywo (#297)', () => {
     });
   });
 });
+
+describe('Wyniki: sport z setami (#301)', () => {
+  it('pod wynikiem w setach stoją wyniki setów meczu', async () => {
+    const sets = [
+      { home: 25, away: 23 },
+      { home: 23, away: 25 },
+      { home: 25, away: 21 },
+      { home: 20, away: 25 },
+      { home: 15, away: 11 },
+    ];
+    publicApi({ results: [finished(1, 1, { homeScore: 3, awayScore: 2, sets })] });
+    renderAt(`/t/${SLUG}/wyniki`);
+
+    const row = await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' });
+    expect(within(row).getByText('25:23, 23:25, 25:21, 20:25, 15:11')).toBeInTheDocument();
+  });
+
+  it('mecz bez setów nie ma linii setów', async () => {
+    publicApi({ results: [finished(1, 1)] });
+    renderAt(`/t/${SLUG}/wyniki`);
+
+    const row = await screen.findByRole('link', { name: 'Gospodarz 1 – Gość 1' });
+    expect(row.querySelector('[data-slot="match-sets"]')).toBeNull();
+  });
+});

@@ -36,6 +36,17 @@ export const Koszykowka: Story = {
   },
 }
 
+/** Siatkówka (#301): zdobycze to sety, obok kolumna punktów w setach. */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  args: { sport: 'volleyball' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('columnheader', { name: 'Sety' })).toBeInTheDocument()
+    await expect(canvas.getByRole('columnheader', { name: 'Punkty w setach' })).toBeInTheDocument()
+  },
+}
+
 /** Szkic różny od zapisanego: podgląd ze zmianą miejsc i przyciski zapisu. */
 export const PodgladZeZmianaMiejsc: Story = {
   args: { preview: true },

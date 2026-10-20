@@ -2,6 +2,7 @@
 
 namespace App\Standings;
 
+use App\Matches\SetScores;
 use App\Models\GameMatch;
 use App\Models\Team;
 use Closure;
@@ -31,16 +32,21 @@ use RuntimeException;
  *    zapisu wyniku: terminarz powstaje bez dat, a kolejka meczu się nie
  *    zmienia. Mini-tabela `head_to_head` liczy na osobnych wierszach, więc
  *    formy pełnej tabeli nie rusza.
+ * 7. W sporcie z setami (#301) wiersz liczy punkty w setach, mecz wygrany
+ *    różnicą jednego seta daje punkty po secie decydującym, a `set_ratio`
+ *    i `point_ratio` porównują ilorazy mnożeniem krzyżowym (`compareRatio()`).
  */
 final readonly class StandingsCalculator
 {
     /**
-     * @param  array{win: int, draw: int, loss: int}  $points  punktacja turnieju
+     * @param  array{win: int, draw: int, loss: int, winDecidingSet?: int, lossDecidingSet?: int}  $points  punktacja turnieju
      * @param  list<string>  $tiebreakers  kody `TiebreakerCode` w kolejności
+     * @param  bool  $hasSets  sport z setami (`Tournament::hasSets()`)
      */
     public function __construct(
         private array $points,
         private array $tiebreakers,
+        private bool $hasSets = false,
     ) {}
 
     /**
@@ -85,7 +91,7 @@ final readonly class StandingsCalculator
         $rows = [];
 
         foreach ($teams as $team) {
-            $rows[$team->id] = new StandingRow($team);
+            $rows[$team->id] = new StandingRow($team, $this->hasSets);
         }
 
         foreach ($finished as $match) {
@@ -96,8 +102,10 @@ final readonly class StandingsCalculator
                 continue;
             }
 
-            $home->record($match->home_score, $match->away_score, $this->points);
-            $away->record($match->away_score, $match->home_score, $this->points);
+            $rally = $this->hasSets ? SetScores::rallyPoints($match->sets ?? []) : null;
+
+            $home->record($match->home_score, $match->away_score, $this->points, $rally);
+            $away->record($match->away_score, $match->home_score, $this->points, $rally === null ? null : [$rally[1], $rally[0]]);
         }
 
         return $rows;
@@ -122,9 +130,16 @@ final readonly class StandingsCalculator
             return $this->byName($rows);
         }
 
-        $tiers = $code === 'head_to_head'
-            ? $this->headToHeadTiers($rows, $matches)
-            : $this->tiers($rows, fn (StandingRow $row): array => [$this->value($row, $code)]);
+        $tiers = match ($code) {
+            'head_to_head' => $this->headToHeadTiers($rows, $matches),
+            'set_ratio' => $this->tiers($rows, fn (StandingRow $a, StandingRow $b): int => self::compareRatio(
+                $b->scoreFor, $b->scoreAgainst, $a->scoreFor, $a->scoreAgainst,
+            )),
+            'point_ratio' => $this->tiers($rows, fn (StandingRow $a, StandingRow $b): int => self::compareRatio(
+                $b->rallyPointsFor ?? 0, $b->rallyPointsAgainst ?? 0, $a->rallyPointsFor ?? 0, $a->rallyPointsAgainst ?? 0,
+            )),
+            default => $this->tiers($rows, self::byKey(fn (StandingRow $row): array => [$this->value($row, $code)])),
+        };
 
         $ranked = [];
 
@@ -176,37 +191,71 @@ final readonly class StandingsCalculator
             $between,
         );
 
-        return $this->tiers($rows, function (StandingRow $row) use ($mini): array {
+        return $this->tiers($rows, self::byKey(function (StandingRow $row) use ($mini): array {
             $record = $mini[$row->team->id];
 
             return [$record->points, $record->scoreDifference(), $record->scoreFor];
-        });
+        }));
     }
 
     /**
-     * Dzieli wiersze na grupy o równym kluczu, od najlepszej. Klucze to listy
-     * liczb tej samej długości, porównywane po kolei; większy jest lepszy.
+     * Komparator z klucza: listy liczb tej samej długości, porównywane po
+     * kolei; większy klucz stawia wiersz wyżej.
+     *
+     * @param  Closure(StandingRow): list<int>  $key
+     * @return Closure(StandingRow, StandingRow): int
+     */
+    private static function byKey(Closure $key): Closure
+    {
+        return fn (StandingRow $a, StandingRow $b): int => $key($b) <=> $key($a);
+    }
+
+    /**
+     * Porównanie ilorazów `aFor/aAgainst` i `bFor/bAgainst` mnożeniem
+     * krzyżowym, bez ułamków (`TiebreakerCode` w kontrakcie). Dodatni wynik
+     * znaczy, że pierwszy iloraz jest większy. Bez straconych iloraz jest
+     * nieskończony, więc stoi wyżej niż każdy skończony, a dwa takie
+     * porównuje się zdobytymi. 0:0 to iloraz zero.
+     */
+    private static function compareRatio(int $aFor, int $aAgainst, int $bFor, int $bAgainst): int
+    {
+        $aInfinite = $aAgainst === 0 && $aFor > 0;
+        $bInfinite = $bAgainst === 0 && $bFor > 0;
+
+        if ($aInfinite || $bInfinite) {
+            return $aInfinite && $bInfinite ? $aFor <=> $bFor : ($aInfinite ? 1 : -1);
+        }
+
+        if ($aAgainst === 0 || $bAgainst === 0) {
+            // Co najmniej jedna strona to 0:0, czyli zero, a druga skończona.
+            return ($aAgainst === 0 ? 0 : $aFor) <=> ($bAgainst === 0 ? 0 : $bFor);
+        }
+
+        return $aFor * $bAgainst <=> $bFor * $aAgainst;
+    }
+
+    /**
+     * Dzieli wiersze na grupy równych według komparatora, od najlepszej.
+     * Komparator zwraca ujemną liczbę, gdy pierwszy wiersz stoi wyżej.
      *
      * @param  list<StandingRow>  $rows
-     * @param  Closure(StandingRow): list<int>  $key
+     * @param  Closure(StandingRow, StandingRow): int  $compare
      * @return list<list<StandingRow>>
      */
-    private function tiers(array $rows, Closure $key): array
+    private function tiers(array $rows, Closure $compare): array
     {
-        usort($rows, fn (StandingRow $a, StandingRow $b): int => $key($b) <=> $key($a));
+        usort($rows, $compare);
 
         $tiers = [];
         $previous = null;
 
         foreach ($rows as $row) {
-            $current = $key($row);
-
-            if ($current !== $previous) {
+            if ($previous === null || $compare($previous, $row) !== 0) {
                 $tiers[] = [];
-                $previous = $current;
             }
 
             $tiers[array_key_last($tiers)][] = $row;
+            $previous = $row;
         }
 
         return $tiers;

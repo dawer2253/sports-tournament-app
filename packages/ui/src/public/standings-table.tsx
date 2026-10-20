@@ -1,4 +1,5 @@
 import { plural } from '../lib/plural'
+import { formatRallyPoints } from '../lib/sets'
 import { withQualifiers } from '../lib/qualifiers'
 import { cn } from '../lib/utils'
 import { Crest } from './crest'
@@ -35,15 +36,19 @@ const NUM = 'text-right tabular-nums text-muted-foreground'
 /**
  * Kolumny stałe, więc liczby nie skaczą między wierszami ani tabelami. Grupa
  * (`compact`) nie ma zdobyczy i formy, bo dwie tabele stoją obok siebie.
+ * Sport z setami (`hasRallyPoints`, #301) dokłada za setami kolumnę punktów w setach,
+ * a remisów nie ma.
  */
-function gridColumns(compact: boolean, allowsDraw: boolean) {
+function gridColumns(compact: boolean, allowsDraw: boolean, hasRallyPoints: boolean) {
   const desktop = compact
     ? allowsDraw
       ? '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_3rem]'
       : '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3rem_3rem]'
-    : allowsDraw
-      ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_2.75rem_5.5rem_3.5rem_8rem_3.5rem]'
-      : '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_6.5rem_3.5rem_6rem_3.5rem]'
+    : hasRallyPoints
+      ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_4rem_6.5rem_3.5rem_6rem_3.5rem]'
+      : allowsDraw
+        ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_2.75rem_5.5rem_3.5rem_8rem_3.5rem]'
+        : '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_6.5rem_3.5rem_6rem_3.5rem]'
   return cn('grid grid-cols-[2rem_minmax(0,1fr)_2rem_3rem_3rem] items-center gap-x-2', desktop)
 }
 
@@ -54,6 +59,12 @@ export interface StandingsTableProps {
   scoreLabel: string
   /** `StandingTable.allowsDraw`: kolumna `R` tylko w sporcie z remisami. */
   allowsDraw: boolean
+  /**
+   * `StandingTable.rallyPointsLabel` (#301): nagłówek kolumny punktów
+   * w setach („Punkty w setach”). Bez niego, w sporcie bez setów, kolumny nie
+   * ma. Wąska tabela grupy jej nie pokazuje, jak zdobyczy.
+   */
+  rallyPointsLabel?: string | null
   /** Wąska tabela: bez zdobyczy i formy (grupy w dwóch kolumnach). */
   compact?: boolean
   /**
@@ -78,8 +89,9 @@ export interface StandingsTableProps {
  *   niewychodzącym, a „remis na linii” pod nazwą drużyny. Czytnik słyszy
  *   „, wychodzi z grupy” przy miejscu.
  */
-export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, group = false, label }: StandingsTableProps) {
-  const grid = gridColumns(compact, allowsDraw)
+export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel = null, compact = false, group = false, label }: StandingsTableProps) {
+  const hasRallyPoints = !compact && rallyPointsLabel !== null
+  const grid = gridColumns(compact, allowsDraw, hasRallyPoints)
   const wide = wideCell(compact)
   const anyPlayed = rows.some((row) => row.played > 0)
 
@@ -107,6 +119,11 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
         {!compact && (
           <span role="columnheader" className={cn(wide, 'text-center')}>
             <Abbr title={`${scoreLabel} zdobyte i stracone`}>{scoreLabel}</Abbr>
+          </span>
+        )}
+        {hasRallyPoints && (
+          <span role="columnheader" className={cn(wide, 'text-center whitespace-nowrap')}>
+            <Abbr title={`${rallyPointsLabel} zdobyte i stracone`}>{rallyPointsLabel}</Abbr>
           </span>
         )}
         <span role="columnheader" className="text-right">
@@ -175,6 +192,11 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, compact = false, 
             {!compact && (
               <span role="cell" className={cn(wide, 'text-center tabular-nums text-muted-foreground')}>
                 {row.scoreFor}:{row.scoreAgainst}
+              </span>
+            )}
+            {hasRallyPoints && (
+              <span role="cell" data-slot="rally-points" className={cn(wide, 'text-center tabular-nums text-muted-foreground')}>
+                {formatRallyPoints(row)}
               </span>
             )}
             <span role="cell" className={NUM}>

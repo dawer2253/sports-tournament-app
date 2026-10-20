@@ -212,3 +212,35 @@ describe('Tabela', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('Tabela: sport z setami (#301)', () => {
+  const VOLLEYBALL = tournament({ name: 'Liga Siatkówki 2026', sport: { id: 3, code: 'volleyball', name: 'Siatkówka', allowsDraw: false } });
+
+  it('pokazuje sety i kolumnę punktów w setach z etykietą z odpowiedzi', async () => {
+    publicApi({
+      data: VOLLEYBALL,
+      standings: [
+        table({
+          scoreLabel: 'Sety',
+          rallyPointsLabel: 'Punkty w setach',
+          allowsDraw: false,
+          rows: [row({ scoreFor: 6, scoreAgainst: 2, scoreDifference: 4, rallyPointsFor: 183, rallyPointsAgainst: 162, drawn: 0 })],
+        }),
+      ],
+      stageMatches: SCHEDULE,
+    });
+    renderAt(`/t/${SLUG}/tabela`);
+
+    expect(await screen.findByRole('columnheader', { name: 'Punkty w setach' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Sety' })).toBeInTheDocument();
+    expect(bodyRows()[0]).toEqual(expect.arrayContaining(['6:2', '183:162']));
+  });
+
+  it('w piłce kolumny punktów w setach nie ma', async () => {
+    publicApi({ standings: [table()], stageMatches: SCHEDULE });
+    renderAt(`/t/${SLUG}/tabela`);
+
+    expect(await screen.findByRole('columnheader', { name: 'Pkt' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Punkty w setach' })).not.toBeInTheDocument();
+  });
+});

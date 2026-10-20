@@ -131,6 +131,7 @@ function OverviewContent() {
               rows: table?.rows ?? [],
               scoreLabel: table?.scoreLabel ?? '',
               allowsDraw: table?.allowsDraw ?? tournament.sport.allowsDraw,
+              rallyPointsLabel: table?.rallyPointsLabel ?? null,
             }))
           : undefined
       }

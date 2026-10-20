@@ -18,6 +18,13 @@ const pointsValue = z
   .min(0, 'Najmniej 0 punktów.')
   .max(10, 'Najwyżej 10 punktów.');
 
+/** Próg seta z `SetFormat` w `openapi.yaml` (#301). */
+const setPointsValue = z
+  .number({ error: 'Podaj liczbę od 5 do 50.' })
+  .int('Podaj liczbę całkowitą.')
+  .min(5, 'Set gra się do co najmniej 5 punktów.')
+  .max(50, 'Set gra się do najwyżej 50 punktów.');
+
 /**
  * Walidacja formularza ustawień. Odwzorowuje `TournamentUpdate` i `Points`
  * z kontraktu, a unikalność sluga zostawia serwerowi.
@@ -28,8 +35,11 @@ const pointsValue = z
  *
  * @param allowsDraw z konfiguracji sportu: bez remisów `draw` nie wchodzi do
  *   porządku, bo koszykówka ma `draw: 0` i `loss: 1`.
+ * @param hasSets sport z setami (#301): punktacja ma punkty po secie
+ *   decydującym z porządkiem `loss ≤ lossDecidingSet < winDecidingSet ≤ win`,
+ *   a formularz format seta z progiem decydującego nie większym od zwykłego.
  */
-export function tournamentSettingsSchema(allowsDraw: boolean) {
+export function tournamentSettingsSchema(allowsDraw: boolean, hasSets = false) {
   return z
     .object({
       name: z
@@ -50,14 +60,54 @@ export function tournamentSettingsSchema(allowsDraw: boolean) {
         .int('Podaj liczbę całkowitą.')
         .min(10, 'Długość meczu to co najmniej 10 minut.')
         .max(600, 'Długość meczu to najwyżej 600 minut.'),
-      points: z.object({ win: pointsValue, draw: pointsValue, loss: pointsValue }),
+      points: z.object({
+        win: pointsValue,
+        draw: pointsValue,
+        loss: pointsValue,
+        // Punkty po secie decydującym (#301): wymagane tylko w sporcie z setami.
+        winDecidingSet: pointsValue.optional(),
+        lossDecidingSet: pointsValue.optional(),
+      }),
+      // Format seta (#301): w sporcie bez setów `null` i niczego nie sprawdza.
+      setFormat: z
+        .object({
+          setsToWin: z.union([z.literal(2), z.literal(3)]),
+          setPoints: setPointsValue,
+          decidingSetPoints: setPointsValue,
+          minLead: z.union([z.literal(1), z.literal(2)]),
+        })
+        .nullable(),
       // Podział meczu (#210). Pole minut znika przy „Bez podziału”, więc jego
       // wartość wtedy się nie liczy; przy kilku częściach jest wymagana.
       periods: z.object({ count: z.number().int().min(1).max(10), minutes: z.number().nullable() }),
       // Zapisy (#300): termin to wartość pola `datetime-local`, `''` bez terminu.
       registration: z.object({ open: z.boolean(), deadline: z.string() }),
     })
-    .superRefine(({ points, periods }, ctx) => {
+    .superRefine(({ points, periods, setFormat }, ctx) => {
+      if (setFormat && setFormat.decidingSetPoints > setFormat.setPoints) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['setFormat', 'decidingSetPoints'],
+          message: 'Set decydujący nie może być dłuższy od zwykłego.',
+        });
+      }
+      for (const field of ['winDecidingSet', 'lossDecidingSet'] as const) {
+        if (hasSets && points[field] === undefined) {
+          ctx.addIssue({ code: 'custom', path: ['points', field], message: 'Podaj liczbę od 0 do 10.' });
+        }
+      }
+      if (
+        hasSets &&
+        points.winDecidingSet !== undefined &&
+        points.lossDecidingSet !== undefined &&
+        (points.loss > points.lossDecidingSet || points.lossDecidingSet >= points.winDecidingSet || points.winDecidingSet > points.win)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['points'],
+          message: 'Porażka w secie decydującym daje co najmniej tyle co porażka i mniej niż wygrana w secie decydującym, a ta najwyżej tyle co wygrana.',
+        });
+      }
       // `null` i puste pole (`NaN`) dają ten sam komunikat co brak liczby.
       const minutes = periods.count > 1 ? periodMinutes.safeParse(periods.minutes) : undefined;
       if (minutes?.error) {
@@ -90,6 +140,7 @@ export function tournamentSettingsValues(tournament: Tournament): TournamentSett
     matchDuration: tournament.matchDuration,
     periods: { ...tournament.periods },
     points: { ...tournament.points },
+    setFormat: tournament.setFormat ? { ...tournament.setFormat } : null,
     registration: { open: tournament.registration.open, deadline: toLocalInputValue(tournament.registration.deadline) },
   };
 }
@@ -101,7 +152,17 @@ function sameDeadline(local: string, saved: string | null): boolean {
 }
 
 function samePoints(a: Points, b: Points) {
-  return a.win === b.win && a.draw === b.draw && a.loss === b.loss;
+  return (
+    a.win === b.win &&
+    a.draw === b.draw &&
+    a.loss === b.loss &&
+    a.winDecidingSet === b.winDecidingSet &&
+    a.lossDecidingSet === b.lossDecidingSet
+  );
+}
+
+function sameSetFormat(a: NonNullable<Tournament['setFormat']>, b: NonNullable<Tournament['setFormat']>) {
+  return a.setsToWin === b.setsToWin && a.setPoints === b.setPoints && a.decidingSetPoints === b.decidingSetPoints && a.minLead === b.minLead;
 }
 
 /**
@@ -133,6 +194,9 @@ export function tournamentSettingsUpdate(
   if (periods.count !== saved.periods.count || periods.minutes !== saved.periods.minutes) body.periods = periods;
   const points = allowsDraw ? values.points : { ...values.points, draw: 0 };
   if (!samePoints(points, saved.points)) body.points = points;
+  // Format seta idzie tylko zmieniony: od pierwszego wpisanego seta serwer go
+  // nie przyjmie (ADR-0012), a reszta ustawień ma się dać zapisać.
+  if (values.setFormat && saved.setFormat && !sameSetFormat(values.setFormat, saved.setFormat)) body.setFormat = values.setFormat;
   // Zapisy idą jak `branding`: tylko zmieniona część. Termin z pola dostaje
   // offset przed wysłaniem (ADR-0008), a puste pole usuwa termin (`null`).
   const registration: NonNullable<TournamentUpdate['registration']> = {};

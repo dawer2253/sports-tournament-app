@@ -84,6 +84,7 @@ export function StandingsPage() {
         qualifiers: group?.qualifiers ?? null,
         scoreLabel: table.scoreLabel,
         allowsDraw: table.allowsDraw,
+        rallyPointsLabel: table.rallyPointsLabel,
         tiebreakers: table.tiebreakers,
       }))}
       status={tournament.status}

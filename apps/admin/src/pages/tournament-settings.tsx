@@ -9,6 +9,7 @@ import {
 } from '@tournament/api-client';
 import {
   BrandColorPicker,
+  cn,
   MatchPeriodsField,
   REGISTRATION_DESCRIPTION,
   RegistrationField,
@@ -25,6 +26,7 @@ import {
   isHexColor,
   Label,
   Separator,
+  SetFormatField,
   SettingsSection,
   Skeleton,
   TiebreakerList,
@@ -47,6 +49,7 @@ import {
   tournamentSettingsSchema,
   type TournamentSettingsValues,
 } from '../lib/tournament-settings-schema';
+import { useSetFormatLocked } from '../lib/use-set-format-locked';
 import { useSports } from '../lib/use-sports';
 import { useTournament } from './tournament-layout';
 
@@ -525,7 +528,13 @@ const POINT_FIELDS = [
   { key: 'win', label: 'Wygrana' },
   { key: 'draw', label: 'Remis' },
   { key: 'loss', label: 'Porażka' },
+  // Sport z setami (#301): mecz rozstrzygnięty różnicą jednego seta (3:2, 2:1).
+  { key: 'winDecidingSet', label: 'Wygrana w secie decydującym' },
+  { key: 'lossDecidingSet', label: 'Porażka w secie decydującym' },
 ] as const;
+
+/** Punkty po secie decydującym: tylko w sporcie z setami. */
+const DECIDING_SET_KEYS: readonly string[] = ['winDecidingSet', 'lossDecidingSet'];
 
 /**
  * Formularz ustawień z jednym „Zapisz zmiany". `PATCH` niesie tylko zmienione
@@ -539,7 +548,10 @@ const POINT_FIELDS = [
 function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sport }) {
   const queryClient = useQueryClient();
   const { allowsDraw, defaultPoints, tiebreakerLabels } = sport.config;
-  const schema = useMemo(() => tournamentSettingsSchema(allowsDraw), [allowsDraw]);
+  // Sport z setami (#301): format seta zamiast podziału meczu i punkty po secie decydującym.
+  const hasSets = sport.config.defaultSetFormat !== null;
+  const schema = useMemo(() => tournamentSettingsSchema(allowsDraw, hasSets), [allowsDraw, hasSets]);
+  const setFormatLocked = useSetFormatLocked(tournament.id, hasSets).data === true;
 
   const {
     control,
@@ -558,15 +570,23 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
   // W sporcie bez remisów pola „Remis" nie ma. Jego błąd z serwera nie
   // miałby gdzie usiąść, więc nie ma go też w `errorFields`: idzie nad przycisk.
-  const pointFields = POINT_FIELDS.filter(({ key }) => allowsDraw || key !== 'draw');
+  const pointFields = POINT_FIELDS.filter(({ key }) => (allowsDraw || key !== 'draw') && (hasSets || !DECIDING_SET_KEYS.includes(key)));
   const errorFields = [
     'name',
     'slug',
     'branding.primaryColor',
     'matchDuration',
-    'periods',
-    'periods.count',
-    'periods.minutes',
+    // W sporcie z setami podziału meczu nie ma na ekranie: jego błąd idzie nad przycisk.
+    ...(hasSets ? [] : (['periods', 'periods.count', 'periods.minutes'] as const)),
+    ...(hasSets
+      ? ([
+          'setFormat',
+          'setFormat.setsToWin',
+          'setFormat.setPoints',
+          'setFormat.decidingSetPoints',
+          'setFormat.minLead',
+        ] as const)
+      : []),
     'points',
     ...pointFields.map(({ key }) => `points.${key}` as const),
     'registration.open',
@@ -613,7 +633,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
   }
 
   function restoreDefaultPoints() {
-    for (const { key } of POINT_FIELDS) {
+    for (const { key } of pointFields) {
       setValue(`points.${key}`, defaultPoints[key], { shouldDirty: true, shouldValidate: false });
     }
   }
@@ -710,7 +730,10 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
 
             <Separator />
 
-            <SettingsSection title="Rozgrywki" description="Długość meczu i jego podział na części.">
+            <SettingsSection
+              title="Rozgrywki"
+              description={hasSets ? 'Długość meczu i format seta.' : 'Długość meczu i jego podział na części.'}
+            >
               <div className="grid w-44 content-start gap-2">
                 <Label htmlFor="match-duration">Długość meczu (min)</Label>
                 <Input
@@ -729,22 +752,49 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                   </p>
                 )}
               </div>
-              {/* Podział meczu (#210): strona meczu liczy z niego części relacji. */}
-              <Controller
-                control={control}
-                name="periods"
-                render={({ field }) => (
-                  <MatchPeriodsField
-                    value={field.value}
-                    onChange={field.onChange}
-                    fallbackMinutes={sport.config.defaultPeriods.minutes}
-                    errors={{
-                      count: errors.periods?.count?.message ?? errors.periods?.message,
-                      minutes: errors.periods?.minutes?.message,
-                    }}
-                  />
-                )}
-              />
+              {/* Podział meczu (#210): strona meczu liczy z niego części relacji.
+                  W sporcie z setami go nie ma: set nie ma czasu (#301). */}
+              {!hasSets && (
+                <Controller
+                  control={control}
+                  name="periods"
+                  render={({ field }) => (
+                    <MatchPeriodsField
+                      value={field.value}
+                      onChange={field.onChange}
+                      fallbackMinutes={sport.config.defaultPeriods.minutes}
+                      errors={{
+                        count: errors.periods?.count?.message ?? errors.periods?.message,
+                        minutes: errors.periods?.minutes?.message,
+                      }}
+                    />
+                  )}
+                />
+              )}
+              {/* Format seta (#301, ADR-0012): od pierwszego wpisanego seta zamknięty. */}
+              {hasSets && (
+                <Controller
+                  control={control}
+                  name="setFormat"
+                  render={({ field }) =>
+                    field.value ? (
+                      <SetFormatField
+                        value={field.value}
+                        onChange={field.onChange}
+                        locked={setFormatLocked}
+                        errors={{
+                          setsToWin: errors.setFormat?.setsToWin?.message,
+                          setPoints: errors.setFormat?.setPoints?.message,
+                          decidingSetPoints: errors.setFormat?.decidingSetPoints?.message ?? errors.setFormat?.message,
+                          minLead: errors.setFormat?.minLead?.message,
+                        }}
+                      />
+                    ) : (
+                      <></>
+                    )
+                  }
+                />
+              )}
             </SettingsSection>
 
             <Separator />
@@ -760,7 +810,7 @@ function SettingsForm({ tournament, sport }: { tournament: Tournament; sport: Sp
                     .filter(Boolean)
                     .join(' ');
                   return (
-                    <div key={key} className="grid w-24 content-start gap-2">
+                    <div key={key} className={cn('grid content-start gap-2', DECIDING_SET_KEYS.includes(key) ? 'w-48' : 'w-24')}>
                       <Label htmlFor={`points-${key}`}>{label}</Label>
                       <Input
                         id={`points-${key}`}

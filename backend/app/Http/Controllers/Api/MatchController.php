@@ -97,6 +97,9 @@ class MatchController extends Controller
             }
         }
 
+        // W sporcie z setami wynik to sety wygrane, liczone z setów (#301).
+        $changes = [...$changes, ...$request->scoreChanges()];
+
         if (array_key_exists('status', $data)) {
             $changes['status'] = $data['status'];
         }

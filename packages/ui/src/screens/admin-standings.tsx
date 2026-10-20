@@ -4,13 +4,14 @@ import { TiebreakerEditor, TiebreakerSentence } from '../components/data/tiebrea
 import { Heading } from '../components/ui/typography'
 import {
   basketballStandingsTableRows,
+  volleyballStandingsTableRows,
   sportSettings,
   standingsTablePreviewDraft,
   standingsTablePreviewRows,
   standingsTableRows,
 } from '../lib/demo-data'
 
-const ROWS = { football: standingsTableRows, basketball: basketballStandingsTableRows }
+const ROWS = { football: standingsTableRows, basketball: basketballStandingsTableRows, volleyball: volleyballStandingsTableRows }
 
 export interface AdminStandingsProps {
   sport?: keyof typeof sportSettings
@@ -44,6 +45,7 @@ export function AdminStandings({ sport = 'football', preview = false }: AdminSta
               rows={preview ? standingsTablePreviewRows : rows}
               scoreLabel={settings.scoreLabel}
               allowsDraw={settings.allowsDraw}
+              rallyPointsLabel={settings.rallyPointsLabel}
               previousPositions={preview ? new Map(rows.map((row) => [row.team.id, row.position])) : undefined}
             />
           </section>

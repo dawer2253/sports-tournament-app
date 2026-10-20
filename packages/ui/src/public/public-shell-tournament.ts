@@ -20,4 +20,4 @@ export type PublicShellTournament = {
  * typ służy kluczom map per sport. Zgodność pilnuje
  * `apps/public/src/lib/contract-guard.ts`.
  */
-export type SportCode = 'football' | 'basketball'
+export type SportCode = 'football' | 'basketball' | 'volleyball'

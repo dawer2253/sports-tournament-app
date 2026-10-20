@@ -1,3 +1,5 @@
+import type { SetScore } from '../../lib/sets'
+
 /**
  * Mecz w wierszu terminarza. Podzbiór `Match` z kontraktu, przepisany ręcznie,
  * bo pakiet UI nie zna klienta API — zgodność pilnuje
@@ -11,8 +13,15 @@ export type MatchRowData = {
   /** `null`, gdy miejsce w drabince nie jest jeszcze rozstrzygnięte. */
   homeTeam: MatchRowTeam | null
   awayTeam: MatchRowTeam | null
+  /** W sporcie z setami sety wygrane (#301). */
   homeScore: number | null
   awayScore: number | null
+  /**
+   * Wyniki setów (`Match.sets`, #301): lista w sporcie z setami, `null`
+   * w pozostałych. Brak pola to mecz bez setów; zmianę nazwy pola łapie
+   * strażnik w aplikacji, wzorem zegara niżej.
+   */
+  sets?: readonly SetScore[] | null
   status: MatchStatus
   /** ISO 8601 z offsetem; `null` to „Termin do ustalenia”. */
   kickoffAt: string | null

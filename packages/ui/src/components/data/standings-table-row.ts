@@ -17,6 +17,14 @@ export type StandingsTableRow = {
   scoreFor: number
   scoreAgainst: number
   scoreDifference: number
+  /**
+   * Punkty w setach zdobyte i stracone (`StandingRow.rallyPointsFor`, #301);
+   * `null` w sporcie bez setów. Opcjonalne, wzorem zegara meczu w
+   * `MatchRowData`: dane demo piłki ich nie niosą, a zmianę nazwy pola łapie
+   * osobny strażnik w aplikacji.
+   */
+  rallyPointsFor?: number | null
+  rallyPointsAgainst?: number | null
   /** Punkty za wyniki meczów, nigdy zdobycze. */
   points: number
   /**

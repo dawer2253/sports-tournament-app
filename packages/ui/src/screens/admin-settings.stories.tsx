@@ -135,6 +135,35 @@ export const Koszykowka: Story = {
   },
 }
 
+/** Siatkówka (#301): format seta zamiast podziału meczu i punkty po secie decydującym, bez remisu. */
+export const Siatkowka: Story = {
+  name: 'Siatkówka',
+  args: { sport: 'volleyball' },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.queryByText('Podział meczu')).not.toBeInTheDocument()
+    await expect(canvas.getByLabelText('Set do (pkt)')).toHaveValue(25)
+    await expect(canvas.getByLabelText('Set decydujący do (pkt)')).toHaveValue(15)
+    await expect(canvas.getByLabelText('Wygrana w secie decydującym')).toHaveValue(2)
+    await expect(canvas.getByLabelText('Porażka w secie decydującym')).toHaveValue(1)
+    await expect(canvas.queryByLabelText('Remis')).not.toBeInTheDocument()
+    await expect(canvas.getByLabelText('Set do (pkt)')).toBeEnabled()
+  },
+}
+
+/** Siatkówka po pierwszym wpisanym secie: pola formatu wyłączone ze zdaniem o blokadzie, punktacja dalej zmienna. */
+export const SiatkowkaFormatZamkniety: Story = {
+  name: 'Siatkówka, format zamknięty',
+  args: { sport: 'volleyball', setFormatLocked: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Set do (pkt)')).toBeDisabled()
+    await expect(canvas.getByRole('combobox', { name: 'Mecz do' })).toBeDisabled()
+    await expect(canvas.getByLabelText('Wygrana w secie decydującym')).toBeEnabled()
+  },
+}
+
 /**
  * Zapisy (#300) otwarte w szkicu: przełącznik włączony, termin w polu,
  * a pod przełącznikiem zdanie, że formularz pojawi się po opublikowaniu.

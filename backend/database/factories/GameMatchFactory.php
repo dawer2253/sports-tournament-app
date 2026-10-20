@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Matches\SetScores;
 use App\Models\GameMatch;
 use App\Models\Round;
 use App\Models\Team;
@@ -38,6 +39,7 @@ class GameMatchFactory extends Factory
             'away_score' => null,
             'home_penalties' => null,
             'away_penalties' => null,
+            'sets' => null,
             'status' => 'scheduled',
             'kickoff_at' => fake()->dateTimeBetween('+1 week', '+2 months'),
             'venue_id' => null,
@@ -69,6 +71,34 @@ class GameMatchFactory extends Factory
             'away_score' => $away,
             'live_period' => 1,
             'period_started_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mecz sportu z setami (#301) z podanymi setami `[[25, 20], …]`. Wynik to
+     * sety wygrane, policzone jak przy zapisie (`SetScores::won()`) według
+     * formatu turnieju fazy, a niedokończony ostatni set go nie zmienia.
+     *
+     * @param  list<array{int, int}>  $scores
+     */
+    public function withSets(array $scores, string $status = 'finished'): static
+    {
+        $sets = array_map(fn (array $score): array => ['home' => $score[0], 'away' => $score[1]], $scores);
+
+        // Domknięcia liczą się po rozwinięciu atrybutów, gdy `round_id` jest
+        // już id, a nie fabryką kolejki.
+        $won = fn (array $attributes): array => SetScores::won(
+            $sets,
+            Round::findOrFail($attributes['round_id'])->stage->tournament->set_format,
+        );
+
+        return $this->state([
+            'status' => $status,
+            'sets' => $sets,
+            'home_score' => fn (array $attributes): ?int => $status === 'scheduled' ? null : $won($attributes)[0],
+            'away_score' => fn (array $attributes): ?int => $status === 'scheduled' ? null : $won($attributes)[1],
+            'live_period' => $status === 'live' ? 1 : null,
+            'period_started_at' => $status === 'live' ? now() : null,
         ]);
     }
 

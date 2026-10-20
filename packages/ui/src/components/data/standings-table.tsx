@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ListOrdered } from 'lucide-react'
 import * as React from 'react'
+import { formatRallyPoints } from '../../lib/sets'
 import { cn } from '../../lib/utils'
 import { TeamLogo } from '../layout/team-logo'
 import { Badge } from '../ui/badge'
@@ -15,6 +16,11 @@ export interface StandingsTableProps {
   scoreLabel: string
   /** `SportConfig.allowsDraw`. Bez remisów kolumna R znika. */
   allowsDraw: boolean
+  /**
+   * `StandingTable.rallyPointsLabel` (#301): nagłówek kolumny punktów
+   * w setach. Bez niego, w sporcie bez setów, kolumny nie ma.
+   */
+  rallyPointsLabel?: string | null
   /**
    * Miejsca według zapisanych kryteriów, po `team.id`. Podane włączają
    * podgląd: wiersz, który zmienił miejsce, jest podświetlony, a przy pozycji
@@ -66,7 +72,12 @@ function Position({
   )
 }
 
-function standingsColumns(scoreLabel: string, allowsDraw: boolean, previousPositions: StandingsTableProps['previousPositions']) {
+function standingsColumns(
+  scoreLabel: string,
+  allowsDraw: boolean,
+  rallyPointsLabel: string | null,
+  previousPositions: StandingsTableProps['previousPositions'],
+) {
   return helper.columns([
     helper.accessor('position', {
       header: '#',
@@ -108,6 +119,16 @@ function standingsColumns(scoreLabel: string, allowsDraw: boolean, previousPosit
       meta: { className: 'w-20 text-center tabular-nums text-muted-foreground' },
       cell: ({ row }) => `${row.original.scoreFor}:${row.original.scoreAgainst}`,
     }),
+    ...(rallyPointsLabel === null
+      ? []
+      : [
+          helper.display({
+            id: 'rallyPoints',
+            header: rallyPointsLabel,
+            meta: { className: 'w-28 text-center tabular-nums text-muted-foreground' },
+            cell: ({ row }) => formatRallyPoints(row.original),
+          }),
+        ]),
     helper.accessor('scoreDifference', {
       header: () => <Abbr title="Bilans">+/−</Abbr>,
       meta: { className: 'w-12 text-center tabular-nums text-muted-foreground' },
@@ -145,6 +166,7 @@ export function StandingsTable({
   rows,
   scoreLabel,
   allowsDraw,
+  rallyPointsLabel = null,
   previousPositions,
   status,
   errorMessage,
@@ -152,8 +174,8 @@ export function StandingsTable({
   emptyAction,
 }: StandingsTableProps) {
   const columns = React.useMemo(
-    () => standingsColumns(scoreLabel, allowsDraw, previousPositions),
-    [scoreLabel, allowsDraw, previousPositions],
+    () => standingsColumns(scoreLabel, allowsDraw, rallyPointsLabel, previousPositions),
+    [scoreLabel, allowsDraw, rallyPointsLabel, previousPositions],
   )
 
   // Ramka tylko wokół tabeli: stan pusty i błąd mają własną, przerywaną.

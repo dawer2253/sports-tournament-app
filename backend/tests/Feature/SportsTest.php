@@ -70,3 +70,20 @@ it('oddaje statLabels z kluczami dokładnie z availableStats każdego sportu', f
         expect(array_keys($sport['config']['statLabels']))->toEqualCanonicalizing($sport['config']['availableStats']);
     }
 });
+
+// #301: siatkówka to sport z setami — ma format seta, jedną część bez czasu
+// i punkty po secie decydującym; piłka i kosz mają format `null`. Sprawdzone
+// niezależnie od przykładu, jak `runningClock` wyżej.
+it('oddaje siatkówkę z formatem seta, a piłce i koszowi defaultSetFormat: null', function () {
+    $sports = actingAsOrganizer()->getJson('/api/v1/sports')->assertValidResponse(200)->collect('data')->keyBy('code');
+
+    expect($sports['volleyball']['config'])->toMatchArray([
+        'allowsDraw' => false,
+        'runningClock' => false,
+        'defaultPeriods' => ['count' => 1, 'minutes' => null],
+        'defaultSetFormat' => ['setsToWin' => 3, 'setPoints' => 25, 'decidingSetPoints' => 15, 'minLead' => 2],
+    ])
+        ->and($sports['volleyball']['config']['defaultPoints'])->toMatchArray(['winDecidingSet' => 2, 'lossDecidingSet' => 1])
+        ->and($sports['football']['config']['defaultSetFormat'])->toBeNull()
+        ->and($sports['basketball']['config']['defaultSetFormat'])->toBeNull();
+});

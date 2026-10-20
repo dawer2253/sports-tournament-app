@@ -40,7 +40,11 @@ beforeEach(function () {
 function cupResultBracket(string $sport = 'football', array $names = ['Wilki', 'Orły', 'Sokoły', 'Rysie']): array
 {
     $factory = Tournament::factory();
-    $tournament = ($sport === 'basketball' ? $factory->basketball() : $factory)->create();
+    $tournament = (match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    })->create();
     $teams = [];
     foreach ($names as $name) {
         $teams[$name] = Team::factory()->for($tournament)->create(['name' => $name]);
@@ -372,4 +376,53 @@ it('mecz bez rywala przyjmuje sam termin', function () {
         ->assertValidResponse(200)
         ->assertJsonPath('data.kickoffAt', '2026-10-11T10:00:00+00:00')
         ->assertJsonPath('data.status', 'scheduled');
+});
+
+// --- sport z setami (#301) ---------------------------------------------------
+
+it('w pucharze siatkówki generator daje mecze z pustą listą setów, a w piłce sets: null', function () {
+    expect(cupResultBracket('volleyball')['sf1']->sets)->toBe([])
+        ->and(cupResultBracket()['sf1']->sets)->toBeNull();
+});
+
+it('w pucharze siatkówki zwycięzca w setach awansuje do finału bez karnych', function () {
+    ['sf1' => $sf1, 'final' => $final, 'teams' => $teams] = cupResultBracket('volleyball');
+    $sets = [['home' => 25, 'away' => 20], ['home' => 18, 'away' => 25], ['home' => 25, 'away' => 22], ['home' => 25, 'away' => 23]];
+
+    cupResultUpdate($sf1, ['status' => 'finished', 'sets' => $sets])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.homeScore', 3)
+        ->assertJsonPath('data.awayScore', 1);
+
+    expect($final->refresh()->home_team_id)->toBe($teams['Wilki']->id);
+});
+
+it('w pucharze siatkówki karne dają 422 pod homePenalties', function () {
+    cupResultUpdate(cupResultBracket('volleyball')['sf1'], [
+        'status' => 'finished',
+        'sets' => [['home' => 25, 'away' => 20], ['home' => 25, 'away' => 20], ['home' => 25, 'away' => 20]],
+        'homePenalties' => 4,
+        'awayPenalties' => 3,
+    ])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.homePenalties.0', 'W meczu na sety nie ma karnych.');
+});
+
+it('w pucharze siatkówki nie ma dogrywki: część 2 daje 422', function () {
+    $volleyball = cupResultBracket('volleyball')['sf1'];
+    cupResultUpdate($volleyball, ['status' => 'live'])->assertValidResponse(200);
+
+    cupResultUpdate($volleyball, ['livePeriod' => 2, 'periodRunning' => true])
+        ->assertValidResponse(422)
+        ->assertJsonPath('errors.livePeriod.0', 'Ten mecz nie ma 2. części.');
+});
+
+it('w pucharze piłki bez podziału po jedynej części wolno wystartować dogrywkę', function () {
+    $football = cupResultBracket()['sf1'];
+    $football->stage->tournament->update(['period_count' => 1, 'period_minutes' => null]);
+    cupResultUpdate($football, ['status' => 'live', 'homeScore' => 0, 'awayScore' => 0])->assertValidResponse(200);
+
+    cupResultUpdate($football, ['livePeriod' => 2, 'periodRunning' => true])
+        ->assertValidResponse(200)
+        ->assertJsonPath('data.livePeriod', 2);
 });

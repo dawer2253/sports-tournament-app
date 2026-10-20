@@ -61,6 +61,11 @@ Punktację (ile punktów w tabeli daje zwycięstwo, remis i porażka) sport poda
 wyłącznie jako domyślną. Obowiązuje punktacja turnieju, którą organizer może
 zmienić, więc sport nigdy sam nie liczy punktów za wynik meczu.
 
+**Sport z setami** (#301) to sport, którego mecz rozstrzygają sety, a nie suma
+zdobyczy — dziś siatkówka. Poznaje się go po domyślnym formacie seta
+(`SportConfig.defaultSetFormat`), bez osobnej flagi. Wynik meczu to sety
+wygrane, remisu nie ma, dogrywki też nie, a mecz ma jedną część bez czasu.
+
 _Unikaj_: SportRules (osobna nazwa na to samo co Sport).
 
 ## Stage (faza)
@@ -344,7 +349,9 @@ w `Tournament.periods` jako liczba części (1–10) i minuty jednej części. T
 **ustawienie turnieju**, a nie sportu, bo amatorskie mecze mają różne części,
 a w koszu bywa bez kwart. Turniej dostaje je przy zakładaniu jako kopię
 `SportConfig.defaultPeriods` (piłka 2 × 45, kosz 4 × 10), wzorem długości
-meczu. Jedna część znaczy „bez podziału”.
+meczu. Jedna część znaczy „bez podziału”. Sport z setami ma zawsze jedną część
+bez czasu, a organizator jej nie zmienia: set nie jest częścią meczu (patrz
+`Set`).
 
 **Etykieta wynika z liczby części, nie ze sportu**: 2 → „połowa”, 3 →
 „tercja”, 4 → „kwarta”, inna liczba → „część” („1. połowa”, „3. kwarta”).
@@ -374,6 +381,8 @@ po części, która trwa i nie jest ostatnią.
 - **Dogrywka** to część po ostatniej (numer `liczba części + 1`), tylko
   w meczu pucharowym, razem z karnymi: przycisk „Dogrywka / karne”, a w sporcie
   bez remisu (bez karnych) „Dogrywka”. Tablica pokazuje „Dogrywka” bez minuty.
+  W sporcie z setami dogrywki nie ma: set nie kończy się remisem, a mecz trwa
+  do rozstrzygnięcia w setach.
 - **Stała minuta startu części**: część `n` startuje od minuty
   `(n − 1) × minuty części + 1`, więc 2. połowa (2 × 45) zawsze od 46′,
   niezależnie od tego, ile doliczono w 1. Po regulaminowym końcu części
@@ -389,6 +398,43 @@ po części, która trwa i nie jest ostatnią.
 **Minuta zegara to nie minuta zdarzenia**: zegar liczy przeglądarka z startu
 części, a minutę zdarzenia wpisuje organizator i zapisuje się bez zmian
 („45+2” → `47`).
+
+## Set (set)
+
+Rozgrywka do progu punktów w sporcie z setami (#301). Mecz wygrywa drużyna,
+która pierwsza wygra wymaganą liczbę setów. Set wygrywa drużyna, która pierwsza
+zdobędzie próg (domyślnie 25) z wymaganą przewagą (domyślnie 2). Wyniki setów
+meczu trzyma `Match.sets`, a wynik meczu to sety wygrane.
+
+- **Gra na przewagi**: przy przewadze 2, po wyrównaniu na progu minus jeden
+  (24:24), gra toczy się do przewagi dwóch punktów, bez górnej granicy (26:24,
+  31:29). Przy przewadze 1 set kończy się na progu (25:24). Gra na przewagi to
+  nie dogrywka: dogrywka jest częścią meczu, a gra na przewagi częścią seta.
+- **Set decydujący** to ostatni możliwy set meczu: 5. przy meczu do 3 wygranych
+  (grany przy 2:2), 3. przy meczu do 2 (przy 1:1). Gra się go do niższego progu
+  (domyślnie 15).
+- **Set niedokończony** to wynik, od którego gra może jeszcze trwać. Tylko
+  ostatni set meczu trwającego może być niedokończony.
+- **Punkty w setach** to punkty zdobyte w setach meczu (`rallyPointsFor`,
+  `rallyPointsAgainst` w wierszu tabeli). Nie mylić z punktami w tabeli ani
+  z punktami zawodnika w klasyfikacji.
+
+Set nie jest częścią meczu (`Match period`), bo nie ma czasu.
+
+_Unikaj_: dogrywka i tie-break (o grze na przewagi), małe punkty (zamiast
+„punkty w setach”), część (o secie).
+
+## Set format (format seta)
+
+Ustawienie turnieju w sporcie z setami (#301), trzymane w
+`Tournament.setFormat`: do ilu wygranych setów gra się mecz (2 albo 3), próg
+seta, próg seta decydującego (nie większy od progu seta) i przewaga (1 albo 2).
+Turniej dostaje go przy zakładaniu jako kopię `SportConfig.defaultSetFormat`
+(do 3 setów, 25, 15, przewaga 2), wzorem długości meczu.
+
+**Zmienia się tylko przed pierwszym wpisanym setem.** Format to reguła, według
+której wyniki powstały, więc jego zmiana zrobiłaby z wpisanych setów niepoprawne.
+Punktacja i kryteria tylko wyniki oceniają, więc działają wstecz.
 
 ## Collision (kolizja)
 
@@ -418,7 +464,9 @@ nie musi się z nim zgadzać.
 Każdy rodzaj zdarzenia ma **wartość** (`value`): wkład jednego zdarzenia do
 statystyki, do której się wlicza. W piłce każde zdarzenie jest warte 1,
 a koszykówka rozbija punkty na rzuty: wolny (1), za 2 i za 3 — przy stoliku
-klika się jeden rzut, a nie wpisuje liczbę punktów.
+klika się jeden rzut, a nie wpisuje liczbę punktów. Siatkówka ma as serwisowy,
+blok punktowy i atak punktowy, każde za 1: to wybrane akcje zawodnika, a nie
+każdy punkt w secie, więc z wynikiem meczu (setami) się ich nie porównuje.
 
 **Samobój** należy do drużyny zawodnika, który go strzelił, choć bramkę dostaje
 przeciwnik. Do żadnej klasyfikacji się nie wlicza.
@@ -435,8 +483,10 @@ zdarzeniami nie da się cofnąć do zaplanowanych, dopóki ich nie usunąć.
 ## Score (zdobycze)
 
 To, co drużyna zdobywa w meczu i z czego wynika jego rozstrzygnięcie: bramki
-w piłce, punkty w koszykówce. Nazwa kanoniczna jest jedna dla wszystkich sportów,
-bo tabela i kryteria rozstrzygające mają ten sam kształt niezależnie od dyscypliny.
+w piłce, punkty w koszykówce, sety w siatkówce. Nazwa kanoniczna jest jedna dla
+wszystkich sportów, bo tabela i kryteria rozstrzygające mają ten sam kształt
+niezależnie od dyscypliny. W sporcie z setami zdobycze liczy serwer z wyników
+setów, a organizator ich nie wpisuje.
 
 Nie mylić z punktami w tabeli, które drużyna dostaje za wynik meczu (patrz
 `Standing`). To dwie różne wielkości i w koszykówce obie nazywają się w UI
@@ -450,6 +500,11 @@ points (zajęte przez punktację i punkty w tabeli, patrz `Points`).
 Reguła turnieju, która mówi, ile punktów w tabeli daje drużynie wygrana, remis
 i porażka. Turniej dostaje ją przy zakładaniu jako kopię wartości domyślnych
 sportu, a potem organizer zmienia ją u siebie.
+
+W sporcie z setami punktacja ma jeszcze punkty za wygraną i porażkę **w secie
+decydującym** (mecz rozstrzygnięty różnicą jednego seta: 3:2, 2:1), domyślnie
+2 i 1, a pozostałe wygrane i porażki dają 3 i 0. To dalej dane turnieju, nie
+osobny algorytm sportu.
 
 Tabela jest zawsze aktualnym wnioskiem z zakończonych meczów, więc zmiana
 punktacji obejmuje też mecze już rozegrane, a powrót do poprzednich wartości
@@ -475,7 +530,8 @@ zdobycze.
 
 Tabela niesie też `scoreLabel` — etykietę, pod jaką zdobycze występują
 w interfejsie tego turnieju — oraz `allowsDraw` sportu i kryteria
-(`tiebreakers`), według których ją ułożono.
+(`tiebreakers`), według których ją ułożono. W sporcie z setami wiersz ma też
+punkty w setach, a tabela ich etykietę (`rallyPointsLabel`).
 
 ## StatLeaderboard (klasyfikacja)
 
@@ -515,6 +571,11 @@ w tabeli jest więc zawsze unikalne, a pozycji ex aequo nie ma.
 
 Kryteria liczone ze zdobyczy noszą nazwę `Score`, nie `goals`: `score_diff`,
 `score_for`, `score_against`.
+
+Sport z setami ma dwa kryteria ilorazowe (#301): **stosunek setów** (`set_ratio`,
+sety wygrane do przegranych) i **stosunek punktów w setach** (`point_ratio`).
+Liczy się iloraz, nie różnica. Drużyna bez straconego seta stoi wyżej niż każda
+ze straconym, a z dwóch bez straconego wyżej ta, która wygrała więcej.
 
 Sport rozstrzyga dwie rzeczy o kryteriach, i są to dwie różne listy.
 **Dopuszczalne** (`availableTiebreakers`) to zbiór, z którego organizer w ogóle

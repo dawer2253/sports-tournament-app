@@ -29,6 +29,7 @@ const SAVE_FAILED = 'Nie udało się założyć turnieju. Spróbuj ponownie.';
 const SPORT_EMOJI: Partial<Record<Sport['code'], string>> = {
   football: '⚽',
   basketball: '🏀',
+  volleyball: '🏐',
 };
 
 export function TournamentCreatePage() {

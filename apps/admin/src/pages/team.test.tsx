@@ -250,6 +250,7 @@ function serveCup(status: 'scheduled' | 'live') {
     groupId: null,
     homePenalties: null,
     awayPenalties: null,
+    sets: null,
     kickoffAt: null,
     venue: null,
     loserToMatchId: null,

@@ -32,6 +32,7 @@ const SPORTS: Sport[] = [
       runningClock: true,
       defaultMatchDuration: 60,
       defaultPeriods: { count: 2, minutes: 45 },
+      defaultSetFormat: null,
       defaultPoints: { win: 3, draw: 1, loss: 0 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff', 'score_for'],
@@ -56,6 +57,7 @@ const SPORTS: Sport[] = [
       runningClock: false,
       defaultMatchDuration: 40,
       defaultPeriods: { count: 4, minutes: 10 },
+      defaultSetFormat: null,
       defaultPoints: { win: 2, draw: 0, loss: 1 },
       eventTypes: [],
       defaultTiebreakers: ['points', 'head_to_head', 'score_diff'],
@@ -65,6 +67,31 @@ const SPORTS: Sport[] = [
         points: 'Punkty w tabeli',
         score_for: 'Zdobyte punkty',
         score_diff: 'Różnica punktów',
+        head_to_head: 'Bezpośredni mecz',
+      },
+      availableStats: [],
+      statLabels: {},
+    },
+  },
+  {
+    id: 3,
+    code: 'volleyball',
+    name: 'Siatkówka',
+    config: {
+      allowsDraw: false,
+      runningClock: false,
+      defaultMatchDuration: 90,
+      defaultPeriods: { count: 1, minutes: null },
+      defaultSetFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
+      defaultPoints: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 },
+      eventTypes: [],
+      defaultTiebreakers: ['points', 'wins', 'set_ratio', 'point_ratio', 'head_to_head'],
+      availableTiebreakers: ['points', 'wins', 'set_ratio', 'point_ratio', 'head_to_head'],
+      tiebreakerLabels: {
+        wins: 'Zwycięstwa',
+        points: 'Punkty w tabeli',
+        set_ratio: 'Stosunek setów',
+        point_ratio: 'Stosunek punktów w setach',
         head_to_head: 'Bezpośredni mecz',
       },
       availableStats: [],
@@ -85,6 +112,7 @@ const FOOTBALL: Tournament = {
   tiebreakers: ['points', 'score_diff', 'head_to_head'],
   matchDuration: 60,
   periods: { count: 2, minutes: 45 },
+  setFormat: null,
   teamsCount: 8,
   registration: { open: false, deadline: null, pendingCount: 0 },
   createdAt: '2026-09-01T10:00:00+02:00',
@@ -99,6 +127,18 @@ const BASKETBALL: Tournament = {
   sport: { id: 2, code: 'basketball', name: 'Koszykówka', allowsDraw: false },
   points: { win: 2, draw: 0, loss: 1 },
   tiebreakers: ['points', 'head_to_head'],
+};
+
+const VOLLEYBALL: Tournament = {
+  ...FOOTBALL,
+  name: 'Liga Siatkówki 2026',
+  slug: 'liga-siatkowki-2026',
+  sport: { id: 3, code: 'volleyball', name: 'Siatkówka', allowsDraw: false },
+  points: { win: 3, draw: 0, loss: 0, winDecidingSet: 2, lossDecidingSet: 1 },
+  tiebreakers: ['points', 'wins', 'set_ratio'],
+  matchDuration: 90,
+  periods: { count: 1, minutes: null },
+  setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 },
 };
 
 beforeEach(() => {
@@ -875,5 +915,126 @@ describe('ustawienia turnieju: usuwanie', () => {
     await user.click(confirmButton(dialog));
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
     expect(deletes).toEqual(['7', '7']);
+  });
+});
+
+/**
+ * Mecze turnieju dla blokady formatu seta (#301): zapytanie o mecze
+ * zakończone liczy `meta.total`, a o trwające patrzy na `sets`.
+ */
+function volleyballMatches({ finished = 0, liveSets = [] as number[] } = {}) {
+  server.use(
+    http.get(`${API}/tournaments/:id/matches`, ({ request }) => {
+      const status = new URL(request.url).searchParams.get('status');
+      const data =
+        status === 'live'
+          ? liveSets.map((count, index) => ({ id: index + 1, sets: Array.from({ length: count }, () => ({ home: 25, away: 20 })) }))
+          : [];
+      return HttpResponse.json({ data, meta: { currentPage: 1, lastPage: 1, perPage: 1, total: status === 'finished' ? finished : data.length } });
+    }),
+  );
+}
+
+describe('ustawienia turnieju: sport z setami (#301)', () => {
+  it('pokazuje format seta zamiast podziału meczu i punkty po secie decydującym', async () => {
+    tournamentApi(VOLLEYBALL);
+    volleyballMatches();
+    await renderSettings();
+
+    expect(screen.queryByRole('combobox', { name: 'Podział meczu' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Set do (pkt)')).toHaveValue(25);
+    expect(screen.getByLabelText('Set decydujący do (pkt)')).toHaveValue(15);
+    expect(screen.getByLabelText('Wygrana w secie decydującym')).toHaveValue(2);
+    expect(screen.getByLabelText('Porażka w secie decydującym')).toHaveValue(1);
+    expect(screen.queryByLabelText('Remis')).not.toBeInTheDocument();
+  });
+
+  it('wysyła zmieniony format seta i punkty po secie decydującym', async () => {
+    const bodies = tournamentApi(VOLLEYBALL);
+    volleyballMatches();
+    const { user } = await renderSettings();
+
+    await user.click(screen.getByRole('combobox', { name: 'Mecz do' }));
+    await user.click(await screen.findByRole('option', { name: '2 wygranych setów' }));
+    await retype(user, screen.getByLabelText('Set do (pkt)'), '21');
+    await retype(user, screen.getByLabelText('Wygrana w secie decydującym'), '3');
+    await retype(user, screen.getByLabelText('Porażka w secie decydującym'), '0');
+    await user.click(saveButton());
+
+    await waitFor(() =>
+      expect(bodies).toEqual([
+        {
+          points: { win: 3, draw: 0, loss: 0, winDecidingSet: 3, lossDecidingSet: 0 },
+          setFormat: { setsToWin: 2, setPoints: 21, decidingSetPoints: 15, minLead: 2 },
+        },
+      ]),
+    );
+  });
+
+  it('nie wysyła seta decydującego dłuższego od zwykłego', async () => {
+    const bodies = tournamentApi(VOLLEYBALL);
+    volleyballMatches();
+    const { user } = await renderSettings();
+
+    await retype(user, screen.getByLabelText('Set decydujący do (pkt)'), '30');
+    await user.click(saveButton());
+
+    expect(await screen.findByText('Set decydujący nie może być dłuższy od zwykłego.')).toBeInTheDocument();
+    expect(bodies).toEqual([]);
+  });
+
+  it('po pierwszym wpisanym secie pola formatu są wyłączone ze zdaniem o blokadzie', async () => {
+    tournamentApi(VOLLEYBALL);
+    volleyballMatches({ liveSets: [0, 1] });
+    await renderSettings();
+
+    expect(await screen.findByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Set do (pkt)')).toBeDisabled();
+    expect(screen.getByRole('combobox', { name: 'Mecz do' })).toBeDisabled();
+    // Punktacja zmienia się dalej, także wstecz.
+    expect(screen.getByLabelText('Wygrana w secie decydującym')).toBeEnabled();
+  });
+
+  it('mecz zakończony zamyka format bez pytania o mecze trwające', async () => {
+    tournamentApi(VOLLEYBALL);
+    volleyballMatches({ finished: 3 });
+    await renderSettings();
+
+    expect(await screen.findByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).toBeInTheDocument();
+  });
+
+  it('wpisany set na drugiej stronie meczów trwających też zamyka format', async () => {
+    tournamentApi(VOLLEYBALL);
+    server.use(
+      http.get(`${API}/tournaments/:id/matches`, ({ request }) => {
+        const query = new URL(request.url).searchParams;
+        if (query.get('status') === 'finished') {
+          return HttpResponse.json({ data: [], meta: { currentPage: 1, lastPage: 1, perPage: 1, total: 0 } });
+        }
+        const page = Number(query.get('page') ?? 1);
+        const data = [{ id: page, sets: page === 2 ? [{ home: 25, away: 20 }] : [] }];
+        return HttpResponse.json({ data, meta: { currentPage: page, lastPage: 2, perPage: 200, total: 201 } });
+      }),
+    );
+    await renderSettings();
+
+    expect(await screen.findByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).toBeInTheDocument();
+  });
+
+  it('mecz trwający bez wpisanego seta nie zamyka formatu', async () => {
+    tournamentApi(VOLLEYBALL);
+    volleyballMatches({ liveSets: [0] });
+    await renderSettings();
+
+    await waitFor(() => expect(screen.getByLabelText('Set do (pkt)')).toBeEnabled());
+    expect(screen.queryByText('Format seta zmienisz tylko przed pierwszym wynikiem.')).not.toBeInTheDocument();
+  });
+
+  it('w piłce nie ma formatu seta ani punktów po secie decydującym', async () => {
+    tournamentApi(FOOTBALL);
+    await renderSettings();
+
+    expect(screen.queryByLabelText('Set do (pkt)')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Wygrana w secie decydującym')).not.toBeInTheDocument();
   });
 });

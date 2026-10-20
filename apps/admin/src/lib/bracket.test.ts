@@ -32,6 +32,7 @@ function match(id: number, round: AdminMatch['round'], matchNumber: number, over
     awayScore: null,
     homePenalties: null,
     awayPenalties: null,
+    sets: null,
     status: 'scheduled',
     kickoffAt: null,
     venue: null,

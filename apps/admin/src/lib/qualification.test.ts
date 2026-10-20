@@ -17,6 +17,7 @@ function table(group: Group, teams: Team[]): StandingTable {
     groupId: group.id,
     groupName: group.name,
     scoreLabel: 'Bramki',
+    rallyPointsLabel: null,
     allowsDraw: true,
     tiebreakers: [],
     rows: teams.map((candidate, index) => ({
@@ -29,6 +30,8 @@ function table(group: Group, teams: Team[]): StandingTable {
       scoreFor: 0,
       scoreAgainst: 0,
       scoreDifference: 0,
+      rallyPointsFor: null,
+      rallyPointsAgainst: null,
       points: 0,
       form: [],
     })),

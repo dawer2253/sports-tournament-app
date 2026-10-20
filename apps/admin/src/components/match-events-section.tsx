@@ -30,6 +30,12 @@ export interface MatchEventsSectionProps {
   /** Wynik z pól okna, także niezapisany: linia zgodności porównuje z tym, co widać. */
   homeScore: string;
   awayScore: string;
+  /**
+   * Linia zgodności zdarzeń z wynikiem (#191). Domyślnie włączona; sport
+   * z setami (#301) ją wyłącza, bo zdarzenia (as, blok, atak) to wybrane
+   * akcje, a wynik to sety.
+   */
+  scoreCheck?: boolean;
   onStart: () => void;
   starting: boolean;
 }
@@ -43,7 +49,7 @@ export interface MatchEventsSectionProps {
  * okna, które dotyczy wyniku, stanu, terminu i obiektu. Dlatego sekcja stoi
  * w `FormDialog` jako `aside`, poza formularzem meczu.
  */
-export function MatchEventsSection({ match, sportCode, started, homeScore, awayScore, onStart, starting }: MatchEventsSectionProps) {
+export function MatchEventsSection({ match, sportCode, started, homeScore, awayScore, scoreCheck = true, onStart, starting }: MatchEventsSectionProps) {
   const queryClient = useQueryClient();
   const events = useMatchEvents(match.id, started);
   const { types, scoringStat, scoringLabel } = useEventTypes(sportCode);
@@ -136,7 +142,7 @@ export function MatchEventsSection({ match, sportCode, started, homeScore, awayS
 
       {started && events.data && types && (
         <>
-          <MismatchLine match={match} scoringLabel={scoringLabel} events={events.data} types={types} scoringStat={scoringStat} homeScore={homeScore} awayScore={awayScore} />
+          {scoreCheck && <MismatchLine match={match} scoringLabel={scoringLabel} events={events.data} types={types} scoringStat={scoringStat} homeScore={homeScore} awayScore={awayScore} />}
           <MatchTimeline events={events.data} homeTeamId={home.id} types={types} onSelect={(row) => setEditing(events.data.find((event) => event.id === row.id) ?? null)} />
         </>
       )}

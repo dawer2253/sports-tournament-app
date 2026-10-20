@@ -460,3 +460,32 @@ describe('mecz pucharowy (#234)', () => {
     expect(requests.stageMatches).toEqual([]);
   });
 });
+
+describe('strona meczu: sport z setami (#301)', () => {
+  it('pod tablicą stoją sety po kolei, a wynik to sety wygrane', async () => {
+    publicApi({
+      matches: [
+        detail(1, {
+          homeScore: 3,
+          awayScore: 1,
+          sets: [
+            { home: 25, away: 20 },
+            { home: 23, away: 25 },
+            { home: 25, away: 18 },
+            { home: 25, away: 22 },
+          ],
+        }),
+      ],
+    });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    const list = await screen.findByRole('list', { name: 'Sety' });
+    expect(within(list).getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+      '1. set 25:20',
+      '2. set 23:25',
+      '3. set 25:18',
+      '4. set 25:22',
+    ]);
+    expect(screen.getByLabelText('Wynik 3 : 1')).toBeInTheDocument();
+  });
+});
