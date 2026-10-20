@@ -77,7 +77,7 @@ Do zrobienia:
 
 ## Jeśli czas i zasoby pozwolą
 W tej kolejności:
-- [ ] Zgłoszenia drużyn do konkretnego turnieju
+- [x] Zgłoszenia drużyn do konkretnego turnieju (#300)
 - [ ] Generator grafik do social mediów
 - [ ] Serwer MCP do obsługi ligi przez organizatora
 - [ ] Trzeci sport, najlepiej z setami (potwierdza, że model udźwignie inną punktację)
