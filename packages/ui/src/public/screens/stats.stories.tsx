@@ -35,7 +35,7 @@ function Demo({
         boards={boards}
         statHref={(code) => (code === stats[0]!.code ? `/t/${tournament.slug}/statystyki` : `/t/${tournament.slug}/statystyki?stat=${code}`)}
         onValueChange={setValue}
-        hasFinishedMatches={hasFinishedMatches}
+        hasFinishedMatches={hasFinishedMatches ?? false}
       />
     </Shell>
   )

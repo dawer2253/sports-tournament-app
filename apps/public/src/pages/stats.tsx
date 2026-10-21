@@ -2,6 +2,7 @@ import { LoadError, NoStats, StatsLoading, StatsScreen, type StatBoard } from '@
 import { useSearchParams } from 'react-router';
 import { useLeaderboards, useResults } from '../lib/queries';
 import { loadErrorMessage } from '../lib/api-error';
+import { hasFinishedMatches, resultsPending } from '../lib/finished-matches';
 import { tabHref, useTournament } from './tournament-layout';
 
 /**
@@ -49,7 +50,7 @@ export function StatsPage() {
   }
   // Pusta klasyfikacja czeka na wyniki, żeby nie mignąć tekstem „ruszy po pierwszym meczu”;
   // ich błąd zostawia ten tekst zamiast zasłaniać ekran.
-  if (main.data.rows.length === 0 && results.data === undefined && !results.error) return <StatsLoading />;
+  if (main.data.rows.length === 0 && resultsPending(results)) return <StatsLoading />;
 
   const boards = Object.fromEntries(
     stats.map((stat, position): [string, StatBoard] => {
@@ -70,7 +71,7 @@ export function StatsPage() {
       boards={boards}
       statHref={statHref}
       onValueChange={select}
-      hasFinishedMatches={(results.data?.length ?? 0) > 0}
+      hasFinishedMatches={hasFinishedMatches(results)}
     />
   );
 }

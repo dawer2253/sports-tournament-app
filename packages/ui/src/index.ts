@@ -99,4 +99,5 @@ export * from './components/layout/meta-list';
 export * from './components/layout/team-crest';
 export * from './components/layout/team-logo';
 export * from './components/layout/tournament-logo';
+export * from './components/layout/tournament-subtitle';
 

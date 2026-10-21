@@ -11,7 +11,7 @@
  */
 import * as React from 'react'
 import type { Leaderboard } from '../../components/data/leaderboard-data'
-import { LEADERBOARD_EMPTY, LEADERBOARD_NO_EVENTS } from '../../components/data/leaderboard-data'
+import { leaderboardEmptyState } from '../../components/data/leaderboard-data'
 import type { MatchInRound, RoundWithMatches } from '../../components/data/round-groups'
 import { bracketFinal, bracketWinnerSide, teamOn } from '../../lib/bracket'
 import { NO_KICKOFF, formatKickoff, formatShortDay, matchDays } from '../../lib/kickoff'
@@ -80,7 +80,7 @@ export interface OverviewScreenProps<M extends OverviewMatch = OverviewMatch, B 
   /** Klasyfikacja domyślnej statystyki. */
   leaderboard: Loadable<Leaderboard>
   /** Czy jest choć jeden mecz zakończony: pusta klasyfikacja mówi wtedy, że jest pusta, a nie że ruszy (#306). */
-  hasFinishedMatches?: boolean
+  hasFinishedMatches: boolean
   /** Strefa terminów; bez niej strefa przeglądarki (ADR-0008). */
   timeZone?: string
   /** Adres strony meczu (tablica, wiersz, kafel drabinki). */
@@ -234,7 +234,7 @@ function Leader({ state, tab, hasFinishedMatches }: { state: Loadable<Leaderboar
         {(leaderboard) =>
           leaderboard.rows.length === 0 ? (
             <p className="py-2 text-pub-14 text-muted-foreground">
-              {hasFinishedMatches ? `${LEADERBOARD_NO_EVENTS}: do zakończonych meczów nie wpisano zdarzeń.` : `${LEADERBOARD_EMPTY}.`}
+              {leaderboardEmptyState(hasFinishedMatches).title}.
             </p>
           ) : (
             <StatLeaders leaderboard={leaderboard} compact />
@@ -260,7 +260,7 @@ export function OverviewScreen<M extends OverviewMatch, B extends PublicBracketM
   groups,
   bracket,
   leaderboard,
-  hasFinishedMatches = false,
+  hasFinishedMatches,
   timeZone,
   matchHref,
   onMatchNavigate,

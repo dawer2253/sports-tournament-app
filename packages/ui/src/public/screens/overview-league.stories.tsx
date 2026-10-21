@@ -102,7 +102,7 @@ export const WTrakcie: Story = {
 
 const inProgressFixtures = publicLeagueSeason.inProgress.lists.fixtures
 const liveNow = inProgressFixtures.find((match) => match.status === 'live')!
-const [nextLive, nextUndated] = inProgressFixtures.filter((match) => match.round.order === 6)
+const [nextLive, nextUndated] = inProgressFixtures.filter((match) => match.round.order === liveNow.round.order + 1)
 
 /**
  * Następna kolejka w bocznej kolumnie (#306): mecz szóstej kolejki zaczęty

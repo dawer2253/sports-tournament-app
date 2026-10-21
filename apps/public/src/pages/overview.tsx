@@ -14,6 +14,7 @@ import {
 import { useNavigate } from 'react-router';
 import { useFixtures, useLeaderboard, useResults, useStandings, useTeams } from '../lib/queries';
 import { loadErrorMessage } from '../lib/api-error';
+import { hasFinishedMatches, resultsPending } from '../lib/finished-matches';
 import { useRounds } from './match-rounds';
 import { matchHref, useRegistrationEntry, useTabNav, useTournament } from './tournament-layout';
 import { useBracket } from './use-bracket';
@@ -152,8 +153,9 @@ function OverviewContent() {
           : undefined
       }
       bracket={fromBracket ? loadable(knockout, (matches) => matches) : undefined}
-      leaderboard={loadable(leaderboard, (board) => board)}
-      hasFinishedMatches={(results.data?.length ?? 0) > 0}
+      // Pusta klasyfikacja czeka na wyniki, żeby nie mignąć tekstem „ruszy po pierwszym meczu” (#306).
+      leaderboard={leaderboard.data?.rows.length === 0 && resultsPending(results) ? { status: 'loading' } : loadable(leaderboard, (board) => board)}
+      hasFinishedMatches={hasFinishedMatches(results)}
       matchHref={(match) => matchHref(slug, match.id)}
       onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
       {...tabNav}

@@ -31,6 +31,7 @@ export function RoundTabs({ rounds, value, onValueChange, 'aria-label': ariaLabe
     >
       {rounds.map((round) => {
         const active = round.id === value
+        const muted = active ? 'text-primary-foreground/80' : 'text-muted-foreground'
         return (
           <button
             key={round.id}
@@ -46,14 +47,14 @@ export function RoundTabs({ rounds, value, onValueChange, 'aria-label': ariaLabe
             {/* Postęp obok nazwy, termin pod nimi: układ zamiast „·” między faktami (#306). */}
             <span className="flex items-baseline justify-between gap-3">
               <span className="font-medium">{round.name}</span>{' '}
-              <span className={cn('text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+              <span className={cn('text-xs', muted)}>
                 <span aria-hidden className="tabular-nums">
                   {round.finished}/{round.total}
                 </span>
                 <span className="sr-only">zakończone {round.finished} z {round.total}</span>
               </span>
             </span>{' '}
-            <span className={cn('block text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{round.dates}</span>
+            <span className={cn('block text-xs', muted)}>{round.dates}</span>
           </button>
         )
       })}

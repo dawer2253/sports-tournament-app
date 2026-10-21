@@ -5,7 +5,7 @@
  * każdej statystyki osobnym zapytaniem, obsługuje wczytywanie i błąd głównej
  * i trzyma wybór w adresie (`?stat=`).
  */
-import { LEADERBOARD_EMPTY, LEADERBOARD_NO_EVENTS, type Leaderboard, type StatOption } from '../../components/data/leaderboard-data'
+import { leaderboardEmptyState, type Leaderboard, type StatOption } from '../../components/data/leaderboard-data'
 import { EmptyBoard } from '../board'
 import { PageHead } from '../heads'
 import { Loading, SkeletonBlock, SkeletonHead } from '../skeleton'
@@ -32,23 +32,18 @@ export interface StatsScreenProps {
    * klasyfikacja mówi wtedy, że jest pusta, a nie że ruszy po pierwszym
    * meczu (#306).
    */
-  hasFinishedMatches?: boolean
+  hasFinishedMatches: boolean
 }
 
-export function StatsScreen({ stats, value, leaderboard, boards, statHref, onValueChange, hasFinishedMatches = false }: StatsScreenProps) {
+export function StatsScreen({ stats, value, leaderboard, boards, statHref, onValueChange, hasFinishedMatches }: StatsScreenProps) {
+  const empty = leaderboardEmptyState(hasFinishedMatches)
   return (
     <>
       <PageHead eyebrow={EYEBROW} title={TITLE} />
       <StatTabs stats={stats} value={value} onValueChange={onValueChange}>
         {leaderboard.rows.length === 0 ? (
           // Bez bocznej kolumny: przed pierwszym meczem zakończonym pusta jest każda klasyfikacja.
-          hasFinishedMatches ? (
-            <EmptyBoard title={LEADERBOARD_NO_EVENTS}>
-              Mecze zakończone już są, ale nie wpisano do nich zdarzeń, które liczą się w tej klasyfikacji.
-            </EmptyBoard>
-          ) : (
-            <EmptyBoard title={LEADERBOARD_EMPTY}>Liczą się zdarzenia z meczów zakończonych, ze wszystkich faz turnieju.</EmptyBoard>
-          )
+          <EmptyBoard title={empty.title}>{empty.detail}</EmptyBoard>
         ) : (
           <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-14">
             <div className="flex min-w-0 flex-col gap-8">
