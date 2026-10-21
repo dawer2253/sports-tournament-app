@@ -3,6 +3,7 @@ import type { Tournament } from '@tournament/api-client';
 import {
   AdminShell,
   isKnockoutOnly,
+  MetaList,
   pendingRegistrationsBadge,
   Skeleton,
   type AdminNavKey,
@@ -146,7 +147,12 @@ export function AdminPage(props: AdminPageProps) {
             active: props.section,
             tournament: open ?? { id: pageTournamentId(props) },
             title: open?.name ?? <Skeleton className="h-7 w-56" />,
-            subtitle: tournament && `${tournament.sport.name} · /t/${tournament.slug}`,
+            subtitle: tournament && (
+              <MetaList>
+                <span>{tournament.sport.name}</span>
+                <span>/t/{tournament.slug}</span>
+              </MetaList>
+            ),
           }
         : { active: props.active, title: props.title, subtitle: props.subtitle })}
       actions={actions}

@@ -734,7 +734,7 @@ function GenerateBracketDialog({
       }}
       onSubmit={submit}
       title={replacing ? 'Rozstaw i wygeneruj ponownie' : 'Rozstaw i wygeneruj'}
-      description={`${stage.name} · ${bracketSizeSentence(order.length)}`}
+      description={`${stage.name}. ${bracketSizeSentence(order.length)}`}
       submitLabel={replacing ? 'Zastąp drabinkę' : 'Wygeneruj'}
       pending={generate.isPending}
       error={formError}

@@ -595,8 +595,8 @@ function GenerateDialog({
       : 'Wygeneruj terminarz';
 
   const description = isGroup
-    ? `${stage.name} · ${(groupSizes ?? []).length} ${plural((groupSizes ?? []).length, GROUPS)}. Kolejka jest wspólna dla wszystkich grup.`
-    : `${stage.name} · ${teamsCount} ${plural(teamsCount, TEAMS)}. Kolejność drużyn jest losowana.`;
+    ? `${stage.name}: ${(groupSizes ?? []).length} ${plural((groupSizes ?? []).length, GROUPS)}. Kolejka jest wspólna dla wszystkich grup.`
+    : `${stage.name}: ${teamsCount} ${plural(teamsCount, TEAMS)}. Kolejność drużyn jest losowana.`;
 
   return (
     <FormDialog

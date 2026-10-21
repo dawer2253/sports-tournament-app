@@ -122,7 +122,10 @@ describe('trasy turnieju', () => {
 
     expect(await screen.findByRole('heading', { name: 'Puchar Zimowy' })).toBeInTheDocument();
     expect(requestedIds).toEqual(['7']);
-    expect(screen.getByText('Koszykówka · /t/puchar-zimowy')).toBeInTheDocument();
+    // Sport i adres to dwa fakty rozdzielone kreską `MetaList`, bez „·” (#306).
+    const subtitle = screen.getByText('/t/puchar-zimowy').closest('div')!;
+    expect(within(subtitle).getByText('Koszykówka')).toBeInTheDocument();
+    expect(subtitle.textContent).not.toContain('·');
     // Status jest dwa razy: przy turnieju w sidebarze i w nagłówku, bo
     // poniżej `md` sidebar siedzi w zamkniętej szufladzie.
     expect(screen.getAllByText('Szkic')).toHaveLength(2);

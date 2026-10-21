@@ -43,16 +43,17 @@ export function RoundTabs({ rounds, value, onValueChange, 'aria-label': ariaLabe
               active ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-muted',
             )}
           >
-            <span className="block font-medium">{round.name}</span>{' '}
-            <span className={cn('block text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
-              {round.dates} ·{' '}
-              <span aria-hidden className="tabular-nums">
-                {round.finished}/{round.total}
+            {/* Postęp obok nazwy, termin pod nimi: układ zamiast „·” między faktami (#306). */}
+            <span className="flex items-baseline justify-between gap-3">
+              <span className="font-medium">{round.name}</span>{' '}
+              <span className={cn('text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+                <span aria-hidden className="tabular-nums">
+                  {round.finished}/{round.total}
+                </span>
+                <span className="sr-only">zakończone {round.finished} z {round.total}</span>
               </span>
-              <span className="sr-only">
-                zakończone {round.finished} z {round.total}
-              </span>
-            </span>
+            </span>{' '}
+            <span className={cn('block text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{round.dates}</span>
           </button>
         )
       })}

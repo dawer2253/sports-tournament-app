@@ -120,7 +120,7 @@ export function MatchEventDialog({ match, event, types, onClose }: MatchEventDia
         }}
         onSubmit={submit}
         title="Edytuj zdarzenie"
-        description={`${minuteLabel}${event.typeLabel} · ${event.player?.name ?? event.team.name}`}
+        description={`${minuteLabel}${event.typeLabel}, ${event.player?.name ?? event.team.name}`}
         submitLabel="Zapisz"
         pending={save.isPending}
         error={formError}
@@ -213,7 +213,7 @@ export function MatchEventDialog({ match, event, types, onClose }: MatchEventDia
         }}
         onConfirm={() => remove.mutate()}
         entity="zdarzenie"
-        name={`${minuteLabel}${event.typeLabel} · ${event.player?.name ?? event.team.name}`}
+        name={`${minuteLabel}${event.typeLabel}, ${event.player?.name ?? event.team.name}`}
         pending={remove.isPending}
         error={remove.error ? apiErrorMessage(remove.error) || DELETE_FAILED : undefined}
       />

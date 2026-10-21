@@ -519,7 +519,7 @@ describe('tabele grup', () => {
     return { patches, standingsRequests: () => standingsRequests };
   }
 
-  const groupSection = (name: string) => screen.getByRole('region', { name: `Faza grupowa · ${name}` });
+  const groupSection = (name: string) => screen.getByRole('region', { name: `Faza grupowa, ${name}` });
   const bodyRows = (section: HTMLElement) => within(section).getAllByRole('row').slice(1);
 
   /** Jak `renderStandings`, ale tabel jest kilka, więc czeka na sterowanie. */
@@ -542,8 +542,8 @@ describe('tabele grup', () => {
     await renderGroups();
 
     expect(screen.getAllByRole('heading', { name: /^Faza grupowa/ }).map((heading) => heading.textContent)).toEqual([
-      'Faza grupowa · Grupa A',
-      'Faza grupowa · Grupa B',
+      'Faza grupowa, Grupa A',
+      'Faza grupowa, Grupa B',
     ]);
     expect(within(groupSection('Grupa B')).getByText('Żubry Wola')).toBeInTheDocument();
     expect(within(groupSection('Grupa A')).queryByText('Żubry Wola')).not.toBeInTheDocument();
@@ -608,7 +608,7 @@ describe('tabele grup', () => {
     await renderGroups();
 
     expect(screen.getAllByRole('table')).toHaveLength(1);
-    expect(screen.getByRole('heading', { name: 'Faza grupowa · Grupa A' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Faza grupowa, Grupa A' })).toBeInTheDocument();
   });
 
   it('tabela ligi nie ma linii wyjścia ani sterowania', async () => {

@@ -4,6 +4,7 @@ import { organizer, tournamentList } from '../../lib/demo-data'
 import { isCurrentTournament } from '../data/tournament-row'
 import { Skeleton } from '../ui/skeleton'
 import { phone375 } from '../../test/viewport'
+import { MetaList } from './meta-list'
 import { AdminShell, type AdminNavKey, type AdminShellTournament, type AdminShellTournamentList } from './admin-shell'
 
 /** Bieżące turnieje demo, tak jak oddaje je API: bez zakończonych. */
@@ -45,7 +46,12 @@ const demoTournament = tournamentList[0]!
 const inTournament = {
   tournament: demoTournament,
   title: demoTournament.name,
-  subtitle: `${demoTournament.sport.name} · /t/${demoTournament.slug}`,
+  subtitle: (
+    <MetaList>
+      <span>{demoTournament.sport.name}</span>
+      <span>/t/{demoTournament.slug}</span>
+    </MetaList>
+  ),
 }
 
 /** Sidebar panelu, w którym stoi lista turniejów. */
