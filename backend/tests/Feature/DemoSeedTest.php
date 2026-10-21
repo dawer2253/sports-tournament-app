@@ -6,6 +6,10 @@ use App\Models\Round;
 use App\Models\Stage;
 use App\Models\Team;
 use App\Models\Tournament;
+use App\Models\User;
+use Database\Seeders\DemoTournamentSeeder;
+use Database\Seeders\TeamAdminsSeeder;
+use Illuminate\Support\Facades\Hash;
 use Symfony\Component\Yaml\Yaml;
 
 /*
@@ -24,7 +28,27 @@ use Symfony\Component\Yaml\Yaml;
 */
 
 beforeEach(function () {
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
+});
+
+it('daje Julii i Wojciechowi konta z własnymi kopiami tych samych turniejów co Dawid', function () {
+    $this->seed(TeamAdminsSeeder::class);
+
+    $dawid = Tournament::query()->whereRelation('user', 'email', 'dawid@example.com')->count();
+
+    foreach (['julia' => 'julia@example.com', 'wojciech' => 'wojciech@example.com'] as $key => $email) {
+        $user = User::firstWhere('email', $email);
+
+        expect($user)->not->toBeNull()
+            ->and(Hash::check('tajnehaslo123', $user->password))->toBeTrue()
+            ->and(Tournament::where('user_id', $user->id)->count())->toBe($dawid);
+
+        $tournament = Tournament::firstWhere('slug', "liga-osiedlowa-2026-{$key}");
+
+        expect($tournament->user_id)->toBe($user->id)
+            ->and($tournament->teams()->count())->toBe(3)
+            ->and($tournament->matches()->count())->toBe(6);
+    }
 });
 
 it('sieje kompletny turniej demo z organizerem, fazą i drużynami', function () {
@@ -230,7 +254,7 @@ it('nie dubluje danych demo przy powtórnym seedowaniu', function () {
     // `make fresh` robi `migrate:fresh --seed`, ale `db:seed` na stojącej bazie
     // to normalny ruch przy pracy nad seedem — drugi turniej o tym samym slugu
     // wywaliłby się na unikacie.
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     $demo = Tournament::firstWhere('slug', 'liga-osiedlowa-2026');
 
@@ -274,7 +298,7 @@ it('sieje ligę koszykówki zgodną z przykładem koszykowka', function () {
 });
 
 it('nie dubluje ligi koszykówki przy powtórnym seedowaniu', function () {
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     expect(Tournament::query()->where('slug', 'liga-koszykowki-2026')->count())->toBe(1)
         ->and(Tournament::firstWhere('slug', 'liga-koszykowki-2026')->stages()->count())->toBe(1);
@@ -314,7 +338,7 @@ it('sieje demo obok turnieju organizera, który zajął najniższe id', function
         'away_team_id' => $away->id,
     ]);
 
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     $demo = Tournament::firstWhere('slug', 'liga-osiedlowa-2026');
 
@@ -371,7 +395,7 @@ it('sieje puchar zgodny z przykładem puchar meczów fazy', function () {
 });
 
 it('nie dubluje pucharu przy powtórnym seedowaniu', function () {
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     $tournament = Tournament::firstWhere('slug', 'puchar-osiedlowy-2026');
 
@@ -479,7 +503,7 @@ it('sieje drabinkę playoffu zgodną z przykładem grupy meczów fazy', function
 });
 
 it('nie dubluje turnieju z grupami przy powtórnym seedowaniu', function () {
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     $tournament = Tournament::firstWhere('slug', 'grupy-osiedlowe-2026');
 
@@ -569,7 +593,7 @@ it('sieje zdarzenia meczu 3 siatkówki zgodne z przykładem siatkowka strony mec
 });
 
 it('nie dubluje ligi siatkówki przy powtórnym seedowaniu', function () {
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     expect(Tournament::query()->where('slug', 'liga-siatkowki-2026')->count())->toBe(1)
         ->and(Tournament::firstWhere('slug', 'liga-siatkowki-2026')->matches()->count())->toBe(6);
@@ -604,7 +628,7 @@ it('sieje turniej z otwartymi zapisami i zgłoszeniami zgodnymi z przykładem li
 });
 
 it('nie dubluje zgłoszeń ani drużyn turnieju z zapisami przy powtórnym seedowaniu', function () {
-    $this->seed();
+    $this->seed(DemoTournamentSeeder::class);
 
     $tournament = Tournament::firstWhere('slug', 'liga-letnia-2026');
 

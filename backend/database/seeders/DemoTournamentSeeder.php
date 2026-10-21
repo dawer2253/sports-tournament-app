@@ -308,6 +308,13 @@ class DemoTournamentSeeder extends Seeder
         ],
     ];
 
+    private string $slugSuffix = '';
+
+    private function slug(string $base): string
+    {
+        return $this->slugSuffix === '' ? $base : "{$base}-{$this->slugSuffix}";
+    }
+
     public function run(): void
     {
         // Konto z przykładu `POST /login` w kontrakcie — tym samym loginem
@@ -318,10 +325,23 @@ class DemoTournamentSeeder extends Seeder
             ['name' => 'Dawid Patko', 'password' => 'tajnehaslo123'],
         );
 
+        $this->seedFor($organizer);
+    }
+
+    /**
+     * Komplet turniejów demo dla jednego organizera. Slug jest globalnie
+     * unikalny (buduje `/t/{slug}`), więc kolejne konta dostają własne kopie
+     * z dopiskiem na końcu sluga, np. `liga-osiedlowa-2026-julia`; Dawid,
+     * którego slugi zna mock kontraktu, zostaje bez dopisku.
+     */
+    public function seedFor(User $organizer, string $slugSuffix = ''): void
+    {
+        $this->slugSuffix = $slugSuffix;
+
         $football = Sport::firstWhere('code', 'football');
 
         $tournament = Tournament::updateOrCreate(
-            ['slug' => 'liga-osiedlowa-2026'],
+            ['slug' => $this->slug('liga-osiedlowa-2026')],
             [
                 'user_id' => $organizer->id,
                 'sport_id' => $football->id,
@@ -445,7 +465,7 @@ class DemoTournamentSeeder extends Seeder
         $football = Sport::firstWhere('code', 'football');
 
         $tournament = Tournament::updateOrCreate(
-            ['slug' => 'liga-letnia-2026'],
+            ['slug' => $this->slug('liga-letnia-2026')],
             [
                 'user_id' => $organizer->id,
                 'sport_id' => $football->id,
@@ -515,7 +535,7 @@ class DemoTournamentSeeder extends Seeder
         $football = Sport::firstWhere('code', 'football');
 
         $tournament = Tournament::updateOrCreate(
-            ['slug' => 'grupy-osiedlowe-2026'],
+            ['slug' => $this->slug('grupy-osiedlowe-2026')],
             [
                 'user_id' => $organizer->id,
                 'sport_id' => $football->id,
@@ -607,7 +627,7 @@ class DemoTournamentSeeder extends Seeder
         $football = Sport::firstWhere('code', 'football');
 
         $tournament = Tournament::updateOrCreate(
-            ['slug' => 'puchar-osiedlowy-2026'],
+            ['slug' => $this->slug('puchar-osiedlowy-2026')],
             [
                 'user_id' => $organizer->id,
                 'sport_id' => $football->id,
@@ -677,7 +697,7 @@ class DemoTournamentSeeder extends Seeder
         $basketball = Sport::firstWhere('code', 'basketball');
 
         $tournament = Tournament::updateOrCreate(
-            ['slug' => 'liga-koszykowki-2026'],
+            ['slug' => $this->slug('liga-koszykowki-2026')],
             [
                 'user_id' => $organizer->id,
                 'sport_id' => $basketball->id,
@@ -748,7 +768,7 @@ class DemoTournamentSeeder extends Seeder
         $format = $volleyball->defaultSetFormat();
 
         $tournament = Tournament::updateOrCreate(
-            ['slug' => 'liga-siatkowki-2026'],
+            ['slug' => $this->slug('liga-siatkowki-2026')],
             [
                 'user_id' => $organizer->id,
                 'sport_id' => $volleyball->id,
