@@ -26,6 +26,13 @@ export type Leaderboard = {
 /** Pusty stan klasyfikacji: przed pierwszym meczem zakończonym nie ma wierszy. */
 export const LEADERBOARD_EMPTY = 'Klasyfikacja ruszy po pierwszym zakończonym meczu'
 
+/**
+ * Pusty stan, gdy mecze zakończone już są, ale bez zdarzeń, które liczą się
+ * w tej klasyfikacji (#306): wynik wpisany bez strzelców albo statystyka,
+ * której nikt jeszcze nie ma (kartki).
+ */
+export const LEADERBOARD_NO_EVENTS = 'Ta klasyfikacja jest jeszcze pusta'
+
 /** Statystyka do wyboru (`PublicTournament.stats`). */
 export type StatOption = { code: string; label: string }
 

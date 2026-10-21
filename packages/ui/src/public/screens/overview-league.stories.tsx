@@ -100,6 +100,41 @@ export const WTrakcie: Story = {
   },
 }
 
+const inProgressFixtures = publicLeagueSeason.inProgress.lists.fixtures
+const liveNow = inProgressFixtures.find((match) => match.status === 'live')!
+const [nextLive, nextUndated] = inProgressFixtures.filter((match) => match.round.order === 6)
+
+/**
+ * Następna kolejka w bocznej kolumnie (#306): mecz szóstej kolejki zaczęty
+ * przed końcem piątej ma „Na żywo” z minutą zamiast godziny, a mecz bez
+ * terminu krótkie „–” z pełnym napisem w `title`, bez łamania na linie.
+ */
+export const NastepnaKolejkaNaZywo: Story = {
+  name: 'Następna kolejka, mecz na żywo i bez terminu',
+  args: {
+    lists: {
+      ...publicLeagueSeason.inProgress.lists,
+      fixtures: inProgressFixtures.map((match) => {
+        if (match.id === nextLive!.id) {
+          const { livePeriod, periodStartedAt, onBreak } = liveNow
+          return { ...match, status: 'live' as const, homeScore: 0, awayScore: 0, livePeriod, periodStartedAt, onBreak }
+        }
+        return match.id === nextUndated!.id ? { ...match, kickoffAt: null } : match
+      }),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const lines = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="next-match"]')]
+    const line = (id: number) => lines.find((candidate) => candidate.getAttribute('href')?.endsWith(`/${id}`))!
+    await expect(within(line(nextLive!.id)).getByText('Na żywo')).toBeVisible()
+    await expect(line(nextLive!.id)).toHaveTextContent('66′')
+    const undated = within(line(nextUndated!.id)).getByTitle('Termin do ustalenia')
+    await expect(undated).toHaveTextContent('–')
+    await expect(undated.getBoundingClientRect().height).toBeLessThan(parseFloat(getComputedStyle(undated).lineHeight) * 1.5)
+    await expect(lines.filter((candidate) => within(candidate).queryByText('Na żywo'))).toHaveLength(1)
+  },
+}
+
 /** Po końcu: ostatnia kolejka, pas „Mistrz” nad tabelą, bez następnej kolejki. */
 export const Zakonczony: Story = {
   name: 'Zakończony',

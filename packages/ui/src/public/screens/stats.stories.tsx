@@ -17,10 +17,12 @@ function Demo({
   tournament,
   stats,
   leaderboards,
+  hasFinishedMatches,
 }: {
   tournament: PublicShellTournament
   stats: StatOption[]
   leaderboards: Record<string, Leaderboard>
+  hasFinishedMatches?: boolean
 }) {
   const [value, setValue] = React.useState(stats[0]!.code)
   const boards = Object.fromEntries(Object.entries(leaderboards).map(([code, leaderboard]) => [code, { status: 'ready', leaderboard } as StatBoard]))
@@ -33,6 +35,7 @@ function Demo({
         boards={boards}
         statHref={(code) => (code === stats[0]!.code ? `/t/${tournament.slug}/statystyki` : `/t/${tournament.slug}/statystyki?stat=${code}`)}
         onValueChange={setValue}
+        hasFinishedMatches={hasFinishedMatches}
       />
     </Shell>
   )
@@ -120,6 +123,24 @@ export const PrzedStartem: Story = {
     await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
     await expect(canvas.queryByRole('complementary', { name: 'Pozostałe statystyki' })).not.toBeInTheDocument()
     await expect(canvas.getByRole('tab', { name: 'Bramki' })).toHaveAttribute('aria-selected', 'true')
+  },
+}
+
+/**
+ * Mecze zakończone są, ale bez wpisanych zdarzeń (#306): ekran nie obiecuje,
+ * że klasyfikacja „ruszy po pierwszym meczu”, tylko mówi, że jest pusta.
+ */
+export const MeczeBezZdarzen: Story = {
+  name: 'Mecze bez zdarzeń',
+  render: () => {
+    const empty = Object.fromEntries(Object.entries(football).map(([code, board]) => [code, { ...board, rows: [] }]))
+    return <Demo tournament={publicTournament} stats={statOptionsBySport.football} leaderboards={empty} hasFinishedMatches />
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await expect(canvas.getByRole('heading', { name: 'Ta klasyfikacja jest jeszcze pusta' })).toBeInTheDocument()
+    await expect(canvas.queryByText('Klasyfikacja ruszy po pierwszym zakończonym meczu')).not.toBeInTheDocument()
+    await expect(canvas.queryByRole('table')).not.toBeInTheDocument()
   },
 }
 

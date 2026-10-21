@@ -153,6 +153,7 @@ function OverviewContent() {
       }
       bracket={fromBracket ? loadable(knockout, (matches) => matches) : undefined}
       leaderboard={loadable(leaderboard, (board) => board)}
+      hasFinishedMatches={(results.data?.length ?? 0) > 0}
       matchHref={(match) => matchHref(slug, match.id)}
       onMatchNavigate={(match) => void navigate(matchHref(slug, match.id))}
       {...tabNav}

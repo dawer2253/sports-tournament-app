@@ -89,6 +89,7 @@ export function OverviewDemo({ mode, tournament, teams, lists, table, groups, br
         groups={groups && (mainError ? error : ready(groups))}
         bracket={bracket && (mainError ? error : ready(bracket))}
         leaderboard={ready(leaderboard)}
+        hasFinishedMatches={lists.results.length > 0}
         timeZone={scheduleTimeZone}
         matchHref={matchHref}
         navHref={navHref}
