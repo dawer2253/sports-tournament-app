@@ -1,5 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
+import { DARK_SURFACES } from '../lib/brand-on-dark'
+import { contrastRatio } from '../lib/contrast'
+import { cssHex } from '../test/theme'
 import { EmptyBoard, ErrorBoard } from './board'
 import { TextLink } from './button'
 import { Loading, SkeletonBlock } from './skeleton'
@@ -37,12 +40,18 @@ export const Blad: Story = {
 }
 const onRetry = fn()
 
-/** Szkielet wczytywania: `role="status"` z etykietą, złożony w kształt ekranu. */
+/**
+ * Szkielet wczytywania: `role="status"` z etykietą, złożony w kształt ekranu.
+ * Bloki odcinają się od tła strony (#306): wnęka `--pub-sunken` miała z nim
+ * 1,06:1 i prawie znikała.
+ */
 export const Wczytywanie: Story = {
   render: () => <Loading label="Wczytywanie terminarza" />,
   play: async ({ canvasElement }) => {
     const status = within(canvasElement).getByRole('status', { name: 'Wczytywanie terminarza' })
-    await expect(status.querySelectorAll('[data-slot="skeleton-block"]').length).toBeGreaterThan(2)
+    const blocks = [...status.querySelectorAll<HTMLElement>('[data-slot="skeleton-block"]')]
+    await expect(blocks.length).toBeGreaterThan(2)
+    await expect(contrastRatio(cssHex(getComputedStyle(blocks[0]!).backgroundColor), DARK_SURFACES.background)).toBeGreaterThanOrEqual(1.2)
   },
 }
 
