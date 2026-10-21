@@ -11,10 +11,10 @@
  */
 import * as React from 'react'
 import type { Leaderboard } from '../../components/data/leaderboard-data'
-import { LEADERBOARD_EMPTY } from '../../components/data/leaderboard-data'
+import { leaderboardEmptyState } from '../../components/data/leaderboard-data'
 import type { MatchInRound, RoundWithMatches } from '../../components/data/round-groups'
 import { bracketFinal, bracketWinnerSide, teamOn } from '../../lib/bracket'
-import { formatKickoff, formatShortDay, matchDays } from '../../lib/kickoff'
+import { NO_KICKOFF, formatKickoff, formatShortDay, matchDays } from '../../lib/kickoff'
 import { Anchor } from '../anchor'
 import { ErrorBoard } from '../board'
 import { BracketTree, type PublicBracketMatch } from '../bracket'
@@ -22,6 +22,7 @@ import { TextLink } from '../button'
 import { SectionHead } from '../heads'
 import type { OverviewStage } from '../overview-stage'
 import type { PublicNavKey } from '../public-nav'
+import { LiveBadge, LiveClock } from '../live'
 import { Loading, SkeletonBlock, SkeletonHead } from '../skeleton'
 import { matchPairLabel } from '../match-sides'
 import { StageBand } from '../stage-band'
@@ -78,6 +79,8 @@ export interface OverviewScreenProps<M extends OverviewMatch = OverviewMatch, B 
   bracket?: Loadable<readonly B[]>
   /** Klasyfikacja domyślnej statystyki. */
   leaderboard: Loadable<Leaderboard>
+  /** Czy jest choć jeden mecz zakończony: pusta klasyfikacja mówi wtedy, że jest pusta, a nie że ruszy (#306). */
+  hasFinishedMatches: boolean
   /** Strefa terminów; bez niej strefa przeglądarki (ADR-0008). */
   timeZone?: string
   /** Adres strony meczu (tablica, wiersz, kafel drabinki). */
@@ -125,7 +128,12 @@ function cupChampion(matches: readonly PublicBracketMatch[]) {
   return final ? teamOn(final, bracketWinnerSide(final)) : null
 }
 
-/** Mecz w bocznej kolumnie: godzina (z dniem, gdy kolejka trwa kilka dni) i para. */
+/**
+ * Mecz w bocznej kolumnie: godzina (z dniem, gdy kolejka trwa kilka dni)
+ * i para. Mecz już trwający ma plakietkę „Na żywo” z minutą pod nią, jak
+ * wiersz Terminarza; bez terminu stoi „–”, a pełny napis w `title`, bo
+ * w wąskiej kolumnie łamał się na trzy linie (#306).
+ */
 function NextMatchLine<M extends OverviewMatch>({
   match,
   showDay,
@@ -146,11 +154,18 @@ function NextMatchLine<M extends OverviewMatch>({
       onNavigate={onNavigate}
       data-slot="next-match"
       aria-label={matchPairLabel(match)}
-      className="grid min-h-12 grid-cols-[3.25rem_minmax(0,1fr)] items-center gap-3 border-b border-hairline py-2 transition-colors hover:bg-card/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-line"
+      className="grid min-h-12 grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-3 border-b border-hairline py-2 transition-colors hover:bg-card/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-line"
     >
       <span className="flex flex-col leading-tight">
-        {match.kickoffAt === null ? (
-          <span className="text-pub-13 text-muted-foreground">{formatKickoff(null)}</span>
+        {match.status === 'live' ? (
+          <span className="flex flex-col items-start gap-1">
+            <LiveBadge />
+            <LiveClock clock={match} className="text-pub-16 leading-tight" />
+          </span>
+        ) : match.kickoffAt === null ? (
+          <span title={NO_KICKOFF} className="pub-num text-pub-20 text-muted-foreground">
+            –
+          </span>
         ) : (
           <>
             <span className="pub-num text-pub-20">{formatKickoff(match.kickoffAt, { showDate: false, timeZone })}</span>
@@ -209,7 +224,7 @@ function NextMatches<M extends OverviewMatch>({
 }
 
 /** Lider domyślnej statystyki z odnośnikiem do Statystyk. */
-function Leader({ state, tab }: { state: Loadable<Leaderboard>; tab: TabLink }) {
+function Leader({ state, tab, hasFinishedMatches }: { state: Loadable<Leaderboard>; tab: TabLink; hasFinishedMatches: boolean }) {
   const id = React.useId()
   const title = state.status === 'ready' ? state.data.label : 'Klasyfikacja'
   return (
@@ -218,7 +233,9 @@ function Leader({ state, tab }: { state: Loadable<Leaderboard>; tab: TabLink }) 
       <Section state={state} label="klasyfikacji" rows={2}>
         {(leaderboard) =>
           leaderboard.rows.length === 0 ? (
-            <p className="py-2 text-pub-14 text-muted-foreground">{LEADERBOARD_EMPTY}.</p>
+            <p className="py-2 text-pub-14 text-muted-foreground">
+              {leaderboardEmptyState(hasFinishedMatches).title}.
+            </p>
           ) : (
             <StatLeaders leaderboard={leaderboard} compact />
           )
@@ -243,6 +260,7 @@ export function OverviewScreen<M extends OverviewMatch, B extends PublicBracketM
   groups,
   bracket,
   leaderboard,
+  hasFinishedMatches,
   timeZone,
   matchHref,
   onMatchNavigate,
@@ -342,7 +360,7 @@ export function OverviewScreen<M extends OverviewMatch, B extends PublicBracketM
           {next && (
             <NextMatches round={next} knockout={knockout} timeZone={timeZone} matchHref={matchHref} onMatchNavigate={onMatchNavigate} tab={tab} />
           )}
-          <Leader state={leaderboard} tab={tab} />
+          <Leader state={leaderboard} tab={tab} hasFinishedMatches={hasFinishedMatches} />
         </aside>
       </div>
     </div>

@@ -58,14 +58,14 @@ test('organizer widzi tabelę grupy z linią wyjścia i ją przesuwa', async ({ 
   });
 
   const winner = test.info().annotations.find((annotation) => annotation.type === 'zwycięzca')!.description!;
-  const groupA = page.getByRole('region', { name: 'Faza grupowa · Grupa A' });
+  const groupA = page.getByRole('region', { name: 'Grupa A' });
   const rows = groupA.getByRole('row').filter({ has: page.getByRole('cell') });
   const qualifying = rows.filter({ hasText: 'wychodzi z grupy' });
 
   await test.step('Tabela pokazuje punkty zwycięzcy i linię pod pierwszym miejscem', async () => {
     await page.goto(`/tournaments/${groups.id}/standings`);
 
-    await expect(page.getByRole('region', { name: 'Faza grupowa · Grupa B' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Grupa B' })).toBeVisible();
     await expect(rows).toHaveCount(3);
     await expect(rows.first()).toContainText(winner);
     await expect(rows.first().getByRole('cell').last()).toHaveText('3');

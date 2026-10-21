@@ -5,7 +5,7 @@
  * każdej statystyki osobnym zapytaniem, obsługuje wczytywanie i błąd głównej
  * i trzyma wybór w adresie (`?stat=`).
  */
-import { LEADERBOARD_EMPTY, type Leaderboard, type StatOption } from '../../components/data/leaderboard-data'
+import { leaderboardEmptyState, type Leaderboard, type StatOption } from '../../components/data/leaderboard-data'
 import { EmptyBoard } from '../board'
 import { PageHead } from '../heads'
 import { Loading, SkeletonBlock, SkeletonHead } from '../skeleton'
@@ -27,16 +27,23 @@ export interface StatsScreenProps {
   statHref?: (code: string) => string
   /** Wybór statystyki zakładką albo „Cała klasyfikacja”: zgłasza kod. */
   onValueChange: (code: string) => void
+  /**
+   * Czy jest choć jeden mecz zakończony (`/results` niepuste). Pusta
+   * klasyfikacja mówi wtedy, że jest pusta, a nie że ruszy po pierwszym
+   * meczu (#306).
+   */
+  hasFinishedMatches: boolean
 }
 
-export function StatsScreen({ stats, value, leaderboard, boards, statHref, onValueChange }: StatsScreenProps) {
+export function StatsScreen({ stats, value, leaderboard, boards, statHref, onValueChange, hasFinishedMatches }: StatsScreenProps) {
+  const empty = leaderboardEmptyState(hasFinishedMatches)
   return (
     <>
       <PageHead eyebrow={EYEBROW} title={TITLE} />
       <StatTabs stats={stats} value={value} onValueChange={onValueChange}>
         {leaderboard.rows.length === 0 ? (
-          // Przed pierwszym meczem zakończonym pusta jest każda klasyfikacja, więc bez bocznej kolumny.
-          <EmptyBoard title={LEADERBOARD_EMPTY}>Liczą się zdarzenia z meczów zakończonych, ze wszystkich faz turnieju.</EmptyBoard>
+          // Bez bocznej kolumny: przed pierwszym meczem zakończonym pusta jest każda klasyfikacja.
+          <EmptyBoard title={empty.title}>{empty.detail}</EmptyBoard>
         ) : (
           <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_19rem] lg:gap-14">
             <div className="flex min-w-0 flex-col gap-8">

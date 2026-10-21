@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, within } from 'storybook/test'
 import { MIN_TEXT_CONTRAST, contrastRatio } from '../lib/contrast'
 import {
+  groupStandingsQualifiers,
+  groupStandingsTableRows,
   publicBasketballStandingsRows,
   publicGroupStandings,
   publicStandingsRows,
@@ -14,6 +16,7 @@ import { ownBrand } from '../test/brand'
 import { cssHex } from '../test/theme'
 import { expectTextFits, phone375 } from '../test/viewport'
 import { ChampionBand, StandingsTable, TiebreakSentence } from './standings-table'
+import type { FormResult } from './form'
 import { EachSample } from './story-samples'
 
 const meta = {
@@ -111,6 +114,80 @@ export const Grupa: Story = {
     await expect(within(rows[2]!).getByText('wyjście z grupy')).toBeVisible()
     await expect(within(canvasElement).queryByRole('columnheader', { name: 'Forma' })).not.toBeInTheDocument()
     await expect(within(canvasElement).queryByRole('columnheader', { name: 'Bramki' })).not.toBeInTheDocument()
+  },
+}
+
+/** Grupa z remisem na linii: drugie i trzecie miejsce mają po 4 punkty, plakietkę mają tylko one. */
+export const GrupaRemisNaLinii: Story = {
+  name: 'Grupa, remis na linii',
+  args: {
+    ...Grupa.args,
+    rows: withQualifiers(
+      groupStandingsTableRows.map((row) => ({ ...row, form: [] })),
+      groupStandingsQualifiers,
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const rows = bodyRows(canvasElement)
+    await expect(rows.map((row) => within(row).queryByText('remis na linii') !== null)).toEqual([false, true, true, false])
+  },
+}
+
+/**
+ * Grupa przed pierwszym meczem (#306): wszyscy mają po zero, więc dorobek na
+ * linii jest równy, ale to jeszcze nie remis. Linia wyjścia stoi, pasków
+ * i plakietki nie ma.
+ */
+export const GrupaPrzedStartem: Story = {
+  name: 'Grupa przed startem',
+  args: {
+    ...Grupa.args,
+    rows: withQualifiers(
+      groupA.rows.map((row) => ({ ...row, played: 0, won: 0, drawn: 0, lost: 0, scoreFor: 0, scoreAgainst: 0, scoreDifference: 0, points: 0, form: [] })),
+      groupA.qualifiers,
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const rows = bodyRows(canvasElement)
+    await expect(rows.some(hasBar)).toBe(false)
+    await expect(within(rows[2]!).getByText('wyjście z grupy')).toBeVisible()
+    await expect(within(canvasElement).queryByText('remis na linii')).not.toBeInTheDocument()
+  },
+}
+
+/** Dwuczłonowe nazwy jak w seedzie demo Laravela. */
+const LONG_NAMES = ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Bobry Bródno', 'Żubry Wola', 'Lwy Mokotów', 'Rysie Wawer', 'Huragan Wawer']
+
+/**
+ * Pełna tabela w głównej kolumnie Przeglądu przy 1280 px (45,5 rem, tuż nad
+ * progiem szerokiej tabeli, #306): dwuczłonowa nazwa drużyny stoi w jednej
+ * linii, a forma z pięcioma wynikami mieści się w swojej kolumnie.
+ */
+export const KolumnaPrzegladu: Story = {
+  name: 'Kolumna Przeglądu',
+  args: {
+    rows: publicStandingsRows.inProgress.map((row, index) => ({
+      ...row,
+      team: { ...row.team, name: LONG_NAMES[index % LONG_NAMES.length]! },
+      form: ['win', 'draw', 'loss', 'win', 'win'] as const satisfies FormResult[],
+    })),
+  },
+  render: (args) => (
+    <div className="w-[45.5rem]">
+      <StandingsTable {...args} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    await document.fonts.ready
+    await expect(within(canvasElement).getByRole('columnheader', { name: 'Forma' })).toBeVisible()
+    const twoLines = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="team-name"]')]
+      .filter((name) => name.getBoundingClientRect().height > parseFloat(getComputedStyle(name).lineHeight) * 1.5)
+      .map((name) => name.textContent)
+    await expect(twoLines).toEqual([])
+    const overflowing = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="form"]')].filter(
+      (form) => form.getBoundingClientRect().right > form.parentElement!.getBoundingClientRect().right + 0.5,
+    )
+    await expect(overflowing).toHaveLength(0)
   },
 }
 

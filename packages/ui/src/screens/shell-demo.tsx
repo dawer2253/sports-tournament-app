@@ -1,6 +1,7 @@
 import {
   AdminShell, type AdminSectionKey, type AdminShellProps, type AdminShellTournamentList,
 } from '../components/layout/admin-shell'
+import { TournamentSubtitle } from '../components/layout/tournament-subtitle'
 import { isCurrentTournament, type TournamentRow } from '../components/data/tournament-row'
 import { organizer, tournamentList } from '../lib/demo-data'
 
@@ -48,7 +49,7 @@ export function TournamentShellDemo({
     <ShellDemo
       tournament={{ ...demoTournament, status, sport: { name: sportName } }}
       title={demoTournament.name}
-      subtitle={`${sportName} · /t/${demoTournament.slug}`}
+      subtitle={<TournamentSubtitle sportName={sportName} slug={demoTournament.slug} />}
       {...props}
     />
   )

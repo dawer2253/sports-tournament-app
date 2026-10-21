@@ -36,10 +36,11 @@ export const Domyslny: Story = {
     const canvas = within(canvasElement)
     const tabs = within(canvas.getByRole('tablist', { name: 'Rundy' })).getAllByRole('tab')
     await expect(tabs.map((tab) => tab.textContent)).toEqual([
-      'Ćwierćfinał sob., 3 paź · 2/2zakończone 2 z 2',
-      'Półfinał sob., 10 paź · 1/2zakończone 1 z 2',
-      'Finał sob., 17 paź · 0/2zakończone 0 z 2',
+      'Ćwierćfinał 2/2zakończone 2 z 2 sob., 3 paź',
+      'Półfinał 1/2zakończone 1 z 2 sob., 10 paź',
+      'Finał 0/2zakończone 0 z 2 sob., 17 paź',
     ])
+    await expect(canvasElement.textContent).not.toContain('·')
     await expect(canvas.getByRole('tab', { selected: true })).toHaveTextContent('Półfinał')
 
     await userEvent.click(canvas.getByRole('tab', { name: /Finał/ }))

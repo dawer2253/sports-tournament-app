@@ -115,7 +115,8 @@ export interface AdminShellProps {
    * ekran podaje szkielet zamiast nazwy, której nie zna (#262).
    */
   title: React.ReactNode
-  subtitle?: string
+  /** Podtytuł; węzeł, bo fakty obok siebie idą przez `MetaList`, a nie „·” (#306). */
+  subtitle?: React.ReactNode
   actions?: React.ReactNode
   children: React.ReactNode
   /**
@@ -632,7 +633,7 @@ export function AdminShell({
           <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center', details && 'pb-4')}>
             <div className="min-w-0">
               <Heading>{title}</Heading>
-              {subtitle && <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>}
+              {subtitle && <div className="mt-0.5 text-sm text-muted-foreground">{subtitle}</div>}
             </div>
             {(details || actions) && (
               <div className="flex flex-wrap items-center gap-2 sm:ml-auto">

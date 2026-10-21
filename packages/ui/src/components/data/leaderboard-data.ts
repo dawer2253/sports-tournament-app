@@ -26,6 +26,24 @@ export type Leaderboard = {
 /** Pusty stan klasyfikacji: przed pierwszym meczem zakończonym nie ma wierszy. */
 export const LEADERBOARD_EMPTY = 'Klasyfikacja ruszy po pierwszym zakończonym meczu'
 
+/**
+ * Pusty stan, gdy mecze zakończone już są, ale bez zdarzeń, które liczą się
+ * w tej klasyfikacji (#306): wynik wpisany bez strzelców albo statystyka,
+ * której nikt jeszcze nie ma (kartki).
+ */
+export const LEADERBOARD_NO_EVENTS = 'Ta klasyfikacja jest jeszcze pusta'
+
+/**
+ * Pusta klasyfikacja: tytuł i zdanie wyjaśnienia zależnie od tego, czy jest
+ * już mecz zakończony (`/results` niepuste). Jedno miejsce dla Statystyk
+ * i lidera na Przeglądzie (#306).
+ */
+export function leaderboardEmptyState(hasFinishedMatches: boolean): { title: string; detail: string } {
+  return hasFinishedMatches
+    ? { title: LEADERBOARD_NO_EVENTS, detail: 'Mecze zakończone już są, ale nie wpisano do nich zdarzeń, które liczą się w tej klasyfikacji.' }
+    : { title: LEADERBOARD_EMPTY, detail: 'Liczą się zdarzenia z meczów zakończonych, ze wszystkich faz turnieju.' }
+}
+
 /** Statystyka do wyboru (`PublicTournament.stats`). */
 export type StatOption = { code: string; label: string }
 

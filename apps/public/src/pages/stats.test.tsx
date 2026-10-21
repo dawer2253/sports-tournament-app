@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { LEADERBOARD_ERROR, SLUG, leaderRow, leaderboard, publicApi, renderAt, tournament } from '../test/public-api';
+import { LEADERBOARD_ERROR, SLUG, finished, leaderRow, leaderboard, publicApi, renderAt, tournament } from '../test/public-api';
 
 const BASKETBALL = tournament({
   name: 'Liga Koszykówki 2026',
@@ -173,6 +173,15 @@ describe('Statystyki', () => {
     expect(await screen.findByText('Klasyfikacja ruszy po pierwszym zakończonym meczu')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.queryByRole('complementary', { name: 'Pozostałe statystyki' })).not.toBeInTheDocument();
+  });
+
+  it('zakończone mecze bez wpisanych zdarzeń: klasyfikacja jest pusta, a nie „ruszy po pierwszym meczu”', async () => {
+    publicApi({ results: [finished(2, 1)] });
+    renderAt(`/t/${SLUG}/statystyki`);
+
+    expect(await screen.findByRole('heading', { name: 'Ta klasyfikacja jest jeszcze pusta' })).toBeInTheDocument();
+    expect(screen.queryByText('Klasyfikacja ruszy po pierwszym zakończonym meczu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
   it('turniej bez statystyk mówi to wprost i o nic nie pyta', async () => {

@@ -2,12 +2,14 @@ import type * as React from 'react'
 import { cn } from '../lib/utils'
 
 /**
- * Szkielet wczytywania: bloki w `--pub-sunken`, które pulsują poza
+ * Szkielet wczytywania: bloki w `--muted`, które pulsują poza
  * `prefers-reduced-motion`. Każdy ekran składa z nich swój kształt
  * (nagłówek, wiersze) w `Loading`, zamiast pokazywać jeden prostokąt.
+ * Blok jest jaśniejszy od tła, jak karta, która w nim stanie; wnęka
+ * `--pub-sunken` jest ciemniejsza od tła i prawie z nim się zlewała (#306).
  */
 export function SkeletonBlock({ className }: { className?: string }) {
-  return <span aria-hidden data-slot="skeleton-block" className={cn('block rounded-md bg-sunken motion-safe:animate-pulse', className)} />
+  return <span aria-hidden data-slot="skeleton-block" className={cn('block rounded-md bg-muted motion-safe:animate-pulse', className)} />
 }
 
 /** Szkielet nagłówka ekranu: podpis i tytuł tablicy. */

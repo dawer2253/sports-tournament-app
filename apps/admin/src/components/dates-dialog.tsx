@@ -196,7 +196,7 @@ export function DatesDialog({
       }}
       onSubmit={submit}
       title="Rozłóż daty"
-      description={`${stage.name} · ${rounds.length} ${plural(rounds.length, words.plural)} · strefa ${timeZone}`}
+      description={`${stage.name}: ${rounds.length} ${plural(rounds.length, words.plural)}. Godziny w strefie ${timeZone}.`}
       submitLabel={confirming ? 'Tak, nadpisz terminy' : 'Rozłóż'}
       pending={pending}
       error={formError}

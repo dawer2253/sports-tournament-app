@@ -25,7 +25,8 @@ function Abbr({ title, children }: { title: string; children: string }) {
  * Komórka widoczna dopiero w szerokiej tabeli: w wąskiej zostają #, drużyna,
  * M, +/− i Pkt. Próg liczy szerokość tabeli (`@container`), nie ekranu, bo
  * ta sama tabela stoi na całą szerokość Tabeli i w głównej kolumnie
- * Przeglądu obok bocznej (#296). Pełna tabela potrzebuje 45 rem (nazwa dostaje wtedy 7 rem), grupa 28.
+ * Przeglądu obok bocznej (#296). Pełna tabela potrzebuje 45 rem (nazwa dostaje wtedy niecałe 10 rem,
+ * czyli dwuczłonowa nazwa w jednej linii, #306), grupa 28.
  */
 function wideCell(compact: boolean) {
   return compact ? 'hidden @md:block' : 'hidden @min-[45rem]:block'
@@ -38,6 +39,10 @@ const NUM = 'text-right tabular-nums text-muted-foreground'
  * (`compact`) nie ma zdobyczy i formy, bo dwie tabele stoją obok siebie.
  * Sport z setami (`hasRallyPoints`, #301) dokłada za setami kolumnę punktów w setach,
  * a remisów nie ma.
+ *
+ * Kolumny liczb mają tyle, ile zajmuje ich treść (M/W/R/P dwie cyfry,
+ * zdobycze „123:110”), a Forma dokładnie pięć wyników z wcięciem, żeby
+ * reszta szła na nazwę drużyny (#306).
  */
 function gridColumns(compact: boolean, allowsDraw: boolean, hasRallyPoints: boolean) {
   const desktop = compact
@@ -45,10 +50,10 @@ function gridColumns(compact: boolean, allowsDraw: boolean, hasRallyPoints: bool
       ? '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_3rem_3rem]'
       : '@md:grid-cols-[2.25rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_3rem_3rem]'
     : hasRallyPoints
-      ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_4rem_6.5rem_3.5rem_6rem_3.5rem]'
+      ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_4rem_6.5rem_3.5rem_7.75rem_3.5rem]'
       : allowsDraw
-        ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_2.75rem_5.5rem_3.5rem_8rem_3.5rem]'
-        : '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.75rem_2.75rem_2.75rem_6.5rem_3.5rem_6rem_3.5rem]'
+        ? '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_2.25rem_4.5rem_3.5rem_7.75rem_3.5rem]'
+        : '@min-[45rem]:grid-cols-[2.5rem_minmax(0,1fr)_2.25rem_2.25rem_2.25rem_5.5rem_3.5rem_7.75rem_3.5rem]'
   return cn('grid grid-cols-[2rem_minmax(0,1fr)_2rem_3rem_3rem] items-center gap-x-2', desktop)
 }
 
@@ -86,8 +91,9 @@ export interface StandingsTableProps {
  *   rozegranym meczu.
  * - **Grupa**: pasek mają drużyny nad linią wyjścia (po pierwszym meczu),
  *   linia w `--brand-line` z podpisem „wyjście z grupy” stoi nad pierwszym
- *   niewychodzącym, a „remis na linii” pod nazwą drużyny. Czytnik słyszy
- *   „, wychodzi z grupy” przy miejscu.
+ *   niewychodzącym, a „remis na linii” pod nazwą drużyny, też dopiero po
+ *   pierwszym meczu grupy: przy samych zerach to jeszcze nie remis (#306).
+ *   Czytnik słyszy „, wychodzi z grupy” przy miejscu.
  */
 export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel = null, compact = false, group = false, label }: StandingsTableProps) {
   const hasRallyPoints = !compact && rallyPointsLabel !== null
@@ -130,7 +136,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel 
           <Abbr title="Bilans">+/−</Abbr>
         </span>
         {!compact && (
-          <span role="columnheader" className={cn(wide, 'pl-4')}>
+          <span role="columnheader" className={cn(wide, 'pl-2')}>
             <Abbr title="Pięć ostatnich meczów, najnowszy z prawej">Forma</Abbr>
           </span>
         )}
@@ -172,7 +178,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel 
                 <span data-slot="team-name" className={cn(strong ? 'font-semibold' : 'font-medium')}>
                   {row.team.name}
                 </span>
-                {row.tied && <span className="text-pub-13 text-muted-foreground">remis na linii</span>}
+                {anyPlayed && row.tied && <span className="text-pub-13 text-muted-foreground">remis na linii</span>}
               </span>
             </span>
             <span role="cell" className={NUM}>
@@ -203,7 +209,7 @@ export function StandingsTable({ rows, scoreLabel, allowsDraw, rallyPointsLabel 
               {signed(row.scoreDifference)}
             </span>
             {!compact && (
-              <span role="cell" className={cn(wide, 'pl-4')}>
+              <span role="cell" className={cn(wide, 'pl-2')}>
                 <Form results={row.form} />
               </span>
             )}

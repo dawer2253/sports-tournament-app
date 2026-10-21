@@ -1,7 +1,8 @@
 import { LoadError, NoStats, StatsLoading, StatsScreen, type StatBoard } from '@tournament/ui/public';
 import { useSearchParams } from 'react-router';
-import { useLeaderboards } from '../lib/queries';
+import { useLeaderboards, useResults } from '../lib/queries';
 import { loadErrorMessage } from '../lib/api-error';
+import { hasFinishedMatches, resultsPending } from '../lib/finished-matches';
 import { tabHref, useTournament } from './tournament-layout';
 
 /**
@@ -22,6 +23,9 @@ export function StatsPage() {
     slug,
     stats.map((stat) => stat.code),
   );
+  // Pusta klasyfikacja przy zakończonych meczach ma inny tekst niż przed
+  // pierwszym meczem (#306); `/results` to te same dane co zakładka Wyniki.
+  const results = useResults(slug);
   const requested = searchParams.get('stat');
   const index = Math.max(
     0,
@@ -44,6 +48,9 @@ export function StatsPage() {
     }
     return <StatsLoading />;
   }
+  // Pusta klasyfikacja czeka na wyniki, żeby nie mignąć tekstem „ruszy po pierwszym meczu”;
+  // ich błąd zostawia ten tekst zamiast zasłaniać ekran.
+  if (main.data.rows.length === 0 && resultsPending(results)) return <StatsLoading />;
 
   const boards = Object.fromEntries(
     stats.map((stat, position): [string, StatBoard] => {
@@ -64,6 +71,7 @@ export function StatsPage() {
       boards={boards}
       statHref={statHref}
       onValueChange={select}
+      hasFinishedMatches={hasFinishedMatches(results)}
     />
   );
 }

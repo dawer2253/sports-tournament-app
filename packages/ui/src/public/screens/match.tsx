@@ -15,12 +15,13 @@ import { Loading, SkeletonBlock } from '../skeleton'
 export type MatchBackTab = 'fixtures' | 'results'
 
 /**
- * Powrót według stanu meczu (#210): zaplanowany do Terminarza, trwający
- * i zakończony do Wyników — a nie historią przeglądarki, bo kibic
+ * Powrót według stanu meczu (#210): do zakładki, na której mecz stoi, czyli
+ * zaplanowany i trwający do Terminarza (`/fixtures` niesie oba, #306),
+ * zakończony do Wyników — a nie historią przeglądarki, bo kibic
  * z zewnętrznego linku nie ma dokąd wrócić.
  */
 function matchBackTab(status: MatchPageData['status']): MatchBackTab {
-  return status === 'scheduled' ? 'fixtures' : 'results'
+  return status === 'finished' ? 'results' : 'fixtures'
 }
 
 export interface MatchScreenProps {

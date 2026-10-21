@@ -209,7 +209,8 @@ function StandingsSection({
         {tables ? (
           tables.map((table) => {
             const group = table.groupId === null ? undefined : groups.get(table.groupId);
-            const heading = table.groupName ? `${table.stageName} · ${table.groupName}` : table.stageName;
+            // Grupa sama: tabele grup stoją tylko w fazie grupowej, więc nazwa fazy nic nie dodaje (#306).
+            const heading = table.groupName ?? table.stageName;
             return (
               <section key={`${table.stageId}-${table.groupId}`} aria-label={heading} className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
