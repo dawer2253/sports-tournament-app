@@ -1,12 +1,19 @@
+import type { ReactNode } from 'react'
 import { Badge } from '../ui/badge'
 import type { TournamentRow } from './tournament-row'
 
 const STATUS_BADGE: Record<
   TournamentRow['status'],
-  { label: string; variant: 'default' | 'secondary' | 'outline' }
+  { label: string; variant: 'destructive' | 'secondary' | 'outline'; icon?: ReactNode }
 > = {
   draft: { label: 'Szkic', variant: 'secondary' },
-  active: { label: 'Trwa', variant: 'default' },
+  // Trwający turniej jest „na żywo”, więc tak jak mecz trwający (`MatchStatusBadge`)
+  // i strona publiczna: czerwień z pulsującą kropką, nie zieleń marki.
+  active: {
+    label: 'Trwa',
+    variant: 'destructive',
+    icon: <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-destructive" />,
+  },
   finished: { label: 'Zakończony', variant: 'outline' },
 }
 
@@ -16,5 +23,10 @@ const STATUS_BADGE: Record<
  */
 export function TournamentStatusBadge({ status }: { status: TournamentRow['status'] }) {
   const badge = STATUS_BADGE[status]
-  return <Badge variant={badge.variant}>{badge.label}</Badge>
+  return (
+    <Badge variant={badge.variant}>
+      {badge.icon}
+      {badge.label}
+    </Badge>
+  )
 }
