@@ -91,8 +91,15 @@ describe('powrót według stanu meczu', () => {
     expect(band(1).queryByLabelText(/^Wynik/)).not.toBeInTheDocument();
   });
 
-  it.each(['live', 'finished'] as const)('mecz %s wraca do Wyników', async (status) => {
-    publicApi({ matches: [detail(1, { status })] });
+  it('mecz trwający wraca do Terminarza, bo tam stoi, dopóki się nie skończy (#306)', async () => {
+    publicApi({ matches: [detail(1, { status: 'live' })] });
+    renderAt(`/t/${SLUG}/mecze/1`);
+
+    expect(await backLink('Terminarz')).toHaveAttribute('href', `/t/${SLUG}/terminarz`);
+  });
+
+  it('mecz zakończony wraca do Wyników', async () => {
+    publicApi({ matches: [detail(1, { status: 'finished' })] });
     const user = userEvent.setup();
     const { router } = renderAt(`/t/${SLUG}/mecze/1`);
 

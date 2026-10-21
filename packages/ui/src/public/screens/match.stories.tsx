@@ -69,7 +69,8 @@ export const PilkaNaZywo: Story = {
   name: 'Piłka na żywo',
   render: () => <Screen match={matchPageLive} />,
   play: async ({ canvasElement }) => {
-    await expect(back(canvasElement)).toHaveTextContent('Wyniki')
+    await expect(back(canvasElement)).toHaveTextContent('Terminarz')
+    await expect(back(canvasElement)).toHaveAttribute('href', `/t/${publicTournament.slug}/terminarz`)
     await expect(within(canvasElement).getByRole('region', { name: 'Relacja na żywo' })).toBeInTheDocument()
   },
 }
