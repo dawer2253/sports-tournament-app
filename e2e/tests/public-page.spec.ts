@@ -214,9 +214,9 @@ test('gol w meczu trwającym widać w relacji na stronie meczu, otwartej z wiers
   const relation = page.getByRole('region', { name: 'Relacja na żywo' });
   await expect(relation.getByRole('button', { name: /^1\. połowa/ })).toHaveAttribute('aria-expanded', 'true');
   await expect(relation.getByRole('listitem')).toHaveText([new RegExp(`12′.*${home.scorer}.*Bramka.*1:0`)]);
-  // Powrót według stanu meczu: trwający wraca do Wyników (zakładka shella jest poza `main`).
-  await expect(page.getByRole('main').getByRole('link', { name: 'Wyniki' })).toHaveAttribute(
+  // Powrót według stanu meczu: trwający wraca do Terminarza, gdzie stoi (#306; zakładka shella jest poza `main`).
+  await expect(page.getByRole('main').getByRole('link', { name: 'Terminarz' })).toHaveAttribute(
     'href',
-    `/t/${tournament.slug}/wyniki`,
+    `/t/${tournament.slug}/terminarz`,
   );
 });
