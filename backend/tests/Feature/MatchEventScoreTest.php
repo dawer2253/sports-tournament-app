@@ -33,10 +33,15 @@ beforeEach(function () {
  *
  * @return array{match: GameMatch, home: Team, away: Team, homePlayer: Player, awayPlayer: Player}
  */
-function matchScoreSetup(string $status = 'live', bool $basketball = false): array
+function matchScoreSetup(string $status = 'live', string $sport = 'football'): array
 {
     $factory = Tournament::factory();
-    $tournament = ($basketball ? $factory->basketball() : $factory)->create();
+    $state = match ($sport) {
+        'basketball' => $factory->basketball(),
+        'volleyball' => $factory->volleyball(),
+        default => $factory,
+    };
+    $tournament = $state->create();
     $round = Round::factory()->for(Stage::factory()->for($tournament))->create();
     $home = Team::factory()->for($tournament)->create();
     $away = Team::factory()->for($tournament)->create();
@@ -124,7 +129,7 @@ it('liczy samobój gospodarza gościom', function () {
 });
 
 it('liczy wartość rzutu w koszykówce: rzut za 3 to +3', function () {
-    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchScoreSetup(basketball: true);
+    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchScoreSetup(sport: 'basketball');
 
     matchScorePost($match, ['type' => 'three_pointer', 'teamId' => $home->id, 'playerId' => $player->id])
         ->assertValidResponse(201);
@@ -142,18 +147,32 @@ it('liczy od zera, gdy mecz trwający nie ma jeszcze wyniku', function () {
     expect(matchScoreOf($match))->toBe([1, 0]);
 });
 
-it('nie zmienia wyniku kartką ani faulem', function (string $type, bool $basketball) {
-    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchScoreSetup(basketball: $basketball);
+it('nie zmienia wyniku kartką ani faulem', function (string $type, string $sport) {
+    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchScoreSetup(sport: $sport);
 
     matchScorePost($match, ['type' => $type, 'teamId' => $home->id, 'playerId' => $player->id])
         ->assertValidResponse(201);
 
     expect(matchScoreOf($match))->toBe([1, 1]);
 })->with([
-    'żółta kartka' => ['yellow_card', false],
-    'czerwona kartka' => ['red_card', false],
-    'faul' => ['foul', true],
+    'żółta kartka' => ['yellow_card', 'football'],
+    'czerwona kartka' => ['red_card', 'football'],
+    'faul' => ['foul', 'basketball'],
 ]);
+
+it('nie zmienia wyniku siatkówki żadnym zdarzeniem: wynik to sety', function () {
+    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchScoreSetup(sport: 'volleyball');
+
+    $id = matchScorePost($match, ['type' => 'ace', 'teamId' => $home->id, 'playerId' => $player->id])
+        ->assertValidResponse(201)
+        ->json('data.id');
+
+    expect(matchScoreOf($match))->toBe([1, 1]);
+
+    matchScoreDelete(MatchEvent::findOrFail($id))->assertValidResponse(204);
+
+    expect(matchScoreOf($match))->toBe([1, 1]);
+});
 
 it('nie zmienia wyniku meczu zakończonego przy dodaniu, poprawce i usunięciu', function () {
     ['match' => $match, 'home' => $home, 'away' => $away, 'homePlayer' => $homePlayer, 'awayPlayer' => $awayPlayer] = matchScoreSetup('finished');

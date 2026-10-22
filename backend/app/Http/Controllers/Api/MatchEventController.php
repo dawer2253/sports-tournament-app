@@ -113,7 +113,14 @@ class MatchEventController extends Controller
     private function gainOf(MatchEvent $event): array
     {
         $match = $event->match;
-        $values = MatchScorers::scoringValues($match->stage->tournament->sport);
+        $sport = $match->stage->tournament->sport;
+
+        // Wynik siatkówki to sety liczone przez serwer, a zdarzenia to wybrane akcje (ADR-0012).
+        if ($sport->hasSets()) {
+            return [0, 0];
+        }
+
+        $values = MatchScorers::scoringValues($sport);
 
         return MatchScorers::gain($event->type, $event->team_id, $match, $values);
     }
