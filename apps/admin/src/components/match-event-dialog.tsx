@@ -7,7 +7,6 @@ import {
   formatEventMinute,
   FormDialog,
   Label,
-  parseEventMinute,
   Select,
   SelectContent,
   SelectItem,
@@ -19,6 +18,7 @@ import { Trash2 } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
+import { BAD_MINUTE, MinuteError, minuteFromField } from '../lib/match-event-minute';
 import { matchEventKeys } from '../lib/match-event-queries';
 import { usePlayers } from '../lib/team-queries';
 import { TextField } from './text-field';
@@ -29,10 +29,6 @@ const DELETE_FAILED = 'Nie udało się usunąć zdarzenia. Spróbuj ponownie.';
 /** Pola, których `422` umiemy posadzić przy polu; reszta (np. `match`) idzie nad przyciski. */
 const FIELDS = ['type', 'teamId', 'playerId', 'minute', 'addedTime'] as const;
 
-const BAD_MINUTE = 'Minuta to liczba od 1 do 150, np. 67 albo 45+3.';
-
-/** Wpis w polu „Minuta” nie jest minutą: błąd siada przy polu bez wizyty na serwerze. */
-class MinuteError extends Error {}
 
 /** Wartość „bez zawodnika” w `Select`; pusty napis `Select` traktuje jak brak wyboru. */
 const NO_PLAYER = 'none';
@@ -68,8 +64,7 @@ export function MatchEventDialog({ match, event, types, onScoreChanged, onClose 
 
   const save = useMutation({
     mutationFn: async () => {
-      const at = parseEventMinute(minute);
-      if (at === null) throw new MinuteError();
+      const at = minuteFromField(minute);
       const result = await api.PATCH('/match-events/{event}', {
         params: { path: { event: event.id } },
         body: {

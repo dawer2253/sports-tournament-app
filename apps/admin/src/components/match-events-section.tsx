@@ -7,7 +7,6 @@ import {
   formatEventMinute,
   MatchTimeline,
   MetaList,
-  parseEventMinute,
   PlayerNumberGrid,
   Skeleton,
   toast,
@@ -17,13 +16,12 @@ import { Play } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { apiErrorMessage } from '../lib/form-errors';
+import { MinuteError, minuteFromField } from '../lib/match-event-minute';
 import { matchEventKeys, useEventTypes, useMatchEvents } from '../lib/match-event-queries';
 import { usePlayers } from '../lib/team-queries';
 import { MatchEventDialog } from './match-event-dialog';
 
 const SAVE_FAILED = 'Nie udało się zapisać zdarzenia. Spróbuj ponownie.';
-
-const BAD_MINUTE = 'Minuta to liczba od 1 do 150, np. 67 albo 45+3.';
 
 /** Samobój należy do drużyny strzelca, a zdobycz daje przeciwnikowi (#188, reguła 9). */
 const OWN_GOAL = 'own_goal';
@@ -107,8 +105,7 @@ export function MatchEventsSection({
 
   const create = useMutation({
     mutationFn: async ({ teamId, type, playerId }: { teamId: number; type: SportEventType; playerId: number }) => {
-      const at = parseEventMinute(minute);
-      if (at === null) throw new Error(BAD_MINUTE);
+      const at = minuteFromField(minute);
       const { data, error } = await api.POST('/matches/{match}/events', {
         params: { path: { match: match.id } },
         body: { type: type.code, teamId, playerId, minute: at.minute, addedTime: at.addedTime },
@@ -133,8 +130,8 @@ export function MatchEventsSection({
     onError: (error) => {
       const message = isValidationError(error)
         ? Object.values(error.errors).flat().join(' ') || error.message
-        : error instanceof Error && error.message === BAD_MINUTE
-          ? BAD_MINUTE
+        : error instanceof MinuteError
+          ? error.message
           : apiErrorMessage(error);
       toast.error(message || SAVE_FAILED);
     },
