@@ -3,8 +3,8 @@ import { eventMinuteText, formatEventMinute, parseEventMinute } from './match-ev
 
 describe('minuta zdarzenia', () => {
   it('formatuje minutę, doliczony czas i brak minuty', () => {
-    expect(formatEventMinute(67)).toBe('67′')
-    expect(formatEventMinute(45, 3)).toBe('45+3′')
+    expect(formatEventMinute({ minute: 67, addedTime: null })).toBe('67′')
+    expect(formatEventMinute({ minute: 45, addedTime: 3 })).toBe('45+3′')
     expect(formatEventMinute(null)).toBe('—')
   })
 
@@ -22,8 +22,8 @@ describe('minuta zdarzenia', () => {
   })
 
   it('składa tekst pola z minuty i doliczonego czasu', () => {
-    expect(eventMinuteText(67)).toBe('67')
-    expect(eventMinuteText(45, 3)).toBe('45+3')
+    expect(eventMinuteText({ minute: 67, addedTime: null })).toBe('67')
+    expect(eventMinuteText({ minute: 45, addedTime: 3 })).toBe('45+3')
     expect(eventMinuteText(null)).toBe('')
   })
 })

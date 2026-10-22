@@ -31,7 +31,7 @@ function toLine(scorer: MatchScorer): ScorerLine {
   return {
     key: `${scorer.player.id}${scorer.ownGoal ? '-own' : ''}`,
     name: scorer.player.name,
-    detail: hasMinuteFormat(scorer) ? scorer.minutes.map((at) => formatEventMinute(at.minute, at.addedTime)).join(' ') : String(scorer.value),
+    detail: hasMinuteFormat(scorer) ? scorer.minutes.map((at) => formatEventMinute(at)).join(' ') : String(scorer.value),
     ownGoal: scorer.ownGoal,
   }
 }

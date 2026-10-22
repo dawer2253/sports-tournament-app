@@ -279,8 +279,7 @@ export function MatchDialog({
    * bez biegnącego zegara, sety).
    */
   function minuteFromClock(): EventMinute | null {
-    if (savedClock.status !== 'live' || hasSets) return null;
-    return matchClockMinute(savedClock, { periods, matchDuration, runningClock }, new Date());
+    return matchClockMinute(savedClock, { periods, matchDuration, runningClock, setFormat }, new Date());
   }
 
   /**

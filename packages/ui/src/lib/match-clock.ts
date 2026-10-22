@@ -5,7 +5,7 @@
  * „Match period (część meczu)”.
  */
 
-import { formatEventMinute, type EventMinute } from '../components/data/match-event-data'
+import { formatEventMinute, type EventMinute } from './event-minute'
 import { currentSetNumber, type SetFormat, type SetScore } from './sets'
 
 /** Podział meczu na części (`MatchPeriods` z kontraktu). `minutes` jest `null` tylko przy jednej części. */
@@ -19,6 +19,11 @@ export type MatchClockState = {
   onBreak: boolean
   /** Wyniki setów (`Match.sets`); w sporcie z setami z nich wychodzi numer bieżącego seta (#302). */
   sets?: readonly SetScore[] | null
+  /**
+   * Stan meczu, gdy wołający go zna (panel). `matchClockMinute` zwraca wtedy
+   * `null` poza meczem trwającym: zaplanowany i zakończony nie mają zegara (#317).
+   */
+  status?: 'scheduled' | 'live' | 'finished'
 }
 
 /** Ustawienia turnieju, z których liczy się zegar (`PublicTournament.periods`, `matchDuration`, `runningClock`, `setFormat`). */
@@ -85,7 +90,7 @@ export function matchClock(state: MatchClockState, settings: MatchClockSettings,
   if (periodStartedAt === null) return null
   if (!settings.runningClock) return periods.count > 1 ? periodLabel(livePeriod, periods.count) : null
   const at = runningMinute(state, settings, now)
-  return at === null ? null : formatEventMinute(at.minute, at.addedTime)
+  return at === null ? null : formatEventMinute(at)
 }
 
 /**
@@ -93,12 +98,12 @@ export function matchClock(state: MatchClockState, settings: MatchClockSettings,
  * addedTime: null }` albo `{ minute: 45, addedTime: 3 }` dla „45+3′”. Z tego
  * samego stanu co `matchClock`, ale `null` wszędzie tam, gdzie zegar nie
  * podaje minuty: przerwa, zapomniany mecz, dogrywka, sport bez biegnącego
- * zegara (kosz), sport z setami, mecz po powrocie z zakończonego (bez startu
- * części). Mecz zakończony nie ma zegara, więc wołający podaje stan tylko
- * meczu trwającego.
+ * zegara (kosz), sport z setami, mecz zakończony (gdy stan niesie `status`)
+ * i mecz po powrocie z zakończonego (bez startu części).
  */
 export function matchClockMinute(state: MatchClockState, settings: MatchClockSettings, now: Date): EventMinute | null {
-  const { livePeriod, onBreak } = state
+  const { livePeriod, onBreak, status } = state
+  if (status !== undefined && status !== 'live') return null
   if (livePeriod === null || settings.setFormat || onBreak) return null
   if (livePeriod > settings.periods.count || !settings.runningClock) return null
   return runningMinute(state, settings, now)

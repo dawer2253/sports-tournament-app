@@ -3,6 +3,7 @@ import { isValidationError, type AdminMatch, type MatchEvent, type SportEventTyp
 import {
   Button,
   ConfirmDeleteDialog,
+  eventMinuteOf,
   eventMinuteText,
   formatEventMinute,
   FormDialog,
@@ -38,7 +39,7 @@ export interface MatchEventDialogProps {
   event: MatchEvent;
   types: SportEventType[];
   /** Wołane po zapisie, poprawce i usunięciu: okno meczu przepisuje wynik z serwera (#317). */
-  onScoreChanged?: () => Promise<unknown>;
+  onScoreChanged: () => Promise<unknown>;
   onClose: () => void;
 }
 
@@ -53,14 +54,14 @@ export function MatchEventDialog({ match, event, types, onScoreChanged, onClose 
   const [type, setType] = useState(event.type);
   const [teamId, setTeamId] = useState(event.team.id);
   const [playerId, setPlayerId] = useState(event.player ? String(event.player.id) : NO_PLAYER);
-  const [minute, setMinute] = useState(eventMinuteText(event.minute, event.addedTime));
+  const [minute, setMinute] = useState(eventMinuteText(eventMinuteOf(event)));
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<(typeof FIELDS)[number], string>>>({});
   const [formError, setFormError] = useState<string>();
   const [confirming, setConfirming] = useState(false);
   const players = usePlayers(teamId);
   const teams = [match.homeTeam, match.awayTeam].filter((team) => team !== null);
 
-  const invalidate = () => Promise.all([queryClient.invalidateQueries({ queryKey: matchEventKeys.list(match.id) }), onScoreChanged?.()]);
+  const invalidate = () => Promise.all([queryClient.invalidateQueries({ queryKey: matchEventKeys.list(match.id) }), onScoreChanged()]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -121,7 +122,7 @@ export function MatchEventDialog({ match, event, types, onScoreChanged, onClose 
     save.mutate();
   }
 
-  const minuteLabel = event.minute === null ? '' : `${formatEventMinute(event.minute, event.addedTime)} `;
+  const minuteLabel = event.minute === null ? '' : `${formatEventMinute(eventMinuteOf(event))} `;
 
   return (
     <>

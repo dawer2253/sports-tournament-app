@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MatchEvents\StoreMatchEventRequest;
 use App\Http\Requests\MatchEvents\UpdateMatchEventRequest;
 use App\Http\Resources\MatchEventResource;
-use App\Leaderboards\MatchScorers;
+use App\Matches\LiveScore;
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -56,7 +56,7 @@ class MatchEventController extends Controller
                 'added_time' => $data['addedTime'] ?? null,
             ]);
 
-            $this->shiftScore($match, $this->gainOf($event), [0, 0]);
+            LiveScore::shift($match, LiveScore::gainOf($event), [0, 0]);
 
             return $event;
         });
@@ -75,10 +75,10 @@ class MatchEventController extends Controller
         }
 
         DB::transaction(function () use ($event, $changes): void {
-            $before = $this->gainOf($event);
+            $before = LiveScore::gainOf($event);
             $event->update($changes);
 
-            $this->shiftScore($event->match, $this->gainOf($event), $before);
+            LiveScore::shift($event->match, LiveScore::gainOf($event), $before);
         });
 
         return $this->respond($event);
@@ -95,63 +95,13 @@ class MatchEventController extends Controller
         }
 
         DB::transaction(function () use ($event): void {
-            $gain = $this->gainOf($event);
+            $gain = LiveScore::gainOf($event);
             $event->delete();
 
-            $this->shiftScore($event->match, [0, 0], $gain);
+            LiveScore::shift($event->match, [0, 0], $gain);
         });
 
         return response()->noContent();
-    }
-
-    /**
-     * Zdobycz zdarzenia jako `[gospodarz, gość]` według sportu turnieju;
-     * `[0, 0]` dla kartki, faulu i typu spoza zdobyczy sportu.
-     *
-     * @return array{int, int}
-     */
-    private function gainOf(MatchEvent $event): array
-    {
-        $match = $event->match;
-        $sport = $match->stage->tournament->sport;
-
-        // Wynik siatkówki to sety liczone przez serwer, a zdarzenia to wybrane akcje (ADR-0012).
-        if ($sport->hasSets()) {
-            return [0, 0];
-        }
-
-        $values = MatchScorers::scoringValues($sport);
-
-        return MatchScorers::gain($event->type, $event->team_id, $match, $values);
-    }
-
-    /**
-     * Przesuwa zapisany wynik o różnicę zdobyczy, ale tylko w meczu trwającym
-     * (#317). Status i wynik czytamy z zablokowanego wiersza, żeby dwie
-     * bramki zapisane naraz nie nadpisały się nawzajem; wynik nie schodzi
-     * poniżej 0 (obcięcie, nie 422).
-     *
-     * @param  array{int, int}  $after
-     * @param  array{int, int}  $before
-     */
-    private function shiftScore(GameMatch $match, array $after, array $before): void
-    {
-        $delta = [$after[0] - $before[0], $after[1] - $before[1]];
-
-        if ($delta === [0, 0]) {
-            return;
-        }
-
-        $locked = GameMatch::whereKey($match->id)->lockForUpdate()->firstOrFail();
-
-        if ($locked->status !== 'live') {
-            return;
-        }
-
-        $locked->update([
-            'home_score' => max(0, ($locked->home_score ?? 0) + $delta[0]),
-            'away_score' => max(0, ($locked->away_score ?? 0) + $delta[1]),
-        ]);
     }
 
     private function respond(MatchEvent $event, int $status = Response::HTTP_OK): JsonResponse

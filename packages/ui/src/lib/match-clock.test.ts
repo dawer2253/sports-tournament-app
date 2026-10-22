@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatEventMinute } from '../components/data/match-event-data'
+import { formatEventMinute } from './event-minute'
 import { matchClock, matchClockMinute, periodLabel, setLabel, periodLabelGenitive, type MatchClockSettings, type MatchClockState } from './match-clock'
 
 const KICKOFF = Date.parse('2026-09-27T10:00:00Z')
@@ -169,7 +169,7 @@ describe('minuta zdarzenia z zegara (#317)', () => {
   it('zgadza się z napisem zegara', () => {
     for (const elapsed of [0, 30, 44, 45, 60, 74]) {
       const at = matchClockMinute(running(1, KICKOFF), football, after(KICKOFF, elapsed))
-      expect(at && formatEventMinute(at.minute, at.addedTime)).toBe(matchClock(running(1, KICKOFF), football, after(KICKOFF, elapsed)))
+      expect(at && formatEventMinute(at)).toBe(matchClock(running(1, KICKOFF), football, after(KICKOFF, elapsed)))
     }
   })
 
@@ -183,6 +183,9 @@ describe('minuta zdarzenia z zegara (#317)', () => {
     expect(matchClockMinute(running(3, KICKOFF), basketball, after(KICKOFF, 4))).toBeNull() // kosz bez biegnącego zegara
     expect(matchClockMinute(running(1, KICKOFF), volleyball, after(KICKOFF, 4))).toBeNull() // sety
     expect(matchClockMinute(reopened, football, after(KICKOFF, 5))).toBeNull() // powrót z zakończonego
+    expect(matchClockMinute({ ...running(2, KICKOFF), status: 'finished' }, football, after(KICKOFF, 21))).toBeNull() // mecz zakończony
+    expect(matchClockMinute({ ...running(2, KICKOFF), status: 'scheduled' }, football, after(KICKOFF, 21))).toBeNull()
+    expect(matchClockMinute({ ...running(2, KICKOFF), status: 'live' }, football, after(KICKOFF, 21))).toEqual({ minute: 67, addedTime: null })
     expect(matchClockMinute({ livePeriod: null, periodStartedAt: null, onBreak: false }, football, after(KICKOFF, 5))).toBeNull()
   })
 })

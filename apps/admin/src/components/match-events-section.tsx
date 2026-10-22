@@ -3,6 +3,7 @@ import { isValidationError, type AdminMatch, type MatchEvent, type Sport, type S
 import {
   Button,
   EventTypeButtons,
+  eventMinuteOf,
   eventMinuteText,
   formatEventMinute,
   MatchTimeline,
@@ -44,13 +45,13 @@ export interface MatchEventsSectionProps {
    * Minuta zdarzenia z zegara meczu w tej chwili (#317) albo `null`, gdy zegar
    * jej nie podaje; liczona przy każdym kliknięciu rodzaju zdarzenia.
    */
-  minuteFromClock?: () => EventMinute | null;
+  minuteFromClock: () => EventMinute | null;
   /**
    * Wołane po zapisie i cofnięciu zdarzenia: okno meczu przepisuje wynik z
    * serwera (zdarzenie w meczu trwającym zmienia wynik, #317) i oddaje go do
    * toastu; `null`, gdy wynik się nie zmienia.
    */
-  onScoreChanged?: () => Promise<{ home: number; away: number } | null>;
+  onScoreChanged: () => Promise<{ home: number; away: number } | null>;
   onStart: () => void;
   starting: boolean;
 }
@@ -97,7 +98,7 @@ export function MatchEventsSection({
       if (error) throw error;
     },
     onSuccess: async () => {
-      await Promise.all([invalidate(), onScoreChanged?.()]);
+      await Promise.all([invalidate(), onScoreChanged()]);
       toast.success('Cofnięto zdarzenie.');
     },
     onError: (error) => toast.error(apiErrorMessage(error) || 'Nie udało się cofnąć zdarzenia.'),
@@ -115,9 +116,9 @@ export function MatchEventsSection({
     },
     onSuccess: async (event) => {
       setPicking(null);
-      const [, score] = await Promise.all([invalidate(), onScoreChanged?.()]);
+      const [, score] = await Promise.all([invalidate(), onScoreChanged()]);
       // Zdarzenie, które zmieniło wynik, mówi nowy wynik; reszta (kartka, faul) — kto i kiedy.
-      const minuteLabel = event.minute === null ? '' : `${formatEventMinute(event.minute, event.addedTime)} `;
+      const minuteLabel = event.minute === null ? '' : `${formatEventMinute(eventMinuteOf(event))} `;
       const type = types?.find((candidate) => candidate.code === event.type);
       const gain = type !== undefined && (type.stat === scoringStat || type.code === OWN_GOAL);
       const text = score && gain ? `${event.typeLabel}, ${score.home}:${score.away}` : `${minuteLabel}${event.typeLabel}: ${event.player?.name ?? event.team.name}`;
@@ -169,7 +170,7 @@ export function MatchEventsSection({
               onMinuteChange={setMinute}
               pending={create.isPending}
               onPick={(type) => {
-                setMinute(eventMinuteText(...minuteArgs(minuteFromClock?.() ?? null)));
+                setMinute(eventMinuteText(minuteFromClock()));
                 setPicking({ teamId: team.id, type });
               }}
               onBack={() => setPicking(null)}
@@ -203,11 +204,6 @@ export function MatchEventsSection({
       )}
     </section>
   );
-}
-
-/** Argumenty `eventMinuteText` z minuty zegara; brak minuty to puste pole. */
-function minuteArgs(at: EventMinute | null): [number | null, number | null] {
-  return at === null ? [null, null] : [at.minute, at.addedTime];
 }
 
 function TeamColumn({

@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from 'react'
 import { EventIcon } from '../components/data/event-icon'
-import { formatEventMinute } from '../components/data/match-event-data'
+import { eventMinuteOf, formatEventMinute } from '../components/data/match-event-data'
 import type { MatchPageTeam, MatchRelationEvent, MatchRelationPeriod } from '../components/data/match-page-data'
 import type { MatchStatus } from '../components/data/match-row-data'
 import { plural } from '../lib/plural'
@@ -73,7 +73,7 @@ function EventRow({ event, teams }: { event: MatchRelationEvent; teams: Relation
       data-side={home ? 'home' : 'away'}
       className="grid min-h-14 grid-cols-[3rem_1.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-hairline py-2"
     >
-      <span className="pub-num text-pub-20 text-muted-foreground">{formatEventMinute(event.minute, event.addedTime ?? null)}</span>
+      <span className="pub-num text-pub-20 text-muted-foreground">{formatEventMinute(eventMinuteOf(event))}</span>
       <EventIcon type={event.type} />
       <span className="flex min-w-0 items-center gap-3">
         <Crest name={event.team.name} logoUrl={logoUrl} className="size-5" />
