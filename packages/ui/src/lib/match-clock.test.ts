@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { matchClock, periodLabel, setLabel, periodLabelGenitive, type MatchClockSettings, type MatchClockState } from './match-clock'
+import { formatEventMinute } from '../components/data/match-event-data'
+import { matchClock, matchClockMinute, periodLabel, setLabel, periodLabelGenitive, type MatchClockSettings, type MatchClockState } from './match-clock'
 
 const KICKOFF = Date.parse('2026-09-27T10:00:00Z')
 const minute = 60_000
@@ -151,5 +152,37 @@ describe('numer seta w sporcie z setami (#302)', () => {
   it('bez zegara meczu (brak części) nie ma numeru seta, a koszykówka zostaje przy kwartach', () => {
     expect(matchClock({ ...live([]), livePeriod: null }, volleyball, now)).toBeNull()
     expect(matchClock({ ...running(3, KICKOFF), sets: null }, basketball, now)).toBe('3. kwarta')
+  })
+})
+
+describe('minuta zdarzenia z zegara (#317)', () => {
+  it('podaje minutę jako liczbę: 67 i 66 w 2. połowie', () => {
+    expect(matchClockMinute(running(2, KICKOFF), football, after(KICKOFF, 21))).toEqual({ minute: 67, addedTime: null })
+    expect(matchClockMinute(running(2, KICKOFF), football, after(KICKOFF, 20))).toEqual({ minute: 66, addedTime: null })
+  })
+
+  it('rozdziela doliczony czas: 45+3 i 90+4', () => {
+    expect(matchClockMinute(running(1, KICKOFF), football, after(KICKOFF, 47))).toEqual({ minute: 45, addedTime: 3 })
+    expect(matchClockMinute(running(2, KICKOFF), football, after(KICKOFF, 48))).toEqual({ minute: 90, addedTime: 4 })
+  })
+
+  it('zgadza się z napisem zegara', () => {
+    for (const elapsed of [0, 30, 44, 45, 60, 74]) {
+      const at = matchClockMinute(running(1, KICKOFF), football, after(KICKOFF, elapsed))
+      expect(at && formatEventMinute(at.minute, at.addedTime)).toBe(matchClock(running(1, KICKOFF), football, after(KICKOFF, elapsed)))
+    }
+  })
+
+  it('daje null tam, gdzie zegar nie podaje minuty', () => {
+    const onBreak: MatchClockState = { livePeriod: 1, periodStartedAt: null, onBreak: true }
+    const reopened: MatchClockState = { livePeriod: 2, periodStartedAt: null, onBreak: false }
+    const volleyball: MatchClockSettings = { ...basketball, setFormat: { setsToWin: 3, setPoints: 25, decidingSetPoints: 15, minLead: 2 } }
+    expect(matchClockMinute(onBreak, football, after(KICKOFF, 50))).toBeNull()
+    expect(matchClockMinute(running(2, KICKOFF), football, after(KICKOFF, 75))).toBeNull() // zapomniany mecz
+    expect(matchClockMinute(running(3, KICKOFF), football, after(KICKOFF, 7))).toBeNull() // dogrywka
+    expect(matchClockMinute(running(3, KICKOFF), basketball, after(KICKOFF, 4))).toBeNull() // kosz bez biegnącego zegara
+    expect(matchClockMinute(running(1, KICKOFF), volleyball, after(KICKOFF, 4))).toBeNull() // sety
+    expect(matchClockMinute(reopened, football, after(KICKOFF, 5))).toBeNull() // powrót z zakończonego
+    expect(matchClockMinute({ livePeriod: null, periodStartedAt: null, onBreak: false }, football, after(KICKOFF, 5))).toBeNull()
   })
 })

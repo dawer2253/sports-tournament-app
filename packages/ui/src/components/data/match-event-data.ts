@@ -34,9 +34,38 @@ export type MatchEventRow = {
   typeLabel: string
   /** `null`, gdy minuty nie wpisano; takie zdarzenie stoi na końcu osi. */
   minute: number | null
+  /** Doliczony czas (#317): `minute: 45, addedTime: 3` to „45+3′”. Brak pola znaczy `null`. */
+  addedTime?: number | null
 }
 
-/** Minuta jak na osi meczu: „63′”, a bez minuty „—”. */
-export function formatEventMinute(minute: number | null): string {
-  return minute === null ? '—' : `${minute}′`
+/** Minuta zdarzenia z doliczonym czasem (`EventMinute` z kontraktu, a w zdarzeniu para `minute` + `addedTime`). */
+export type EventMinute = { minute: number; addedTime: number | null }
+
+/** Minuta jak na osi meczu: „63′”, z doliczonym czasem „45+3′”, a bez minuty „—”. */
+export function formatEventMinute(minute: number | null, addedTime: number | null = null): string {
+  if (minute === null) return '—'
+  return addedTime === null ? `${minute}′` : `${minute}+${addedTime}′`
+}
+
+/**
+ * Minuta wpisana w pole: „67” albo „45+3”. Puste pole to zdarzenie bez minuty
+ * (`{ minute: null, addedTime: null }`), a `null` znaczy, że wpis nie jest
+ * minutą (poza 1–150, doliczony czas poza 1–30, litery, ułamek).
+ */
+export function parseEventMinute(text: string): { minute: number | null; addedTime: number | null } | null {
+  const value = text.trim()
+  if (value === '') return { minute: null, addedTime: null }
+  const match = /^(\d{1,3})(?:\s*\+\s*(\d{1,2}))?$/.exec(value)
+  if (!match) return null
+  const minute = Number(match[1])
+  const addedTime = match[2] === undefined ? null : Number(match[2])
+  if (minute < 1 || minute > 150) return null
+  if (addedTime !== null && (addedTime < 1 || addedTime > 30)) return null
+  return { minute, addedTime }
+}
+
+/** Odwrotność `parseEventMinute`: tekst do pola „Minuta” („67”, „45+3”, a bez minuty pusty). */
+export function eventMinuteText(minute: number | null, addedTime: number | null = null): string {
+  if (minute === null) return ''
+  return addedTime === null ? String(minute) : `${minute}+${addedTime}`
 }

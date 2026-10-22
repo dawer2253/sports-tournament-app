@@ -36,7 +36,7 @@ export function MatchTimeline({ events, homeTeamId, types = [], onSelect, classN
       {events.map((event) => {
         const home = event.team.id === homeTeamId
         const who = event.player?.name ?? event.team.name
-        const minute = formatEventMinute(event.minute)
+        const minute = formatEventMinute(event.minute, event.addedTime ?? null)
         const note = outsideStats.has(event.type) ? ' (nie wlicza się do klasyfikacji)' : ''
         const content = (
           <>

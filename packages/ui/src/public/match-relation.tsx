@@ -73,7 +73,7 @@ function EventRow({ event, teams }: { event: MatchRelationEvent; teams: Relation
       data-side={home ? 'home' : 'away'}
       className="grid min-h-14 grid-cols-[3rem_1.25rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-hairline py-2"
     >
-      <span className="pub-num text-pub-20 text-muted-foreground">{formatEventMinute(event.minute)}</span>
+      <span className="pub-num text-pub-20 text-muted-foreground">{formatEventMinute(event.minute, event.addedTime ?? null)}</span>
       <EventIcon type={event.type} />
       <span className="flex min-w-0 items-center gap-3">
         <Crest name={event.team.name} logoUrl={logoUrl} className="size-5" />

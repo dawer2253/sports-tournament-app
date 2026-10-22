@@ -1,4 +1,5 @@
 import type { SetScore } from '../../lib/sets'
+import type { EventMinute } from './match-event-data'
 
 /**
  * Mecz w wierszu terminarza. Podzbiór `Match` z kontraktu, przepisany ręcznie,
@@ -95,8 +96,8 @@ export type MatchScorer = {
   player: { id: number; name: string }
   /** Suma wartości zdarzeń zawodnika w meczu, także tych bez minuty. */
   value: number
-  /** Minuty zdarzeń rosnąco; zdarzenia bez minuty tu nie ma. */
-  minutes: number[]
+  /** Minuty zdarzeń rosnąco (minuta, potem doliczony czas); zdarzenia bez minuty tu nie ma. */
+  minutes: EventMinute[]
   ownGoal: boolean
 }
 

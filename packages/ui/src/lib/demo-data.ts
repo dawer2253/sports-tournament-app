@@ -759,10 +759,10 @@ function scorersFromEvents(events: ScoringEvent[]): MatchScorer[] {
     const key = `${event.player.id}-${event.ownGoal}`
     const row = rows.get(key) ?? { team: event.team, player: event.player, value: 0, minutes: [], ownGoal: event.ownGoal }
     row.value += 1
-    if (event.minute !== null) row.minutes = [...row.minutes, event.minute].toSorted((a, b) => a - b)
+    if (event.minute !== null) row.minutes = [...row.minutes, { minute: event.minute, addedTime: null }].toSorted((a, b) => a.minute - b.minute)
     rows.set(key, row)
   }
-  const firstMinute = (row: MatchScorer) => row.minutes[0] ?? Number.POSITIVE_INFINITY
+  const firstMinute = (row: MatchScorer) => row.minutes[0]?.minute ?? Number.POSITIVE_INFINITY
   return [...rows.values()].toSorted((a, b) => firstMinute(a) - firstMinute(b) || a.player.id - b.player.id)
 }
 
@@ -1168,7 +1168,7 @@ function demoMatchPage(
       scoreAfter = { home, away }
       const key = `${player.id}-${ownGoal}`
       const row = scorers.get(key) ?? { team, player: { id: player.id, name: player.name }, value: 0, minutes: [], ownGoal }
-      scorers.set(key, { ...row, value: row.value + value, minutes: minute === null ? row.minutes : [...row.minutes, minute] })
+      scorers.set(key, { ...row, value: row.value + value, minutes: minute === null ? row.minutes : [...row.minutes, { minute, addedTime: null }] })
     }
     return { id, team, player: { id: player.id, name: player.name }, type, typeLabel: PAGE_EVENT_TYPES[type]!.label, minute, period, scoreAfter }
   })
@@ -1181,7 +1181,7 @@ function demoMatchPage(
       homeScore,
       awayScore,
     }))
-  const firstMinute = (row: MatchScorer) => row.minutes[0] ?? Number.POSITIVE_INFINITY
+  const firstMinute = (row: MatchScorer) => row.minutes[0]?.minute ?? Number.POSITIVE_INFINITY
 
   return {
     ...base,

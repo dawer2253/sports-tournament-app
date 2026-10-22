@@ -198,7 +198,7 @@ const zubry = { id: 4, name: 'Żubry Wola', logoUrl: null }
 const rysie = { id: 5, name: 'Rysie Mokotów', logoUrl: null }
 
 function scorer(team: MatchScorer['team'], id: number, name: string, value: number, minutes: number[], ownGoal = false): MatchScorer {
-  return { team, player: { id, name }, value, minutes, ownGoal }
+  return { team, player: { id, name }, value, minutes: minutes.map((minute) => ({ minute, addedTime: null })), ownGoal }
 }
 
 /**
