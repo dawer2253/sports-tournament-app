@@ -3,11 +3,15 @@ import { isValidationError, type AdminMatch, type MatchEvent, type Sport, type S
 import {
   Button,
   EventTypeButtons,
+  eventMinuteText,
+  formatEventMinute,
   MatchTimeline,
   MetaList,
+  parseEventMinute,
   PlayerNumberGrid,
   Skeleton,
   toast,
+  type EventMinute,
 } from '@tournament/ui';
 import { Play } from 'lucide-react';
 import { useState } from 'react';
@@ -18,6 +22,8 @@ import { usePlayers } from '../lib/team-queries';
 import { MatchEventDialog } from './match-event-dialog';
 
 const SAVE_FAILED = 'Nie udało się zapisać zdarzenia. Spróbuj ponownie.';
+
+const BAD_MINUTE = 'Minuta to liczba od 1 do 150, np. 67 albo 45+3.';
 
 /** Samobój należy do drużyny strzelca, a zdobycz daje przeciwnikowi (#188, reguła 9). */
 const OWN_GOAL = 'own_goal';
@@ -36,6 +42,17 @@ export interface MatchEventsSectionProps {
    * akcje, a wynik to sety.
    */
   scoreCheck?: boolean;
+  /**
+   * Minuta zdarzenia z zegara meczu w tej chwili (#317) albo `null`, gdy zegar
+   * jej nie podaje; liczona przy każdym kliknięciu rodzaju zdarzenia.
+   */
+  minuteFromClock?: () => EventMinute | null;
+  /**
+   * Wołane po zapisie i cofnięciu zdarzenia: okno meczu przepisuje wynik z
+   * serwera (zdarzenie w meczu trwającym zmienia wynik, #317) i oddaje go do
+   * toastu; `null`, gdy wynik się nie zmienia.
+   */
+  onScoreChanged?: () => Promise<{ home: number; away: number } | null>;
   onStart: () => void;
   starting: boolean;
 }
@@ -49,13 +66,25 @@ export interface MatchEventsSectionProps {
  * okna, które dotyczy wyniku, stanu, terminu i obiektu. Dlatego sekcja stoi
  * w `FormDialog` jako `aside`, poza formularzem meczu.
  */
-export function MatchEventsSection({ match, sportCode, started, homeScore, awayScore, scoreCheck = true, onStart, starting }: MatchEventsSectionProps) {
+export function MatchEventsSection({
+  match,
+  sportCode,
+  started,
+  homeScore,
+  awayScore,
+  scoreCheck = true,
+  minuteFromClock,
+  onScoreChanged,
+  onStart,
+  starting,
+}: MatchEventsSectionProps) {
   const queryClient = useQueryClient();
   const events = useMatchEvents(match.id, started);
   const { types, scoringStat, scoringLabel } = useEventTypes(sportCode);
   const [picking, setPicking] = useState<{ teamId: number; type: SportEventType } | null>(null);
-  // Minuta zostaje między wpisami, dopóki okno jest otwarte: przy stoliku
-  // organizator tylko ją podbija.
+  // Minutę wpisuje zegar meczu przy każdym kliknięciu rodzaju zdarzenia, a
+  // organizator może ją poprawić przed wyborem zawodnika (#317). Tekst, bo
+  // przyjmuje „67” i „45+3”.
   const [minute, setMinute] = useState('');
   const [editing, setEditing] = useState<MatchEvent | null>(null);
 
@@ -70,7 +99,7 @@ export function MatchEventsSection({ match, sportCode, started, homeScore, awayS
       if (error) throw error;
     },
     onSuccess: async () => {
-      await invalidate();
+      await Promise.all([invalidate(), onScoreChanged?.()]);
       toast.success('Cofnięto zdarzenie.');
     },
     onError: (error) => toast.error(apiErrorMessage(error) || 'Nie udało się cofnąć zdarzenia.'),
@@ -78,25 +107,35 @@ export function MatchEventsSection({ match, sportCode, started, homeScore, awayS
 
   const create = useMutation({
     mutationFn: async ({ teamId, type, playerId }: { teamId: number; type: SportEventType; playerId: number }) => {
+      const at = parseEventMinute(minute);
+      if (at === null) throw new Error(BAD_MINUTE);
       const { data, error } = await api.POST('/matches/{match}/events', {
         params: { path: { match: match.id } },
-        body: { type: type.code, teamId, playerId, minute: minute === '' ? null : Number(minute) },
+        body: { type: type.code, teamId, playerId, minute: at.minute, addedTime: at.addedTime },
       });
       if (data) return data.data;
       throw error;
     },
     onSuccess: async (event) => {
       setPicking(null);
-      await invalidate();
-      const minuteLabel = event.minute === null ? '' : `${event.minute}′ `;
-      toast.success(`${minuteLabel}${event.typeLabel}: ${event.player?.name ?? event.team.name}`, {
+      const [, score] = await Promise.all([invalidate(), onScoreChanged?.()]);
+      // Zdarzenie, które zmieniło wynik, mówi nowy wynik; reszta (kartka, faul) — kto i kiedy.
+      const minuteLabel = event.minute === null ? '' : `${formatEventMinute(event.minute, event.addedTime)} `;
+      const type = types?.find((candidate) => candidate.code === event.type);
+      const gain = type !== undefined && (type.stat === scoringStat || type.code === OWN_GOAL);
+      const text = score && gain ? `${event.typeLabel}, ${score.home}:${score.away}` : `${minuteLabel}${event.typeLabel}: ${event.player?.name ?? event.team.name}`;
+      toast.success(text, {
         action: { label: 'Cofnij', onClick: () => undo.mutate(event.id) },
       });
     },
     // Siatka nie ma pól, przy których dałoby się posadzić błąd, więc idzie
     // w toast — bez gubienia komunikatu (zawodnik spoza drużyny, minuta 151).
     onError: (error) => {
-      const message = isValidationError(error) ? Object.values(error.errors).flat().join(' ') || error.message : apiErrorMessage(error);
+      const message = isValidationError(error)
+        ? Object.values(error.errors).flat().join(' ') || error.message
+        : error instanceof Error && error.message === BAD_MINUTE
+          ? BAD_MINUTE
+          : apiErrorMessage(error);
       toast.error(message || SAVE_FAILED);
     },
   });
@@ -132,7 +171,10 @@ export function MatchEventsSection({ match, sportCode, started, homeScore, awayS
               minute={minute}
               onMinuteChange={setMinute}
               pending={create.isPending}
-              onPick={(type) => setPicking({ teamId: team.id, type })}
+              onPick={(type) => {
+                setMinute(eventMinuteText(...minuteArgs(minuteFromClock?.() ?? null)));
+                setPicking({ teamId: team.id, type });
+              }}
               onBack={() => setPicking(null)}
               onSelectPlayer={(type, playerId) => create.mutate({ teamId: team.id, type, playerId })}
             />
@@ -153,10 +195,22 @@ export function MatchEventsSection({ match, sportCode, started, homeScore, awayS
       )}
 
       {editing && types && (
-        <MatchEventDialog key={editing.id} match={match} event={editing} types={types} onClose={() => setEditing(null)} />
+        <MatchEventDialog
+          key={editing.id}
+          match={match}
+          event={editing}
+          types={types}
+          onScoreChanged={onScoreChanged}
+          onClose={() => setEditing(null)}
+        />
       )}
     </section>
   );
+}
+
+/** Argumenty `eventMinuteText` z minuty zegara; brak minuty to puste pole. */
+function minuteArgs(at: EventMinute | null): [number | null, number | null] {
+  return at === null ? [null, null] : [at.minute, at.addedTime];
 }
 
 function TeamColumn({

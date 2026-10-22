@@ -281,6 +281,7 @@ export function TournamentBracketPage() {
           onClose={() => setOpenMatchId(null)}
           sportCode={tournament.sport.code}
           periods={tournament.periods}
+          matchDuration={tournament.matchDuration}
           setFormat={tournament.setFormat}
           knockout
         />

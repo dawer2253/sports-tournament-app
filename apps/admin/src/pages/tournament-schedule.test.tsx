@@ -5,7 +5,7 @@ import type { AdminMatch, Group, MatchEvent, Player, Sport, Stage, Team, Tournam
 import { Toaster } from '@tournament/ui';
 import { HttpResponse, http } from 'msw';
 import { RouterProvider, createMemoryRouter } from 'react-router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setToken } from '../lib/session';
 import { routes } from '../routes';
 import { API_URL as API, server } from '../test/server';
@@ -670,6 +670,7 @@ function event(id: number, teamId: number, overrides: Partial<MatchEvent> = {}):
     type: 'goal',
     typeLabel: 'Bramka',
     minute: 10,
+    addedTime: null,
     ...overrides,
   };
 }
@@ -678,25 +679,29 @@ function event(id: number, teamId: number, overrides: Partial<MatchEvent> = {}):
  * Zdarzenia meczu po stronie „serwera”: `POST` dopisuje, `DELETE` usuwa,
  * a lista oddaje stan po zmianach. `posts` zbiera ciała zapisów.
  */
-function serveEvents(initial: MatchEvent[] = []) {
+function serveEvents(initial: MatchEvent[] = [], onChange?: (change: 'post' | 'delete', event: MatchEvent) => void) {
   const state = { events: [...initial], posts: [] as Record<string, unknown>[], deletes: [] as number[] };
   server.use(
     http.get(`${API}/teams/:team/players`, ({ params }) => HttpResponse.json({ data: squad(Number(params.team)) })),
     http.get(EVENTS_URL, () => HttpResponse.json({ data: state.events })),
     http.post(EVENTS_URL, async ({ request }) => {
-      const body = (await request.json()) as { teamId: number; playerId: number; type: string; minute: number | null };
+      const body = (await request.json()) as { teamId: number; playerId: number; type: string; minute: number | null; addedTime?: number | null };
       state.posts.push(body);
       const created = event(100 + state.posts.length, body.teamId, {
         player: { id: body.playerId, name: squad(body.teamId).find((player) => player.id === body.playerId)!.name },
         type: body.type,
         typeLabel: SPORTS[0].config.eventTypes.find((type) => type.code === body.type)!.label,
         minute: body.minute,
+        addedTime: body.addedTime ?? null,
       });
       state.events.push(created);
+      onChange?.('post', created);
       return HttpResponse.json({ data: created }, { status: 201 });
     }),
     http.delete(EVENT_URL, ({ params }) => {
       state.deletes.push(Number(params.event));
+      const removed = state.events.find((candidate) => candidate.id === Number(params.event))!;
+      onChange?.('delete', removed);
       state.events = state.events.filter((candidate) => candidate.id !== Number(params.event));
       return new HttpResponse(null, { status: 204 });
     }),
@@ -719,8 +724,8 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     await user.click(within(dialog).getByRole('button', { name: '9. Zawodnik 2B' }));
 
     await waitFor(() => expect(state.posts).toHaveLength(1));
-    expect(state.posts[0]).toEqual({ type: 'goal', teamId: 2, playerId: 22, minute: 63 });
-    expect(await screen.findByText('63′ Bramka: Zawodnik 2B')).toBeInTheDocument();
+    expect(state.posts[0]).toEqual({ type: 'goal', teamId: 2, playerId: 22, minute: 63, addedTime: null });
+    expect(await screen.findByText('Bramka, 1:0')).toBeInTheDocument();
     // Po zapisie kolumna wraca do przycisków, a zdarzenie stoi na osi.
     expect(
       await within(dialog).findByRole('button', { name: 'Edytuj: 63′ Bramka, Zawodnik 2B (Sokoły Ursus)' }),
@@ -728,7 +733,7 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     expect(within(dialog).getByRole('group', { name: 'Zdarzenia: Sokoły Ursus' })).toBeInTheDocument();
   });
 
-  it('minuta zostaje w polu po zapisie, a puste pole wysyła minute: null', async () => {
+  it('bez zegara pole minuty startuje puste przy każdym kliknięciu rodzaju, a puste pole wysyła minute: null', async () => {
     serveMatches([match(1, 1, 1, 2, LIVE)]);
     const state = serveEvents();
     const { user } = renderSchedule('?round=1');
@@ -737,21 +742,138 @@ describe('Terminarz — zdarzenia meczu (#200)', () => {
     const homeButton = async (name: string) =>
       within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' })).getByRole('button', { name });
 
-    // Bez minuty.
     await user.click(await homeButton('Żółta kartka'));
     await user.click(await within(dialog).findByRole('button', { name: '7. Zawodnik 1A' }));
     await waitFor(() => expect(state.posts).toHaveLength(1));
-    expect(state.posts[0]).toMatchObject({ minute: null });
+    expect(state.posts[0]).toMatchObject({ minute: null, addedTime: null });
 
-    // Z minutą, która zostaje na kolejny wpis.
+    // Minuta wpisana ręcznie nie przechodzi na kolejny wpis: każde kliknięcie liczy ją na nowo.
     await user.click(await homeButton('Bramka'));
     await user.type(await within(dialog).findByLabelText('Minuta'), '30');
     await user.click(within(dialog).getByRole('button', { name: '7. Zawodnik 1A' }));
     await waitFor(() => expect(state.posts).toHaveLength(2));
-    expect(state.posts[1]).toMatchObject({ minute: 30 });
+    expect(state.posts[1]).toMatchObject({ minute: 30, addedTime: null });
 
     await user.click(await homeButton('Bramka'));
-    expect(await within(dialog).findByLabelText('Minuta')).toHaveValue('30');
+    expect(await within(dialog).findByLabelText('Minuta')).toHaveValue('');
+  });
+
+  it('kliknięcie rodzaju wpisuje minutę z zegara meczu trwającego, a ręczny „45+3” rozdziela doliczony czas', async () => {
+    const startedAt = new Date(Date.now() - (21 * 60 + 20) * 1000).toISOString();
+    serveMatches([match(1, 1, 1, 2, { ...LIVE, livePeriod: 2, periodStartedAt: startedAt })]);
+    const state = serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    const homeButton = async (name: string) =>
+      within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' })).getByRole('button', { name });
+
+    // 2. połowa startuje od 46′, więc po 21 pełnych minutach tablica pokazuje 67′.
+    await user.click(await homeButton('Bramka'));
+    expect(await within(dialog).findByLabelText('Minuta')).toHaveValue('67');
+    await user.click(within(dialog).getByRole('button', { name: '7. Zawodnik 1A' }));
+    await waitFor(() => expect(state.posts).toHaveLength(1));
+    expect(state.posts[0]).toMatchObject({ minute: 67, addedTime: null });
+
+    await user.click(await homeButton('Żółta kartka'));
+    const again = await within(dialog).findByLabelText('Minuta');
+    await user.clear(again);
+    await user.type(again, '45+3');
+    await user.click(within(dialog).getByRole('button', { name: '7. Zawodnik 1A' }));
+    await waitFor(() => expect(state.posts).toHaveLength(2));
+    expect(state.posts[1]).toMatchObject({ minute: 45, addedTime: 3 });
+    expect(await within(dialog).findByRole('button', { name: /^Edytuj: 45\+3′ Żółta kartka/ })).toBeInTheDocument();
+  });
+
+  it('w przerwie pole minuty zostaje puste', async () => {
+    serveMatches([match(1, 1, 1, 2, { ...LIVE, livePeriod: 1, periodStartedAt: null, onBreak: true })]);
+    serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' })).getByRole('button', { name: 'Bramka' }));
+    expect(await within(dialog).findByLabelText('Minuta')).toHaveValue('');
+  });
+
+  it('w meczu zakończonym pole minuty zostaje puste mimo zapisanego zegara', async () => {
+    const startedAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    serveMatches([match(1, 1, 1, 2, { ...FINISHED, livePeriod: 2, periodStartedAt: startedAt })]);
+    serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' })).getByRole('button', { name: 'Bramka' }));
+    expect(await within(dialog).findByLabelText('Minuta')).toHaveValue('');
+  });
+
+  it('bramka w meczu trwającym przepisuje pola wyniku z serwera, tost mówi nowy wynik, a „Zapisz” nie cofa bramki', async () => {
+    const served = serveMatches([match(1, 1, 1, 2, LIVE)]);
+    const patches = serveSave(served.matches);
+    serveEvents([], (change) => {
+      // Serwer podbija zapisany wynik tak, jak robi to w transakcji zdarzenia.
+      const live = served.matches[0];
+      served.matches[0] = { ...live, homeScore: live.homeScore! + (change === 'post' ? 1 : -1) };
+    });
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    // Ręcznie wpisany, niezapisany wynik ustępuje wynikowi z serwera.
+    await user.clear(within(dialog).getByLabelText('Wynik Sokoły Ursus'));
+    await user.type(within(dialog).getByLabelText('Wynik Sokoły Ursus'), '5');
+
+    await user.click(within(await within(dialog).findByRole('group', { name: 'Zdarzenia: Wilki Bemowo' })).getByRole('button', { name: 'Bramka' }));
+    await user.click(await within(dialog).findByRole('button', { name: '7. Zawodnik 1A' }));
+
+    expect(await screen.findByText('Bramka, 2:0')).toBeInTheDocument();
+    await waitFor(() => expect(within(dialog).getByLabelText('Wynik Wilki Bemowo')).toHaveValue(2));
+    expect(within(dialog).getByLabelText('Wynik Sokoły Ursus')).toHaveValue(0);
+
+    // Zapis bez ręcznej zmiany wyniku nie wysyła go, więc nie nadpisuje bramki.
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+    await waitFor(() => expect(patches).toHaveLength(1));
+    expect(patches[0]).not.toHaveProperty('homeScore');
+    expect(patches[0]).not.toHaveProperty('awayScore');
+  });
+
+  it('„Zapisz” wysyła wynik, gdy organizator zmienił go ręcznie', async () => {
+    const matches = [match(1, 1, 1, 2, LIVE)];
+    serveMatches(matches);
+    const patches = serveSave(matches);
+    serveEvents();
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    const homeScore = within(dialog).getByLabelText('Wynik Wilki Bemowo');
+    await user.clear(homeScore);
+    await user.type(homeScore, '3');
+    await user.click(within(dialog).getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(patches).toHaveLength(1));
+    expect(patches[0]).toMatchObject({ homeScore: 3, awayScore: 0 });
+  });
+
+  it('wpis, który nie jest minutą, daje błąd przy polu w oknie edycji i nic nie jedzie na serwer', async () => {
+    serveMatches([match(1, 1, 1, 2, LIVE)]);
+    serveEvents([event(5, 1)]);
+    const patched = vi.fn();
+    server.use(
+      http.patch(EVENT_URL, () => {
+        patched();
+        return HttpResponse.json({}, { status: 500 });
+      }),
+    );
+    const { user } = renderSchedule('?round=1');
+
+    const dialog = await openMatchRow(user, 'Wilki Bemowo – Sokoły Ursus');
+    await user.click(await within(dialog).findByRole('button', { name: 'Edytuj: 10′ Bramka, Zawodnik 1A (Wilki Bemowo)' }));
+    const edit = await screen.findByRole('dialog', { name: 'Edytuj zdarzenie' });
+    const minute = within(edit).getByLabelText('Minuta');
+    await user.clear(minute);
+    await user.type(minute, '45+99');
+    await user.click(within(edit).getByRole('button', { name: 'Zapisz' }));
+
+    expect(await within(edit).findByText('Minuta to liczba od 1 do 150, np. 67 albo 45+3.')).toBeInTheDocument();
+    expect(patched).not.toHaveBeenCalled();
   });
 
   it('422 pod playerId w pod-oknie edycji siada przy polu zawodnika', async () => {

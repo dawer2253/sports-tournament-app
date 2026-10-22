@@ -173,7 +173,7 @@ describe('Terminarz i Wyniki: wiersz meczu', () => {
   });
 
   it('nie pokazuje strzelców z odpowiedzi ani w Wynikach, ani w Terminarzu', async () => {
-    const scorers = [scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, minutes: [23] })];
+    const scorers = [scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, minutes: [{ minute: 23, addedTime: null }] })];
     publicApi({
       fixtures: [match(2, 2, { status: 'live', homeScore: 1, awayScore: 0, scorers: [scorer(2, 'home', 3, { player: { id: 3, name: 'Tomasz Lis' } })] })],
       results: [finished(1, 1, { scorers })],

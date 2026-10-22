@@ -14,6 +14,7 @@ import {
   cn,
   collisionLabel,
   formatKickoff,
+  matchClockMinute,
   matchLabel,
   periodLabelGenitive,
   setDraftsToScores,
@@ -21,6 +22,7 @@ import {
   SetScoresField,
   setsWon,
   toast,
+  type EventMinute,
   type SetDraft,
 } from '@tournament/ui';
 import { ChevronDown, Info, TriangleAlert } from 'lucide-react';
@@ -107,6 +109,8 @@ export interface MatchDialogProps {
   sportCode: Sport['code'];
   /** Podział meczu turnieju (`Tournament.periods`): z niego przycisk części meczu trwającego (#297). */
   periods: Tournament['periods'];
+  /** Długość meczu turnieju (`Tournament.matchDuration`): zegar liczy z niej minutę w turnieju bez podziału (#317). */
+  matchDuration: Tournament['matchDuration'];
   /**
    * Format seta turnieju (`Tournament.setFormat`, #301). Podany oznacza sport
    * z setami: zamiast pól wyniku okno ma wpis kolejnych setów.
@@ -159,16 +163,22 @@ export function MatchDialog({
   onClose,
   sportCode,
   periods,
+  matchDuration,
   setFormat = null,
   knockout = false,
 }: MatchDialogProps) {
   const queryClient = useQueryClient();
   const venues = useVenues(tournamentId);
   const sports = useSports();
-  const allowsDraw = sports.data?.find((sport) => sport.code === sportCode)?.config.allowsDraw ?? false;
+  const sportConfig = sports.data?.find((sport) => sport.code === sportCode)?.config;
+  const allowsDraw = sportConfig?.allowsDraw ?? false;
+  const runningClock = sportConfig?.runningClock ?? false;
   const [status, setStatus] = useState<MatchStatus>(match.status);
   const [homeScore, setHomeScore] = useState(match.homeScore?.toString() ?? '');
   const [awayScore, setAwayScore] = useState(match.awayScore?.toString() ?? '');
+  // „Zapisz” wysyła wynik tylko po ręcznej zmianie pól (#317): inaczej zmiana
+  // stanu albo obiektu nadpisałaby bramkę, którą serwer zapisał od zdarzenia.
+  const [scoreEdited, setScoreEdited] = useState(false);
   const [homePenalties, setHomePenalties] = useState(match.homePenalties?.toString() ?? '');
   const [awayPenalties, setAwayPenalties] = useState(match.awayPenalties?.toString() ?? '');
   const [sets, setSets] = useState<SetDraft[]>(setScoresToDrafts(match.sets));
@@ -235,6 +245,7 @@ export function MatchDialog({
       setStatus(saved.status);
       setHomeScore(saved.homeScore?.toString() ?? '');
       setAwayScore(saved.awayScore?.toString() ?? '');
+      setScoreEdited(false);
       setScheduleOpen(false);
       await queryClient.invalidateQueries({ queryKey: scheduleKeys.matches(tournamentId) });
       toast.success('Mecz trwa. Możesz wpisywać zdarzenia.');
@@ -261,6 +272,36 @@ export function MatchDialog({
     onError: (error) => showErrors(error, PERIOD_FAILED),
   });
   const action = periodAction(savedClock, periods, knockout, allowsDraw, hasSets);
+
+  /**
+   * Minuta zdarzenia z zegara meczu w tej chwili (#317); `null` poza meczem
+   * trwającym i tam, gdzie zegar nie podaje minuty (przerwa, dogrywka, sport
+   * bez biegnącego zegara, sety).
+   */
+  function minuteFromClock(): EventMinute | null {
+    if (savedClock.status !== 'live' || hasSets) return null;
+    return matchClockMinute(savedClock, { periods, matchDuration, runningClock }, new Date());
+  }
+
+  /**
+   * Po zapisie, poprawce albo cofnięciu zdarzenia w meczu trwającym serwer
+   * zmienia wynik (#317): odświeżamy mecze i przepisujemy pola wyniku z
+   * serwera, także gdy organizator wpisał coś ręcznie i nie zapisał.
+   * Zwraca nowy wynik albo `null`, gdy mecz nie jest zapisany jako trwający.
+   */
+  async function syncScore(): Promise<{ home: number; away: number } | null> {
+    if (savedClock.status !== 'live' || hasSets) return null;
+    await queryClient.invalidateQueries({ queryKey: scheduleKeys.matches(tournamentId) });
+    const fresh = queryClient
+      .getQueriesData<AdminMatch[]>({ queryKey: scheduleKeys.matches(tournamentId) })
+      .flatMap(([, data]) => data ?? [])
+      .find((candidate) => candidate.id === match.id);
+    if (!fresh || fresh.homeScore === null || fresh.awayScore === null) return null;
+    setHomeScore(fresh.homeScore.toString());
+    setAwayScore(fresh.awayScore.toString());
+    setScoreEdited(false);
+    return { home: fresh.homeScore, away: fresh.awayScore };
+  }
 
   function showErrors(error: unknown, fallback: string) {
     setFieldErrors({});
@@ -291,6 +332,9 @@ export function MatchDialog({
     );
   }
 
+  // Wynik jedzie, gdy organizator go zmienił albo gdy mecz dopiero startuje lub wraca do zaplanowanych.
+  const sendsScore = scoreEdited || status === 'scheduled' || savedClock.status === 'scheduled';
+
   const save = useMutation({
     mutationFn: async () => {
       const result = await api.PATCH('/matches/{match}', {
@@ -298,7 +342,9 @@ export function MatchDialog({
         body: {
           status,
           // W sporcie z setami wynik niesie lista setów, a sety wygrane liczy serwer.
-          ...(hasSets ? { sets: status === 'scheduled' ? [] : setScores } : { homeScore: toNumber(homeScore), awayScore: toNumber(awayScore) }),
+          ...(hasSets
+            ? { sets: status === 'scheduled' ? [] : setScores }
+            : sendsScore && { homeScore: toNumber(homeScore), awayScore: toNumber(awayScore) }),
           // Liga wysyła ciało jak dotąd; karne należą tylko do drabinki.
           ...(knockout && !hasSets && penalties),
           kickoffAt: kickoffAt === '' ? null : toOffsetIso(kickoffAt),
@@ -345,6 +391,11 @@ export function MatchDialog({
     clearPairErrors();
   }
 
+  function changeScore(setValue: (value: string) => void, value: string) {
+    setScoreEdited(true);
+    changePair(setValue, value);
+  }
+
   function changeStatus(next: MatchStatus) {
     clearPairErrors();
     setStatus(next);
@@ -389,6 +440,8 @@ export function MatchDialog({
           homeScore={homeScore}
           awayScore={awayScore}
           scoreCheck={!hasSets}
+          minuteFromClock={minuteFromClock}
+          onScoreChanged={syncScore}
           onStart={() => start.mutate()}
           starting={start.isPending}
         />
@@ -421,8 +474,8 @@ export function MatchDialog({
                 <ScoreInputs
                   homeValue={homeScore}
                   awayValue={awayScore}
-                  onHomeChange={(value) => changePair(setHomeScore, value)}
-                  onAwayChange={(value) => changePair(setAwayScore, value)}
+                  onHomeChange={(value) => changeScore(setHomeScore, value)}
+                  onAwayChange={(value) => changeScore(setAwayScore, value)}
                   homeLabel={`Wynik ${home}`}
                   awayLabel={`Wynik ${away}`}
                   error={fieldErrors.homeScore}
