@@ -2817,24 +2817,28 @@ paths:
                         type: goal
                         typeLabel: Bramka
                         minute: 12
+                        addedTime: null
                       - id: 3
                         team: { id: 2, name: Sokoły Ursus, logoUrl: null }
                         player: { id: 5, name: Adam Zieliński }
                         type: goal
                         typeLabel: Bramka
                         minute: 34
+                        addedTime: null
                       - id: 2
                         team: { id: 2, name: Sokoły Ursus, logoUrl: null }
                         player: { id: 4, name: Tomasz Lis }
                         type: own_goal
                         typeLabel: Bramka samobójcza
                         minute: 58
+                        addedTime: null
                       - id: 4
                         team: { id: 2, name: Sokoły Ursus, logoUrl: null }
                         player: { id: 4, name: Tomasz Lis }
                         type: yellow_card
                         typeLabel: Żółta kartka
                         minute: 71
+                        addedTime: null
                 koszykowka:
                   summary: Mecz 1 ligi koszykówki, Żubry Wola – Rysie Mokotów 90:70 (fragment)
                   description: |
@@ -2849,30 +2853,35 @@ paths:
                         type: two_pointer
                         typeLabel: Rzut za 2
                         minute: 1
+                        addedTime: null
                       - id: 42
                         team: { id: 5, name: Rysie Mokotów, logoUrl: null }
                         player: { id: 13, name: Filip Sarna }
                         type: three_pointer
                         typeLabel: Rzut za 3
                         minute: 2
+                        addedTime: null
                       - id: 43
                         team: { id: 4, name: Żubry Wola, logoUrl: null }
                         player: { id: 11, name: Oskar Dąb }
                         type: foul
                         typeLabel: Faul
                         minute: 4
+                        addedTime: null
                       - id: 44
                         team: { id: 5, name: Rysie Mokotów, logoUrl: null }
                         player: { id: 14, name: Hubert Łoś }
                         type: free_throw
                         typeLabel: Rzut wolny
                         minute: 4
+                        addedTime: null
                       - id: 45
                         team: { id: 4, name: Żubry Wola, logoUrl: null }
                         player: { id: 12, name: Bruno Klon }
                         type: three_pointer
                         typeLabel: Rzut za 3
                         minute: null
+                        addedTime: null
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2884,9 +2893,14 @@ paths:
         daje `422` pod `match`; mecz `live` i `finished` przyjmuje zdarzenia
         zawsze, bez ostrzeżenia. Stan turnieju niczego nie blokuje.
 
-        Zdarzenie nie zmienia wyniku meczu ani tabeli: wynik wpisuje się osobno
-        (`PATCH /matches/{match}`), a API nie sprawdza zgodności liczby bramek
-        z wynikiem.
+        W meczu `live` zdarzenie-zdobycz podbija zapisany wynik meczu w tej samej
+        transakcji (#317): typ, którego `stat` to pierwszy wpis
+        `availableStats` sportu, o swoje `value` na korzyść drużyny zdarzenia,
+        a samobój o `value` na korzyść jej przeciwnika. Kartka, faul i sport
+        z setami wyniku nie ruszają. W meczu `finished` zdarzenie wyniku nie
+        zmienia, a tabela i drabinka liczą się dalej tylko z zakończonych
+        meczów. Seria karnych zostaje ręczna. Nowy wynik czytaj z `GET
+        /matches/{match}`; API nie sprawdza zgodności liczby bramek z wynikiem.
       requestBody:
         required: true
         content:
@@ -2911,6 +2925,7 @@ paths:
                   type: goal
                   typeLabel: Bramka
                   minute: 63
+                  addedTime: null
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2928,6 +2943,12 @@ paths:
         zdarzeniem tymi samymi regułami co przy dodawaniu, więc sama zmiana
         `teamId` na drużynę przeciwną przy zostawionym zawodniku daje `422`
         pod `playerId`. Zdarzenie meczu `scheduled` daje `422` pod `match`.
+
+        W meczu `live` poprawka przelicza wynik meczu w tej samej transakcji:
+        zmiana drużyny przenosi zdobycz, zmiana typu (bramka → kartka, bramka →
+        samobój) zdejmuje ją albo przenosi, zmiana samej minuty, doliczonego
+        czasu albo zawodnika wyniku nie rusza. Wynik nie schodzi poniżej 0.
+        W meczu `finished` poprawka wyniku nie zmienia.
       requestBody:
         required: true
         content:
@@ -2951,7 +2972,10 @@ paths:
     delete:
       tags: [MatchEvents]
       summary: Usuń zdarzenie meczu
-      description: Zdarzenie meczu `scheduled` daje `422` pod `match`; przy `live` i `finished` usunięcie przechodzi zawsze.
+      description: |
+        Zdarzenie meczu `scheduled` daje `422` pod `match`; przy `live` i `finished` usunięcie przechodzi zawsze.
+        W meczu `live` usunięcie zdarzenia-zdobyczy odejmuje jego wartość od
+        wyniku (nie poniżej 0), w `finished` wyniku nie zmienia.
       responses:
         '204': { description: Usunięto }
         '401': { $ref: '#/components/responses/Unauthenticated' }
@@ -4121,7 +4145,7 @@ paths:
                         periodStartedAt: '2026-09-27T10:55:00+00:00'
                         onBreak: false
                         scorers:
-                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [38], ownGoal: false }
+                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [{ minute: 38, addedTime: null }], ownGoal: false }
                       - id: 5
                         stageId: 1
                         groupId: null
@@ -4196,9 +4220,9 @@ paths:
                         periodStartedAt: '2026-09-20T16:25:00+00:00'
                         onBreak: false
                         scorers:
-                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 5, minutes: [2, 6], ownGoal: false }
-                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 4, minutes: [3, 8], ownGoal: false }
-                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 3, minutes: [5], ownGoal: false }
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 5, minutes: [{ minute: 2, addedTime: null }, { minute: 6, addedTime: null }], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 4, minutes: [{ minute: 3, addedTime: null }, { minute: 8, addedTime: null }], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 3, minutes: [{ minute: 5, addedTime: null }], ownGoal: false }
                           - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 4, minutes: [], ownGoal: false }
                 siatkowka:
                   summary: Turniej siatkarski — mecz trwający z niedokończonym setem
@@ -4479,8 +4503,8 @@ paths:
                         periodStartedAt: null
                         onBreak: false
                         scorers:
-                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [23], ownGoal: false }
-                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 4, name: Tomasz Lis }, value: 1, minutes: [67], ownGoal: false }
+                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [{ minute: 23, addedTime: null }], ownGoal: false }
+                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 4, name: Tomasz Lis }, value: 1, minutes: [{ minute: 67, addedTime: null }], ownGoal: false }
                           - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, value: 1, minutes: [], ownGoal: false }
                       - id: 2
                         stageId: 1
@@ -4504,8 +4528,8 @@ paths:
                         periodStartedAt: null
                         onBreak: false
                         scorers:
-                          - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [12, 58], ownGoal: false }
-                          - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [81], ownGoal: true }
+                          - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [{ minute: 12, addedTime: null }, { minute: 58, addedTime: null }], ownGoal: false }
+                          - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [{ minute: 81, addedTime: null }], ownGoal: true }
                       - id: 1
                         stageId: 1
                         groupId: null
@@ -4528,9 +4552,9 @@ paths:
                         periodStartedAt: null
                         onBreak: false
                         scorers:
-                          - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 1, minutes: [34], ownGoal: false }
-                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [50], ownGoal: false }
-                          - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, value: 1, minutes: [77], ownGoal: false }
+                          - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 1, minutes: [{ minute: 34, addedTime: null }], ownGoal: false }
+                          - { team: { id: 2, name: Sokoły Ursus, logoUrl: null }, player: { id: 5, name: Adam Zieliński }, value: 1, minutes: [{ minute: 50, addedTime: null }], ownGoal: false }
+                          - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, value: 1, minutes: [{ minute: 77, addedTime: null }], ownGoal: false }
                 koszykowka:
                   summary: Turniej koszykarski — sumy rzutów
                   description: |
@@ -5133,14 +5157,14 @@ paths:
                       periodStartedAt: null
                       onBreak: false
                       scorers:
-                        - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [12, 58], ownGoal: false }
-                        - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [81], ownGoal: true }
+                        - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, value: 2, minutes: [{ minute: 12, addedTime: null }, { minute: 58, addedTime: null }], ownGoal: false }
+                        - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, value: 1, minutes: [{ minute: 81, addedTime: null }], ownGoal: true }
                       events:
-                        - { id: 11, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, type: goal, typeLabel: Bramka, minute: 12, period: 1, scoreAfter: { home: 0, away: 1 } }
-                        - { id: 12, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, type: yellow_card, typeLabel: Żółta kartka, minute: 40, period: 1, scoreAfter: null }
-                        - { id: 13, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, type: goal, typeLabel: Bramka, minute: 58, period: 2, scoreAfter: { home: 0, away: 2 } }
-                        - { id: 14, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, type: own_goal, typeLabel: Bramka samobójcza, minute: 81, period: 2, scoreAfter: { home: 0, away: 3 } }
-                        - { id: 15, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, type: yellow_card, typeLabel: Żółta kartka, minute: null, period: null, scoreAfter: null }
+                        - { id: 11, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, type: goal, typeLabel: Bramka, minute: 12, addedTime: null, period: 1, scoreAfter: { home: 0, away: 1 } }
+                        - { id: 12, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, type: yellow_card, typeLabel: Żółta kartka, minute: 40, addedTime: null, period: 1, scoreAfter: null }
+                        - { id: 13, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 1, name: Marek Nowak }, type: goal, typeLabel: Bramka, minute: 58, addedTime: null, period: 2, scoreAfter: { home: 0, away: 2 } }
+                        - { id: 14, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, type: own_goal, typeLabel: Bramka samobójcza, minute: 81, addedTime: null, period: 2, scoreAfter: { home: 0, away: 3 } }
+                        - { id: 15, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, type: yellow_card, typeLabel: Żółta kartka, minute: null, addedTime: null, period: null, scoreAfter: null }
                       periods:
                         - { number: 1, label: 1. połowa, homeScore: 0, awayScore: 1 }
                         - { number: 2, label: 2. połowa, homeScore: 0, awayScore: 2 }
@@ -5174,37 +5198,37 @@ paths:
                       periodStartedAt: null
                       onBreak: false
                       scorers:
-                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 7, minutes: [2, 13, 24], ownGoal: false }
-                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 7, minutes: [3, 22, 35], ownGoal: false }
-                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, value: 7, minutes: [5, 18, 29, 38], ownGoal: false }
-                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, value: 8, minutes: [8, 19, 31, 39], ownGoal: false }
-                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 8, minutes: [12, 33, 40], ownGoal: false }
-                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 6, minutes: [16, 27, 37], ownGoal: false }
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, value: 7, minutes: [{ minute: 2, addedTime: null }, { minute: 13, addedTime: null }, { minute: 24, addedTime: null }], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, value: 7, minutes: [{ minute: 3, addedTime: null }, { minute: 22, addedTime: null }, { minute: 35, addedTime: null }], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, value: 7, minutes: [{ minute: 5, addedTime: null }, { minute: 18, addedTime: null }, { minute: 29, addedTime: null }, { minute: 38, addedTime: null }], ownGoal: false }
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, value: 8, minutes: [{ minute: 8, addedTime: null }, { minute: 19, addedTime: null }, { minute: 31, addedTime: null }, { minute: 39, addedTime: null }], ownGoal: false }
+                          - { team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, value: 8, minutes: [{ minute: 12, addedTime: null }, { minute: 33, addedTime: null }, { minute: 40, addedTime: null }], ownGoal: false }
+                          - { team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, value: 6, minutes: [{ minute: 16, addedTime: null }, { minute: 27, addedTime: null }, { minute: 37, addedTime: null }], ownGoal: false }
                       events:
-                          - { id: 101, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: two_pointer, typeLabel: Rzut za 2, minute: 2, period: 1, scoreAfter: { home: 2, away: 0 } }
-                          - { id: 102, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: three_pointer, typeLabel: Rzut za 3, minute: 3, period: 1, scoreAfter: { home: 2, away: 3 } }
-                          - { id: 103, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: foul, typeLabel: Faul, minute: 5, period: 1, scoreAfter: null }
-                          - { id: 104, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: free_throw, typeLabel: Rzut wolny, minute: 5, period: 1, scoreAfter: { home: 2, away: 4 } }
-                          - { id: 105, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: three_pointer, typeLabel: Rzut za 3, minute: 8, period: 1, scoreAfter: { home: 5, away: 4 } }
-                          - { id: 106, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: two_pointer, typeLabel: Rzut za 2, minute: 12, period: 2, scoreAfter: { home: 5, away: 6 } }
-                          - { id: 107, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: two_pointer, typeLabel: Rzut za 2, minute: 13, period: 2, scoreAfter: { home: 7, away: 6 } }
-                          - { id: 108, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: foul, typeLabel: Faul, minute: 15, period: 2, scoreAfter: null }
-                          - { id: 109, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: free_throw, typeLabel: Rzut wolny, minute: 16, period: 2, scoreAfter: { home: 8, away: 6 } }
-                          - { id: 110, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: three_pointer, typeLabel: Rzut za 3, minute: 18, period: 2, scoreAfter: { home: 8, away: 9 } }
-                          - { id: 111, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: two_pointer, typeLabel: Rzut za 2, minute: 19, period: 2, scoreAfter: { home: 10, away: 9 } }
-                          - { id: 112, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: two_pointer, typeLabel: Rzut za 2, minute: 22, period: 3, scoreAfter: { home: 10, away: 11 } }
-                          - { id: 113, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: three_pointer, typeLabel: Rzut za 3, minute: 24, period: 3, scoreAfter: { home: 13, away: 11 } }
-                          - { id: 114, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: foul, typeLabel: Faul, minute: 25, period: 3, scoreAfter: null }
-                          - { id: 115, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: two_pointer, typeLabel: Rzut za 2, minute: 27, period: 3, scoreAfter: { home: 15, away: 11 } }
-                          - { id: 116, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: two_pointer, typeLabel: Rzut za 2, minute: 29, period: 3, scoreAfter: { home: 15, away: 13 } }
-                          - { id: 117, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: free_throw, typeLabel: Rzut wolny, minute: 31, period: 4, scoreAfter: { home: 16, away: 13 } }
-                          - { id: 118, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: three_pointer, typeLabel: Rzut za 3, minute: 33, period: 4, scoreAfter: { home: 16, away: 16 } }
-                          - { id: 119, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: foul, typeLabel: Faul, minute: 34, period: 4, scoreAfter: null }
-                          - { id: 120, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: two_pointer, typeLabel: Rzut za 2, minute: 35, period: 4, scoreAfter: { home: 16, away: 18 } }
-                          - { id: 121, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: three_pointer, typeLabel: Rzut za 3, minute: 37, period: 4, scoreAfter: { home: 19, away: 18 } }
-                          - { id: 122, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: free_throw, typeLabel: Rzut wolny, minute: 38, period: 4, scoreAfter: { home: 19, away: 19 } }
-                          - { id: 123, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: two_pointer, typeLabel: Rzut za 2, minute: 39, period: 4, scoreAfter: { home: 21, away: 19 } }
-                          - { id: 124, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: three_pointer, typeLabel: Rzut za 3, minute: 40, period: 4, scoreAfter: { home: 21, away: 22 } }
+                          - { id: 101, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: two_pointer, typeLabel: Rzut za 2, minute: 2, addedTime: null, period: 1, scoreAfter: { home: 2, away: 0 } }
+                          - { id: 102, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: three_pointer, typeLabel: Rzut za 3, minute: 3, addedTime: null, period: 1, scoreAfter: { home: 2, away: 3 } }
+                          - { id: 103, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: foul, typeLabel: Faul, minute: 5, addedTime: null, period: 1, scoreAfter: null }
+                          - { id: 104, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: free_throw, typeLabel: Rzut wolny, minute: 5, addedTime: null, period: 1, scoreAfter: { home: 2, away: 4 } }
+                          - { id: 105, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: three_pointer, typeLabel: Rzut za 3, minute: 8, addedTime: null, period: 1, scoreAfter: { home: 5, away: 4 } }
+                          - { id: 106, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: two_pointer, typeLabel: Rzut za 2, minute: 12, addedTime: null, period: 2, scoreAfter: { home: 5, away: 6 } }
+                          - { id: 107, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: two_pointer, typeLabel: Rzut za 2, minute: 13, addedTime: null, period: 2, scoreAfter: { home: 7, away: 6 } }
+                          - { id: 108, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: foul, typeLabel: Faul, minute: 15, addedTime: null, period: 2, scoreAfter: null }
+                          - { id: 109, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: free_throw, typeLabel: Rzut wolny, minute: 16, addedTime: null, period: 2, scoreAfter: { home: 8, away: 6 } }
+                          - { id: 110, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: three_pointer, typeLabel: Rzut za 3, minute: 18, addedTime: null, period: 2, scoreAfter: { home: 8, away: 9 } }
+                          - { id: 111, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: two_pointer, typeLabel: Rzut za 2, minute: 19, addedTime: null, period: 2, scoreAfter: { home: 10, away: 9 } }
+                          - { id: 112, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: two_pointer, typeLabel: Rzut za 2, minute: 22, addedTime: null, period: 3, scoreAfter: { home: 10, away: 11 } }
+                          - { id: 113, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: three_pointer, typeLabel: Rzut za 3, minute: 24, addedTime: null, period: 3, scoreAfter: { home: 13, away: 11 } }
+                          - { id: 114, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: foul, typeLabel: Faul, minute: 25, addedTime: null, period: 3, scoreAfter: null }
+                          - { id: 115, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: two_pointer, typeLabel: Rzut za 2, minute: 27, addedTime: null, period: 3, scoreAfter: { home: 15, away: 11 } }
+                          - { id: 116, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: two_pointer, typeLabel: Rzut za 2, minute: 29, addedTime: null, period: 3, scoreAfter: { home: 15, away: 13 } }
+                          - { id: 117, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: free_throw, typeLabel: Rzut wolny, minute: 31, addedTime: null, period: 4, scoreAfter: { home: 16, away: 13 } }
+                          - { id: 118, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: three_pointer, typeLabel: Rzut za 3, minute: 33, addedTime: null, period: 4, scoreAfter: { home: 16, away: 16 } }
+                          - { id: 119, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 10, name: Kacper Lipa }, type: foul, typeLabel: Faul, minute: 34, addedTime: null, period: 4, scoreAfter: null }
+                          - { id: 120, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 13, name: Filip Sarna }, type: two_pointer, typeLabel: Rzut za 2, minute: 35, addedTime: null, period: 4, scoreAfter: { home: 16, away: 18 } }
+                          - { id: 121, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 11, name: Oskar Dąb }, type: three_pointer, typeLabel: Rzut za 3, minute: 37, addedTime: null, period: 4, scoreAfter: { home: 19, away: 18 } }
+                          - { id: 122, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 14, name: Hubert Łoś }, type: free_throw, typeLabel: Rzut wolny, minute: 38, addedTime: null, period: 4, scoreAfter: { home: 19, away: 19 } }
+                          - { id: 123, team: { id: 4, name: Żubry Wola, logoUrl: null }, player: { id: 12, name: Bruno Klon }, type: two_pointer, typeLabel: Rzut za 2, minute: 39, addedTime: null, period: 4, scoreAfter: { home: 21, away: 19 } }
+                          - { id: 124, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, player: { id: 15, name: Wiktor Bóbr }, type: three_pointer, typeLabel: Rzut za 3, minute: 40, addedTime: null, period: 4, scoreAfter: { home: 21, away: 22 } }
                       periods:
                           - { number: 1, label: 1. kwarta, homeScore: 5, awayScore: 4 }
                           - { number: 2, label: 2. kwarta, homeScore: 5, awayScore: 5 }
@@ -5274,12 +5298,12 @@ paths:
                       periodStartedAt: '2026-09-20T12:55:00+00:00'
                       onBreak: false
                       scorers:
-                        - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, value: 1, minutes: [15], ownGoal: false }
-                        - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, value: 1, minutes: [52], ownGoal: false }
+                        - { team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, value: 1, minutes: [{ minute: 15, addedTime: null }], ownGoal: false }
+                        - { team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, value: 1, minutes: [{ minute: 52, addedTime: null }], ownGoal: false }
                       events:
-                        - { id: 21, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, type: goal, typeLabel: Bramka, minute: 15, period: 1, scoreAfter: { home: 1, away: 0 } }
-                        - { id: 22, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, type: yellow_card, typeLabel: Żółta kartka, minute: 33, period: 1, scoreAfter: null }
-                        - { id: 23, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, type: goal, typeLabel: Bramka, minute: 52, period: 2, scoreAfter: { home: 1, away: 1 } }
+                        - { id: 21, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, player: { id: 3, name: Jakub Wrona }, type: goal, typeLabel: Bramka, minute: 15, addedTime: null, period: 1, scoreAfter: { home: 1, away: 0 } }
+                        - { id: 22, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 8, name: Paweł Mazur }, type: yellow_card, typeLabel: Żółta kartka, minute: 33, addedTime: null, period: 1, scoreAfter: null }
+                        - { id: 23, team: { id: 3, name: Orły Bielany, logoUrl: null }, player: { id: 7, name: Rafał Duda }, type: goal, typeLabel: Bramka, minute: 52, addedTime: null, period: 2, scoreAfter: { home: 1, away: 1 } }
                       periods:
                         - { number: 1, label: 1. połowa, homeScore: 1, awayScore: 0 }
                         - { number: 2, label: 2. połowa, homeScore: 0, awayScore: 1 }
@@ -6281,7 +6305,7 @@ components:
         Zdarzenie meczu: bramka, kartka, rzut, faul. Typy i ich etykiety
         pochodzą z `SportConfig.eventTypes` sportu turnieju. Samobój należy do
         drużyny zawodnika, który go strzelił.
-      required: [id, team, player, type, typeLabel, minute]
+      required: [id, team, player, type, typeLabel, minute, addedTime]
       properties:
         id: { type: integer, format: int64 }
         team: { $ref: '#/components/schemas/TeamSummary' }
@@ -6301,8 +6325,19 @@ components:
           minimum: 1
           maximum: 150
           description: |
-            Minuta meczu. Doliczony czas zapisuje się zwykłą liczbą
-            („90+3” → `93`). `null`, gdy minuty nie wpisano.
+            Minuta meczu bez doliczonego czasu. `null`, gdy minuty nie
+            wpisano. Zdarzenia sprzed wprowadzenia `addedTime` mają doliczony
+            czas zapisany zwykłą liczbą („90+3” → `93`) i tak zostają.
+        addedTime:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 30
+          description: |
+            Doliczony czas w minutach: `minute: 45, addedTime: 3` to „45+3′”.
+            `null` poza doliczonym czasem i przy zdarzeniu bez minuty. API
+            sprawdza tylko zakres, nie to, czy `minute` kończy część meczu.
+            Część zdarzenia (`PublicMatchEvent.period`) liczy się z samej
+            `minute`.
 
     MatchEventCreate:
       type: object
@@ -6318,6 +6353,7 @@ components:
           `playerId`;
         - zawodnik musi należeć do drużyny `teamId` i nie być usunięty,
           inaczej `422` pod `playerId`;
+        - `addedTime` bez `minute` daje `422` pod `addedTime`;
         - zdarzenie meczu `scheduled` daje `422` pod `match`.
       required: [type, teamId, playerId, minute]
       properties:
@@ -6325,6 +6361,11 @@ components:
         teamId: { type: integer, format: int64 }
         playerId: { type: [integer, 'null'], format: int64 }
         minute: { type: [integer, 'null'], minimum: 1, maximum: 150 }
+        addedTime:
+          type: [integer, 'null']
+          minimum: 1
+          maximum: 30
+          description: Doliczony czas (`MatchEvent.addedTime`). Pominięty znaczy `null`.
 
     MatchEventUpdate:
       type: object
@@ -6334,6 +6375,7 @@ components:
         teamId: { type: integer, format: int64 }
         playerId: { type: [integer, 'null'], format: int64 }
         minute: { type: [integer, 'null'], minimum: 1, maximum: 150 }
+        addedTime: { type: [integer, 'null'], minimum: 1, maximum: 30 }
 
     Venue:
       type: object
@@ -6784,6 +6826,14 @@ components:
                   końcu, a przy równości `player.id` rosnąco.
               items: { $ref: '#/components/schemas/PublicMatchScorer' }
 
+    EventMinute:
+      type: object
+      description: Minuta zdarzenia z doliczonym czasem, np. 45 z addedTime 3 to „45+3′”.
+      required: [minute, addedTime]
+      properties:
+        minute: { type: integer, minimum: 1, maximum: 150 }
+        addedTime: { type: [integer, 'null'], minimum: 1, maximum: 30 }
+
     PublicMatchScorer:
       type: object
       description: Jeden zawodnik w jednym meczu (`PublicMatch.scorers`).
@@ -6806,11 +6856,12 @@ components:
         minutes:
           type: array
           description: |
-            Minuty zdarzeń rosnąco. Zdarzenie bez minuty liczy się do
-            `value`, ale tu go nie ma. Gdy `minutes` ma tyle wpisów, ile
-            wynosi `value`, każde zdarzenie jest warte 1 i ma minutę — wtedy
-            ekran pokazuje minuty, w przeciwnym razie samą sumę.
-          items: { type: integer, minimum: 1, maximum: 150 }
+            Minuty zdarzeń rosnąco (`minute`, potem `addedTime`). Zdarzenie
+            bez minuty liczy się do `value`, ale tu go nie ma. Gdy `minutes`
+            ma tyle wpisów, ile wynosi `value`, każde zdarzenie jest warte 1
+            i ma minutę — wtedy ekran pokazuje minuty, w przeciwnym razie samą
+            sumę.
+          items: { $ref: '#/components/schemas/EventMinute' }
         ownGoal:
           type: boolean
           description: |
@@ -6869,9 +6920,9 @@ components:
               minimum: 1
               description: |
                 Numer części meczu według `Tournament.periods`:
-                `min(count, ceil(minute / minutes))`. Doliczony czas zapisany
-                zwykłą liczbą trafia do następnej części („45+2” → `47` →
-                2. połowa), a dogrywka do ostatniej. `null` przy zdarzeniu
+                `min(count, ceil(minute / minutes))`, liczony z samej
+                `minute` bez `addedTime` („45+3” → 1. połowa), a dogrywka
+                trafia do ostatniej części. `null` przy zdarzeniu
                 bez minuty i przy każdym zdarzeniu turnieju bez podziału
                 (`count: 1`).
             scoreAfter:
