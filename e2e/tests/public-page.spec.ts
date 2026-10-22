@@ -183,7 +183,7 @@ test('gol w meczu trwającym widać w relacji na stronie meczu, otwartej z wiers
   const match = matches.data!.data[0]!;
   const live = await api.PATCH('/matches/{match}', {
     params: { path: { match: match.id } },
-    body: { status: 'live', homeScore: 1, awayScore: 0 },
+    body: { status: 'live', homeScore: 0, awayScore: 0 },
   });
   expect(live.error, 'PATCH /matches live').toBeUndefined();
 
@@ -208,7 +208,7 @@ test('gol w meczu trwającym widać w relacji na stronie meczu, otwartej z wiers
 
   const band = page.getByRole('region', { name: `Mecz: ${home.team} – ${away.team}` });
   await expect(band.getByText('Na żywo')).toBeVisible();
-  await expect(band.getByRole('list', { name: `Strzelcy: ${home.team}` })).toHaveText(`${home.scorer} 12'`);
+  await expect(band.getByRole('list', { name: `Strzelcy: ${home.team}` })).toHaveText(`${home.scorer} 12′`);
 
   // Piłka gra domyślnie 2 × 45, więc gol z 12′ stoi w 1. połowie, z wynikiem po nim.
   const relation = page.getByRole('region', { name: 'Relacja na żywo' });
