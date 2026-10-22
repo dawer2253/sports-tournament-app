@@ -252,8 +252,9 @@ Stan meczu: zaplanowany, trwający, zakończony. Tylko mecz zakończony wpływa 
 tabelę i na statystyki.
 
 Wynik ma mecz trwający i zakończony; zaplanowany go nie ma. Wynik wpisuje
-organizer ręcznie, a przy sporcie bez remisów (`allowsDraw: false`) remis jest
-dozwolony w meczu trwającym, ale nie w zakończonym.
+organizer ręcznie, a w meczu trwającym zmieniają go też zdarzenia (patrz
+`MatchEvent`, ADR-0013). Przy sporcie bez remisów (`allowsDraw: false`) remis
+jest dozwolony w meczu trwającym, ale nie w zakończonym.
 
 **Mecz rozpoczęty** to mecz trwający albo zakończony, czyli każdy poza
 zaplanowanym. Wiąże drużyny, zawodników i obiekt, które w nim uczestniczą:
@@ -357,8 +358,11 @@ bez czasu, a organizator jej nie zmienia: set nie jest częścią meczu (patrz
 „tercja”, 4 → „kwarta”, inna liczba → „część” („1. połowa”, „3. kwarta”).
 
 Zdarzenie należy do części `min(liczba części, ⌈minuta / minuty części⌉)`.
-Doliczony czas zapisany zwykłą liczbą trafia więc do następnej części („45+2”
-→ `47` → 2. połowa), a dogrywka do ostatniej. Zdarzenie bez minuty
+Część liczy się z samej `minute`, bez **doliczonego czasu** (`addedTime`, osobne
+pole zdarzenia: `minute: 45, addedTime: 3` to „45+3′”), więc „45+3” zostaje
+w 1. połowie, a dogrywka trafia do ostatniej części. Stare zdarzenia z
+doliczonym czasem zapisanym zwykłą liczbą (`47`) trafiają do następnej części
+i zostają bez migracji. Zdarzenie bez minuty
 i każde zdarzenie turnieju bez podziału nie ma części. Część liczy się przy
 odczycie, więc zmiana ustawienia działa wstecz na wszystkie mecze turnieju.
 Z części korzysta relacja na stronie meczu (`PublicMatchDetail`).
@@ -396,8 +400,11 @@ po części, która trwa i nie jest ostatnią.
   koszykówka) tablica pokazuje część („3. kwarta”) zamiast minuty.
 
 **Minuta zegara to nie minuta zdarzenia**: zegar liczy przeglądarka z startu
-części, a minutę zdarzenia wpisuje organizator i zapisuje się bez zmian
-(„45+2” → `47`).
+części, a minutę zdarzenia zapisuje organizator. Panel podpowiada ją z zegara
+w chwili kliknięcia rodzaju zdarzenia (`matchClockMinute`, `{ minute,
+addedTime }`; `null` w przerwie, w zapomnianym meczu, w dogrywce, w sporcie bez
+biegnącego zegara i w sporcie z setami), a organizator może ją poprawić przed
+wyborem zawodnika.
 
 ## Set (set)
 
@@ -459,9 +466,12 @@ Pojedynczy fakt odnotowany w meczu: bramka, kartka, faul. Wiąże mecz, drużyn�
 zwykle zawodnika i minutę.
 
 Zbiór dopuszczalnych rodzajów zdarzeń wynika ze sportu turnieju. Zdarzenia są
-źródłem statystyk indywidualnych (na przykład klasyfikacji strzelców), a nie
-źródłem wyniku meczu: wynik jest wpisywany osobno, a liczba bramek ze zdarzeń
-nie musi się z nim zgadzać.
+źródłem statystyk indywidualnych (na przykład klasyfikacji strzelców). W meczu
+trwającym zdarzenie-zdobycz zmienia też zapisany wynik meczu o swoją wartość,
+w tej samej transakcji (samobój liczy się przeciwnikowi; kartka, faul i sport
+z setami wyniku nie ruszają); w meczu zakończonym zdarzenie wyniku nie zmienia
+(ADR-0013). Wynik pozostaje polem meczu, które organizator może poprawić
+ręcznie, więc liczba bramek ze zdarzeń nie musi się z nim zgadzać.
 
 Każdy rodzaj zdarzenia ma **wartość** (`value`): wkład jednego zdarzenia do
 statystyki, do której się wlicza. W piłce każde zdarzenie jest warte 1,
