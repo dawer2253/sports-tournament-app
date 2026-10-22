@@ -312,8 +312,8 @@ export const Strzelcy: Story = {
   render: () => <ScorerRows />,
   globals: { viewport: { value: 'desktop', isRotated: false } },
   play: async ({ canvasElement }) => {
-    await expect(scorerItems(canvasElement, 'Wilki Bemowo')).toEqual(["Marek Nowak 12' 58'", "Paweł Mazur 81' (sam.)"])
-    await expect(scorerItems(canvasElement, 'Sokoły Ursus')).toEqual(["Konstanty Brzęczyszczykiewicz 23' 88'", 'Tomasz Lis 1'])
+    await expect(scorerItems(canvasElement, 'Wilki Bemowo')).toEqual(["Marek Nowak 12′ 58′", "Paweł Mazur 81′ (sam.)"])
+    await expect(scorerItems(canvasElement, 'Sokoły Ursus')).toEqual(["Konstanty Brzęczyszczykiewicz 23′ 88′", 'Tomasz Lis 1'])
     await expect(scorerItems(canvasElement, 'Żubry Wola')).toEqual(['Oskar Dąb 31', 'Kacper Lipa 28', 'Bruno Klon 19'])
     await expect(scorerItems(canvasElement, 'Rysie Mokotów')).toEqual(['Hubert Łoś 24', 'Filip Sarna 22'])
     await expect(canvasElement.textContent).not.toContain('·')
