@@ -38,7 +38,30 @@ abstract class MatchEventRequest extends FormRequest
         return [
             $this->checkMatchStarted(...),
             $this->checkAgainstSportAndMatch(...),
+            $this->checkAddedTimeHasMinute(...),
         ];
+    }
+
+    /**
+     * Doliczony czas dopisuje się do minuty, więc bez minuty nie ma sensu.
+     * Sprawdzane po scaleniu: `PATCH` zerujący samą `minute` przy zapisanym
+     * doliczonym czasie daje `422` pod `addedTime`.
+     */
+    private function checkAddedTimeHasMinute(Validator $validator): void
+    {
+        if ($validator->errors()->hasAny(['minute', 'addedTime'])) {
+            return;
+        }
+
+        $data = $this->validated();
+        $current = $this->current();
+
+        $minute = array_key_exists('minute', $data) ? $data['minute'] : $current?->minute;
+        $addedTime = array_key_exists('addedTime', $data) ? $data['addedTime'] : $current?->added_time;
+
+        if ($addedTime !== null && $minute === null) {
+            $validator->errors()->add('addedTime', 'Doliczony czas wymaga minuty.');
+        }
     }
 
     /**
@@ -116,6 +139,7 @@ abstract class MatchEventRequest extends FormRequest
             'teamId' => ['integer:strict'],
             'playerId' => ['nullable', 'integer:strict'],
             'minute' => ['nullable', 'integer:strict', 'between:1,150'],
+            'addedTime' => ['nullable', 'integer:strict', 'between:1,30'],
         ];
     }
 
@@ -135,6 +159,8 @@ abstract class MatchEventRequest extends FormRequest
             'minute.present' => 'Podaj minutę albo wyślij null.',
             'minute.integer' => 'Minuta to liczba od 1 do 150.',
             'minute.between' => 'Minuta to liczba od 1 do 150.',
+            'addedTime.integer' => 'Doliczony czas to liczba od 1 do 30.',
+            'addedTime.between' => 'Doliczony czas to liczba od 1 do 30.',
         ];
     }
 }

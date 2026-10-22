@@ -66,7 +66,7 @@ final class MatchRelation
         /** @var MatchEvent $event */
         foreach ($match->events as $event) {
             $period = $periods->periodOf($event->minute);
-            $gain = self::gain($event, $match, $values);
+            $gain = MatchScorers::gain($event->type, $event->team_id, $match, $values);
 
             if ($period !== null) {
                 $periodScores[$period] ??= [0, 0];
@@ -105,25 +105,5 @@ final class MatchRelation
                 'awayScore' => $consistent ? $score[1] : null,
             ], array_keys($periodScores), $periodScores),
         ];
-    }
-
-    /**
-     * Zdobycz zdarzenia jako `[gospodarz, gość]`. Samobój podnosi wynik
-     * przeciwnika drużyny zdarzenia; typ spoza zdobyczy daje `[0, 0]`.
-     *
-     * @param  array<string, int>  $values
-     * @return array{int, int}
-     */
-    private static function gain(MatchEvent $event, GameMatch $match, array $values): array
-    {
-        $value = $values[$event->type] ?? 0;
-
-        if ($value === 0) {
-            return [0, 0];
-        }
-
-        $forHome = ($event->team_id === $match->home_team_id) !== MatchScorers::isOwnGoal($event->type);
-
-        return $forHome ? [$value, 0] : [0, $value];
     }
 }

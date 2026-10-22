@@ -97,6 +97,7 @@ function publicPageEvents(GameMatch $match, array $events): void
 /**
  * Strzelcy meczu z `/fixtures` albo `/results` jako
  * `[nazwisko, drużyna, value, minutes, ownGoal]`, w kolejności z odpowiedzi.
+ * Minuta bez doliczonego czasu to liczba, z doliczonym napis „45+3”.
  */
 function publicPageScorers(Tournament $tournament, string $path, GameMatch $match): array
 {
@@ -106,7 +107,9 @@ function publicPageScorers(Tournament $tournament, string $path, GameMatch $matc
     expect($found)->toHaveCount(1);
 
     return array_map(fn (array $row): array => [
-        $row['player']['name'], $row['team']['name'], $row['value'], $row['minutes'], $row['ownGoal'],
+        $row['player']['name'], $row['team']['name'], $row['value'],
+        array_map(fn (array $at): int|string => $at['addedTime'] === null ? $at['minute'] : "{$at['minute']}+{$at['addedTime']}", $row['minutes']),
+        $row['ownGoal'],
     ], $found[0]['scorers']);
 }
 
@@ -532,6 +535,18 @@ it('bramka bez minuty zwiększa value, ale nie trafia do minutes', function () {
 
     expect(publicPageScorers($tournament, '/results', $match))->toBe([
         ['Marek Nowak', 'Orły Bielany', 2, [23], false],
+    ]);
+});
+
+it('niesie doliczony czas w minutes i układa go po minucie', function () {
+    $tournament = publicPageTournament();
+    $scorer = publicPagePlayer($tournament, 'Orły Bielany', 'Marek Nowak');
+    $match = publicPageMatch($tournament, 1, ['status' => 'finished', 'home_score' => 3, 'away_score' => 0]);
+    publicPageEvents($match, [[$scorer, 'goal', 46], [$scorer, 'goal', 45]]);
+    $match->events()->where('minute', 45)->update(['added_time' => 3]);
+
+    expect(publicPageScorers($tournament, '/results', $match))->toBe([
+        ['Marek Nowak', 'Orły Bielany', 2, ['45+3', 46], false],
     ]);
 });
 

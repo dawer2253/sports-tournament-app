@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Dopuszczalne `type` to kody z `Sport.config.eventTypes` turnieju. Kolumna jest
  * tekstowa właśnie po to, żeby dodanie sportu pozostało seedem (decyzja #10).
  */
-#[Fillable(['match_id', 'team_id', 'player_id', 'type', 'minute', 'meta'])]
+#[Fillable(['match_id', 'team_id', 'player_id', 'type', 'minute', 'added_time', 'meta'])]
 class MatchEvent extends Model
 {
     use HasFactory;
@@ -31,6 +31,7 @@ class MatchEvent extends Model
     {
         return [
             'minute' => 'integer',
+            'added_time' => 'integer',
             'meta' => 'array',
         ];
     }
@@ -38,13 +39,14 @@ class MatchEvent extends Model
     /**
      * Kolejność osi meczu ze stanu kontraktu (#188, reguła 10): minuta
      * rosnąco, zdarzenia bez minuty na końcu (MySQL stawia `NULL` na
-     * początku rosnącego porządku, stąd osobny klucz), potem `id`. Tę samą
-     * kolejność mają panel i strona meczu.
+     * początku rosnącego porządku, stąd osobny klucz), potem doliczony czas
+     * (zdarzenie bez niego stoi przed „45+1”, bo `NULL` jest pierwszy), potem
+     * `id`. Tę samą kolejność mają panel i strona meczu.
      */
     #[Scope]
     protected function inTimelineOrder(Builder $query): void
     {
-        $query->orderByRaw('`minute` IS NULL')->orderBy('minute')->orderBy('id');
+        $query->orderByRaw('`minute` IS NULL')->orderBy('minute')->orderBy('added_time')->orderBy('id');
     }
 
     public function match(): BelongsTo
