@@ -115,7 +115,7 @@ it('sieje mecz trwający w 2. połowie, zaczętej przed seedowaniem, jak przykł
     $this->getJson('/api/v1/public/t/liga-osiedlowa-2026/fixtures')
         ->assertOk()
         ->assertJsonPath('data.0.livePeriod', 2)
-        ->assertJsonPath('data.0.scorers.0.minutes', [38]);
+        ->assertJsonPath('data.0.scorers.0.minutes', [['minute' => 38, 'addedTime' => null]]);
 });
 
 it('sieje zdarzenia meczowe zgodne z wynikami', function () {
