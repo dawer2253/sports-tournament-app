@@ -18,15 +18,15 @@ function scorersOn(status: 'live' | 'finished') {
 describe('Przegląd', () => {
   it('tablica meczu na żywo ma strzelców, z samobójem oznaczonym „(sam.)”; mecz zakończony ich nie ma', async () => {
     publicApi({
-      results: [finished(2, 3, { scorers: [scorer(2, 'home', 3, { player: { id: 3, name: 'Adam Bez' }, minutes: [12] })] })],
+      results: [finished(2, 3, { scorers: [scorer(2, 'home', 3, { player: { id: 3, name: 'Adam Bez' }, minutes: [{ minute: 12, addedTime: null }] })] })],
       fixtures: [
         match(1, 3, {
           status: 'live',
           homeScore: 2,
           awayScore: 0,
           scorers: [
-            scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, minutes: [5] }),
-            scorer(1, 'away', 2, { player: { id: 2, name: 'Jan Lis' }, minutes: [40], ownGoal: true }),
+            scorer(1, 'home', 1, { player: { id: 1, name: 'Marek Nowak' }, minutes: [{ minute: 5, addedTime: null }] }),
+            scorer(1, 'away', 2, { player: { id: 2, name: 'Jan Lis' }, minutes: [{ minute: 40, addedTime: null }], ownGoal: true }),
           ],
         }),
       ],
@@ -34,7 +34,7 @@ describe('Przegląd', () => {
     renderAt(`/t/${SLUG}`);
 
     await screen.findByRole('region', { name: 'Kolejka 3' });
-    expect(scorersOn('live')).toBe("Marek Nowak 5', Jan Lis 40' (sam.)");
+    expect(scorersOn('live')).toBe("Marek Nowak 5′, Jan Lis 40′ (sam.)");
     expect(scorersOn('finished')).toBeNull();
   });
 });

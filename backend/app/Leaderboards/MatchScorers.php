@@ -56,7 +56,7 @@ final class MatchScorers
     /**
      * Wiersze strzelców meczu z wczytanych `events` (`eagerLoad()`).
      *
-     * @return list<array{team: array{id: int, name: string, logoUrl: ?string}, player: array{id: int, name: string}, value: int, minutes: list<int>, ownGoal: bool}>
+     * @return list<array{team: array{id: int, name: string, logoUrl: ?string}, player: array{id: int, name: string}, value: int, minutes: list<array{minute: int, addedTime: ?int}>, ownGoal: bool}>
      */
     public static function of(GameMatch $match, Sport $sport): array
     {
@@ -86,12 +86,12 @@ final class MatchScorers
             $rows[$key]['value'] += $values[$event->type];
 
             if ($event->minute !== null) {
-                $rows[$key]['minutes'][] = $event->minute;
+                $rows[$key]['minutes'][] = ['minute' => $event->minute, 'addedTime' => $event->added_time];
             }
         }
 
         foreach ($rows as &$row) {
-            sort($row['minutes']);
+            usort($row['minutes'], fn (array $a, array $b): int => [$a['minute'], $a['addedTime'] ?? 0] <=> [$b['minute'], $b['addedTime'] ?? 0]);
         }
         unset($row);
 
@@ -119,6 +119,28 @@ final class MatchScorers
         return $values;
     }
 
+    /**
+     * Zdobycz zdarzenia jako `[gospodarz, gość]`. Samobój podnosi wynik
+     * przeciwnika drużyny zdarzenia; typ spoza zdobyczy daje `[0, 0]`.
+     * Z tej reguły korzystają relacja meczu i zmiana wyniku przy zapisie
+     * zdarzenia (#317).
+     *
+     * @param  array<string, int>  $values  `scoringValues()`
+     * @return array{int, int}
+     */
+    public static function gain(string $type, int $teamId, GameMatch $match, array $values): array
+    {
+        $value = $values[$type] ?? 0;
+
+        if ($value === 0) {
+            return [0, 0];
+        }
+
+        $forHome = ($teamId === $match->home_team_id) !== self::isOwnGoal($type);
+
+        return $forHome ? [$value, 0] : [0, $value];
+    }
+
     /** Czy typ to samobój, czyli zdobycz dla przeciwnika drużyny zdarzenia. */
     public static function isOwnGoal(string $type): bool
     {
@@ -130,11 +152,17 @@ final class MatchScorers
      * zawodnika, a samobój tego samego zawodnika w tej samej minucie stoi
      * po zwykłym wierszu — żeby kolejka była stała.
      *
-     * @param  array{player: array{id: int}, minutes: list<int>, ownGoal: bool}  $row
-     * @return array{bool, int, int, bool}
+     * @param  array{player: array{id: int}, minutes: list<array{minute: int, addedTime: ?int}>, ownGoal: bool}  $row
+     * @return array{bool, int, int, int, bool}
      */
     private static function sortKey(array $row): array
     {
-        return [$row['minutes'] === [], $row['minutes'][0] ?? 0, $row['player']['id'], $row['ownGoal']];
+        return [
+            $row['minutes'] === [],
+            $row['minutes'][0]['minute'] ?? 0,
+            $row['minutes'][0]['addedTime'] ?? 0,
+            $row['player']['id'],
+            $row['ownGoal'],
+        ];
     }
 }

@@ -1,3 +1,4 @@
+import { formatEventMinute } from './match-event-data'
 import type { MatchRowData, MatchScorer } from './match-row-data'
 
 // Układ strzelców pod wynikiem (#208): po której stronie stoi wiersz, w jakim
@@ -30,7 +31,7 @@ function toLine(scorer: MatchScorer): ScorerLine {
   return {
     key: `${scorer.player.id}${scorer.ownGoal ? '-own' : ''}`,
     name: scorer.player.name,
-    detail: hasMinuteFormat(scorer) ? scorer.minutes.map((minute) => `${minute}'`).join(' ') : String(scorer.value),
+    detail: hasMinuteFormat(scorer) ? scorer.minutes.map((at) => formatEventMinute(at)).join(' ') : String(scorer.value),
     ownGoal: scorer.ownGoal,
   }
 }

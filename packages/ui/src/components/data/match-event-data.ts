@@ -34,9 +34,9 @@ export type MatchEventRow = {
   typeLabel: string
   /** `null`, gdy minuty nie wpisano; takie zdarzenie stoi na końcu osi. */
   minute: number | null
+  /** Doliczony czas (#317): `minute: 45, addedTime: 3` to „45+3′”. Brak pola znaczy `null`. */
+  addedTime?: number | null
 }
 
-/** Minuta jak na osi meczu: „63′”, a bez minuty „—”. */
-export function formatEventMinute(minute: number | null): string {
-  return minute === null ? '—' : `${minute}′`
-}
+// Minuta zdarzenia (#317) mieszka w `lib/event-minute.ts`, żeby zegar meczu nie zależał od komponentów.
+export { eventMinuteOf, eventMinuteText, formatEventMinute, parseEventMinute, type EventMinute } from '../../lib/event-minute'

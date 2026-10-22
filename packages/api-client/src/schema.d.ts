@@ -3311,9 +3311,14 @@ export interface paths {
          *     daje `422` pod `match`; mecz `live` i `finished` przyjmuje zdarzenia
          *     zawsze, bez ostrzeżenia. Stan turnieju niczego nie blokuje.
          *
-         *     Zdarzenie nie zmienia wyniku meczu ani tabeli: wynik wpisuje się osobno
-         *     (`PATCH /matches/{match}`), a API nie sprawdza zgodności liczby bramek
-         *     z wynikiem.
+         *     W meczu `live` zdarzenie-zdobycz podbija zapisany wynik meczu w tej samej
+         *     transakcji (#317): typ, którego `stat` to pierwszy wpis
+         *     `availableStats` sportu, o swoje `value` na korzyść drużyny zdarzenia,
+         *     a samobój o `value` na korzyść jej przeciwnika. Kartka, faul i sport
+         *     z setami wyniku nie ruszają. W meczu `finished` zdarzenie wyniku nie
+         *     zmienia, a tabela i drabinka liczą się dalej tylko z zakończonych
+         *     meczów. Seria karnych zostaje ręczna. Nowy wynik czytaj z `GET
+         *     /matches/{match}`; API nie sprawdza zgodności liczby bramek z wynikiem.
          */
         post: {
             parameters: {
@@ -3359,7 +3364,8 @@ export interface paths {
                          *         },
                          *         "type": "goal",
                          *         "typeLabel": "Bramka",
-                         *         "minute": 63
+                         *         "minute": 63,
+                         *         "addedTime": null
                          *       }
                          *     }
                          */
@@ -3395,6 +3401,8 @@ export interface paths {
         /**
          * Usuń zdarzenie meczu
          * @description Zdarzenie meczu `scheduled` daje `422` pod `match`; przy `live` i `finished` usunięcie przechodzi zawsze.
+         *     W meczu `live` usunięcie zdarzenia-zdobyczy odejmuje jego wartość od
+         *     wyniku (nie poniżej 0), w `finished` wyniku nie zmienia.
          */
         delete: {
             parameters: {
@@ -3447,6 +3455,12 @@ export interface paths {
          *     zdarzeniem tymi samymi regułami co przy dodawaniu, więc sama zmiana
          *     `teamId` na drużynę przeciwną przy zostawionym zawodniku daje `422`
          *     pod `playerId`. Zdarzenie meczu `scheduled` daje `422` pod `match`.
+         *
+         *     W meczu `live` poprawka przelicza wynik meczu w tej samej transakcji:
+         *     zmiana drużyny przenosi zdobycz, zmiana typu (bramka → kartka, bramka →
+         *     samobój) zdejmuje ją albo przenosi, zmiana samej minuty, doliczonego
+         *     czasu albo zawodnika wyniku nie rusza. Wynik nie schodzi poniżej 0.
+         *     W meczu `finished` poprawka wyniku nie zmienia.
          */
         patch: {
             parameters: {
@@ -5107,10 +5121,19 @@ export interface components {
             /** @description Etykieta typu z konfiguracji sportu, np. „Rzut za 3”. */
             typeLabel: string;
             /**
-             * @description Minuta meczu. Doliczony czas zapisuje się zwykłą liczbą
-             *     („90+3” → `93`). `null`, gdy minuty nie wpisano.
+             * @description Minuta meczu bez doliczonego czasu. `null`, gdy minuty nie
+             *     wpisano. Zdarzenia sprzed wprowadzenia `addedTime` mają doliczony
+             *     czas zapisany zwykłą liczbą („90+3” → `93`) i tak zostają.
              */
             minute: number | null;
+            /**
+             * @description Doliczony czas w minutach: `minute: 45, addedTime: 3` to „45+3′”.
+             *     `null` poza doliczonym czasem i przy zdarzeniu bez minuty. API
+             *     sprawdza tylko zakres, nie to, czy `minute` kończy część meczu.
+             *     Część zdarzenia (`PublicMatchEvent.period`) liczy się z samej
+             *     `minute`.
+             */
+            addedTime: number | null;
         };
         /**
          * @description Reguły zapisu, sprawdzane także przy `PATCH` po scaleniu z zapisanym
@@ -5124,6 +5147,7 @@ export interface components {
          *       `playerId`;
          *     - zawodnik musi należeć do drużyny `teamId` i nie być usunięty,
          *       inaczej `422` pod `playerId`;
+         *     - `addedTime` bez `minute` daje `422` pod `addedTime`;
          *     - zdarzenie meczu `scheduled` daje `422` pod `match`.
          */
         MatchEventCreate: {
@@ -5133,6 +5157,8 @@ export interface components {
             /** Format: int64 */
             playerId: number | null;
             minute: number | null;
+            /** @description Doliczony czas (`MatchEvent.addedTime`). Pominięty znaczy `null`. */
+            addedTime?: number | null;
         };
         /** @description Częściowa zmiana zdarzenia. Pole nieobecne zostaje bez zmian; reguły jak w `MatchEventCreate`, po scaleniu. */
         MatchEventUpdate: {
@@ -5142,6 +5168,7 @@ export interface components {
             /** Format: int64 */
             playerId?: number | null;
             minute?: number | null;
+            addedTime?: number | null;
         };
         Venue: {
             /** Format: int64 */
@@ -5548,6 +5575,11 @@ export interface components {
              */
             scorers: components["schemas"]["PublicMatchScorer"][];
         };
+        /** @description Minuta zdarzenia z doliczonym czasem, np. 45 z addedTime 3 to „45+3′”. */
+        EventMinute: {
+            minute: number;
+            addedTime: number | null;
+        };
         /** @description Jeden zawodnik w jednym meczu (`PublicMatch.scorers`). */
         PublicMatchScorer: {
             /**
@@ -5563,12 +5595,13 @@ export interface components {
              */
             value: number;
             /**
-             * @description Minuty zdarzeń rosnąco. Zdarzenie bez minuty liczy się do
-             *     `value`, ale tu go nie ma. Gdy `minutes` ma tyle wpisów, ile
-             *     wynosi `value`, każde zdarzenie jest warte 1 i ma minutę — wtedy
-             *     ekran pokazuje minuty, w przeciwnym razie samą sumę.
+             * @description Minuty zdarzeń rosnąco (`minute`, potem `addedTime`). Zdarzenie
+             *     bez minuty liczy się do `value`, ale tu go nie ma. Gdy `minutes`
+             *     ma tyle wpisów, ile wynosi `value`, każde zdarzenie jest warte 1
+             *     i ma minutę — wtedy ekran pokazuje minuty, w przeciwnym razie samą
+             *     sumę.
              */
-            minutes: number[];
+            minutes: components["schemas"]["EventMinute"][];
             /**
              * @description Samobój. Tworzy osobny wiersz, nawet gdy ten sam zawodnik strzelił
              *     w meczu też do bramki przeciwnika.
@@ -5613,9 +5646,9 @@ export interface components {
         PublicMatchEvent: components["schemas"]["MatchEvent"] & {
             /**
              * @description Numer części meczu według `Tournament.periods`:
-             *     `min(count, ceil(minute / minutes))`. Doliczony czas zapisany
-             *     zwykłą liczbą trafia do następnej części („45+2” → `47` →
-             *     2. połowa), a dogrywka do ostatniej. `null` przy zdarzeniu
+             *     `min(count, ceil(minute / minutes))`, liczony z samej
+             *     `minute` bez `addedTime` („45+3” → 1. połowa), a dogrywka
+             *     trafia do ostatniej części. `null` przy zdarzeniu
              *     bez minuty i przy każdym zdarzeniu turnieju bez podziału
              *     (`count: 1`).
              */

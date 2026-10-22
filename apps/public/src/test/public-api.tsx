@@ -140,7 +140,7 @@ export function scorer(
     team: side === 'home' ? homeTeam! : awayTeam!,
     player: { id: playerId, name: `Zawodnik ${playerId}` },
     value: 1,
-    minutes: [10 + playerId],
+    minutes: [{ minute: 10 + playerId, addedTime: null }],
     ownGoal: false,
     ...overrides,
   };
@@ -172,6 +172,7 @@ export function matchEvent(
     type: 'yellow_card',
     typeLabel: 'Żółta kartka',
     minute: id * 10,
+    addedTime: null,
     period: null,
     scoreAfter: null,
     ...overrides,

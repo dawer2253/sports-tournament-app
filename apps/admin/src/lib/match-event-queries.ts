@@ -6,8 +6,10 @@ import { useSports } from './use-sports';
 
 /**
  * Zdarzenia meczu leżą pod własnym prefiksem, a nie pod `['tournament', id]`:
- * zapis zdarzenia nie zmienia wyniku ani tabeli (#188, reguła 11), więc nie ma
- * powodu odświeżać przy nim terminarza.
+ * zapis zdarzenia nie zmienia tabeli ani meczów zakończonych, więc samo
+ * unieważnienie listy zdarzeń wystarcza. W meczu trwającym zdarzenie-zdobycz
+ * zmienia też wynik (#317, ADR-0013), dlatego okno meczu po zapisie odświeża
+ * dodatkowo mecze turnieju (`MatchDialog.syncScore`).
  */
 export const matchEventKeys = {
   list: (matchId: number) => ['match', matchId, 'events'] as const,

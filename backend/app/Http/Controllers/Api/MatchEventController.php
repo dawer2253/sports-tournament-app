@@ -6,17 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\MatchEvents\StoreMatchEventRequest;
 use App\Http\Requests\MatchEvents\UpdateMatchEventRequest;
 use App\Http\Resources\MatchEventResource;
+use App\Matches\LiveScore;
 use App\Models\GameMatch;
 use App\Models\MatchEvent;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Zdarzenia meczu (#188): osobny zasób, płaski jak zawodnicy. Zdarzenie nie
- * zmienia wyniku meczu ani tabeli — wynik wpisuje się osobno, a API nie
- * sprawdza zgodności liczby bramek z wynikiem (reguła 11).
+ * Zdarzenia meczu (#188): osobny zasób, płaski jak zawodnicy. W meczu
+ * trwającym zdarzenie-zdobycz zmienia zapisany wynik meczu o swoją wartość,
+ * w jednej transakcji z zapisem zdarzenia (#317, ADR-0013); samobój liczy się
+ * przeciwnikowi, kartka i faul wyniku nie ruszają. W meczu zakończonym
+ * zdarzenie wyniku nie zmienia, a API nie sprawdza zgodności liczby bramek
+ * z wynikiem (reguła 11 z #188). Wynik poprawia się też ręcznie.
  */
 class MatchEventController extends Controller
 {
@@ -42,12 +47,19 @@ class MatchEventController extends Controller
     {
         $data = $request->validated();
 
-        $event = $match->events()->create([
-            'type' => $data['type'],
-            'team_id' => $data['teamId'],
-            'player_id' => $data['playerId'],
-            'minute' => $data['minute'],
-        ]);
+        $event = DB::transaction(function () use ($match, $data): MatchEvent {
+            $event = $match->events()->create([
+                'type' => $data['type'],
+                'team_id' => $data['teamId'],
+                'player_id' => $data['playerId'],
+                'minute' => $data['minute'],
+                'added_time' => $data['addedTime'] ?? null,
+            ]);
+
+            LiveScore::shift($match, LiveScore::gainOf($event), [0, 0]);
+
+            return $event;
+        });
 
         return $this->respond($event, Response::HTTP_CREATED);
     }
@@ -56,13 +68,18 @@ class MatchEventController extends Controller
     {
         $changes = [];
 
-        foreach (['type' => 'type', 'teamId' => 'team_id', 'playerId' => 'player_id', 'minute' => 'minute'] as $field => $column) {
+        foreach (['type' => 'type', 'teamId' => 'team_id', 'playerId' => 'player_id', 'minute' => 'minute', 'addedTime' => 'added_time'] as $field => $column) {
             if (array_key_exists($field, $request->validated())) {
                 $changes[$column] = $request->validated()[$field];
             }
         }
 
-        $event->update($changes);
+        DB::transaction(function () use ($event, $changes): void {
+            $before = LiveScore::gainOf($event);
+            $event->update($changes);
+
+            LiveScore::shift($event->match, LiveScore::gainOf($event), $before);
+        });
 
         return $this->respond($event);
     }
@@ -77,7 +94,12 @@ class MatchEventController extends Controller
             throw ValidationException::withMessages(['match' => MatchEvent::NOT_STARTED_MESSAGE]);
         }
 
-        $event->delete();
+        DB::transaction(function () use ($event): void {
+            $gain = LiveScore::gainOf($event);
+            $event->delete();
+
+            LiveScore::shift($event->match, [0, 0], $gain);
+        });
 
         return response()->noContent();
     }

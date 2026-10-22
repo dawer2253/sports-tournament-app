@@ -132,8 +132,8 @@ it('usuwa zdarzenie', function () {
     expect(MatchEvent::find($event->id))->toBeNull();
 });
 
-it('nie zmienia wyniku meczu przy zapisie zdarzenia', function () {
-    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchEventSetup();
+it('nie zmienia wyniku meczu zakończonego przy zapisie zdarzenia', function () {
+    ['match' => $match, 'home' => $home, 'homePlayer' => $player] = matchEventSetup('finished');
 
     matchEventPost($match, ['type' => 'goal', 'teamId' => $home->id, 'playerId' => $player->id, 'minute' => 5])
         ->assertValidResponse(201);

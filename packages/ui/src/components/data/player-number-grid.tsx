@@ -44,7 +44,6 @@ export function PlayerNumberGrid({
   className,
 }: PlayerNumberGridProps) {
   const minuteId = useId()
-  const hintId = useId()
 
   return (
     <div className={cn('grid gap-2', className)}>
@@ -59,16 +58,13 @@ export function PlayerNumberGrid({
         <Input
           id={minuteId}
           inputMode="numeric"
-          aria-describedby={hintId}
-          className="h-8 w-14"
+          className="h-8 w-16"
           value={minute}
           disabled={disabled}
-          onChange={(event) => onMinuteChange(event.target.value.replace(/\D/g, '').slice(0, 3))}
+          // „67” albo „45+3” (minuta i doliczony czas, #317).
+          onChange={(event) => onMinuteChange(event.target.value.replace(/[^\d+]/g, '').slice(0, 6))}
         />
       </div>
-      <p id={hintId} className="text-right text-xs text-muted-foreground">
-        Doliczony czas „90+3” wpisz jako 93.
-      </p>
       <ul className="grid grid-cols-3 gap-1.5">
         {players.map((player) => (
           <li key={player.id}>

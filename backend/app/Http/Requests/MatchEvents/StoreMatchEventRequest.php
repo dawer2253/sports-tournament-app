@@ -21,6 +21,7 @@ class StoreMatchEventRequest extends MatchEventRequest
             'teamId' => ['required', ...$rules['teamId']],
             'playerId' => ['present', ...$rules['playerId']],
             'minute' => ['present', ...$rules['minute']],
+            'addedTime' => ['sometimes', ...$rules['addedTime']],
         ];
     }
 

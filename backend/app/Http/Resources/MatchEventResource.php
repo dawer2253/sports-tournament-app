@@ -36,6 +36,7 @@ class MatchEventResource extends JsonResource
             'type' => $this->type,
             'typeLabel' => $this->sport->eventType($this->type)['label'] ?? $this->type,
             'minute' => $this->minute,
+            'addedTime' => $this->added_time,
         ];
     }
 }

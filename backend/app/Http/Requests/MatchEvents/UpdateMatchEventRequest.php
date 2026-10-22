@@ -22,6 +22,7 @@ class UpdateMatchEventRequest extends MatchEventRequest
             'teamId' => ['sometimes', 'required', ...$rules['teamId']],
             'playerId' => ['sometimes', ...$rules['playerId']],
             'minute' => ['sometimes', ...$rules['minute']],
+            'addedTime' => ['sometimes', ...$rules['addedTime']],
         ];
     }
 

@@ -5,6 +5,7 @@
  * „Match period (część meczu)”.
  */
 
+import { formatEventMinute, type EventMinute } from './event-minute'
 import { currentSetNumber, type SetFormat, type SetScore } from './sets'
 
 /** Podział meczu na części (`MatchPeriods` z kontraktu). `minutes` jest `null` tylko przy jednej części. */
@@ -18,6 +19,11 @@ export type MatchClockState = {
   onBreak: boolean
   /** Wyniki setów (`Match.sets`); w sporcie z setami z nich wychodzi numer bieżącego seta (#302). */
   sets?: readonly SetScore[] | null
+  /**
+   * Stan meczu, gdy wołający go zna (panel). `matchClockMinute` zwraca wtedy
+   * `null` poza meczem trwającym: zaplanowany i zakończony nie mają zegara (#317).
+   */
+  status?: 'scheduled' | 'live' | 'finished'
 }
 
 /** Ustawienia turnieju, z których liczy się zegar (`PublicTournament.periods`, `matchDuration`, `runningClock`, `setFormat`). */
@@ -36,9 +42,6 @@ export const MATCH_CLOCK_TICK_MS = 30_000
 
 /** Ile minut ponad regulaminowy koniec części zegar jeszcze stoi, zanim zostanie samo „Na żywo”. */
 const FORGOTTEN_AFTER = 30
-
-/** Znak minuty (U+2032), ten sam co w relacji meczu. */
-const PRIME = '′'
 
 /** Rzeczownik części według ich liczby, nie sportu: [mianownik, dopełniacz]. Inna liczba to „część”. */
 const NOUNS: Record<number, [string, string]> = {
@@ -86,14 +89,37 @@ export function matchClock(state: MatchClockState, settings: MatchClockSettings,
   if (onBreak) return 'Przerwa'
   if (periodStartedAt === null) return null
   if (!settings.runningClock) return periods.count > 1 ? periodLabel(livePeriod, periods.count) : null
+  const at = runningMinute(state, settings, now)
+  return at === null ? null : formatEventMinute(at)
+}
 
+/**
+ * Minuta bieżącego zdarzenia z zegara jako liczby (#317): `{ minute: 67,
+ * addedTime: null }` albo `{ minute: 45, addedTime: 3 }` dla „45+3′”. Z tego
+ * samego stanu co `matchClock`, ale `null` wszędzie tam, gdzie zegar nie
+ * podaje minuty: przerwa, zapomniany mecz, dogrywka, sport bez biegnącego
+ * zegara (kosz), sport z setami, mecz zakończony (gdy stan niesie `status`)
+ * i mecz po powrocie z zakończonego (bez startu części).
+ */
+export function matchClockMinute(state: MatchClockState, settings: MatchClockSettings, now: Date): EventMinute | null {
+  const { livePeriod, onBreak, status } = state
+  if (status !== undefined && status !== 'live') return null
+  if (livePeriod === null || settings.setFormat || onBreak) return null
+  if (livePeriod > settings.periods.count || !settings.runningClock) return null
+  return runningMinute(state, settings, now)
+}
+
+/** Minuta biegnącego zegara: część ma już start, a wołający wykluczył przerwę, dogrywkę i sporty bez minuty. */
+function runningMinute(state: MatchClockState, settings: MatchClockSettings, now: Date): EventMinute | null {
+  const { livePeriod, periodStartedAt } = state
+  if (livePeriod === null || periodStartedAt === null) return null
   const started = Date.parse(periodStartedAt)
   if (Number.isNaN(started)) return null
   const elapsed = Math.max(0, Math.floor((now.getTime() - started) / 60_000))
-  const length = periods.minutes ?? settings.matchDuration
+  const length = settings.periods.minutes ?? settings.matchDuration
   const end = livePeriod * length
   const minute = (livePeriod - 1) * length + 1 + elapsed
-  if (minute <= end) return `${minute}${PRIME}`
+  if (minute <= end) return { minute, addedTime: null }
   const added = minute - end
-  return added > FORGOTTEN_AFTER ? null : `${end}+${added}${PRIME}`
+  return added > FORGOTTEN_AFTER ? null : { minute: end, addedTime: added }
 }

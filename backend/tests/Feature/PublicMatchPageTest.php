@@ -161,6 +161,20 @@ it('przypisuje część według ustawienia turnieju', function (string $sport, a
     '2 × 20 w koszu' => ['basketball', [2, 20], [[20, 1], [25, 2], [null, null]]],
 ]);
 
+it('doliczony czas zostaje w części z minuty: 45+3 to 1. połowa, 90+4 to 2.', function () {
+    $tournament = matchPageTournament();
+    $match = matchPageMatch($tournament);
+    $player = matchPagePlayer($tournament, 'Orły Bielany', 'Marek Nowak');
+    $events = matchPageEvents($match, [[$player, 'yellow_card', 45], [$player, 'yellow_card', 90]]);
+    $events[0]->update(['added_time' => 3]);
+    $events[1]->update(['added_time' => 4]);
+
+    $page = matchPage($tournament, $match)['events'];
+
+    expect(array_column($page, 'period'))->toBe([1, 2])
+        ->and(array_column($page, 'addedTime'))->toBe([3, 4]);
+});
+
 it('etykieta części wynika z liczby części, nie ze sportu', function (string $sport, array $periods, string $label) {
     $tournament = matchPageTournament($sport, $periods);
     $match = matchPageMatch($tournament);

@@ -3,6 +3,9 @@ import { isValidationError, type AdminMatch, type MatchEvent, type SportEventTyp
 import {
   Button,
   ConfirmDeleteDialog,
+  eventMinuteOf,
+  eventMinuteText,
+  formatEventMinute,
   FormDialog,
   Label,
   Select,
@@ -16,6 +19,7 @@ import { Trash2 } from 'lucide-react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { api } from '../lib/api';
 import { apiErrorMessage, applyApiError } from '../lib/form-errors';
+import { BAD_MINUTE, MinuteError, minuteFromField } from '../lib/match-event-minute';
 import { matchEventKeys } from '../lib/match-event-queries';
 import { usePlayers } from '../lib/team-queries';
 import { TextField } from './text-field';
@@ -24,7 +28,8 @@ const SAVE_FAILED = 'Nie udało się zapisać zdarzenia. Spróbuj ponownie.';
 const DELETE_FAILED = 'Nie udało się usunąć zdarzenia. Spróbuj ponownie.';
 
 /** Pola, których `422` umiemy posadzić przy polu; reszta (np. `match`) idzie nad przyciski. */
-const FIELDS = ['type', 'teamId', 'playerId', 'minute'] as const;
+const FIELDS = ['type', 'teamId', 'playerId', 'minute', 'addedTime'] as const;
+
 
 /** Wartość „bez zawodnika” w `Select`; pusty napis `Select` traktuje jak brak wyboru. */
 const NO_PLAYER = 'none';
@@ -33,6 +38,8 @@ export interface MatchEventDialogProps {
   match: AdminMatch;
   event: MatchEvent;
   types: SportEventType[];
+  /** Wołane po zapisie, poprawce i usunięciu: okno meczu przepisuje wynik z serwera (#317). */
+  onScoreChanged: () => Promise<unknown>;
   onClose: () => void;
 }
 
@@ -42,29 +49,31 @@ export interface MatchEventDialogProps {
  * Wysyłamy wszystkie cztery pola, więc formularz mówi dokładnie to, co widać.
  * W tym samym oknie „Usuń zdarzenie” z potwierdzeniem.
  */
-export function MatchEventDialog({ match, event, types, onClose }: MatchEventDialogProps) {
+export function MatchEventDialog({ match, event, types, onScoreChanged, onClose }: MatchEventDialogProps) {
   const queryClient = useQueryClient();
   const [type, setType] = useState(event.type);
   const [teamId, setTeamId] = useState(event.team.id);
   const [playerId, setPlayerId] = useState(event.player ? String(event.player.id) : NO_PLAYER);
-  const [minute, setMinute] = useState(event.minute?.toString() ?? '');
+  const [minute, setMinute] = useState(eventMinuteText(eventMinuteOf(event)));
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<(typeof FIELDS)[number], string>>>({});
   const [formError, setFormError] = useState<string>();
   const [confirming, setConfirming] = useState(false);
   const players = usePlayers(teamId);
   const teams = [match.homeTeam, match.awayTeam].filter((team) => team !== null);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: matchEventKeys.list(match.id) });
+  const invalidate = () => Promise.all([queryClient.invalidateQueries({ queryKey: matchEventKeys.list(match.id) }), onScoreChanged()]);
 
   const save = useMutation({
     mutationFn: async () => {
+      const at = minuteFromField(minute);
       const result = await api.PATCH('/match-events/{event}', {
         params: { path: { event: event.id } },
         body: {
           type,
           teamId,
           playerId: playerId === NO_PLAYER ? null : Number(playerId),
-          minute: minute === '' ? null : Number(minute),
+          minute: at.minute,
+          addedTime: at.addedTime,
         },
       });
       if (result.data) return result.data.data;
@@ -78,6 +87,10 @@ export function MatchEventDialog({ match, event, types, onClose }: MatchEventDia
     onError: (error) => {
       setFieldErrors({});
       setFormError(undefined);
+      if (error instanceof MinuteError) {
+        setFieldErrors({ minute: BAD_MINUTE });
+        return;
+      }
       applyApiError(
         error,
         FIELDS,
@@ -109,7 +122,7 @@ export function MatchEventDialog({ match, event, types, onClose }: MatchEventDia
     save.mutate();
   }
 
-  const minuteLabel = event.minute === null ? '' : `${event.minute}′ `;
+  const minuteLabel = event.minute === null ? '' : `${formatEventMinute(eventMinuteOf(event))} `;
 
   return (
     <>
@@ -186,10 +199,10 @@ export function MatchEventDialog({ match, event, types, onClose }: MatchEventDia
               value={minute}
               error={fieldErrors.minute}
               disabled={save.isPending}
-              onChange={(change) => setMinute(change.target.value.replace(/\D/g, '').slice(0, 3))}
+              onChange={(change) => setMinute(change.target.value.replace(/[^\d+]/g, '').slice(0, 6))}
             />
           </div>
-          <p className="text-xs text-muted-foreground">Puste pole minuty to zdarzenie bez minuty. Doliczony czas „90+3” wpisz jako 93.</p>
+          <p className="text-xs text-muted-foreground">Puste pole minuty to zdarzenie bez minuty. Doliczony czas wpisz jako „90+3”.</p>
 
           <Button
             type="button"
