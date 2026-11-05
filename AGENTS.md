@@ -26,6 +26,7 @@ npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 | `packages/ui/` | design system + ekrany w Storybooku ([własny `AGENTS.md`](packages/ui/AGENTS.md)) |
 | `apps/admin/` | panel organizera (logowanie, port 5173) ([własny `AGENTS.md`](apps/admin/AGENTS.md)) |
 | `apps/public/` | strona turnieju (bez logowania, port 5174) |
+| `apps/mcp-server/` | lokalny serwer MCP (stdio) do nagrania demo w Claude Desktop; woła REST z kontraktu ([`docs/MCP-DEMO.md`](docs/MCP-DEMO.md)) |
 | `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); autoryzacja stoi, endpointy domenowe dochodzą w kolejnych ticketach |
 | `e2e/` | suita dymna Playwrighta przez panel, stronę publiczną i Laravela (patrz [Testy E2E](#testy-e2e)) |
 
@@ -88,6 +89,9 @@ Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 
+Demo MCP (agent w Claude Desktop zakłada ligę przez `apps/mcp-server`):
+[`docs/MCP-DEMO.md`](docs/MCP-DEMO.md).
+
 Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 `typecheck`, `test`, `test:e2e`, `build`.
 
@@ -95,7 +99,9 @@ Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 
 `npm test` w rootcie puszcza vitesta w tych workspace'ach, które mają skrypt
 `test` — dziś `apps/admin` i `apps/public` (vitest + Testing Library + msw,
-jsdom). Obie aplikacje mają ten sam układ: `vitest.config.ts` osobno od
+jsdom) oraz `apps/mcp-server` (vitest w node: klient MCP przez
+`InMemoryTransport`, `fetch` podmieniony atrapą API z
+`src/test/harness.ts`, bez msw). Obie aplikacje React mają ten sam układ: `vitest.config.ts` osobno od
 `vite.config.ts` oraz `src/test/{server,setup}.ts`. Konfiguracja vitesta
 przypina też `VITE_API_URL` na adres mocka, a `server.ts` bierze `API_URL` stamtąd,
 więc lokalny `.env` wskazujący Laravela nie rozjeżdża klienta z handlerami msw.
@@ -181,9 +187,10 @@ pokaże kilku tygodni stabilnej zieleni.
   `Closes #16`, bo GitHub nie rozpoznaje polskiego (patrz
   [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md)).
 - Commity: krótki tytuł po polsku z prefiksem obszaru (`DS:`, `Admin:`,
-  `Public:`, `API:`, `CI:`, `Design:`, `Init:`, `Backend:`, `Docs:`, `E2E:`).
-  `Admin:` i `Public:` to zmiany w `apps/admin` i `apps/public`; `DS:` zostaje
-  dla `packages/ui`. Zmiana obejmująca aplikację i design system bierze prefiks
+  `Public:`, `API:`, `CI:`, `Design:`, `Init:`, `Backend:`, `Docs:`, `E2E:`,
+  `MCP:`). `Admin:` i `Public:` to zmiany w `apps/admin` i `apps/public`,
+  `MCP:` w `apps/mcp-server` (gałęzie `mcp/…`); `DS:` zostaje dla
+  `packages/ui`. Zmiana obejmująca aplikację i design system bierze prefiks
   tego obszaru, w którym leży jej sedno.
 - Gałęzie: `<obszar>/<opis-po-polsku>`, np. `admin/terminarz-ligi`,
   `ds/rama-tabel-danych`. Obszar to prefiks commita małymi literami; do tego
