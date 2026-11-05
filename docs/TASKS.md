@@ -66,11 +66,14 @@ Do zrobienia:
 - [ ] Dopracowanie strzelców + brandingu (J)
 - Kamień: pełny zakres formatów
 
-## S6 — Stabilizacja (zespół)
-- [ ] Feature-testy API kluczowych ścieżek (zespół)
-- [ ] Poprawki UX po testach z makiet (zespół)
-- [ ] Deploy na środowisko dostępne z sieci + dane demo (seeders) (W)
-- Kamień: aplikacja stoi pod publicznym adresem
+## S6 — Stabilizacja (nierealizowane)
+Rezygnujemy z wdrożenia (decyzja #27 w `docs/PLAN.md`). Aplikacja zostaje
+lokalna, a demo pokazujemy z nagrania. Mapa S6 i jej tickety są zamknięte
+([#274](https://github.com/dawer2253/sports-tournament-app/issues/274)).
+- ~~Feature-testy API kluczowych ścieżek (zespół)~~
+- ~~Poprawki UX po testach z makiet (zespół)~~
+- ~~Deploy na środowisko dostępne z sieci + dane demo (seeders) (W)~~
+- ~~Kamień: aplikacja stoi pod publicznym adresem~~
 
 ## S7 — Lifting strony publicznej
 - [ ] Docelowy wygląd strony publicznej w miejsce dzisiejszego POC
@@ -78,8 +81,8 @@ Do zrobienia:
 ## Jeśli czas i zasoby pozwolą
 W tej kolejności:
 - [x] Zgłoszenia drużyn do konkretnego turnieju (#300)
-- [ ] Generator grafik do social mediów
-- [ ] Serwer MCP do obsługi ligi przez organizatora
+- [ ] Generator grafik do social mediów ([#319](https://github.com/dawer2253/sports-tournament-app/issues/319))
+- [ ] Serwer MCP do obsługi ligi przez organizatora — lokalnie, do nagrania demo ([#320](https://github.com/dawer2253/sports-tournament-app/issues/320))
 - [ ] Trzeci sport, najlepiej z setami (potwierdza, że model udźwignie inną punktację)
 
 ## Na koniec — dokumentacja
