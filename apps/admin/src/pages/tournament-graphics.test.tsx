@@ -367,7 +367,8 @@ describe('grafiki: plik', () => {
     await user.click(download);
 
     await waitFor(() => expect(exportMock.download).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // Stan po udanym renderze React zatwierdza po wywołaniu pobrania, więc czekamy.
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });
 
   it('zmiana formatu renderuje plik od nowa i zmienia nazwę', async () => {
