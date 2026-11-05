@@ -633,6 +633,36 @@ paths:
   /tournaments/{tournament}/logo:
     parameters:
       - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Tournaments]
+      summary: Plik logo turnieju
+      description: |
+        Plik logo w takiej postaci, w jakiej go wgrano, z `Content-Type`
+        z jego treści (PNG, JPG albo WebP). Polityka dostępu ta sama co przy
+        `GET /tournaments/{tournament}`: wymaga tokenu organizatora, a cudzy
+        turniej daje `403`.
+
+        Panel czyta stąd logo do grafiki turnieju (`SocialGraphic`, #333):
+        `branding.logoUrl` wskazuje plik na innym originie i bez CORS, więc
+        przeglądarka nie pozwala go narysować w eksportowanym PNG. `logoUrl`
+        zostaje znakiem, że plik istnieje. Bez wgranego logo, a także gdy
+        pliku nie ma na dysku, odpowiedź to `404`.
+
+        Mock kontraktu nie oddaje tu obrazu, bo przykłady turnieju mają
+        `logoUrl: null`.
+      responses:
+        '200':
+          description: Plik logo
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [Tournaments]
       summary: Wgraj logo turnieju
@@ -1623,6 +1653,32 @@ paths:
   /teams/{team}/logo:
     parameters:
       - { $ref: '#/components/parameters/TeamId' }
+    get:
+      tags: [Teams]
+      summary: Plik herbu drużyny
+      description: |
+        Plik herbu w takiej postaci, w jakiej go wgrano, z `Content-Type`
+        z jego treści (PNG, JPG albo WebP). Polityka dostępu ta sama co przy
+        `GET /teams/{team}`: wymaga tokenu organizatora, a drużyna cudzego
+        turnieju daje `403`.
+
+        Panel czyta stąd herby do grafiki turnieju (`SocialGraphic`, #333), bo
+        `logoUrl` wskazuje plik na innym originie i bez CORS. `logoUrl`
+        zostaje znakiem, że plik istnieje. Bez wgranego herbu, a także gdy
+        pliku nie ma na dysku, odpowiedź to `404`.
+      responses:
+        '200':
+          description: Plik herbu
+          content:
+            image/png:
+              schema: { type: string, format: binary }
+            image/jpeg:
+              schema: { type: string, format: binary }
+            image/webp:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
     post:
       tags: [Teams]
       summary: Wgraj herb drużyny
@@ -3134,6 +3190,94 @@ paths:
                           - { position: 2, team: { id: 8, name: Czaple Ursynów, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 4, scoreAgainst: 4, scoreDifference: 0, rallyPointsFor: 183, rallyPointsAgainst: 188, points: 3, form: [win, loss] }
                           - { position: 3, team: { id: 7, name: Mewy Żoliborz, logoUrl: null }, played: 2, won: 1, drawn: 0, lost: 1, scoreFor: 3, scoreAgainst: 4, scoreDifference: -1, rallyPointsFor: 155, rallyPointsAgainst: 161, points: 3, form: [loss, win] }
                           - { position: 4, team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, played: 2, won: 0, drawn: 0, lost: 2, scoreFor: 3, scoreAgainst: 6, scoreDifference: -3, rallyPointsFor: 195, rallyPointsAgainst: 205, points: 1, form: [loss, loss] }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /tournaments/{tournament}/leaderboard:
+    parameters:
+      - { $ref: '#/components/parameters/TournamentId' }
+    get:
+      tags: [Reads]
+      summary: Klasyfikacja indywidualna (panel)
+      description: |
+        Ta sama klasyfikacja co `GET /public/t/{slug}/leaderboard`, z tymi
+        samymi regułami liczenia i parametrem `stat`, ale dla organizatora:
+        po id, z tokenem i we wszystkich statusach turnieju, także `draft`.
+        Panel bierze stąd klasyfikację do grafiki turnieju (`SocialGraphic`,
+        #333), bez `stat`, czyli w domyślnej statystyce sportu. Lista jest bez
+        limitu: czołówkę przycina szablon grafiki.
+
+        Bez walidatora HTTP: panel odczytuje klasyfikację raz przy wejściu
+        na grafikę.
+
+        Przykłady są trzy, po jednym na sport, zgodne z seedem demo: `pilka`
+        (domyślny), `koszykowka` i `siatkowka`. Mock zwraca dwa ostatnie po
+        nagłówkach `Prefer: example=koszykowka` i `Prefer: example=siatkowka`,
+        tak jak turniej, mecze i tabela panelu. Mock nie liczy klasyfikacji,
+        więc parametr `stat` niczego w nim nie zmienia.
+      parameters:
+        - name: stat
+          in: query
+          required: false
+          description: |
+            Kod statystyki z `availableStats` sportu turnieju. Bez parametru
+            odpowiedź liczy pierwszą statystykę sportu: piłka `goals`, kosz
+            i siatkówka `points`. Kod spoza `availableStats` sportu turnieju
+            daje `422` pod `stat`.
+          schema: { type: string }
+          example: yellowCards
+      responses:
+        '200':
+          description: Klasyfikacja zawodników
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/StatLeaderboard' }
+              examples:
+                pilka:
+                  summary: Turniej piłkarski — domyślna klasyfikacja to bramki
+                  value:
+                    data:
+                      stat: goals
+                      label: Bramki
+                      rows:
+                        - { position: 1, player: { id: 1, name: Marek Nowak }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 3 }
+                        - { position: 2, player: { id: 5, name: Adam Zieliński }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 2 }
+                        - { position: 3, player: { id: 3, name: Jakub Wrona }, team: { id: 1, name: Wilki Bemowo, logoUrl: null }, value: 1 }
+                        - { position: 3, player: { id: 4, name: Tomasz Lis }, team: { id: 2, name: Sokoły Ursus, logoUrl: null }, value: 1 }
+                        - { position: 3, player: { id: 7, name: Rafał Duda }, team: { id: 3, name: Orły Bielany, logoUrl: null }, value: 1 }
+                koszykowka:
+                  summary: Turniej koszykarski — domyślna klasyfikacja to punkty
+                  description: Liga koszykówki z seedu demo (`liga-koszykowki-2026`), jak w klasyfikacji strony publicznej.
+                  value:
+                    data:
+                      stat: points
+                      label: Punkty
+                      rows:
+                        - { position: 1, player: { id: 11, name: Oskar Dąb }, team: { id: 4, name: Żubry Wola, logoUrl: null }, value: 57 }
+                        - { position: 1, player: { id: 12, name: Bruno Klon }, team: { id: 4, name: Żubry Wola, logoUrl: null }, value: 57 }
+                        - { position: 3, player: { id: 10, name: Kacper Lipa }, team: { id: 4, name: Żubry Wola, logoUrl: null }, value: 54 }
+                        - { position: 4, player: { id: 15, name: Wiktor Bóbr }, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, value: 48 }
+                        - { position: 5, player: { id: 14, name: Hubert Łoś }, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, value: 47 }
+                        - { position: 6, player: { id: 13, name: Filip Sarna }, team: { id: 5, name: Rysie Mokotów, logoUrl: null }, value: 46 }
+                siatkowka:
+                  summary: Liga siatkówki — domyślna klasyfikacja to punkty
+                  description: |
+                    Liga siatkówki z seedu demo (`liga-siatkowki-2026`). Zdarzenia
+                    ma tylko mecz Orlęta – Jaskółki z 2. kolejki: as i blok Kamila
+                    Lisa oraz atak Oli Kruk, każde za punkt.
+                  value:
+                    data:
+                      stat: points
+                      label: Punkty
+                      rows:
+                        - { position: 1, player: { id: 16, name: Kamil Lis }, team: { id: 6, name: Orlęta Wawer, logoUrl: null }, value: 2 }
+                        - { position: 2, player: { id: 17, name: Ola Kruk }, team: { id: 9, name: Jaskółki Targówek, logoUrl: null }, value: 1 }
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
