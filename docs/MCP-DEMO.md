@@ -20,7 +20,7 @@ przez klienta z kontraktu (`@tournament/api-client`). Wystawia trzy narzędzia:
 | `add_teams` | dodaje drużyny po kolei; odrzucone przez API raportuje i idzie dalej |
 | `generate_schedule` | losuje pary w kolejkach i nadaje kolejkom daty co tydzień (domyślnie od 18:00 czasu warszawskiego); ponowne wywołanie losuje od nowa |
 
-Narzędzia do publikacji nie ma: stan turnieju ustawia organizer.
+Narzędzia do publikacji nie ma: stan turnieju ustawia organizator.
 
 ## 1. Backend z seedem
 

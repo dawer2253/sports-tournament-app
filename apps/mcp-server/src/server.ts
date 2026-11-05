@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
-import type { AdminMatch } from '@tournament/api-client';
+import { type AdminMatch, isValidationError } from '@tournament/api-client';
 import * as z from 'zod/v4';
 import { createSession, type Session, ToolFailure, unwrap } from './api.ts';
 import type { Config } from './config.ts';
@@ -29,12 +29,14 @@ async function run(handler: () => Promise<CallToolResult>): Promise<CallToolResu
 
 interface ScheduledRound {
   name: string;
+  /** Chwila startu kolejki z API (UTC). Bez obiektów cała kolejka gra o jednej godzinie. */
+  startsAt: string | null;
   matches: Array<{ home: string; away: string; kickoff: string | null }>;
 }
 
 /** Mecze przychodzą posortowane po kolejce i numerze meczu, więc wystarczy je pociąć. */
-function groupByRound(matches: AdminMatch[]): Array<ScheduledRound & { startsAt: string | null }> {
-  const rounds = new Map<number, ScheduledRound & { startsAt: string | null }>();
+function groupByRound(matches: AdminMatch[]): ScheduledRound[] {
+  const rounds = new Map<number, ScheduledRound>();
   for (const match of matches) {
     let round = rounds.get(match.round.id);
     if (!round) {
@@ -50,7 +52,7 @@ function groupByRound(matches: AdminMatch[]): Array<ScheduledRound & { startsAt:
   return [...rounds.values()];
 }
 
-function describeRound(round: ScheduledRound & { startsAt: string | null }): string {
+function describeRound(round: ScheduledRound): string {
   const when = round.startsAt ? warsawLong(round.startsAt) : 'termin do ustalenia';
   return [`${round.name}, ${when}:`, ...round.matches.map((match) => `- ${match.home} – ${match.away}`)].join('\n');
 }
@@ -67,7 +69,7 @@ export function createServer(config: Config, session: Session = createSession(co
     ).data;
     const league = stages.find((stage) => stage.type === 'league');
     if (!league) {
-      throw new ToolFailure(`Turniej ${tournamentId} nie ma fazy ligi, więc to narzędzie nie ułoży mu terminarza.`);
+      throw new ToolFailure(`Turniej ${tournamentId} nie jest ligą, więc to narzędzie nie ułoży mu terminarza.`);
     }
     return league.id;
   }
@@ -97,7 +99,7 @@ export function createServer(config: Config, session: Session = createSession(co
       description:
         'Zakłada nowy turniej w formacie ligi (każdy z każdym) jako szkic, niewidoczny publicznie. ' +
         'Wywołaj raz na ligę. Jeśli turniej już powstał w tej rozmowie, kontynuuj z jego id zamiast zakładać kolejny. ' +
-        'Zwraca id turnieju, id fazy ligi i link do turnieju w panelu.',
+        'Zwraca id turnieju i link do turnieju w panelu.',
       inputSchema: {
         name: z.string().describe('Nazwa turnieju, np. „Liga Osiedlowa 2026”.'),
         sport: z.string().describe('Kod sportu: football (piłka nożna), basketball (koszykówka) albo volleyball (siatkówka).'),
@@ -128,8 +130,7 @@ export function createServer(config: Config, session: Session = createSession(co
 
         return success(
           { id: tournament.id, name: tournament.name, stageId, status: tournament.status, panelUrl },
-          `Założono szkic turnieju „${tournament.name}” (id ${tournament.id}, faza ligi ${stageId}, stan: ${tournament.status}). ` +
-            `Panel: ${panelUrl}`,
+          `Założono szkic turnieju „${tournament.name}” (id ${tournament.id}). Panel: ${panelUrl}`,
         );
       }),
   );
@@ -157,19 +158,34 @@ export function createServer(config: Config, session: Session = createSession(co
         const rejected: Array<{ name: string; message: string }> = [];
         // Po kolei, nie równolegle: limit drużyn i unikalność nazw sprawdza backend
         // przy każdym zapisie, a kolejność na liście ma odpowiadać kolejności w czacie.
-        for (const name of names) {
-          const result = await session.request((api) =>
-            api.POST('/tournaments/{tournament}/teams', {
-              params: { path: { tournament: tournamentId } },
-              body: { name },
-            }),
-          );
-          if (result.response.status === 422) {
-            rejected.push({ name, message: (result.error as { message: string }).message });
-            continue;
+        for (const [index, name] of names.entries()) {
+          try {
+            const result = await session.request((api) =>
+              api.POST('/tournaments/{tournament}/teams', {
+                params: { path: { tournament: tournamentId } },
+                body: { name },
+              }),
+            );
+            if (result.response.status === 422 && isValidationError(result.error)) {
+              rejected.push({ name, message: result.error.message });
+              continue;
+            }
+            const team = unwrap(result).data;
+            added.push({ id: team.id, name: team.name });
+          } catch (error) {
+            // Inny błąd niż 422 przerywa listę. Agent musi wiedzieć, co już weszło,
+            // inaczej ponowi całość i dostanie duplikaty nazw.
+            if (!(error instanceof ToolFailure)) {
+              throw error;
+            }
+            return failure(
+              [
+                `Przerwano dodawanie na drużynie „${name}”. ${error.message}`,
+                `Dodane: ${added.map((team) => team.name).join(', ') || 'żadna'}.`,
+                `Niedodane: ${names.slice(index).join(', ')}.`,
+              ].join('\n'),
+            );
           }
-          const team = unwrap(result).data;
-          added.push({ id: team.id, name: team.name });
         }
 
         const rejectedLines = rejected.map((team) => `- ${team.name}: ${team.message}`);
@@ -191,7 +207,7 @@ export function createServer(config: Config, session: Session = createSession(co
       description:
         'Układa terminarz ligi (pary w kolejkach) i nadaje kolejkom daty co intervalDays dni od startDate, ' +
         'w czasie warszawskim. Ponowne wywołanie losuje pary od nowa i nadpisuje cały terminarz. ' +
-        'Wywołaj po dodaniu wszystkich drużyn. Turniej zostaje szkicem: publikuje go organizer w panelu.',
+        'Wywołaj po dodaniu wszystkich drużyn. Turniej zostaje szkicem: publikuje go organizator w panelu.',
       inputSchema: {
         tournamentId: z.number().int().describe('Id turnieju z create_tournament.'),
         startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('Dzień pierwszej kolejki, YYYY-MM-DD.'),
@@ -204,7 +220,7 @@ export function createServer(config: Config, session: Session = createSession(co
         meetings: z
           .union([z.literal(1), z.literal(2)])
           .default(1)
-          .describe('1 to jedna runda, 2 to mecz i rewanż.'),
+          .describe('Ile razy gra ze sobą każda para: 1 to raz, 2 to mecz i rewanż.'),
       },
       outputSchema: {
         roundsCount: z.number(),
@@ -256,7 +272,7 @@ export function createServer(config: Config, session: Session = createSession(co
             `Terminarz gotowy: ${generated.roundsCount} kolejek, ${generated.matchesCount} meczów.`,
             ...rounds.map(describeRound),
             `Terminarz w panelu: ${panelUrl}`,
-            'Turniej jest szkicem. Organizer przegląda terminarz w panelu i sam publikuje turniej przyciskiem „Opublikuj” w ustawieniach.',
+            'Turniej jest szkicem. Organizator przegląda terminarz w panelu i sam publikuje turniej przyciskiem „Opublikuj” w ustawieniach.',
           ].join('\n\n'),
         );
       }),

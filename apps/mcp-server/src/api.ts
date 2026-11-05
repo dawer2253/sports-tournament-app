@@ -1,4 +1,4 @@
-import { type ApiClient, createApiClient } from '@tournament/api-client';
+import { type ApiClient, type ApiError, createApiClient, isValidationError } from '@tournament/api-client';
 import type { Config } from './config.ts';
 
 /**
@@ -90,17 +90,10 @@ export function unwrap<T>(result: ApiResult<T>): T {
  * bo to backend waliduje, a agent ma z tego poprawić wywołanie.
  */
 export function describeError(status: number, error: unknown): string {
-  const body = (typeof error === 'object' && error !== null ? error : {}) as {
-    message?: unknown;
-    errors?: unknown;
-  };
-  const message = typeof body.message === 'string' ? body.message : 'bez komunikatu';
-
-  if (status === 422 && typeof body.errors === 'object' && body.errors !== null) {
-    const fields = Object.entries(body.errors as Record<string, string[]>).map(
-      ([field, messages]) => `- ${field}: ${messages.join(' ')}`,
-    );
-    return [`API odrzuciło dane (422): ${message}`, ...fields].join('\n');
+  if (status === 422 && isValidationError(error)) {
+    const fields = Object.entries(error.errors).map(([field, messages]) => `- ${field}: ${messages.join(' ')}`);
+    return [`API odrzuciło dane (422): ${error.message}`, ...fields].join('\n');
   }
+  const message = (error as Partial<ApiError> | undefined)?.message ?? 'bez komunikatu';
   return `API odpowiedziało ${status}: ${message}`;
 }

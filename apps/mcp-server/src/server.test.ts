@@ -125,7 +125,6 @@ describe('błędy API', () => {
   });
 });
 
-
 describe('add_teams', () => {
   it('dodaje drużyny po kolei w podanej kolejności', async () => {
     const { call, backend } = await connect();
@@ -192,8 +191,29 @@ describe('add_teams', () => {
     expect(text).toContain('Sokoły Ursus');
     expect(text).toContain('Turniej ma rozegrane mecze, więc nie przyjmuje nowych drużyn.');
   });
-});
+  it('gdy API padnie w połowie listy, mówi które drużyny już dodało, żeby agent nie dodawał ich drugi raz', async () => {
+    const routes = happyRoutes();
+    const addTeam = routes['POST /tournaments/12/teams'];
+    const { call } = await connect({
+      ...routes,
+      'POST /tournaments/12/teams': (request) =>
+        (request.body as { name: string }).name === 'Orły Bielany'
+          ? json(500, { message: 'Server Error' })
+          : addTeam(request),
+    });
 
+    const result = await call('add_teams', {
+      tournamentId: 12,
+      names: ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Lwy Wola'],
+    });
+
+    expect(result.isError).toBe(true);
+    const text = textOf(result);
+    expect(text).toContain('500');
+    expect(text).toContain('Dodane: Wilki Bemowo, Sokoły Ursus.');
+    expect(text).toContain('Niedodane: Orły Bielany, Lwy Wola.');
+  });
+});
 
 describe('generate_schedule', () => {
   it('generuje jedną rundę i rozkłada kolejki co 7 dni od 18:00 czasu warszawskiego, bez obiektów', async () => {
