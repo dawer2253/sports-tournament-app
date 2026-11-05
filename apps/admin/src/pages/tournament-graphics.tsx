@@ -229,7 +229,7 @@ function GraphicsSection({
   const warning = kind === 'standings' && caption ? standingsWarning(caption) : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
       <Card>
         <CardContent className="space-y-6">
           <ChoiceCards
@@ -247,7 +247,7 @@ function GraphicsSection({
           />
 
           {list.length > 0 && selected && (
-            <div className="grid content-start gap-2">
+            <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-2">
               <Label id={matchFieldId}>Mecz</Label>
               <Select value={String(selected.id)} onValueChange={(value) => choose({ matchId: Number(value) })}>
                 <SelectTrigger aria-labelledby={matchFieldId} className="w-full">
