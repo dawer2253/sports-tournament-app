@@ -81,7 +81,7 @@ export const Pilka916: Story = {
   },
 }
 
-/** Zapowiedzi brak: seed nie ma nadchodzącego meczu z datą. Etykieta zdobyczy to „Punkty”. */
+/** Etykieta zdobyczy to „Punkty”, a zapowiedź pokazuje halę. */
 export const Koszykowka45: Story = {
   name: 'Koszykówka 4:5',
   args: { sample: basketballSample },
@@ -91,6 +91,7 @@ export const Koszykowka45: Story = {
     await expect(within(graphic(canvasElement, 'standings')).getByText('168:141')).toBeVisible()
     await expect(within(graphic(canvasElement, 'leaderboard')).getByText('Punkty · lider')).toBeVisible()
     await expect(within(graphic(canvasElement, 'matchResult')).getByText('71–78')).toBeVisible()
+    await expect(within(graphic(canvasElement, 'matchPreview')).getByText(/Hala OSiR Wola/)).toBeVisible()
   },
 }
 

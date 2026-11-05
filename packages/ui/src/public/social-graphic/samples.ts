@@ -96,10 +96,14 @@ export const footballSample: GraphicSample = {
 const zubry = team('Żubry Wola')
 const rysie = team('Rysie Mokotów')
 
-/** Seed nie ma nadchodzącego meczu koszykówki z datą, więc zapowiedź jest nieaktywna. */
+/**
+ * Seed nie ma nadchodzącego meczu koszykówki z datą (panel ma wtedy
+ * zapowiedź nieaktywną), więc zapowiedź jest tu dopisana, żeby story
+ * pokazały każdy rodzaj w każdym sporcie.
+ */
 export const basketballSample: GraphicSample = {
   tournament: { name: 'Liga Koszykówki 2026', logoUrl: null, primaryColor: '#1F7A45' },
-  preview: null,
+  preview: { roundName: 'Kolejka 3', kickoffAt: '2026-10-11T16:30:00+00:00', venue: 'Hala OSiR Wola', home: zubry, away: rysie },
   result: { roundName: 'Kolejka 2', home: rysie, away: zubry, homeScore: 71, awayScore: 78, sets: null, penalties: null, scorers: null },
   standings: {
     afterRound: 2,
