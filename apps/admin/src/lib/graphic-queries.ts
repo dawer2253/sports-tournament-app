@@ -79,7 +79,7 @@ async function fetchLogo({ owner, id }: LogoSource): Promise<string | null> {
   }
 }
 
-const logoKey = (source: LogoSource) => `${source.owner}:${source.id}`;
+const logoKey = (source: Pick<LogoSource, 'owner' | 'id'>) => `${source.owner}:${source.id}`;
 
 /**
  * Herby i logo do grafiki jako adresy `data:` (#333). `logoUrl` wskazuje plik
@@ -102,6 +102,6 @@ export function useLogoDataUrls(sources: readonly LogoSource[]) {
   return {
     ready: results.every((result) => !result.isPending),
     /** Adres `data:` albo `null` (brak pliku, błąd albo jeszcze w drodze). */
-    url: (source: Pick<LogoSource, 'owner' | 'id'>) => urls.get(logoKey(source as LogoSource)) ?? null,
+    url: (source: Pick<LogoSource, 'owner' | 'id'>) => urls.get(logoKey(source)) ?? null,
   };
 }

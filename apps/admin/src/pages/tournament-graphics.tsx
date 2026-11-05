@@ -40,13 +40,15 @@ import {
   resultMatches,
   standingsCaption,
   standingsWarning,
+  writeGraphicParams,
+  type StandingsCaption,
 } from '../lib/graphics';
 import { useEventTypes, useMatchEvents } from '../lib/match-event-queries';
 import { useStandings } from '../lib/standings-queries';
 import { useTournament } from './tournament-layout';
 
 const SHARE_FAILED = 'Nie udało się udostępnić grafiki. Pobierz PNG i dodaj go ręcznie.';
-const RENDER_FAILED = 'Nie udało się przygotować pliku PNG.';
+const RENDER_FAILED = 'Nie udało się przygotować pliku PNG. Kliknij „Pobierz PNG”, żeby spróbować jeszcze raz.';
 
 /** Rodzaj w nazwie pliku. */
 const KIND_SLUG: Record<SocialGraphicKind, string> = {
@@ -134,8 +136,8 @@ function GraphicsSection({
   // „Teraz” na czas wizyty: domyślna zapowiedź nie skacze między renderami.
   const [now] = useState(() => new Date());
   const reasons = useMemo(
-    () => graphicKindReasons({ matches, tablesCount: tables.length, leaderboard: { label: leaderboard.label, rows: leaderboard.rows.length } }),
-    [matches, tables.length, leaderboard],
+    () => graphicKindReasons({ matches, tables, leaderboard: { label: leaderboard.label, rows: leaderboard.rows.length } }),
+    [matches, tables, leaderboard],
   );
   const params = readGraphicParams(search, reasons);
   const { kind, format } = params;
@@ -147,23 +149,15 @@ function GraphicsSection({
     (kind === 'matchPreview' ? defaultPreviewMatch(list, now) : kind === 'matchResult' ? defaultResultMatch(list) : undefined);
 
   // Adres zawsze opisuje to, co widać: błędne wartości wracają do domyślnych (#325).
-  const canonical = useMemo(() => {
-    const next = new URLSearchParams({ kind });
-    if (selected) next.set('match', String(selected.id));
-    next.set('format', format);
-    return next.toString();
-  }, [kind, selected, format]);
+  const canonical = writeGraphicParams({ kind, matchId: selected?.id ?? null, format }).toString();
   useEffect(() => {
     if (search.toString() !== canonical) setSearch(new URLSearchParams(canonical), { replace: true });
   }, [canonical, search, setSearch]);
 
   function choose(patch: { kind?: SocialGraphicKind; matchId?: number; format?: SocialGraphicFormat }) {
-    const next = new URLSearchParams({ kind: patch.kind ?? kind });
     // Nowy rodzaj ma własną listę meczów, więc mecz wraca do domyślnego.
-    const matchId = patch.kind ? undefined : (patch.matchId ?? selected?.id);
-    if (matchId !== undefined) next.set('match', String(matchId));
-    next.set('format', patch.format ?? format);
-    setSearch(next, { replace: true });
+    const matchId = patch.kind ? null : (patch.matchId ?? selected?.id ?? null);
+    setSearch(writeGraphicParams({ kind: patch.kind ?? kind, matchId, format: patch.format ?? format }), { replace: true });
   }
 
   const { types, scoringStat } = useEventTypes(tournament.sport.code);
@@ -213,6 +207,12 @@ function GraphicsSection({
   const fileName = `grafika-${tournament.slug}-${KIND_SLUG[kind]}-${format.replace(':', 'x')}.png`;
   const renderKey = JSON.stringify({ content, graphicTournament, format, fileName });
   const exported = useGraphicFile(renderKey, fileName, contentReady && content !== null);
+
+  // Po błędzie renderu „Pobierz PNG” zostaje aktywny i próbuje jeszcze raz.
+  async function download() {
+    const file = exported.file ?? (exported.failed ? await exported.retry() : null);
+    if (file) downloadFile(file);
+  }
 
   const canShare = useMemo(() => canSharePng(), []);
   async function share(file: File) {
@@ -305,8 +305,8 @@ function GraphicsSection({
               )}
               <Button
                 variant={canShare ? 'outline' : 'default'}
-                disabled={!exported.file}
-                onClick={() => exported.file && downloadFile(exported.file)}
+                disabled={!exported.file && !exported.failed}
+                onClick={() => void download()}
               >
                 <Download aria-hidden className="size-4" />
                 Pobierz PNG
@@ -333,7 +333,7 @@ function buildContent({
   kind: SocialGraphicKind;
   selected: AdminMatch | undefined;
   table: StandingTable | undefined;
-  caption: ReturnType<typeof standingsCaption> | null;
+  caption: StandingsCaption | null;
   leaderboard: StatLeaderboard;
   team: (summary: TeamSummary | null) => GraphicTeam;
   scorers: () => ReturnType<typeof matchScorers>;
@@ -421,6 +421,20 @@ function useGraphicFile(key: string, fileName: string, ready: boolean) {
     };
   }, [key, fileName, ready]);
   const current = result?.key === key ? result : null;
-  return { node, file: current?.file ?? null, failed: current?.failed ?? false };
+
+  /** Ponowny render po błędzie, w kliknięciu „Pobierz PNG” (#325): `null`, gdy znów się nie uda. */
+  async function retry(): Promise<File | null> {
+    if (!node.current) return null;
+    try {
+      const file = await renderGraphicFile(node.current, fileName);
+      setResult({ key, file, failed: false });
+      return file;
+    } catch {
+      setResult({ key, file: null, failed: true });
+      return null;
+    }
+  }
+
+  return { node, file: current?.file ?? null, failed: current?.failed ?? false, retry };
 }
 

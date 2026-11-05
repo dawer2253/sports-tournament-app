@@ -354,6 +354,22 @@ describe('grafiki: plik', () => {
     Reflect.deleteProperty(navigator, 'share');
   });
 
+  it('błąd renderu zachęca do „Pobierz PNG”, a klik renderuje jeszcze raz i pobiera plik', async () => {
+    api();
+    exportMock.render.mockRejectedValueOnce(new Error('canvas'));
+    const { user } = await renderGraphics();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Nie udało się przygotować pliku PNG. Kliknij „Pobierz PNG”, żeby spróbować jeszcze raz.',
+    );
+    const download = screen.getByRole('button', { name: 'Pobierz PNG' });
+    expect(download).toBeEnabled();
+    await user.click(download);
+
+    await waitFor(() => expect(exportMock.download).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('zmiana formatu renderuje plik od nowa i zmienia nazwę', async () => {
     api();
     const { user } = await renderGraphics();

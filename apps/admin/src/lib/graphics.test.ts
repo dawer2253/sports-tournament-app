@@ -10,6 +10,7 @@ import {
   resultMatches,
   standingsCaption,
   standingsWarning,
+  writeGraphicParams,
 } from './graphics';
 
 const WILKI = { id: 1, name: 'Wilki Bemowo', logoUrl: null };
@@ -88,6 +89,16 @@ describe('wynik', () => {
     const list = resultMatches([late, match(), undated, early, match({ status: 'live' })]);
     expect(list.map(({ id }) => id)).toEqual([early.id, late.id, undated.id]);
     expect(defaultResultMatch(list)?.id).toBe(undated.id);
+  });
+
+  it('gdy choć jeden nie ma terminu, cała lista idzie po kolejce i numerze, niezależnie od kolejności wejścia', () => {
+    const first = finished({ kickoffAt: '2026-09-20T10:00:00+00:00', order: 1 });
+    const second = finished({ kickoffAt: null, order: 2 });
+    const third = finished({ kickoffAt: '2026-09-13T10:00:00+00:00', order: 3 });
+    const expected = [first.id, second.id, third.id];
+    expect(resultMatches([first, second, third]).map(({ id }) => id)).toEqual(expected);
+    expect(resultMatches([third, second, first]).map(({ id }) => id)).toEqual(expected);
+    expect(resultMatches([second, third, first]).map(({ id }) => id)).toEqual(expected);
   });
 });
 
@@ -169,7 +180,7 @@ describe('strzelcy', () => {
 describe('rodzaje bez danych', () => {
   const base = {
     matches: [finished({ order: 1 }), match({ order: 2, kickoffAt: '2026-10-04T10:00:00+00:00' })],
-    tablesCount: 1,
+    tables: [{ stageId: 1 }],
     leaderboard: { label: 'Bramki', rows: 1 },
   };
 
@@ -177,8 +188,14 @@ describe('rodzaje bez danych', () => {
     expect(graphicKindReasons(base)).toEqual({ matchPreview: null, matchResult: null, standings: null, leaderboard: null });
   });
 
+  it('tabela liczy zakończone mecze tylko ze swojej fazy', () => {
+    const otherStage = { ...base, matches: [finished({ stageId: 2 })] };
+    expect(graphicKindReasons(otherStage).standings).toBe('Tabela nie ma jeszcze zakończonego meczu.');
+    expect(graphicKindReasons(otherStage).matchResult).toBeNull();
+  });
+
   it('każdy rodzaj ma własne wyjaśnienie', () => {
-    expect(graphicKindReasons({ matches: [], tablesCount: 1, leaderboard: { label: 'Bramki', rows: 0 } })).toEqual({
+    expect(graphicKindReasons({ matches: [], tables: [{ stageId: 1 }], leaderboard: { label: 'Bramki', rows: 0 } })).toEqual({
       matchPreview: 'Brak meczu z terminem i znanymi drużynami, który można zapowiedzieć.',
       matchResult: 'Brak zakończonego meczu.',
       standings: 'Tabela nie ma jeszcze zakończonego meczu.',
@@ -187,10 +204,10 @@ describe('rodzaje bez danych', () => {
   });
 
   it('tabela grup jest nieaktywna, a turniej bez tabeli też', () => {
-    expect(graphicKindReasons({ ...base, tablesCount: 2 }).standings).toBe(
+    expect(graphicKindReasons({ ...base, tables: [{ stageId: 1 }, { stageId: 1 }] }).standings).toBe(
       'Turniej ma kilka tabel grup, a grafika pokazuje jedną tabelę.',
     );
-    expect(graphicKindReasons({ ...base, tablesCount: 0 }).standings).toBe('Turniej nie ma tabeli.');
+    expect(graphicKindReasons({ ...base, tables: [] }).standings).toBe('Turniej nie ma tabeli.');
   });
 });
 
@@ -212,5 +229,12 @@ describe('adres', () => {
       format: '4:5',
     });
     expect(readGraphicParams(new URLSearchParams('kind=standings'), available).kind).toBe('matchPreview');
+  });
+
+  it('zapisuje wybór w kolejności rodzaj, mecz, format, a bez meczu pomija `match`', () => {
+    expect(writeGraphicParams({ kind: 'matchResult', matchId: 12, format: '9:16' }).toString()).toBe(
+      'kind=matchResult&match=12&format=9%3A16',
+    );
+    expect(writeGraphicParams({ kind: 'standings', matchId: null, format: '4:5' }).toString()).toBe('kind=standings&format=4%3A5');
   });
 });

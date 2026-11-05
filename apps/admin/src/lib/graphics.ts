@@ -41,17 +41,17 @@ export function defaultPreviewMatch(list: readonly AdminMatch[], now: Date): Adm
 }
 
 /**
- * Wynik: tylko `finished`, chronologicznie. Kolejność wyznacza termin, a gdy
- * którykolwiek z pary go nie ma, kolejka i numer meczu (#325).
+ * Wynik: tylko `finished`, chronologicznie (#325). Kolejność wyznacza termin,
+ * a gdy choć jeden mecz listy go nie ma, cała lista idzie po kolejce i numerze
+ * meczu. Klucz wybiera się raz dla listy, nie dla każdej pary, bo mieszane
+ * porównanie nie jest przechodnie i kolejność zależałaby od wejścia.
  */
 export function resultMatches(matches: readonly AdminMatch[]): AdminMatch[] {
-  return matches
-    .filter((match) => match.status === 'finished')
-    .sort((a, b) =>
-      a.kickoffAt !== null && b.kickoffAt !== null
-        ? kickoffTime(a) - kickoffTime(b)
-        : a.round.order - b.round.order || a.matchNumber - b.matchNumber,
-    );
+  const list = matches.filter((match) => match.status === 'finished');
+  const allDated = list.every((match) => match.kickoffAt !== null);
+  return list.sort((a, b) =>
+    allDated ? kickoffTime(a) - kickoffTime(b) : a.round.order - b.round.order || a.matchNumber - b.matchNumber,
+  );
 }
 
 /** Ostatni zakończony. */
@@ -127,27 +127,32 @@ export function matchScorers(
 
 export type GraphicKindReasons = Record<SocialGraphicKind, string | null>;
 
-/** Powód, dla którego rodzaj jest nieaktywny, albo `null` (#325, „Warunki bez danych”). */
+/**
+ * Powód, dla którego rodzaj jest nieaktywny, albo `null` (#325, „Warunki bez
+ * danych”). Tabela patrzy tylko na mecze swojej fazy: zakończony mecz innej
+ * fazy jej nie wypełnia.
+ */
 export function graphicKindReasons({
   matches,
-  tablesCount,
+  tables,
   leaderboard,
 }: {
   matches: readonly AdminMatch[];
-  tablesCount: number;
+  tables: readonly { stageId: number }[];
   leaderboard: { label: string; rows: number };
 }): GraphicKindReasons {
-  const anyFinished = matches.some((match) => match.status === 'finished');
+  const isFinished = (match: AdminMatch) => match.status === 'finished';
+  const tableFinished = tables.length === 1 && matches.some((match) => isFinished(match) && match.stageId === tables[0]!.stageId);
   return {
     matchPreview:
       previewMatches(matches).length > 0 ? null : 'Brak meczu z terminem i znanymi drużynami, który można zapowiedzieć.',
-    matchResult: anyFinished ? null : 'Brak zakończonego meczu.',
+    matchResult: matches.some(isFinished) ? null : 'Brak zakończonego meczu.',
     standings:
-      tablesCount === 0
+      tables.length === 0
         ? 'Turniej nie ma tabeli.'
-        : tablesCount > 1
+        : tables.length > 1
           ? 'Turniej ma kilka tabel grup, a grafika pokazuje jedną tabelę.'
-          : anyFinished
+          : tableFinished
             ? null
             : 'Tabela nie ma jeszcze zakończonego meczu.',
     leaderboard: leaderboard.rows > 0 ? null : `Klasyfikacja „${leaderboard.label}” jest jeszcze pusta.`,
@@ -175,4 +180,12 @@ export function readGraphicParams(search: URLSearchParams, reasons: GraphicKindR
     matchId: Number.isInteger(match) && match > 0 ? match : null,
     format: format ?? '4:5',
   };
+}
+
+/** Wybór jako adres, w kolejności, którą czyta `readGraphicParams`; bez meczu bez `match`. */
+export function writeGraphicParams({ kind, matchId, format }: GraphicParams): URLSearchParams {
+  const search = new URLSearchParams({ kind });
+  if (matchId !== null) search.set('match', String(matchId));
+  search.set('format', format);
+  return search;
 }
