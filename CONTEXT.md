@@ -562,6 +562,16 @@ równej wartości pozycja jest dzielona, a zawodnicy ex aequo idą po id.
 _Unikaj_: *top scorers* i „strzelcy” jako nazwy kanonicznej — to etykieta UI
 dla piłki, ten sam chwyt co przy `Score` (ADR 0003).
 
+## SocialGraphic (grafika)
+
+Obraz do wrzucenia na social media, który organizer tworzy w panelu z danych
+turnieju, w jego barwach. Ma jeden z czterech rodzajów (`kind`): zapowiedź
+meczu, wynik meczu, tabela, klasyfikacja. Tak jak tabela, nie jest bytem
+zapisywanym: powstaje z aktualnych danych w chwili podglądu.
+
+_Unikaj_: „post” (aplikacja niczego nie publikuje), „plakat”, „król strzelców”
+jako nazwy rodzaju — to etykieta UI dla piłki, rodzaj to `leaderboard`.
+
 ## Tiebreaker (kryterium rozstrzygające)
 
 Reguła ustalająca kolejność drużyn, które mają tyle samo punktów. Turniej ma
