@@ -82,9 +82,22 @@ jeden przykład i oddaje go zawsze). Ten turniej ma odpowiednik w seedzie demo
 a w panelu turniej, terminarz i tabela. Wynik meczu to tam sety wygrane,
 `Match.sets` niesie wyniki setów, a tabela ma kolumnę punktów w setach. Ten
 turniej ma odpowiednik w seedzie demo (`liga-siatkowki-2026`).
+Klasyfikację panelu (`GET /tournaments/{tournament}/leaderboard`, źródło
+grafiki „Klasyfikacja” w zakładce Grafiki, #333) przełączają
+`Prefer: example=koszykowka` i `Prefer: example=siatkowka` (oba „Punkty”);
+bez nagłówka oddaje bramki ligi piłkarskiej.
 
 Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 `.env.example` do `.env` w danej aplikacji i ustaw `VITE_API_URL`.
+
+Przycisk „Udostępnij” w zakładce Grafiki (#333) to Web Share z plikiem,
+a przeglądarka daje go tylko w bezpiecznym kontekście (HTTPS albo
+`localhost`). Telefon w tej samej sieci otwiera panel pod `http://<IP>:5173`,
+więc przycisku nie zobaczy, zostaje samo „Pobierz PNG”. Żeby pokazać arkusz
+udostępniania na telefonie, wystaw przez tunel HTTPS (np. `cloudflared tunnel
+--url`) **i** panel, **i** API, w `.env` panelu ustaw `VITE_API_URL` na adres
+tunelu API, a origin tunelu panelu dopisz do CORS Laravela
+(`backend/config/cors.php`), bo ten wpuszcza tylko porty 5173 i 5174.
 
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 

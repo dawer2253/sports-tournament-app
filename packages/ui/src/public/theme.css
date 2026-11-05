@@ -1,9 +1,10 @@
 /*
   STRONA PUBLICZNA — motyw ponad `.dark` (#289, #290)
   ─────────────────────────────────────────────────────────────
-  Arkusz tylko strony publicznej: importuje go `apps/public/src/index.css`
-  (po `@tournament/ui/styles.css`) i Storybook. Panel go nie widzi, więc nie
-  ładuje Barlow ani nie zna narzędzi `pub-*`.
+  Arkusz strony publicznej: importuje go `apps/public/src/index.css`
+  (po `@tournament/ui/styles.css`) i Storybook. Panel importuje go tylko dla
+  `SocialGraphic` w zakładce Grafiki (#333): grafika jest w kroju i motywie
+  strony, a własne ekrany panelu tych narzędzi nie używają.
 
   Strona jest zawsze ciemna: `class="dark"` stoi na `<html>`, a korzeń shella
   ma `.public-site` i zmienne koloru turnieju z `brandVars()`. Tło,

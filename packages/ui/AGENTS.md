@@ -148,8 +148,9 @@ publiczna” niżej.
   `--radius: 0.375rem`.
 - **Kroje** z `@fontsource`, bez CDN: panel **Inter** (400–800, import
   w `src/index.css`), strona publiczna **Barlow** (400–600) i **Barlow
-  Condensed** (500–800), import w `src/public/theme.css`, więc panel ich nie
-  ładuje.
+  Condensed** (500–800), import w `src/public/theme.css`. Panel ładuje ten
+  arkusz tylko dla grafiki z zakładki Grafiki (#333); jego ekrany zostają
+  w Inter.
 
 ## Dodawanie komponentu shadcn
 
@@ -188,7 +189,10 @@ pkt 8 zastępuje tu trójkę plików panelu.
   w `lib/match-clock.ts`, a w sporcie z setami numer seta z `currentSetNumber`
   w `lib/sets.ts`, #302), zapisy (#300: `registration.tsx` z paskiem pod
   nagłówkiem, który shell przyjmuje propem `banner`, i kaflem Przeglądu;
-  pola formularza strony w `fields.tsx`) i ekrany w `screens/`. Panelowy `MatchRow`
+  pola formularza strony w `fields.tsx`), grafika do social mediów (#333:
+  `social-graphic/` z szablonem `SocialGraphic` w 4:5 i 9:16, typami treści
+  w `data.ts` i cięciem wierszy w `rows.ts`; renderuje ją panel, nie strona)
+  i ekrany w `screens/`. Panelowy `MatchRow`
   z `components/data` zostaje dla panelu.
 - **Barrel** `src/public/index.ts`, import `@tournament/ui/public`, nazwy bez
   przedrostka. Re-eksportuje logikę, której strona potrzebuje (`brandVars`,
