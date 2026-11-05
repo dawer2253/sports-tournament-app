@@ -35,6 +35,7 @@
 | 24 | „Pauza" (bye) w lidze nieparzystej | **Nie pokazywana jawnie** w terminarzu; kolejka ma po prostu o jeden mecz mniej | Bye to artefakt circle method, nie informacja dla kibica. Wewnętrznie generator dalej go używa |
 | 25 | Domyślna punktacja i tiebreaki per sport | **Ustalone w kontrakcie v0.1**; odłożone zostaje wyłącznie strojenie punktacji per turniej w UI (S1) | Pierwotnie odłożone w całości jako zgadywanie. Przestało nim być, gdy kontrakt zaczął serwować komplet w przykładzie `GET /sports` — piłka `{win:3, draw:1, loss:0}`, kosz `{win:2, draw:0, loss:1}`, `allowsDraw`, `eventTypes`. Mock już to oddaje, a `apps/admin` przeciw temu stoi, więc migracja `sports` przepisuje te wartości dosłownie; rozjazd oznaczałby dwie różne prawdy o tym samym sporcie |
 | 26 | Sport: dane czy strategia | **Sam `config` w bazie**, bez klasy strategii sportu. Punktację za wynik liczy klasyfikacja z `Tournament.points`, nie sport | W S1 i S2 sporty różnią się wartościami, nie algorytmem, a akcesory `Sport` te wartości wystawiają. Klasa niosąca dane dublowałaby `config`, czyli dawałaby dwie prawdy o sporcie (#25). Kod per sport powstaje dopiero z pierwszym algorytmem nie do wyrażenia danymi i czyta `config`. Rozstrzygnięte w [#81](https://github.com/dawer2253/sports-tournament-app/issues/81) |
+| 27 | Wdrożenie | **Bez wdrożenia na środowisko dostępne z sieci.** S6 nie jest realizowane, aplikacja zostaje lokalna (Sail + seed demo), a demo pokazujemy z nagrania | Decyzja z 2026-11-05. Mapa S6 i jej tickety zamknięte jako nierealizowane ([#274](https://github.com/dawer2253/sports-tournament-app/issues/274)). Serwer MCP służy tylko do nagrania filmu demo i działa lokalnie ([#320](https://github.com/dawer2253/sports-tournament-app/issues/320)) |
 
 ---
 
@@ -257,9 +258,9 @@ Standard: Form Requests (walidacja), Policies (autoryzacja), API Resources (DTO)
 | S3 | 7–8 | Eventy (strzelcy/kartki) + strona publiczna (tabela/terminarz/wyniki) | publiczny link do pokazania |
 | S4 | 9–10 | **Drabinka + kaskada** | format pucharowy działa |
 | S5 | 11–12 | **Grupy + playoff** + strzelcy + branding | pełny zakres formatów |
-| S6 | 13–14 | Testy, poprawki, **deploy na środowisko dostępne z sieci** | aplikacja stoi pod publicznym adresem |
+| S6 | 13–14 | ~~Testy, poprawki, deploy na środowisko dostępne z sieci~~ **nierealizowane** (decyzja #27) | ~~aplikacja stoi pod publicznym adresem~~ |
 
-**Po S6** idzie **S7: lifting strony publicznej**. Dzisiejsza strona to POC
+**Po S5** idzie **S7: lifting strony publicznej** (S6 odpada, decyzja #27). Dzisiejsza strona to POC
 i potrzebuje docelowego wyglądu.
 
 Kolejne funkcjonalności wchodzą, **jeśli czas i zasoby pozwolą**, w tej
@@ -267,7 +268,8 @@ kolejności:
 
 1. Zgłoszenia drużyn do konkretnego turnieju.
 2. Generator grafik do social mediów.
-3. Serwer MCP do obsługi ligi przez organizatora.
+3. Serwer MCP do obsługi ligi przez organizatora — lokalnie, do nagrania
+   filmu demo (decyzja #27).
 4. Trzeci sport, najlepiej z setami, żeby potwierdzić, że model udźwignie
    inną punktację.
 
