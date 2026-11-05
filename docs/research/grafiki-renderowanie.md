@@ -57,6 +57,11 @@ wyraźnie oddzielona od reszty.
    na macOS/Linux dopiero od 128), Edge, Safari 14+ (macOS i iOS), Samsung
    Internet 11+. **Firefox nie udostępnia plików** (ani desktop, ani Android).
    Wymaga HTTPS i kliknięcia użytkownika — potrzebny fallback na pobranie pliku.
+   Aktywacja z kliknięcia trwa 5 s w Chromium i WebKit (kod źródłowy, gałąź
+   `main`), więc render PNG po kliknięciu „Udostępnij" musi się w nich zmieścić
+   albo PNG trzeba przygotować przed kliknięciem (§6.1). Instagram na Androidzie
+   przyjmuje `image/*` z intencji systemowej wg dokumentacji Meta; dla iOS
+   i dla Facebooka/WhatsAppa pierwotnego źródła nie znalazłam (§6.3).
 
 ## 2. W przeglądarce
 
@@ -250,9 +255,116 @@ tylko bezpieczny kontekst (HTTPS), `share()` wymaga aktywacji użytkownika
 gdy przeglądarka nie udostępnia plików albo blokuje to Permissions Policy
 `web-share`. PNG (`image/png`) jest na liście typów „usually shareable", więc
 MDN zaleca sprawdzać `canShare` przed `share`. `localhost` przeglądarki traktują
-jako bezpieczny kontekst, więc dev nie wymaga TLS. Fallback dla Firefoksa
-i starszych przeglądarek: zwykłe pobranie pliku (`<a download>` z
-`URL.createObjectURL(blob)`).
+jako bezpieczny kontekst, więc dev nie wymaga TLS.
+
+Ustalenie z mapy (#319, #322): integracja z social mediami to przycisk
+„Udostępnij", który otwiera systemowy arkusz udostępniania, a aplikację wybiera
+organizator. Niżej szczegóły pod ten przypadek.
+
+### 6.1. Gest użytkownika a asynchroniczny render przed `share()`
+
+- **Spec Web Share** ([w3c.github.io/web-share](https://w3c.github.io/web-share/),
+  algorytm `share()`): bez transient activation → `NotAllowedError` (krok 6),
+  a samo wywołanie **zużywa** aktywację (krok 7, „consume user activation").
+  `canShare()` aktywacji nie wymaga.
+- **Spec HTML** ([transient activation duration](https://html.spec.whatwg.org/multipage/interaction.html#transient-activation-duration)):
+  czas trwania aktywacji jest stałą implementacji, „expected be at most a few
+  seconds". Aktywację dają `pointerdown`/`mousedown`, `pointerup`, `touchend`,
+  `keydown` ([MDN: Transient activation](https://developer.mozilla.org/en-US/docs/Glossary/Transient_activation)).
+- **Chromium**: `kActivationLifespan = base::Seconds(5)`
+  ([`user_activation_state.h`](https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/public/common/frame/user_activation_state.h),
+  gałąź `main`; komentarz: ma starczyć na rundę sieciową na wolnym łączu).
+- **WebKit**: `defaultTransientActivationDuration { 5_s }`
+  ([`LocalDOMWindow.cpp`](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/page/LocalDOMWindow.cpp),
+  gałąź `main`; **nie sprawdzałam**, od której wersji Safari na iOS obowiązuje ta
+  wartość). Blog WebKit podaje jako typowy błąd właśnie `await fetch(...)` przed
+  `navigator.share({ files })` — aktywacja wygasa i `share()` odpada
+  ([The User Activation API, 2023-02-15](https://webkit.org/blog/13862/the-user-activation-api/)).
+  WebKit ma na to test regresji `LayoutTests/fast/web-share/share-transient-activation-expired`
+  (oczekiwany wynik: `NotAllowedError`).
+
+Wniosek dla projektu (fakt z powyższego, nie test): render PNG **po** kliknięciu
+„Udostępnij" mieści się w geście tylko wtedy, gdy trwa poniżej ok. 5 s od
+kliknięcia — czasu renderu żadnej biblioteki nie mierzyłam (§0), a na słabszym
+telefonie i przy 1440 × 2560 może być blisko granicy. Wzorce, które problem
+omijają: (a) wyrenderować `Blob` wcześniej (przy podglądzie albo po zmianie
+formatu) i w kliknięciu wołać od razu `canShare`/`share`; (b) dwa kroki —
+„Przygotuj grafikę", potem „Udostępnij"; (c) sprawdzić
+`navigator.userActivation.isActive` przed `share()` i przy wygasłej aktywacji
+pokazać drugi przycisk (API opisane we wpisie WebKit).
+
+### 6.2. Typy i limity plików
+
+- Spec nie wylicza typów; blokowanie typu „due to security considerations" daje
+  `NotAllowedError` (krok 11). Wnioskuję ze struktury algorytmu, że `canShare()`
+  tego kroku nie wykonuje, więc może zwrócić `true` dla typu, który `share()`
+  odrzuci — PNG jest jednak na listach obu silników (niżej).
+- **Chromium desktop** ([`share_service_impl.cc`](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/webshare/share_service_impl.cc),
+  [`.h`](https://chromium.googlesource.com/chromium/src/+/main/chrome/browser/webshare/share_service_impl.h)):
+  lista dozwolonych rozszerzeń i typów MIME zawiera `.png` / `image/png`;
+  `kMaxSharedFileCount = 10`, `kMaxSharedFileBytes = 50 MB`; karta musi być
+  aktywna i widoczna, inaczej `PERMISSION_DENIED`.
+- **Chromium Android** ([`ShareServiceImpl.java`](https://chromium.googlesource.com/chromium/src/+/main/components/browser_ui/webshare/android/java/src/org/chromium/components/browser_ui/webshare/ShareServiceImpl.java)):
+  te same limity (`MAX_SHARED_FILE_COUNT = 10`, `MAX_SHARED_FILE_BYTES = 50 MB`)
+  i `image/png` na liście.
+- **Plik**: `new File([blob], "zapowiedz.png", { type: "image/png" })` — typ
+  MIME i rozszerzenie są sprawdzane osobno (Chromium: `IsDangerousFilename`
+  i `IsDangerousMimeType`), więc oba muszą się zgadzać z listą.
+- PNG 1440 × 2560 będzie daleko od 50 MB (rząd pojedynczych MB — nie mierzyłam).
+
+### 6.3. Czy Instagram, Facebook, WhatsApp przyjmą obraz z arkusza
+
+Arkusz pokazuje aplikacje, które system uzna za cele dla `image/png`; to
+decyzja aplikacji docelowych, nie strony.
+
+- **Instagram, Android**: dokumentacja Meta „Sharing to Feed"
+  ([developers.facebook.com](https://developers.facebook.com/docs/instagram-platform/sharing-to-feed))
+  opisuje udostępnianie obrazu do Instagrama zwykłą intencją `ACTION_SEND`
+  z typem `image/*` (JPEG, GIF, PNG). Chrome na Androidzie przekazuje pliki
+  do systemowego udostępniania (`ShareParams` w `ShareServiceImpl.java`), więc
+  Instagram powinien być na liście — **wniosek, nie test na urządzeniu**.
+- **Instagram, iOS**: ta sama strona Meta opisuje dla iOS inną drogę
+  (Document Interaction API, plik `.ig`/`.igo`), nie arkusz udostępniania.
+  Pierwotnego źródła potwierdzającego, że Instagram przyjmuje PNG z arkusza
+  Safari, **nie znalazłam**.
+- **Facebook, WhatsApp**: pierwotnego źródła o przyjmowaniu obrazu z arkusza
+  (Android ani iOS) **nie znalazłam**. Do sprawdzenia na fizycznych telefonach
+  w prototypie.
+- Przy udostępnianiu pliku pola `text`/`url` bywają przez aplikacje docelowe
+  ignorowane — tego też nie sprawdzałam; bezpieczniej nie opierać się na
+  podpisie przekazanym z arkusza.
+
+### 6.4. Desktop
+
+- **Windows**: Chrome i Edge otwierają systemowe okno udostępniania (dane BCD:
+  Chrome 89–127 tylko ChromeOS i Windows, Edge 81–92 tylko Windows).
+- **macOS**: Safari 14+ (pliki), Chrome od 128 (nowość 128 w BCD; zapowiedź
+  w newsletterze [„New in Chrome 128" na fugu-dev](https://groups.google.com/a/chromium.org/g/fugu-dev/c/eGi3P03iC4c)).
+- **Linux**: BCD nie ma przy Chrome 128 uwagi o platformie; **nie sprawdzałam**,
+  czy na Linuksie jest arkusz. Firefox desktop: `share()` tylko za flagą, plików
+  brak.
+- Czy desktopowy arkusz oferuje Instagram/Facebook — nie sprawdzałam. Na
+  desktopie praktycznym celem jest raczej pobranie albo schowek.
+
+### 6.5. Fallback: pobranie i schowek
+
+- **Pobranie**: `<a download="…png" href={URL.createObjectURL(blob)}>` — działa
+  wszędzie tam, gdzie `canShare({ files })` zwraca `false`. Uwaga: `share()`
+  zużywa aktywację (§6.1), więc po `AbortError` (anulowanie arkusza) kolejna
+  akcja wymagająca gestu potrzebuje nowego kliknięcia. Czy programowe
+  `a.click()` po `await` pobiera plik w Safari na iOS — nie sprawdzałam.
+- **Schowek** (`navigator.clipboard.write([new ClipboardItem({ "image/png": blob })])`):
+  tylko HTTPS ([MDN `Clipboard.write()`](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write)),
+  „commonly support writing text, HTML, and PNG image data". Dane BCD
+  (`api/Clipboard.json`, `api/ClipboardItem.json`): Chrome 76+ (od 107 w geście
+  albo z uprawnieniem `clipboard-write`, jeden `ClipboardItem` naraz), Firefox
+  127+ (w geście, jeden element), Safari 13.1+. Konstruktor `ClipboardItem`
+  przyjmuje Promise rozwiązywany do `Blob` w Chrome od 98. WebKit: zapis musi
+  zajść „during a user gesture", a `ClipboardItem` mapuje typ MIME na Promise
+  ([WebKit: Async Clipboard API, 2020-06-23](https://webkit.org/blog/10855/async-clipboard-api/));
+  typy w WebKit: `text/plain`, `text/html`, `text/uri-list`, `image/png`. Czy
+  Promise w `ClipboardItem` utrzymuje gest przez dłuższy render w Safari — wpis
+  tego nie mówi, nie sprawdzałam.
 
 ## 7. Szablon jako komponent w `packages/ui` (Storybook)
 
@@ -288,6 +400,9 @@ Co z tego wynika dla każdej drogi:
 - Zachowania html-to-image i modern-screenshot na fizycznym iPhonie/Safari.
 - Treści artykułu Centrum pomocy Instagrama o rozdzielczości zdjęć.
 - Obsługi Tailwinda przez satori i API tekstu w Intervention Image v4.
+- Czy Instagram, Facebook i WhatsApp pojawiają się w arkuszu dla PNG z Safari
+  na iOS i z Chrome na Androidzie (brak testu na urządzeniu), oraz od której
+  wersji Safari na iOS aktywacja trwa 5 s.
 
 ## 9. Rekomendacja (opinia, nie fakt — do zatwierdzenia przez człowieka)
 
@@ -295,7 +410,9 @@ Najmniej nowej infrastruktury przy największym ponownym użyciu kodu daje
 **render w przeglądarce panelu przez html-to-image albo modern-screenshot**,
 z szablonem jako komponentem w `packages/ui` (story + `play`), eksportem PNG
 w 1440 × 1800 (4:5) i 1440 × 2560 (9:16, ze strefą bezpieczną), oraz
-`navigator.canShare({ files })` z fallbackiem na pobranie. Między nimi:
+`navigator.canShare({ files })` z fallbackiem na pobranie. PNG warto
+renderować przy podglądzie, nie w kliknięciu „Udostępnij", żeby nie ryzykować
+wygaśnięcia gestu (§6.1). Między nimi:
 modern-screenshot ma świeże wydanie (2026-04) i `fetchFn` do własnego
 pobierania obrazów; html-to-image ma większą społeczność, ale ostatnie wydanie
 z lutego 2025, a v2 jest nieopublikowane. Warunkiem jest rozwiązanie CORS dla
