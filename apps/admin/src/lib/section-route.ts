@@ -10,6 +10,7 @@ export const SECTION_ROUTES: Partial<Record<AdminSectionKey, string>> = {
   registrations: 'registrations',
   groups: 'groups',
   venues: 'venues',
+  graphics: 'graphics',
   settings: 'settings',
   standings: 'standings',
   schedule: 'schedule',
