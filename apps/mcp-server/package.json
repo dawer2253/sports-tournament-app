@@ -1,0 +1,25 @@
+{
+  "name": "@tournament/mcp-server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Lokalny serwer MCP (stdio): agent prowadzi turniej przez REST z kontraktu.",
+  "scripts": {
+    "start": "node src/index.ts",
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@tournament/api-client": "*",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "oxlint": "^1.69.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.10"
+  }
+}
