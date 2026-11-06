@@ -48,6 +48,19 @@ przed pierwszym meczem rozpoczętym i przed terminem.
 Krótki, czytelny identyfikator turnieju używany w publicznym adresie. Unikalny
 globalnie, nie tylko w obrębie jednego organizera.
 
+## Panel (panel organizera)
+
+Część aplikacji, w której organizer po zalogowaniu prowadzi swoje turnieje.
+Widzi ją tylko organizer.
+
+_Unikaj_: „CMS”. Organizer nie redaguje tu treści, tylko prowadzi rozgrywki.
+
+## Public site (strona publiczna)
+
+Strona turnieju pod jego publicznym adresem (patrz `Slug`), dostępna bez
+logowania dla kibiców i zawodników. Pokazuje turniej opublikowany. Niczego na
+niej nie da się zmienić.
+
 ## Sport
 
 Zestaw reguł, które określają jak liczy się wynik: czy mecz może skończyć się
