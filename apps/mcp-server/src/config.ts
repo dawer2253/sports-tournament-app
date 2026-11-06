@@ -20,7 +20,7 @@ export function readConfig(env: NodeJS.ProcessEnv): Config {
   if (missing.length > 0) {
     throw new Error(
       `Brakuje zmiennych środowiskowych: ${missing.join(', ')}. ` +
-        'Ustaw je w sekcji "env" wpisu serwera w claude_desktop_config.json (patrz docs/MCP-DEMO.md).',
+        'Ustaw je w sekcji "env" wpisu serwera w claude_desktop_config.json (patrz docs/MCP.md).',
     );
   }
   return {

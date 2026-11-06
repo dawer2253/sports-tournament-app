@@ -79,23 +79,85 @@ export const SPORTS = [
   { id: 3, code: 'volleyball', name: 'Siatkówka' },
 ];
 
-/** Szczęśliwa ścieżka: turniej 12 z fazą ligi 34. Testy nadpisują wybrane trasy. */
+/** Szczęśliwa ścieżka: turniej 12 (piłka nożna) z fazą ligi 34. Testy nadpisują wybrane trasy. */
 export function happyRoutes(): Routes {
   let nextTeamId = 100;
   return {
     'POST /login': () => json(200, { data: { token: TOKEN, user: { id: 1 } } }),
     'GET /sports': () => json(200, { data: SPORTS }),
     'POST /tournaments': ({ body }) =>
-      json(201, { data: { id: 12, name: (body as { name: string }).name, status: 'draft' } }),
+      json(201, { data: apiTournament({ name: (body as { name: string }).name }) }),
     'GET /tournaments/12/stages': () =>
       json(200, { data: [{ id: 34, type: 'league', name: 'Faza zasadnicza', order: 1, groups: [] }] }),
     'POST /tournaments/12/teams': ({ body }) =>
-      json(201, { data: { id: nextTeamId++, tournamentId: 12, name: (body as { name: string }).name } }),
+      json(201, { data: apiTeam(nextTeamId++, (body as { name: string }).name) }),
     'POST /stages/34/schedule': () => json(201, { data: { roundsCount: 3, matchesCount: 6 } }),
     'POST /stages/34/schedule/dates': () => json(200, { data: { matchesCount: 6, collisionsCount: 0 } }),
     'GET /tournaments/12/matches': () => json(200, { data: [], meta: { currentPage: 1, lastPage: 1, perPage: 200, total: 0 } }),
   };
 }
+
+/** Mecz z API w pełnym kształcie `AdminMatch`; testy nadpisują to, co sprawdzają. */
+export function apiMatch(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 1,
+    stageId: 34,
+    groupId: null,
+    round: { id: 501, name: 'Kolejka 1', order: 1 },
+    matchNumber: 1,
+    homeTeam: { id: 100, name: 'Wilki Bemowo', logoUrl: null },
+    awayTeam: { id: 101, name: 'Sokoły Ursus', logoUrl: null },
+    homeScore: null,
+    awayScore: null,
+    sets: null,
+    homePenalties: null,
+    awayPenalties: null,
+    status: 'scheduled',
+    kickoffAt: null,
+    venue: null,
+    winnerToMatchId: null,
+    loserToMatchId: null,
+    advancesToSlot: null,
+    livePeriod: null,
+    periodStartedAt: null,
+    onBreak: false,
+    collisions: [],
+    ...overrides,
+  };
+}
+
+/** Turniej z API w pełnym kształcie `Tournament`. */
+export function apiTournament(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 12,
+    name: 'Liga Osiedlowa',
+    slug: 'liga-osiedlowa',
+    status: 'draft',
+    sport: { id: 1, code: 'football', name: 'Piłka nożna', allowsDraw: true },
+    branding: { logoUrl: null, primaryColor: '#0F766E' },
+    points: { win: 3, draw: 1, loss: 0 },
+    tiebreakers: ['points', 'head_to_head', 'score_diff'],
+    matchDuration: 90,
+    periods: { count: 2, minutes: 45 },
+    setFormat: null,
+    teamsCount: 0,
+    registration: { open: false, deadline: null, pendingCount: 0 },
+    createdAt: '2026-11-01T10:00:00+00:00',
+    updatedAt: '2026-11-01T10:00:00+00:00',
+    ...overrides,
+  };
+}
+
+export function apiTeam(id: number, name: string, overrides: Record<string, unknown> = {}) {
+  return { id, tournamentId: 12, name, logoUrl: null, groupId: null, playersCount: 0, scheduledMatchesCount: 0, ...overrides };
+}
+
+export const page = (data: unknown[]) => ({
+  data,
+  meta: { currentPage: 1, lastPage: 1, perPage: 50, total: data.length },
+});
+
+export const validation = (field: string, message: string) => json(422, { message, errors: { [field]: [message] } });
 
 export async function connect(routes: Routes = happyRoutes()) {
   const backend = fakeBackend(routes);

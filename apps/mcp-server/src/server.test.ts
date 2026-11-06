@@ -1,74 +1,116 @@
 import { describe, expect, it } from 'vitest';
 import { API_URL, connect, happyRoutes, json, TOKEN, textOf } from './test/harness.ts';
 
+const READ_TOOLS = [
+  'get_leaderboard',
+  'get_standings',
+  'get_tournament',
+  'list_match_events',
+  'list_matches',
+  'list_players',
+  'list_registrations',
+  'list_sports',
+  'list_tournaments',
+  'list_venues',
+];
+
+/** Narzędzia, które tylko dopisują: niczego nie nadpisują ani nie kasują. */
+const ADDITIVE_TOOLS = [
+  'accept_registration',
+  'add_match_events',
+  'add_players',
+  'add_teams',
+  'add_venues',
+  'create_tournament',
+];
+
 describe('tools/list', () => {
-  it('wystawia trzy narzędzia, a tylko generowanie terminarza jest destrukcyjne', async () => {
+  it('każde narzędzie ma tytuł, schemat wyniku i podpowiedzi zgodne z tym, co robi', async () => {
     const { client } = await connect();
 
     const { tools } = await client.listTools();
 
-    const byName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
-    expect(Object.keys(byName).sort()).toEqual(['add_teams', 'create_tournament', 'generate_schedule']);
-    expect(byName.create_tournament.annotations?.destructiveHint).toBe(false);
-    expect(byName.add_teams.annotations?.destructiveHint).toBe(false);
-    expect(byName.generate_schedule.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false });
+    expect(tools).toHaveLength(37);
+    for (const tool of tools) {
+      expect(tool.name, tool.name).toMatch(/^[a-z][a-z_]{2,63}$/);
+      expect(tool.title, tool.name).toBeTruthy();
+      expect(tool.annotations?.title, tool.name).toBe(tool.title);
+      expect(tool.outputSchema, tool.name).toBeDefined();
+      expect(tool.annotations?.openWorldHint, tool.name).toBe(false);
+
+      if (READ_TOOLS.includes(tool.name)) {
+        expect(tool.annotations?.readOnlyHint, tool.name).toBe(true);
+      } else {
+        // Domyślnie destrukcyjne jest `true`, więc narzędzie zapisujące musi mówić to jawnie.
+        expect(tool.annotations?.readOnlyHint, tool.name).toBe(false);
+        expect(tool.annotations?.destructiveHint, tool.name).toBe(!ADDITIVE_TOOLS.includes(tool.name));
+      }
+    }
+  });
+
+  it('losowanie i generowanie nie są idempotentne, a edycje i usunięcia są', async () => {
+    const { client } = await connect();
+
+    const { tools } = await client.listTools();
+
+    const idempotent = Object.fromEntries(tools.map((tool) => [tool.name, tool.annotations?.idempotentHint]));
+    expect(idempotent).toMatchObject({
+      draw_groups: false,
+      generate_schedule: false,
+      generate_bracket: false,
+      set_groups: true,
+      set_schedule_dates: true,
+      set_match_result: true,
+      clear_match_result: true,
+      set_tournament_status: true,
+      update_team: true,
+      delete_team: true,
+      delete_tournament: true,
+    });
+  });
+
+  it('opisy nie wydają agentowi poleceń wołania innych narzędzi (wymóg katalogu konektorów)', async () => {
+    const { client } = await connect();
+
+    const { tools } = await client.listTools();
+
+    for (const tool of tools) {
+      expect(tool.description, tool.name).not.toMatch(/\b(wywołaj|użyj|musisz|powinieneś|pamiętaj)\b/i);
+    }
   });
 });
 
-describe('create_tournament', () => {
-  it('zakłada szkic ligi z identyfikatorem sportu z API i oddaje fazę ligi oraz link do panelu', async () => {
-    const { call, backend } = await connect();
-
-    const result = await call('create_tournament', { name: 'Liga Jesienna', sport: 'volleyball' });
-
-    expect(result.isError).toBeFalsy();
-    expect(backend.calls('POST /tournaments')[0]).toMatchObject({
-      body: { name: 'Liga Jesienna', sportId: 3, format: 'league' },
-      authorization: `Bearer ${TOKEN}`,
-    });
-    expect(result.structuredContent).toEqual({
-      id: 12,
-      name: 'Liga Jesienna',
-      stageId: 34,
-      status: 'draft',
-      panelUrl: 'http://panel.test/tournaments/12',
-    });
-    expect(textOf(result)).toContain('http://panel.test/tournaments/12');
-  });
-
-  it('na sport spoza listy odpowiada błędem z kodami dostępnymi w API i niczego nie zakłada', async () => {
-    const { call, backend } = await connect();
-
-    const result = await call('create_tournament', { name: 'Liga', sport: 'handball' });
-
-    expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain('handball');
-    expect(textOf(result)).toContain('football, basketball, volleyball');
-    expect(backend.calls('POST /tournaments')).toEqual([]);
-  });
-});
-
-describe('błędy API', () => {
+describe('błędy', () => {
   it('przepuszcza 422 do agenta z komunikatem i błędami pól', async () => {
     const { call } = await connect({
       ...happyRoutes(),
       'POST /tournaments': () =>
         json(422, {
-          message: 'Pole nazwa nie może być dłuższe niż 160 znaków. (i jeszcze 1 błąd)',
+          message: 'Nazwa jest już zajęta. (i jeszcze 1 błąd)',
           errors: {
-            name: ['Pole nazwa nie może być dłuższe niż 160 znaków.'],
+            name: ['Nazwa jest już zajęta.'],
             sportId: ['Wybrany sport jest nieprawidłowy.'],
           },
         }),
     });
 
-    const result = await call('create_tournament', { name: 'x'.repeat(200), sport: 'football' });
+    const result = await call('create_tournament', { name: 'Liga', sport: 'football', format: 'league' });
 
     expect(result.isError).toBe(true);
     const text = textOf(result);
-    expect(text).toContain('Pole nazwa nie może być dłuższe niż 160 znaków. (i jeszcze 1 błąd)');
-    expect(text).toContain('name: Pole nazwa nie może być dłuższe niż 160 znaków.');
+    expect(text).toContain('Nazwa jest już zajęta. (i jeszcze 1 błąd)');
+    expect(text).toContain('name: Nazwa jest już zajęta.');
     expect(text).toContain('sportId: Wybrany sport jest nieprawidłowy.');
+  });
+
+  it('błędne argumenty odrzuca przed wysłaniem czegokolwiek, z nazwą pola w komunikacie', async () => {
+    const { call, backend } = await connect();
+
+    const result = await call('create_tournament', { name: 'Liga', sport: 'football', format: 'swiss' });
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain('format');
+    expect(backend.calls('POST /tournaments')).toEqual([]);
   });
 
   it('po 401 loguje się ponownie i powtarza żądanie z nowym tokenem', async () => {
@@ -82,7 +124,7 @@ describe('błędy API', () => {
           : json(401, { message: 'Unauthenticated.' }),
     });
 
-    const result = await call('create_tournament', { name: 'Liga', sport: 'football' });
+    const result = await call('create_tournament', { name: 'Liga', sport: 'football', format: 'league' });
 
     expect(result.isError).toBeFalsy();
     expect(backend.calls('POST /login')).toHaveLength(2);
@@ -99,7 +141,7 @@ describe('błędy API', () => {
       'GET /sports': () => json(401, { message: 'Unauthenticated.' }),
     });
 
-    const result = await call('create_tournament', { name: 'Liga', sport: 'football' });
+    const result = await call('list_sports', {});
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain('401');
@@ -115,7 +157,7 @@ describe('błędy API', () => {
       },
     });
 
-    const result = await call('create_tournament', { name: 'Liga', sport: 'football' });
+    const result = await call('list_tournaments', {});
 
     expect(result.isError).toBe(true);
     const text = textOf(result);
@@ -123,205 +165,14 @@ describe('błędy API', () => {
     expect(text).toContain('TOURNAMENT_API_URL');
     expect(text).not.toMatch(/\n\s+at /);
   });
-});
 
-describe('add_teams', () => {
-  it('dodaje drużyny po kolei w podanej kolejności', async () => {
+  it('każde żądanie idzie z tokenem organizatora', async () => {
     const { call, backend } = await connect();
 
-    const result = await call('add_teams', { tournamentId: 12, names: ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany'] });
+    await call('create_tournament', { name: 'Liga', sport: 'football', format: 'league' });
 
-    expect(result.isError).toBeFalsy();
-    expect(backend.calls('POST /tournaments/12/teams').map((request) => request.body)).toEqual([
-      { name: 'Wilki Bemowo' },
-      { name: 'Sokoły Ursus' },
-      { name: 'Orły Bielany' },
-    ]);
-    expect(result.structuredContent).toEqual({
-      added: [
-        { id: 100, name: 'Wilki Bemowo' },
-        { id: 101, name: 'Sokoły Ursus' },
-        { id: 102, name: 'Orły Bielany' },
-      ],
-      rejected: [],
-    });
-  });
-
-  it('po odrzuceniu drużyny idzie dalej i raportuje odrzuconą z komunikatem 422, bez błędu narzędzia', async () => {
-    const taken = 'Wilki Bemowo';
-    const routes = happyRoutes();
-    const addTeam = routes['POST /tournaments/12/teams'];
-    const { call, backend } = await connect({
-      ...routes,
-      'POST /tournaments/12/teams': (request) =>
-        (request.body as { name: string }).name === taken
-          ? json(422, {
-              message: 'Drużyna o tej nazwie już jest w turnieju.',
-              errors: { name: ['Drużyna o tej nazwie już jest w turnieju.'] },
-            })
-          : addTeam(request),
-    });
-
-    const result = await call('add_teams', { tournamentId: 12, names: ['Wilki Bemowo', 'Sokoły Ursus'] });
-
-    expect(result.isError).toBeFalsy();
-    expect(backend.calls('POST /tournaments/12/teams')).toHaveLength(2);
-    expect(result.structuredContent).toEqual({
-      added: [{ id: 100, name: 'Sokoły Ursus' }],
-      rejected: [{ name: 'Wilki Bemowo', message: 'Drużyna o tej nazwie już jest w turnieju.' }],
-    });
-    expect(textOf(result)).toContain('Wilki Bemowo');
-  });
-
-  it('gdy nie dodało żadnej drużyny, kończy się błędem z powodami odrzuceń', async () => {
-    const { call } = await connect({
-      ...happyRoutes(),
-      'POST /tournaments/12/teams': () =>
-        json(422, {
-          message: 'Turniej ma rozegrane mecze, więc nie przyjmuje nowych drużyn.',
-          errors: { teams: ['Turniej ma rozegrane mecze, więc nie przyjmuje nowych drużyn.'] },
-        }),
-    });
-
-    const result = await call('add_teams', { tournamentId: 12, names: ['Wilki Bemowo', 'Sokoły Ursus'] });
-
-    expect(result.isError).toBe(true);
-    const text = textOf(result);
-    expect(text).toContain('Wilki Bemowo');
-    expect(text).toContain('Sokoły Ursus');
-    expect(text).toContain('Turniej ma rozegrane mecze, więc nie przyjmuje nowych drużyn.');
-  });
-  it('gdy API padnie w połowie listy, mówi które drużyny już dodało, żeby agent nie dodawał ich drugi raz', async () => {
-    const routes = happyRoutes();
-    const addTeam = routes['POST /tournaments/12/teams'];
-    const { call } = await connect({
-      ...routes,
-      'POST /tournaments/12/teams': (request) =>
-        (request.body as { name: string }).name === 'Orły Bielany'
-          ? json(500, { message: 'Server Error' })
-          : addTeam(request),
-    });
-
-    const result = await call('add_teams', {
-      tournamentId: 12,
-      names: ['Wilki Bemowo', 'Sokoły Ursus', 'Orły Bielany', 'Lwy Wola'],
-    });
-
-    expect(result.isError).toBe(true);
-    const text = textOf(result);
-    expect(text).toContain('500');
-    expect(text).toContain('Dodane: Wilki Bemowo, Sokoły Ursus.');
-    expect(text).toContain('Niedodane: Orły Bielany, Lwy Wola.');
+    const authorized = backend.requests.filter((request) => request.path !== '/login');
+    expect(authorized.length).toBeGreaterThan(0);
+    expect(authorized.every((request) => request.authorization === `Bearer ${TOKEN}`)).toBe(true);
   });
 });
-
-describe('generate_schedule', () => {
-  it('generuje jedną rundę i rozkłada kolejki co 7 dni od 18:00 czasu warszawskiego, bez obiektów', async () => {
-    const { call, backend } = await connect();
-
-    const result = await call('generate_schedule', { tournamentId: 12, startDate: '2026-11-01' });
-
-    expect(result.isError).toBeFalsy();
-    expect(backend.calls('POST /stages/34/schedule')[0].body).toEqual({ meetings: 1 });
-    expect(backend.calls('POST /stages/34/schedule/dates')[0].body).toEqual({
-      mode: 'interval',
-      startAt: '2026-11-01T18:00:00+01:00',
-      timeZone: 'Europe/Warsaw',
-      intervalDays: 7,
-    });
-    const matches = backend.calls('GET /tournaments/12/matches')[0];
-    expect(matches.query.get('stageId')).toBe('34');
-    expect(matches.query.get('perPage')).toBe('200');
-  });
-
-  it('pokazuje kolejki z parami i datami w czasie warszawskim, link do terminarza i przypomnienie o publikacji', async () => {
-    const match = (id: number, round: number, home: string, away: string, kickoffAt: string) => ({
-      id,
-      stageId: 34,
-      round: { id: 500 + round, name: `Kolejka ${round}`, order: round },
-      matchNumber: id,
-      homeTeam: { id: id * 10, name: home, logoUrl: null },
-      awayTeam: { id: id * 10 + 1, name: away, logoUrl: null },
-      kickoffAt,
-    });
-    const { call } = await connect({
-      ...happyRoutes(),
-      'GET /tournaments/12/matches': () =>
-        json(200, {
-          data: [
-            // 23:30 UTC 31 października to już 1 listopada w Warszawie.
-            match(1, 1, 'Wilki Bemowo', 'Sokoły Ursus', '2026-10-31T23:30:00+00:00'),
-            match(2, 1, 'Orły Bielany', 'Lwy Wola', '2026-10-31T23:30:00+00:00'),
-            match(3, 2, 'Sokoły Ursus', 'Orły Bielany', '2026-11-07T23:30:00+00:00'),
-          ],
-          meta: { currentPage: 1, lastPage: 1, perPage: 200, total: 3 },
-        }),
-    });
-
-    const result = await call('generate_schedule', { tournamentId: 12, startDate: '2026-11-01', kickoffTime: '00:30' });
-
-    expect(result.structuredContent).toMatchObject({
-      rounds: [
-        {
-          name: 'Kolejka 1',
-          matches: [
-            { home: 'Wilki Bemowo', away: 'Sokoły Ursus', kickoff: '2026-11-01 00:30' },
-            { home: 'Orły Bielany', away: 'Lwy Wola', kickoff: '2026-11-01 00:30' },
-          ],
-        },
-        { name: 'Kolejka 2', matches: [{ home: 'Sokoły Ursus', away: 'Orły Bielany', kickoff: '2026-11-08 00:30' }] },
-      ],
-      panelUrl: 'http://panel.test/tournaments/12/schedule',
-    });
-    const text = textOf(result);
-    expect(text).toContain('niedziela, 1 listopada 2026 00:30');
-    expect(text).toContain('Wilki Bemowo – Sokoły Ursus');
-    expect(text).toContain('http://panel.test/tournaments/12/schedule');
-    expect(text).toContain('szkic');
-    expect(text).toContain('Opublikuj');
-  });
-
-  it('liczy offset na dzień startu: październik przed zmianą czasu to jeszcze +02:00', async () => {
-    const { call, backend } = await connect();
-
-    await call('generate_schedule', { tournamentId: 12, startDate: '2026-10-01' });
-
-    expect(backend.calls('POST /stages/34/schedule/dates')[0].body).toMatchObject({
-      startAt: '2026-10-01T18:00:00+02:00',
-    });
-  });
-
-  it('przekazuje rewanże, odstęp i godzinę podane przez agenta', async () => {
-    const { call, backend } = await connect();
-
-    await call('generate_schedule', {
-      tournamentId: 12,
-      startDate: '2026-11-01',
-      kickoffTime: '10:30',
-      intervalDays: 14,
-      meetings: 2,
-    });
-
-    expect(backend.calls('POST /stages/34/schedule')[0].body).toEqual({ meetings: 2 });
-    expect(backend.calls('POST /stages/34/schedule/dates')[0].body).toEqual({
-      mode: 'interval',
-      startAt: '2026-11-01T10:30:00+01:00',
-      timeZone: 'Europe/Warsaw',
-      intervalDays: 14,
-    });
-  });
-
-  it('turniej bez fazy ligi kończy się błędem, zanim cokolwiek nadpisze', async () => {
-    const { call, backend } = await connect({
-      ...happyRoutes(),
-      'GET /tournaments/12/stages': () =>
-        json(200, { data: [{ id: 35, type: 'knockout', name: 'Puchar', order: 1, groups: [] }] }),
-    });
-
-    const result = await call('generate_schedule', { tournamentId: 12, startDate: '2026-11-01' });
-
-    expect(result.isError).toBe(true);
-    expect(backend.requests.filter((request) => request.method === 'POST' && request.path !== '/login')).toEqual([]);
-  });
-});
-

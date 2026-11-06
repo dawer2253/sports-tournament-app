@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Lokalny serwer MCP (stdio) do nagrania demo: agent zakłada ligę przez REST z kontraktu.",
+  "description": "Lokalny serwer MCP (stdio): agent prowadzi turniej przez REST z kontraktu.",
   "scripts": {
     "start": "node src/index.ts",
     "lint": "oxlint",
