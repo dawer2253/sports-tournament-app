@@ -26,7 +26,7 @@ npm workspaces, jeden `package-lock.json` w rootcie. Bez Turborepo.
 | `packages/ui/` | design system + ekrany w Storybooku ([własny `AGENTS.md`](packages/ui/AGENTS.md)) |
 | `apps/admin/` | panel organizera (logowanie, port 5173) ([własny `AGENTS.md`](apps/admin/AGENTS.md)) |
 | `apps/public/` | strona turnieju (bez logowania, port 5174) |
-| `apps/mcp-server/` | lokalny serwer MCP (stdio) do nagrania demo w Claude Desktop; woła REST z kontraktu ([`docs/MCP-DEMO.md`](docs/MCP-DEMO.md)) |
+| `apps/mcp-server/` | lokalny serwer MCP (stdio): agent w Claude Desktop prowadzi turniej; woła REST z kontraktu ([`docs/MCP.md`](docs/MCP.md)) |
 | `backend/` | Laravel 13 + Sail (MySQL) ([własny `AGENTS.md`](backend/AGENTS.md)); autoryzacja stoi, endpointy domenowe dochodzą w kolejnych ticketach |
 | `e2e/` | suita dymna Playwrighta przez panel, stronę publiczną i Laravela (patrz [Testy E2E](#testy-e2e)) |
 
@@ -89,8 +89,8 @@ Aplikacje domyślnie celują w mock. Żeby przełączyć je na Laravela, skopiuj
 
 Backend: `make up`, `make shell`, `make test` (patrz [`docs/BACKEND.md`](docs/BACKEND.md)).
 
-Demo MCP (agent w Claude Desktop zakłada ligę przez `apps/mcp-server`):
-[`docs/MCP-DEMO.md`](docs/MCP-DEMO.md).
+Serwer MCP (agent w Claude Desktop prowadzi turniej przez `apps/mcp-server`;
+katalog narzędzi i konwencje dopisywania nowych): [`docs/MCP.md`](docs/MCP.md).
 
 Pozostałe skrypty w rootcie: `contract:validate`, `contract:generate`, `lint`,
 `typecheck`, `test`, `test:e2e`, `build`.
