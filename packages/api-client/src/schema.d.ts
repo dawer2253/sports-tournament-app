@@ -920,7 +920,49 @@ export interface paths {
             };
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Plik logo turnieju
+         * @description Plik logo w takiej postaci, w jakiej go wgrano, z `Content-Type`
+         *     z jego treści (PNG, JPG albo WebP). Polityka dostępu ta sama co przy
+         *     `GET /tournaments/{tournament}`: wymaga tokenu organizatora, a cudzy
+         *     turniej daje `403`.
+         *
+         *     Panel czyta stąd logo do grafiki turnieju (`SocialGraphic`, #333):
+         *     `branding.logoUrl` wskazuje plik na innym originie i bez CORS, więc
+         *     przeglądarka nie pozwala go narysować w eksportowanym PNG. `logoUrl`
+         *     zostaje znakiem, że plik istnieje. Bez wgranego logo, a także gdy
+         *     pliku nie ma na dysku, odpowiedź to `404`.
+         *
+         *     Mock kontraktu nie oddaje tu obrazu, bo przykłady turnieju mają
+         *     `logoUrl: null`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    tournament: components["parameters"]["TournamentId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Plik logo */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/png": Blob;
+                        "image/jpeg": Blob;
+                        "image/webp": Blob;
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         put?: never;
         /**
          * Wgraj logo turnieju
@@ -2224,7 +2266,45 @@ export interface paths {
             };
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Plik herbu drużyny
+         * @description Plik herbu w takiej postaci, w jakiej go wgrano, z `Content-Type`
+         *     z jego treści (PNG, JPG albo WebP). Polityka dostępu ta sama co przy
+         *     `GET /teams/{team}`: wymaga tokenu organizatora, a drużyna cudzego
+         *     turnieju daje `403`.
+         *
+         *     Panel czyta stąd herby do grafiki turnieju (`SocialGraphic`, #333), bo
+         *     `logoUrl` wskazuje plik na innym originie i bez CORS. `logoUrl`
+         *     zostaje znakiem, że plik istnieje. Bez wgranego herbu, a także gdy
+         *     pliku nie ma na dysku, odpowiedź to `404`.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    team: components["parameters"]["TeamId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Plik herbu */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/png": Blob;
+                        "image/jpeg": Blob;
+                        "image/webp": Blob;
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         put?: never;
         /**
          * Wgraj herb drużyny
@@ -3582,6 +3662,78 @@ export interface paths {
                     content: {
                         "application/json": {
                             data: components["schemas"]["StandingTable"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                422: components["responses"]["ValidationError"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tournaments/{tournament}/leaderboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament: components["parameters"]["TournamentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Klasyfikacja indywidualna (panel)
+         * @description Ta sama klasyfikacja co `GET /public/t/{slug}/leaderboard`, z tymi
+         *     samymi regułami liczenia i parametrem `stat`, ale dla organizatora:
+         *     po id, z tokenem i we wszystkich statusach turnieju, także `draft`.
+         *     Panel bierze stąd klasyfikację do grafiki turnieju (`SocialGraphic`,
+         *     #333), bez `stat`, czyli w domyślnej statystyce sportu. Lista jest bez
+         *     limitu: czołówkę przycina szablon grafiki.
+         *
+         *     Bez walidatora HTTP: panel odczytuje klasyfikację raz przy wejściu
+         *     na grafikę.
+         *
+         *     Przykłady są trzy, po jednym na sport, zgodne z seedem demo: `pilka`
+         *     (domyślny), `koszykowka` i `siatkowka`. Mock zwraca dwa ostatnie po
+         *     nagłówkach `Prefer: example=koszykowka` i `Prefer: example=siatkowka`,
+         *     tak jak turniej, mecze i tabela panelu. Mock nie liczy klasyfikacji,
+         *     więc parametr `stat` niczego w nim nie zmienia.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /**
+                     * @description Kod statystyki z `availableStats` sportu turnieju. Bez parametru
+                     *     odpowiedź liczy pierwszą statystykę sportu: piłka `goals`, kosz
+                     *     i siatkówka `points`. Kod spoza `availableStats` sportu turnieju
+                     *     daje `422` pod `stat`.
+                     * @example yellowCards
+                     */
+                    stat?: string;
+                };
+                header?: never;
+                path: {
+                    tournament: components["parameters"]["TournamentId"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Klasyfikacja zawodników */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["StatLeaderboard"];
                         };
                     };
                 };

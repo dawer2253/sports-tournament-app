@@ -117,3 +117,26 @@ export const RefBezZaznaczenia: Story = {
     )
   },
 }
+
+/**
+ * Opcja nieaktywna (#333): kafelek zostaje z powodem w opisie, ale radia nie
+ * da się zaznaczyć ani klikiem, ani `onChange` nie idzie.
+ */
+export const OpcjaNieaktywna: Story = {
+  name: 'Opcja nieaktywna',
+  args: {
+    options: [
+      FORMATS[0]!,
+      { ...FORMATS[1]!, description: 'Niedostępne: turniej ma już terminarz ligi.', disabled: true },
+    ],
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    const knockout = canvas.getByRole('radio', { name: 'Puchar (drabinka)' })
+    await expect(knockout).toBeDisabled()
+    await expect(knockout).toHaveAccessibleDescription('Niedostępne: turniej ma już terminarz ligi.')
+    await userEvent.click(canvas.getByText('Puchar (drabinka)'))
+    await expect(knockout).not.toBeChecked()
+    await expect(args.onChange).not.toHaveBeenCalled()
+  },
+}
