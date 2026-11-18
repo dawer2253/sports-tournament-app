@@ -177,12 +177,15 @@ describe('trasy turnieju', () => {
       'Zgłoszenia',
       'Grupy',
       'Obiekty',
+      'Grafiki',
       'Ustawienia',
       'Terminarz',
       'Tabela',
       'Drabinka',
     ]);
     expect(sectionTabs().getByRole('link', { name: 'Tabela' })).toHaveAttribute('href', '/tournaments/7/standings');
+    // Grafiki (#333): ostatnia z kart z danymi, przed Ustawieniami, czynna w każdym statusie.
+    expect(sectionTabs().getByRole('link', { name: 'Grafiki' })).toHaveAttribute('href', '/tournaments/7/graphics');
     expect(sectionTabs().getByRole('link', { name: 'Terminarz' })).toHaveAttribute('href', '/tournaments/7/schedule');
   });
 

@@ -5,6 +5,7 @@ namespace App\Models\Concerns;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /**
@@ -28,6 +29,21 @@ trait HasLogo
     public function logoUrl(): ?string
     {
         return $this->logo_path === null ? null : Storage::disk('public')->url($this->logo_path);
+    }
+
+    /**
+     * Plik logo prosto z dysku `public` (`GET …/logo`, #333), z typem z jego
+     * treści. Czyta dysk, a nie `/storage`, więc nie zależy od `storage:link`
+     * i idzie przez Laravela razem z CORS. Brak logo i brak pliku na dysku
+     * dają to samo `404`: panel rysuje wtedy herb zastępczy.
+     */
+    public function logoResponse(): StreamedResponse
+    {
+        $disk = Storage::disk('public');
+
+        abort_if($this->logo_path === null || ! $disk->exists($this->logo_path), 404);
+
+        return $disk->response($this->logo_path, headers: ['Content-Type' => $disk->mimeType($this->logo_path)]);
     }
 
     /**

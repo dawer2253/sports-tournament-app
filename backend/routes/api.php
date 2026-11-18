@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\LeaderboardController;
 use App\Http\Controllers\Api\MatchController;
 use App\Http\Controllers\Api\MatchEventController;
 use App\Http\Controllers\Api\PlayerController;
@@ -59,6 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manage', 'tournament');
     Route::delete('/tournaments/{tournament}', [TournamentController::class, 'destroy'])
         ->can('manage', 'tournament');
+    Route::get('/tournaments/{tournament}/logo', [TournamentLogoController::class, 'show'])
+        ->can('manage', 'tournament');
     Route::post('/tournaments/{tournament}/logo', [TournamentLogoController::class, 'store'])
         ->can('manage', 'tournament');
     Route::delete('/tournaments/{tournament}/logo', [TournamentLogoController::class, 'destroy'])
@@ -66,6 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tournaments/{tournament}/stages', [StageController::class, 'index'])
         ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/standings', [StandingController::class, 'index'])
+        ->can('manage', 'tournament');
+    Route::get('/tournaments/{tournament}/leaderboard', [LeaderboardController::class, 'show'])
         ->can('manage', 'tournament');
     Route::get('/tournaments/{tournament}/matches', [MatchController::class, 'index'])
         ->can('manage', 'tournament');
@@ -103,6 +108,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/teams/{team}', [TeamController::class, 'destroy'])
         ->can('manage', 'team');
 
+    Route::get('/teams/{team}/logo', [TeamLogoController::class, 'show'])
+        ->can('manage', 'team');
     Route::post('/teams/{team}/logo', [TeamLogoController::class, 'store'])
         ->can('manage', 'team');
     Route::delete('/teams/{team}/logo', [TeamLogoController::class, 'destroy'])

@@ -1,4 +1,12 @@
 @import "@tournament/ui/styles.css";
+/*
+  Motyw strony publicznej (kroje Barlow, narzędzia `pub-*`) dla zakładki
+  „Grafiki” (#333): szablon `SocialGraphic` rysuje się w języku strony
+  publicznej, a bez Barlow PNG wyszedłby krojem zapasowym. Tokeny siedzą pod
+  `.public-site`, więc reszty panelu nie ruszają, a pliki krojów przeglądarka
+  pobiera dopiero wtedy, gdy grafika ich użyje.
+*/
+@import "@tournament/ui/public/theme.css";
 
 /*
   Tailwind 4 sam wykrywa źródła klas, ale pomija node_modules, a @tournament/ui

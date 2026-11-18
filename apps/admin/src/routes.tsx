@@ -7,6 +7,7 @@ import { TeamPage } from './pages/team';
 import { TeamsPage } from './pages/teams';
 import { TournamentBracketPage } from './pages/tournament-bracket';
 import { TournamentCreatePage } from './pages/tournament-create';
+import { TournamentGraphicsPage } from './pages/tournament-graphics';
 import { TournamentGroupsPage } from './pages/tournament-groups';
 import { TournamentLayout } from './pages/tournament-layout';
 import { TournamentSchedulePage } from './pages/tournament-schedule';
@@ -70,6 +71,8 @@ export const routes: RouteObject[] = [
       { path: 'standings', element: <TournamentStandingsPage /> },
       { path: 'schedule', element: <TournamentSchedulePage /> },
       { path: 'bracket', element: <TournamentBracketPage /> },
+      // Grafiki (#333): wybór rodzaju, meczu i formatu siedzi w adresie (`?kind=…&match=…&format=…`).
+      { path: 'graphics', element: <TournamentGraphicsPage /> },
     ],
   },
 ];

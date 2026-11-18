@@ -35,6 +35,10 @@ export type { StandingsTableRow } from './standings-table-row'
 export * from './stats'
 export * from './teams-showcase'
 export * from './tournament-logo'
+// Grafika turnieju do social mediów (#333): renderuje ją panel, nie strona.
+export * from './social-graphic/data'
+export * from './social-graphic/rows'
+export * from './social-graphic/social-graphic'
 
 // Ekrany (dane w propsach).
 export * from './screens/bracket'

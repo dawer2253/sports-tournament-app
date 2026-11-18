@@ -6,10 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tournaments\UploadTournamentLogoRequest;
 use App\Http\Resources\TournamentResource;
 use App\Models\Tournament;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /** Kolejność kroków i sprzątanie plików żyje w `HasLogo`. */
 class TournamentLogoController extends Controller
 {
+    /** Plik logo do grafiki turnieju (#333); `404` bez pliku. */
+    public function show(Tournament $tournament): StreamedResponse
+    {
+        return $tournament->logoResponse();
+    }
+
     public function store(UploadTournamentLogoRequest $request, Tournament $tournament): TournamentResource
     {
         $tournament->replaceLogo($request->file('logo'));

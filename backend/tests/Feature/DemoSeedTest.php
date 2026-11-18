@@ -224,6 +224,30 @@ it('sieje klasyfikację zgodną z przykładem kontraktu', function (string $slug
     'koszykówka' => ['liga-koszykowki-2026', 'koszykowka'],
 ]);
 
+it('sieje klasyfikację panelu zgodną z przykładem kontraktu (#333)', function (string $slug, string $example) {
+    // Jak test wyżej: komplet wierszy bez `id`, bo autoinkrement się nie zeruje.
+    $spec = Yaml::parseFile(config('spectator.sources.local.base_path').'/openapi.yaml');
+    $promised = $spec['paths']['/tournaments/{tournament}/leaderboard']['get']['responses']['200']['content']['application/json']['examples'][$example]['value']['data'];
+
+    $withoutIds = fn (array $leaderboard): array => [
+        'stat' => $leaderboard['stat'],
+        'label' => $leaderboard['label'],
+        'rows' => array_map(fn (array $row): string => "{$row['position']}. {$row['player']['name']} ({$row['team']['name']}) {$row['value']}", $leaderboard['rows']),
+    ];
+
+    $tournament = Tournament::query()->where('slug', $slug)->firstOrFail();
+    $actual = actingAsOrganizer($tournament->user)
+        ->getJson("/api/v1/tournaments/{$tournament->id}/leaderboard")
+        ->assertOk()
+        ->json('data');
+
+    expect($withoutIds($actual))->toBe($withoutIds($promised));
+})->with([
+    'piłka' => ['liga-osiedlowa-2026', 'pilka'],
+    'koszykówka' => ['liga-koszykowki-2026', 'koszykowka'],
+    'siatkówka' => ['liga-siatkowki-2026', 'siatkowka'],
+]);
+
 it('liga koszykówki daje w klasyfikacji punktów sumę równą sumie wyników meczów', function () {
     $tournament = Tournament::firstWhere('slug', 'liga-koszykowki-2026');
     $scored = $tournament->matches()->where('matches.status', 'finished')->get()

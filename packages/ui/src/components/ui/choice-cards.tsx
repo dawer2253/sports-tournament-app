@@ -9,6 +9,12 @@ export interface ChoiceOption<T extends string | number> {
   description?: string;
   /** Ikona albo emoji w kafelku. Bez tego kafelek ma sam tytuł i opis. */
   icon?: ReactNode;
+  /**
+   * Opcja nieaktywna: widoczna, ale nie do wybrania. Powód podaj
+   * w `description`, bo kafelek bez powodu wyglądałby na zepsuty (rodzaj
+   * grafiki bez danych, #333).
+   */
+  disabled?: boolean;
 }
 
 export interface ChoiceCardsProps<T extends string | number> {
@@ -89,7 +95,8 @@ export function ChoiceCards<T extends string | number>({
             <label
               key={option.value}
               className={cn(
-                'relative cursor-pointer rounded-xl transition-shadow hover:shadow-md',
+                'relative rounded-xl transition-shadow',
+                option.disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:shadow-md',
                 'has-[:focus-visible]:outline has-[:focus-visible]:outline-2',
                 'has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring',
               )}
@@ -101,6 +108,7 @@ export function ChoiceCards<T extends string | number>({
                 name={name}
                 value={option.value}
                 checked={selected}
+                disabled={option.disabled}
                 onChange={() => onChange(option.value)}
                 onBlur={onBlur}
                 aria-labelledby={labelId}
