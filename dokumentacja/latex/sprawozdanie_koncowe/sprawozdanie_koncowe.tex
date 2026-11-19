@@ -1,0 +1,217 @@
+% Autor szablonu: dr Roman Czapla
+% Kompilacja: pdfLaTeX (dwukrotnie, aby zaktualizować spis treści).
+% Wymagane logo uczelni: images/logo.png (ścieżka względem pliku głównego).
+\documentclass[11pt,a4paper,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish,provide=*]{babel}
+\usepackage{lmodern,microtype}
+\usepackage[margin=25mm,headheight=14pt]{geometry}
+\usepackage{xcolor,graphicx,tabularx,booktabs,array,enumitem,fancyhdr,titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\definecolor{accent}{HTML}{344B59}
+\definecolor{hintcolor}{HTML}{58636A}
+\hypersetup{pdfauthor={Wojciech Czachurski, Julia Gawlik, Dawid Pątko},pdftitle={Projekt inżynierski - Sprawozdanie końcowe}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\renewcommand{\arraystretch}{1.3}
+\setlength{\emergencystretch}{2em}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection.}{0.5em}{}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Projekt inżynierski}
+\fancyhead[R]{\small Sprawozdanie końcowe}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% Podpowiedzi są widoczne podczas wypełniania szablonu.
+% Przed oddaniem: uzupełnij pola, zastąp przykłady własną treścią
+% i zmień poniższy przełącznik na \podpowiedzifalse.
+\newif\ifpodpowiedzi
+%\podpowiedzitrue
+\podpowiedzifalse
+\newcommand{\podpowiedz}[1]{\ifpodpowiedzi\par\begingroup\small\color{hintcolor}\textit{Wskazówka: #1}\par\endgroup\fi}
+\newcommand{\pole}[1]{\textnormal{[#1]}}
+
+% Dane dokumentu - uzupełnij w jednym miejscu.
+% Ścieżkę logo można zmienić poniżej.
+\newcommand{\pliklogo}{images/logo.png}
+\newcommand{\logouczelni}{%
+  \includegraphics[width=0.8\textwidth,height=40mm,keepaspectratio]{\pliklogo}%
+}
+\newcommand{\tytulprojektu}{System do zarządzania rozgrywkami sportowymi}
+\newcommand{\rokakademicki}{2026/2027}
+\newcommand{\semestrprojektu}{VII, zimowy}
+\newcommand{\datadokumentu}{19.11.2026}
+\newcommand{\wersjadokumentu}{1.0}
+% Zespół dwuosobowy tylko za zgodą dyrekcji: zmień na \trzeciaosobafalse.
+\newif\iftrzeciaosoba
+\trzeciaosobatrue
+\newcommand{\studentA}{Wojciech Czachurski}
+\newcommand{\studentB}{Julia Gawlik}
+\newcommand{\studentC}{Dawid Pątko}
+\newcommand{\albumA}{168750}
+\newcommand{\albumB}{168679}
+\newcommand{\albumC}{168744}
+\newcommand{\prowadzacyA}{mgr Wojciech Baran}
+\newcommand{\prowadzacyB}{dr Wojciech Gwizdała}
+
+\begin{document}
+\begin{titlepage}
+\centering
+{\large Uniwersytet Komisji Edukacji Narodowej w Krakowie\par}
+{\normalsize Instytut Bezpieczeństwa i Informatyki\par}
+\vspace{8mm}
+\logouczelni\par
+\vspace{10mm}
+{\Large\bfseries\color{accent} PROJEKT INŻYNIERSKI\par}
+\vspace{3mm}
+{\large Sprawozdanie końcowe\par}
+\vspace{15mm}
+{\LARGE\bfseries\tytulprojektu\par}
+\vspace{15mm}
+{\small ZESPÓŁ PROJEKTOWY\par}
+\vspace{3mm}
+\begin{tabular}{ll}
+\studentA & Nr albumu: \albumA\\
+\studentB & Nr albumu: \albumB
+\iftrzeciaosoba\\
+\studentC & Nr albumu: \albumC\fi
+\end{tabular}
+\vspace{12mm}
+
+{\small PROWADZĄCY ZAJĘCIA PROJEKTOWE\par}
+\vspace{3mm}
+\prowadzacyA\par
+\prowadzacyB\par
+\vfill
+Rok akademicki: \rokakademicki\quad Semestr: \semestrprojektu\par
+Data dokumentu: \datadokumentu\quad Wersja: \wersjadokumentu\par
+\vspace{6mm}
+Kraków\par
+
+\end{titlepage}
+
+\newcommand{\podpisy}{%
+\par\vspace{5mm}
+\begin{tabularx}{\textwidth}{@{}Y p{0.28\textwidth} p{0.28\textwidth}@{}}
+\toprule
+Imię i nazwisko & Data & Podpis\\
+\midrule
+\studentA & \dotfill & \dotfill\\[4mm]
+\studentB & \dotfill & \dotfill
+\iftrzeciaosoba\\[4mm]
+\studentC & \dotfill & \dotfill\fi\\[4mm]
+\bottomrule
+\end{tabularx}}
+
+\tableofcontents
+\sloppy
+\podpowiedz{Sprawozdanie podsumowuje cały projekt. Opisz uzyskane rezultaty, zgodność z uzgodnionym zakresem i indywidualny wkład. Szczegóły techniczne możesz wskazać przez odwołania do osobnej dokumentacji. Uzupełnij wszystkie pola, usuń przykłady i wyłącz podpowiedzi przed oddaniem. Dla zespołu dwuosobowego zatwierdzonego przez dyrekcję użyj przełącznika w preambule i usuń opis prac trzeciej osoby.}
+
+\section{Opis projektu}
+\podpowiedz{Przedstaw problem, cel, odbiorców oraz finalny rezultat. Wyjaśnij praktyczny i inżynierski charakter projektu. Porównaj rezultat z dokumentem ,,Wybór projektu'', uwzględniając późniejsze uzgodnienia.}
+\textbf{Problem i cel:} amatorskie ligi i turnieje sportowe są zwykle prowadzone w arkuszach kalkulacyjnych i komunikatorach: organizator ręcznie układa terminarz i przelicza tabelę, a kibice nie mają jednego miejsca z aktualnymi wynikami. Celem projektu była aplikacja webowa, w której organizator prowadzi cały turniej, a system sam liczy tabelę, klasyfikację i drabinkę i udostępnia je kibicom na publicznej stronie.\par
+\textbf{Rezultat:} powstał system złożony z backendu Laravel z REST API i bazą MySQL, panelu organizatora i publicznej strony turnieju w React oraz lokalnego serwera MCP. Organizator zakłada turniej w formacie ligi, pucharu albo grup z fazą pucharową, w piłce nożnej, koszykówce lub siatkówce; dodaje drużyny, zawodników i obiekty; generuje terminarz z rozkładem dat i drabinkę z rozstawieniem; wpisuje wyniki, przebieg meczu na żywo i zdarzenia; ustawia punktację i kolejność kryteriów rozstrzygania remisów; rozpatruje zgłoszenia drużyn i tworzy grafiki do mediów społecznościowych. Kibice oglądają przegląd, tabelę, drabinkę, terminarz, wyniki, statystyki i relacje meczów pod adresem \texttt{/t/\{slug\}}, odświeżane automatycznie. Przez serwer MCP turniej może prowadzić asystent AI w Claude Desktop.\par
+\textbf{Realizacja założeń:} wszystkie wymagania podstawowe z dokumentu ,,Wybór projektu'' zostały spełnione. Wykonano wszystkie sprinty z wyjątkiem S6. Zrealizowano też rozszerzenia: zgłoszenia drużyn, trzeci sport z setami (siatkówka) oraz dwie propozycje z raportu postępu z 22.10.2026 -- serwer MCP do prowadzenia turnieju z pomocą agenta AI i moduł generowania grafik do mediów społecznościowych. Ponad plan dodano relację meczu na żywo z zegarem i podziałem na części gry. Uzgodniona zmiana: na spotkaniu z prowadzącymi ustalono, że wdrożenie pod stały adres w internecie (S6) nie jest konieczne -- aplikacja działa lokalnie, a jej działanie pokazuje nagranie. Elementy niezrealizowane, świadomie pozostawione jako dalszy rozwój: role współpracowników organizatora, historia drużyn między sezonami, dwumecze w pucharze i powiadomienia e-mail.
+
+
+\section{Opis zrealizowanych prac}
+\podpowiedz{Podsumuj etapy realizacji: koncepcję, dobór metod i narzędzi, wykonanie, integrację oraz weryfikację. Dostosuj opis do charakteru projektu; może dotyczyć aplikacji, animacji, prototypu lub innego rezultatu. Nie kopiuj kolejnych raportów bez opracowania podsumowania.}
+\textbf{Koncepcja.} Na początku zespół przeanalizował istniejące narzędzia do prowadzenia turniejów (m.in. Tournify) i spisał plan z dziennikiem decyzji (\texttt{docs/PLAN.md}): model domeny, formaty rozgrywek, zasady tabeli i kryteriów remisów, cykl życia meczu i awans w drabince. Decyzje trudne do odwrócenia zapisywano jako rekordy ADR (14 rekordów w \texttt{docs/adr/}), a pojęcia domeny w słowniku \texttt{CONTEXT.md}.
+
+\textbf{Dobór metod i narzędzi.} Wybrano Laravel z MySQL na backend oraz React z TypeScriptem na dwie osobne aplikacje frontendowe, w jednym monorepo. Kluczową decyzją było podejście ,,kontrakt przed kodem'': kontrakt OpenAPI jest jedynym źródłem prawdy o API, z niego powstaje typowany klient i mock, dzięki czemu frontend powstawał równolegle z backendem, a testy backendu sprawdzają zgodność z kontraktem. Przed ekranami zbudowano design system w Storybooku.
+
+\textbf{Wykonanie.} Prace prowadzono w sprintach: S0 -- fundament (repozytorium, baza danych, logowanie, CI), S1 -- dane podstawowe (turnieje, drużyny, zawodnicy, boiska), S2 -- liga (terminarz, tabela, kryteria przy remisie), S3 -- zdarzenia meczu i strona publiczna, S4 -- puchar (drabinka i awans zwycięzcy), S5 -- grupy i playoff, S7 -- dopracowanie wyglądu strony publicznej, a następnie rozszerzenia. Sprint S6 (wdrożenie pod stały adres w internecie) nie był realizowany po uzgodnieniu z prowadzącymi. Uwagi ze spotkań wprowadzano na bieżąco: w raporcie postępu z 22.10.2026 wskazano, że przy wpisywaniu bramki organizator musiał osobno przepisywać wynik i minutę z zegara, a kibic widział nowy wynik dopiero po ręcznym zapisie -- do dnia przesłania raportu zdarzenie dodane w meczu trwającym zaczęło samo aktualizować wynik i podpowiadać minutę z zegara meczu. Zadania były zapisywane jako zgłoszenia w GitHub Issues i pogrupowane w kamienie milowe. Choć pierwotny plan przypisywał sprinty i obszary konkretnym osobom, w praktyce członkowie zespołu wybierali zgłoszenia z backlogu na bieżąco, według dostępności i zainteresowania, więc każdy pracował po trochu we wszystkich obszarach: kontrakcie API, backendzie, panelu, stronie publicznej, testach i dokumentacji. Granicą zadania była funkcjonalność widoczna dla użytkownika, a nie warstwa systemu, więc jedna zmiana obejmowała zwykle kontrakt, backend i frontend.
+
+\textbf{Integracja.} Każda zmiana trafiała do chronionej gałęzi \texttt{main} przez pull request, który przechodził automatyczne sprawdzenia GitHub Actions (kontrakt, backend, frontend, E2E) i przegląd przez innego członka zespołu. Dzięki temu wszyscy znali całość rozwiązania, a rozjazdy między frontendem a backendem wychodziły przed scaleniem.
+
+\textbf{Weryfikacja} opisana jest w następnej podsekcji, a szczegóły techniczne w dokumentacji projektowej.
+
+\subsection{Weryfikacja i ograniczenia}
+\podpowiedz{Opisz, jak sprawdzono realizację celów i jakość rezultatu. Wskaż testy lub inne sprawdzenia, ich wyniki oraz odwołania do dokumentacji. Podaj znane ograniczenia, problemy i możliwe kierunki rozwoju.}
+Realizację celów sprawdzono testami automatycznymi i scenariuszami ręcznymi na danych demonstracyjnych. W przebiegach wykonanych 19.11.2026: testy backendu (Pest, z asercjami zgodności z kontraktem) -- 1281 zaliczonych, 28 pominiętych, bez błędów; testy panelu organizatora -- 500 zaliczonych; testy strony publicznej -- 173 zaliczone; testy serwera MCP -- 73 zaliczone. Dodatkowo 15 scenariuszy end-to-end w Playwright sprawdza pełne przepływy (logowanie, liga, grupy, drabinka, zdarzenia, zegar meczu, zgłoszenia, grafiki, siatkówka, strona publiczna) i jest uruchamianych w CI. Ręcznie przeprowadzono pełne turnieje w każdym formacie na koncie demonstracyjnym. Szczegóły: dokumentacja projektowa, podsekcja ,,Testy i weryfikacja''.
+
+Znane ograniczenia: aplikacja działa lokalnie; turniej ma jednego właściciela bez ról współpracowników; drużyny nie przechodzą między sezonami; kryterium bezpośrednich meczów nie jest rekurencyjne; puchar nie obsługuje dwumeczów; strona publiczna odświeża się przez polling. Kierunki rozwoju: wdrożenie produkcyjne, role współpracowników, historia drużyn, dwumecze, aktualizacje na żywo przez WebSockety, powiadomienia e-mail i wersja angielska.
+
+\subsection{Indywidualny wkład członków zespołu}
+\podpowiedz{Dla każdej osoby opisz konkretne zadania i rezultaty. Przy pracy wspólnej rozróżnij indywidualne obowiązki. Uwzględnij również koncepcję, integrację, testy, dokumentację i organizację pracy. Opis powinien być zgodny z raportami i oświadczeniem o wkładzie.}
+Wkład wszystkich członków zespołu był równy. Zadania nie były przypisane na stałe do osób -- każdy wybierał zgłoszenia ze wspólnego backlogu, dzięki czemu każda osoba pracowała we wszystkich warstwach systemu i przeglądała zmiany pozostałych.
+
+\textbf{\studentA:} współtworzenie koncepcji i decyzji projektowych; realizacja zgłoszeń z backlogu obejmujących kontrakt API, backend (endpointy, logika rozgrywek, migracje), panel organizatora i stronę publiczną; pisanie testów do własnych zmian; przegląd pull requestów pozostałych osób; współtworzenie dokumentacji i przygotowanie nagrania.\par
+\textbf{\studentB:} współtworzenie koncepcji i decyzji projektowych; realizacja zgłoszeń z backlogu obejmujących kontrakt API, backend (endpointy, logika rozgrywek, migracje), panel organizatora i stronę publiczną; pisanie testów do własnych zmian; przegląd pull requestów pozostałych osób; współtworzenie dokumentacji i przygotowanie nagrania.\par
+\iftrzeciaosoba
+\textbf{\studentC:} współtworzenie koncepcji i decyzji projektowych; realizacja zgłoszeń z backlogu obejmujących kontrakt API, backend (endpointy, logika rozgrywek, migracje), panel organizatora i stronę publiczną; pisanie testów do własnych zmian; przegląd pull requestów pozostałych osób; współtworzenie dokumentacji i przygotowanie nagrania.\par
+\fi
+
+\subsection{Wykorzystanie AI i materiałów zewnętrznych}
+\podpowiedz{Wskaż narzędzia AI i zakres ich zastosowania w całym projekcie. Rozróżnij wspomaganie prac od mechanizmów AI stanowiących część rozwiązania. Opisz weryfikację uzyskanych wyników; dla funkcji AI w projekcie podaj także sposób oceny działania i ograniczenia. Nie wymaga się pełnej historii rozmów ani wszystkich promptów. Jeśli nie korzystano z AI, wpisz tę informację.}
+\textbf{AI:} \emph{Wspomaganie prac.} Zespół korzystał z narzędzia Claude Code (Anthropic, modele Opus i Sonnet) -- agenta programistycznego działającego w terminalu i aplikacji desktopowej, pracującego według zasad zapisanych w repozytorium i korzystającego ze skilli (spisanych procedur, np. przeglądu kodu, diagnozy błędów czy pracy test-first). Używano go do analizy i doprecyzowania zgłoszeń, przygotowywania szkiców kodu i testów, wstępnego przeglądu zmian, researchu dokumentacji bibliotek oraz redakcji dokumentacji. Zasady pracy agenta zapisano w repozytorium (\texttt{AGENTS.md}), m.in. obowiązek pracy w kolejności ,,kontrakt -- klient -- kod'' i zakaz twierdzeń o stanie repozytorium bez polecenia, które je potwierdza. Każdy wynik pracy AI trafiał do repozytorium wyłącznie przez pull request, który przechodził testy automatyczne i przegląd przez członka zespołu; każdą zmianę zatwierdzał człowiek, który decydował też o podejmowanych działaniach i wyborach, a za poprawność odpowiada zespół. \emph{AI jako część rozwiązania.} Aplikacja udostępnia lokalny serwer MCP z 37 narzędziami, przez który asystent AI w Claude Desktop prowadzi turniej. Model nie jest częścią aplikacji -- serwer wywołuje te same endpointy co panel, więc reguły i walidację wykonuje backend. Działanie oceniono testami narzędzi (73 testy) i scenariuszem prowadzenia całego turnieju przez asystenta; ograniczeniem jest możliwa błędna interpretacja polecenia, dlatego operacje zmieniające dane wymagają potwierdzenia użytkownika.\par
+\podpowiedz{Wskaż wykorzystane biblioteki, modele, dane, zasoby i cudze fragmenty kodu, ich pochodzenie i warunki wykorzystania. Odróżnij je od własnego wkładu. Szczegółowe źródła wymień w wykazie na końcu dokumentu.}
+\textbf{Materiały zewnętrzne:} biblioteki i frameworki otwartoźródłowe instalowane przez menedżery pakietów (m.in. Laravel, Sanctum, Pest, Spectator, React, Vite, React Router, TanStack Query, TanStack Table, Zod, Tailwind CSS, shadcn/ui, Lucide, Storybook, Vitest, Playwright, MSW, Prism, Oxlint, MCP TypeScript SDK) oraz usługa Chromatic do porównywania wyglądu komponentów na licencjach MIT lub Apache 2.0; fonty Inter, Barlow, Barlow Condensed i Geist (pakiety Fontsource, licencja SIL OFL). Komponenty shadcn/ui są kopiowane do projektu i dostosowane przez zespół. Nie wykorzystano zewnętrznych zbiorów danych -- dane demonstracyjne (fikcyjne drużyny i zawodnicy) przygotował zespół. Własnym wkładem zespołu są: kontrakt API, model danych, cała logika rozgrywek (generatory terminarza i drabinki, tabela, awans, mecz na żywo, sety), obie aplikacje frontendowe, design system, serwer MCP i testy.
+
+
+\section{Wykaz załączników}
+\podpowiedz{Wymień wszystkie oddawane pliki i pakiety wraz z krótkim opisem. Zakres dokumentacji powinien być zgodny z ustaleniami prowadzących. Wskaż kompletny projekt z kodem lub innymi plikami źródłowymi, zasobami i plikami wynikowymi oraz obowiązkowe nagranie. Dokumenty oddaje się w PDF. W razie niewymagania danego rodzaju dokumentacji odnotuj uzgodnienie i uzasadnienie pod tabelą. Dodaj wiersze według potrzeb.}
+\begin{tabularx}{\textwidth}{@{}p{0.12\textwidth} Y Y@{}}
+\toprule
+Oznaczenie & Plik / pakiet & Zawartość i przeznaczenie\\
+\midrule
+Z1 & \texttt{sports-tournament-app.zip} & kompletny projekt: kod źródłowy monorepo (backend, panel, strona publiczna, serwer MCP, kontrakt API, design system), migracje i seedery z danymi demonstracyjnymi, testy, dokumentacja techniczna\\
+Z2 & \texttt{dokumentacja\_projektowa.pdf} & dokumentacja projektowa\\
+Z3 & \texttt{dokumentacja\_uzytkowa.pdf} & dokumentacja użytkowa\\
+Z4 & \texttt{dokumentacja\_\allowbreak instalacyjno\_\allowbreak konfiguracyjna.pdf} & dokumentacja instalacji i konfiguracji\\
+Z5 & \pole{nazwa nagrania} & \pole{prezentacja działania lub rezultatu oddanej wersji.}\\
+\bottomrule
+\end{tabularx}
+\textbf{Uzgodnienia dotyczące dokumentacji:} wymagane są wszystkie rodzaje dokumentacji (projektowa, użytkowa i instalacyjno-konfiguracyjna), zgodnie z dokumentem ,,Wybór projektu''; nie odstąpiono od żadnego dokumentu.
+
+\podpowiedz{Dla projektu programistycznego podaj repozytorium i commit lub tag. Dla innych projektów podaj miejsce przechowywania i oznaczenie wersji plików. Odnośnik nie zastępuje przekazania kompletu plików do archiwizacji.}
+\textbf{Repozytorium lub miejsce przechowywania:} \url{https://github.com/dawer2253/sports-tournament-app}\par
+\textbf{Ostateczna wersja:} gałąź \texttt{main}, wersja 1.0, \pole{commit lub tag wersji oddawanej i data}
+
+%\newpage
+\section{Oświadczenia}
+\subsection{Oświadczenie o wykonaniu projektu i wykorzystanych materiałach}
+\podpowiedz{Przed podpisaniem upewnijcie się, że treść jest zgodna z rzeczywistym przebiegiem prac i że ujawniono wykorzystanie AI oraz materiałów zewnętrznych. Oświadczenie podpisują wszyscy członkowie zespołu.}
+
+Oświadczamy, że projekt opisany w niniejszym sprawozdaniu został zrealizowany przez nas pod opieką prowadzących zajęcia projektowe w Instytucie Bezpieczeństwa i Informatyki Uniwersytetu Komisji Edukacji Narodowej w Krakowie.
+
+Przedstawiony opis prac i indywidualnego wkładu odpowiada rzeczywistemu przebiegowi realizacji projektu. Wykorzystanie narzędzi AI oraz materiałów zewnętrznych zostało wskazane w sprawozdaniu i odpowiednich miejscach dokumentacji. Materiałów zewnętrznych nie przedstawiamy jako własnego wkładu.
+
+Potwierdzamy, że zweryfikowaliśmy przekazane rezultaty i rozumiemy rozwiązania należące do zakresu naszych prac. Korzystanie z narzędzi wspomagających nie zwalnia nas z odpowiedzialności za poprawność i jakość oddanego projektu.
+\podpisy
+
+%\newpage
+\subsection{Oświadczenie o indywidualnym wkładzie}
+Oświadczamy, że opis indywidualnego wkładu zawarty w niniejszym sprawozdaniu jest zgodny ze stanem faktycznym i został uzgodniony przez wszystkich członków zespołu.
+\podpowiedz{Wskaż konkretne obowiązki poszczególnych osób, a nie wyłącznie procenty. Obszary dostosuj do projektu; przy zadaniach wspólnych określ wkład każdej osoby. Tabela uzupełnia opis prac i nie powinna mu przeczyć.}
+\begin{tabularx}{\textwidth}{@{}p{0.26\textwidth} Y Y@{}}
+\toprule
+Obszar prac & Osoba / osoby & Indywidualny wkład\\
+\midrule
+Koncepcja i założenia & \studentA, \studentB, \studentC & każda osoba współtworzyła plan, model domeny i decyzje projektowe (dziennik decyzji, ADR)\\
+Metody i narzędzia & \studentA, \studentB, \studentC & wspólny dobór technologii; każda osoba stosowała podejście ,,kontrakt przed kodem'' we własnych zadaniach\\
+Wykonanie i integracja & \studentA, \studentB, \studentC & każda osoba realizowała zgłoszenia z backlogu we wszystkich warstwach (kontrakt, backend, panel, strona publiczna) i scalała je przez pull requesty\\
+Weryfikacja / testy & \studentA, \studentB, \studentC & każda osoba pisała testy do swoich zmian i przeglądała pull requesty pozostałych\\
+Dokumentacja i nagranie & \studentA, \studentB, \studentC & wspólne przygotowanie dokumentacji i nagrania\\
+Pozostałe prace & \studentA, \studentB, \studentC & organizacja pracy w GitHub Issues, komunikacja zespołu (Discord, Messenger), konsultacje z prowadzącymi\\
+\bottomrule
+\end{tabularx}
+\podpisy
+
+\section*{Źródła i materiały referencyjne}
+\addcontentsline{toc}{section}{Źródła i materiały referencyjne}
+\podpowiedz{Wymień źródła przywołane w sprawozdaniu: publikacje, dokumentację, zbiory danych i inne zasoby. Dla materiałów internetowych podaj tytuł, adres i datę dostępu. Pełny wykaz techniczny może znajdować się w dokumentacji projektowej - wskaż wtedy odpowiednią sekcję. Jeśli nie wykorzystano źródeł zewnętrznych, wpisz tę informację.}
+\begin{enumerate}
+\item Tournify -- aplikacja do organizacji turniejów (rozwiązanie referencyjne), \url{https://www.tournifyapp.com}, dostęp: 19.11.2026.
+\item Claude Code -- dokumentacja, Anthropic, \url{https://docs.claude.com/en/docs/claude-code/overview}, dostęp: 19.11.2026.
+\item Model Context Protocol -- specyfikacja, \url{https://modelcontextprotocol.io}, dostęp: 19.11.2026.
+\item OpenAPI Specification, \url{https://spec.openapis.org/oas/latest.html}, dostęp: 19.11.2026.
+\item Pełny wykaz dokumentacji bibliotek i narzędzi: dokumentacja projektowa, podsekcja ,,Źródła i materiały referencyjne''.
+\end{enumerate}
+\end{document}

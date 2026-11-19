@@ -1,0 +1,278 @@
+% Autor szablonu: dr Roman Czapla
+% Kompilacja: pdfLaTeX (dwukrotnie, aby zaktualizować spis treści).
+% Wymagane logo uczelni: images/logo.png (ścieżka względem pliku głównego).
+\documentclass[11pt,a4paper,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish,provide=*]{babel}
+\usepackage{lmodern,microtype}
+\usepackage[margin=25mm,headheight=14pt]{geometry}
+\usepackage{xcolor,graphicx,tabularx,booktabs,array,enumitem,fancyhdr,titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\definecolor{accent}{HTML}{344B59}
+\definecolor{hintcolor}{HTML}{58636A}
+\hypersetup{pdfauthor={Wojciech Czachurski, Julia Gawlik, Dawid Pątko},pdftitle={Projekt inżynierski - Dokumentacja instalacji i konfiguracji}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\renewcommand{\arraystretch}{1.3}
+\setlength{\emergencystretch}{2em}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection.}{0.5em}{}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Projekt inżynierski}
+\fancyhead[R]{\small Instalacja i konfiguracja}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% Podpowiedzi są widoczne podczas wypełniania szablonu.
+% Przed oddaniem: uzupełnij pola, zastąp przykłady własną treścią
+% i zmień poniższy przełącznik na \podpowiedzifalse.
+\newif\ifpodpowiedzi
+%\podpowiedzitrue
+\podpowiedzifalse
+\newcommand{\podpowiedz}[1]{\ifpodpowiedzi\par\begingroup\small\color{hintcolor}\textit{Wskazówka: #1}\par\endgroup\fi}
+\newcommand{\pole}[1]{\textnormal{[#1]}}
+
+% Dane dokumentu - uzupełnij w jednym miejscu.
+% Ścieżkę logo można zmienić poniżej.
+\newcommand{\pliklogo}{images/logo.png}
+\newcommand{\logouczelni}{%
+  \includegraphics[width=0.8\textwidth,height=40mm,keepaspectratio]{\pliklogo}%
+}
+\newcommand{\tytulprojektu}{System do zarządzania rozgrywkami sportowymi}
+\newcommand{\rokakademicki}{2026/2027}
+\newcommand{\semestrprojektu}{VII, zimowy}
+\newcommand{\datadokumentu}{19.11.2026}
+\newcommand{\wersjadokumentu}{1.0}
+% Zespół dwuosobowy tylko za zgodą dyrekcji: zmień na \trzeciaosobafalse.
+\newif\iftrzeciaosoba
+\trzeciaosobatrue
+\newcommand{\studentA}{Wojciech Czachurski}
+\newcommand{\studentB}{Julia Gawlik}
+\newcommand{\studentC}{Dawid Pątko}
+\newcommand{\albumA}{168750}
+\newcommand{\albumB}{168679}
+\newcommand{\albumC}{168744}
+\newcommand{\prowadzacyA}{mgr Wojciech Baran}
+\newcommand{\prowadzacyB}{dr Wojciech Gwizdała}
+
+\begin{document}
+\begin{titlepage}
+\centering
+{\large Uniwersytet Komisji Edukacji Narodowej w Krakowie\par}
+{\normalsize Instytut Bezpieczeństwa i Informatyki\par}
+\vspace{8mm}
+\logouczelni\par
+\vspace{10mm}
+{\Large\bfseries\color{accent} PROJEKT INŻYNIERSKI\par}
+\vspace{3mm}
+{\large Dokumentacja instalacji i konfiguracji\par}
+\vspace{15mm}
+{\LARGE\bfseries\tytulprojektu\par}
+\vspace{15mm}
+{\small ZESPÓŁ PROJEKTOWY\par}
+\vspace{3mm}
+\begin{tabular}{ll}
+\studentA & Nr albumu: \albumA\\
+\studentB & Nr albumu: \albumB
+\iftrzeciaosoba\\
+\studentC & Nr albumu: \albumC\fi
+\end{tabular}
+\vspace{12mm}
+
+{\small PROWADZĄCY ZAJĘCIA PROJEKTOWE\par}
+\vspace{3mm}
+\prowadzacyA\par
+\prowadzacyB\par
+\vfill
+Rok akademicki: \rokakademicki\quad Semestr: \semestrprojektu\par
+Data dokumentu: \datadokumentu\quad Wersja: \wersjadokumentu\par
+\vspace{6mm}
+Kraków\par
+
+\end{titlepage}
+
+\tableofcontents
+\sloppy
+\podpowiedz{Dokument jest przeznaczony dla osoby przygotowującej środowisko, wdrażającej projekt lub administrującej nim. Jego wymagalność i zakres zależą od charakteru projektu i są uzgadniane z prowadzącymi. Dla animacji lub wizualizacji osobna dokumentacja instalacyjna może nie być potrzebna. Jeśli jest wymagana, opisz rzeczywisty sposób przygotowania środowiska; usuń podsekcje nieadekwatne. Uzupełnij pola, usuń przykłady i wyłącz podpowiedzi przed oddaniem.}
+
+\section{Szczegółowa dokumentacja instalacji i konfiguracji}
+\subsection{Zakres i wersja projektu}
+\podpowiedz{Podaj wersję projektu, której dotyczy instrukcja, oraz opisany wariant wdrożenia, np. lokalny, serwerowy, kontenerowy lub na urządzeniu. Wskaż, czy instrukcja obejmuje uruchomienie gotowego rezultatu, odtworzenie go z plików źródłowych, czy oba warianty. Opisz wymaganą wiedzę i uprawnienia osoby wykonującej czynności.}
+\textbf{Wersja projektu:} wersja 1.0, gałąź \texttt{main} repozytorium, stan z 19.11.2026.\par
+\textbf{Wariant i zakres:} instalacja lokalna na jednym komputerze, z plików źródłowych. Backend (PHP, Laravel) i baza MySQL działają w kontenerach Docker (Laravel Sail), a aplikacje frontendowe -- panel organizatora i strona publiczna -- na serwerze deweloperskim Vite pod Node.js. Opcjonalnie konfiguruje się lokalny serwer MCP dla asystenta AI w Claude Desktop. Wdrożenie pod stały adres w internecie (sprint S6) okazało się po uzgodnieniu z prowadzącymi niekonieczne, więc projekt nie jest wdrażany na serwer dostępny z internetu. Instrukcję sprawdzono na systemie Windows 11 z WSL2 i Docker Desktop; na Linuksie i macOS kroki są takie same, bez WSL2.\par
+\textbf{Wymagane uprawnienia:} konto z prawem instalowania oprogramowania (Docker Desktop, WSL2, Node.js, Git), dostęp do internetu przy pierwszej instalacji (pobranie obrazów Dockera i pakietów npm/Composer). Wymagana podstawowa znajomość wiersza poleceń.
+
+\newpage
+\subsection{Wymagania sprzętowe}
+\podpowiedz{Podaj minimalne zasoby potrzebne do działania projektu: procesor, pamięć RAM, miejsce na dysku, GPU, urządzenia i połączenia sieciowe, o ile mają znaczenie. Rozróżnij wymagania do uruchomienia oraz budowania, renderowania lub innych prac, jeśli są różne. Wskazuj wymagania sprawdzone albo wyraźnie oznacz szacunki.}
+Wymagania są szacunkiem zespołu; aplikację uruchamiano na typowych laptopach i komputerach stacjonarnych członków zespołu.
+
+\begin{tabularx}{\textwidth}{@{}l Y Y@{}}
+\toprule
+Zasób & Wymaganie & Uwagi\\
+\midrule
+Procesor & 64-bitowy, 4 rdzenie, z obsługą wirtualizacji & wirtualizacja musi być włączona w BIOS/UEFI (WSL2, Docker)\\
+Pamięć RAM & 8 GB (szacunek) & zalecane 16 GB przy jednoczesnym uruchomieniu kontenerów, dwóch serwerów Vite, testów E2E i Storybooka\\
+Dysk & ok. 10 GB wolnego miejsca (szacunek) & obrazy Dockera, zależności npm i Composer, baza danych\\
+Sieć & dostęp do internetu przy instalacji & później aplikacja działa bez internetu (poza asystentem AI)\\
+GPU & nie jest wymagany & --\\
+\bottomrule
+\end{tabularx}
+
+\subsection{Środowisko uruchomieniowe i zależności}
+\podpowiedz{Wymień system operacyjny, środowiska uruchomieniowe, narzędzia, biblioteki i usługi wraz ze sprawdzonymi wersjami. Uwzględnij bazę danych, kontenery, oprogramowanie specjalistyczne i wtyczki, jeśli występują. Podaj pliki określające zależności oraz sposób ich instalacji. Wskaż wymagany dostęp do sieci lub usług zewnętrznych.}
+\begin{tabularx}{\textwidth}{@{}Y l Y@{}}
+\toprule
+Komponent & Wersja & Rola / sposób uzyskania\\
+\midrule
+System operacyjny & Windows 11 + WSL2 (Ubuntu 24.04) & sprawdzona konfiguracja; Linux lub macOS bez WSL2\\
+Docker Desktop & 29.7 & kontenery backendu; \url{https://www.docker.com}\\
+Laravel Sail, PHP & 1.67, PHP 8.5 & obraz aplikacji budowany z \texttt{backend/compose.yaml}\\
+MySQL & 8.4 & baza danych, obraz \texttt{mysql:8.4}\\
+Composer & z obrazu \texttt{laravelsail/php84-composer} & instalacja zależności PHP w kontenerze (\texttt{backend/\allowbreak composer.json}, \texttt{composer.lock}); na komputerze nie trzeba instalować PHP\\
+Node.js i npm & 24 (plik \texttt{.nvmrc}) & frontend, mock API, testy, serwer MCP; \url{https://nodejs.org} lub nvm\\
+Git & dowolna aktualna & pobranie repozytorium\\
+make & dowolna aktualna & skróty poleceń backendu (\texttt{Makefile}); w WSL2: \texttt{sudo apt install make}\\
+Zależności npm & \texttt{package.json}, \texttt{package-lock.json} & instalowane jednym \texttt{npm install} w katalogu głównym\\
+Claude Desktop (opcjonalnie) & aktualna & asystent AI korzystający z serwera MCP; wymaga konta Anthropic\\
+\bottomrule
+\end{tabularx}
+
+\subsection{Przygotowanie plików projektu}
+\podpowiedz{Wskaż przekazany pakiet i jego strukturę: kod źródłowy, pliki projektu, zasoby, dane, instalatory lub obrazy kontenerów. Dla projektu programistycznego podaj adres repozytorium oraz identyfikator commitu lub tagu odpowiadającego przekazanemu pakietowi. Dla projektu o innym charakterze wskaż uzgodnione miejsce przechowywania materiałów i oznaczenie wersji plików. Instrukcja powinna umożliwiać pracę z zarchiwizowanym kompletem materiałów; sam odnośnik do repozytorium lub zewnętrznej usługi nie zastępuje przekazania wymaganych plików. Opisz rozpakowanie, rozmieszczenie plików i wymagane przygotowanie danych.}
+Kod źródłowy znajduje się w repozytorium \url{https://github.com/dawer2253/sports-tournament-app} (gałąź \texttt{main}); ten sam komplet jest przekazywany jako archiwum projektu (załącznik do sprawozdania końcowego). Po sklonowaniu lub rozpakowaniu katalog główny zawiera:
+\begin{itemize}
+\item \texttt{backend/} -- aplikacja Laravel, migracje i seedery bazy, \texttt{compose.yaml}, \texttt{.env.example};
+\item \texttt{apps/admin/}, \texttt{apps/public/} -- aplikacje frontendowe, każda z \texttt{.env.example};
+\item \texttt{apps/mcp-server/} -- serwer MCP;
+\item \texttt{packages/} -- kontrakt API, wygenerowany klient i design system;
+\item \texttt{e2e/} -- testy end-to-end; \texttt{docs/} -- dokumentacja techniczna;
+\item \texttt{Makefile}, \texttt{package.json}, \texttt{package-lock.json}, \texttt{.nvmrc}.
+\end{itemize}
+Katalogi \texttt{node\_modules/}, \texttt{backend/vendor/} i pliki \texttt{.env} nie są przechowywane w repozytorium -- powstają podczas instalacji. Dane demonstracyjne nie wymagają przygotowania: tworzy je seeder w kroku~\ref{krok:fresh}. Na Windowsie zaleca się umieszczenie repozytorium w systemie plików WSL2 (np. \texttt{\textasciitilde/sports-tournament-app}), a nie na dysku \texttt{C:}, bo działa to szybciej i bez problemów z uprawnieniami.
+
+\subsection{Instalacja krok po kroku}
+\podpowiedz{Podaj czynności w kolejności wykonania, z rzeczywistymi poleceniami lub opisem działań w interfejsie. Przy poleceniach wskaż katalog roboczy i wymagane uprawnienia. Opisz budowanie projektu, przygotowanie bazy danych i innych komponentów, jeśli dotyczy. Po istotnych krokach podaj oczekiwany efekt. Poniższe punkty zastąp instrukcją dla własnego projektu.}
+Wszystkie polecenia wykonuje się w powłoce WSL2 (na Linuksie i macOS -- w zwykłym terminalu), w katalogu głównym repozytorium, bez uprawnień administratora, chyba że zaznaczono inaczej.
+\begin{enumerate}
+\item Zainstaluj Docker Desktop (z integracją WSL2), Git i Node.js 24 (np. przez nvm). Sprawdź wersje: \texttt{docker --version}, \texttt{node --version} (oczekiwane \texttt{v24.x}), \texttt{git --version}. W WSL2 doinstaluj \texttt{make}: \texttt{sudo apt install make}.
+\item Pobierz projekt:
+\begin{verbatim}
+git clone https://github.com/dawer2253/sports-tournament-app.git
+cd sports-tournament-app
+nvm use
+npm install
+\end{verbatim}
+\texttt{npm install} uruchamia się wyłącznie w katalogu głównym (monorepo z jednym plikiem \texttt{package-lock.json}). Efekt: katalog \texttt{node\_modules/} z zależnościami wszystkich aplikacji.
+\item Przygotuj backend: \texttt{make install}. Polecenie kopiuje \texttt{backend/.env.example} do \texttt{backend/.env}, instaluje zależności PHP w kontenerze Composera i generuje klucz aplikacji \texttt{APP\_KEY}. Efekt: katalog \texttt{backend/vendor/}.
+\item Uruchom kontenery: \texttt{make up}. Polecenie startuje kontenery PHP i MySQL, czeka na gotowość bazy, wykonuje migracje i tworzy dowiązanie \texttt{storage} dla wgrywanych logo. Pierwsze uruchomienie pobiera i buduje obrazy, co może potrwać kilka minut.
+\item\label{krok:fresh} Załaduj dane demonstracyjne: \texttt{make fresh} (\texttt{migrate:fresh --seed}). \textbf{Uwaga:} polecenie czyści całą bazę deweloperską. Efekt: konta organizatorów i sześć turniejów demonstracyjnych na każdym koncie, w tym konto \texttt{administrator@example.com}.
+\item Skieruj aplikacje frontendowe na lokalny backend: skopiuj \texttt{apps/admin/.env.example} do \texttt{apps/admin/.env} i \texttt{apps/public/.env.example} do \texttt{apps/public/.env}, a w obu plikach ustaw \texttt{VITE\_API\_URL=http://localhost:8000/api/v1}. Bez tej zmiany aplikacje korzystają z mocka kontraktu.
+\item Uruchom aplikacje frontendowe, każdą w osobnym terminalu: \texttt{npm run dev:admin} (panel, port 5173) i \texttt{npm run dev:public} (strona publiczna, port 5174).
+\item (Opcjonalnie) Skonfiguruj asystenta AI -- opis w podsekcji \emph{Konfiguracja}.
+\end{enumerate}
+% Krótkie polecenia: \texttt{polecenie}.
+% Wielowierszowe polecenia można umieścić w środowisku verbatim.
+% Nie zamieszczaj prawdziwych haseł ani kluczy dostępu.
+
+
+\subsection{Konfiguracja}
+\podpowiedz{Wskaż pliki konfiguracyjne, zmienne środowiskowe i ustawienia usług. Wyjaśnij znaczenie parametrów, wymagane wartości i miejsca ich zmiany. Uwzględnij porty, ścieżki, połączenia, konta i uprawnienia, jeśli występują. Używaj przykładowych wartości; nie wpisuj rzeczywistych haseł, tokenów ani kluczy. Wyjaśnij, jak osoba wdrażająca projekt ma dostarczyć własne dane dostępowe.}
+\begin{tabularx}{\textwidth}{@{}Y Y Y@{}}
+\toprule
+Parametr / lokalizacja & Znaczenie & Wartość / sposób ustawienia\\
+\midrule
+\texttt{APP\_PORT} (\texttt{backend/.env}) & port API na komputerze & \texttt{8000} -- musi zgadzać się z kontraktem i adresem w aplikacjach frontendowych\\
+\texttt{APP\_KEY} (\texttt{backend/.env}) & klucz szyfrowania Laravela & generuje \texttt{make install}; nie kopiować między instalacjami\\
+\texttt{APP\_LOCALE} (\texttt{backend/.env}) & język komunikatów API & \texttt{pl}\\
+\texttt{DB\_DATABASE}, \texttt{DB\_USERNAME}, \texttt{DB\_PASSWORD} (\texttt{backend/.env}) & połączenie z MySQL w kontenerze & wartości z \texttt{.env.example}; przy wdrożeniu poza komputerem deweloperskim ustawić własne hasło\\
+\texttt{SUPERVISOR\_PHP\_USER} (\texttt{backend/.env}) & użytkownik procesu PHP w kontenerze & na Windowsie z repozytorium na dysku \texttt{C:} odkomentować \texttt{SUPERVISOR\_PHP\_USER=root}; w WSL2, Linuksie i macOS zostawić zakomentowane\\
+\texttt{backend/config/cors.php} & dozwolone adresy frontendu & porty 5173 i 5174 (\texttt{localhost} i \texttt{127.0.0.1}); inny adres panelu wymaga dopisania\\
+\texttt{VITE\_API\_URL} (\texttt{apps/*/.env}) & adres API dla panelu i strony publicznej & \url{http://localhost:8000/api/v1} (backend) albo \texttt{http://127.0.0.1:4010} (mock)\\
+\texttt{VITE\_PUBLIC\_URL} (\texttt{apps/admin/.env}) & adres strony publicznej do linków z panelu & \texttt{http://localhost:5174}\\
+\texttt{VITE\_POLL\_INTERVAL\_MS} (\texttt{apps/public/.env}) & odstęp odświeżania strony publicznej & \texttt{15000} (15 s)\\
+\texttt{TOURNAMENT\_API\_URL} (serwer MCP) & adres API z prefiksem & \url{http://localhost:8000/api/v1}\\
+\texttt{TOURNAMENT\_PANEL\_URL} (serwer MCP) & adres panelu w odpowiedziach asystenta & \texttt{http://localhost:5173}\\
+\texttt{TOURNAMENT\_EMAIL}, \texttt{TOURNAMENT\_PASSWORD} (serwer MCP) & konto organizatora, na którym działa asystent & konto demonstracyjne \texttt{administrator@example.com} albo własne konto organizatora\\
+\bottomrule
+\end{tabularx}
+
+Hasła w \texttt{backend/.env.example} i hasło kont demonstracyjnych (\texttt{tajnehaslo123}) służą wyłącznie do pracy lokalnej. Osoba wdrażająca aplikację poza własnym komputerem ustawia własne dane dostępowe w \texttt{backend/.env} (plik nie trafia do repozytorium) i nie ładuje danych demonstracyjnych.
+
+\podpowiedz{Jeśli AI jest częścią rozwiązania, opisz wymagane modele, usługę lub środowisko lokalne, sposób konfiguracji dostępu, sprawdzoną wersję modelu, o ile można ją ustalić, oraz zależności i limity istotne dla uruchomienia. Samo użycie AI podczas tworzenia projektu nie wymaga takiego opisu tutaj.}
+\textbf{Asystent AI (serwer MCP).} Wymaga aplikacji Claude Desktop z kontem Anthropic (model i limity zależą od planu konta), Node.js 24 widocznego w \texttt{PATH} oraz działającego backendu. W Claude Desktop należy otworzyć \emph{Settings $\rightarrow$ Developer $\rightarrow$ Edit Config} (plik \texttt{\%APPDATA\%\textbackslash Claude\textbackslash claude\_desktop\_config.json} na Windowsie) i dopisać serwer:
+\begin{verbatim}
+{
+  "mcpServers": {
+    "turnieje": {
+      "command": "node",
+      "args": ["<ścieżka-do-repo>/apps/mcp-server/src/index.ts"],
+      "env": {
+        "TOURNAMENT_API_URL": "http://localhost:8000/api/v1",
+        "TOURNAMENT_PANEL_URL": "http://localhost:5173",
+        "TOURNAMENT_EMAIL": "administrator@example.com",
+        "TOURNAMENT_PASSWORD": "<hasło konta>"
+      }
+    }
+  }
+}
+\end{verbatim}
+Po zapisaniu pliku Claude Desktop należy całkowicie zamknąć (także z zasobnika systemowego) i uruchomić ponownie. Serwer \texttt{turnieje} powinien być widoczny w menu narzędzi z 37 narzędziami. Szczegóły: \texttt{docs/MCP.md} w repozytorium.
+
+\subsection{Uruchomienie i weryfikacja działania}
+\podpowiedz{Opisz pierwsze uruchomienie, zatrzymanie i ponowne uruchomienie rozwiązania. Podaj sposób sprawdzenia gotowości komponentów, lokalizację logów i krótki scenariusz potwierdzający poprawność instalacji. Wskaż dane potrzebne do próby oraz konkretny oczekiwany rezultat. Dla złożonego projektu sprawdź także połączenia między komponentami.}
+\textbf{Uruchomienie i zatrzymanie:} backend -- \texttt{make up} (start) i \texttt{make down} (zatrzymanie; dane bazy zostają w wolumenie Dockera); frontend -- \texttt{npm run dev:admin} i \texttt{npm run dev:public}, zatrzymanie skrótem Ctrl+C w danym terminalu. Ponowne uruchomienie to te same polecenia, bez \texttt{make install} i \texttt{make fresh}. Gotowość backendu: adres \url{http://localhost:8000/} zwraca \texttt{\{"status":"ok"\}}. Logi: \texttt{backend/storage/logs/laravel.log}, logi kontenerów w Docker Desktop, logi serwerów Vite w terminalach, w których je uruchomiono. Pozostałe polecenia wypisuje \texttt{make help}.\par
+\textbf{Próba działania:} otwórz \url{http://localhost:5173}, zaloguj się podpowiedzianym kontem demonstracyjnym \texttt{administrator@example.com}, otwórz turniej ,,Liga Osiedlowa 2026'' i zakładkę \emph{Tabela}, a następnie przyciskiem \emph{Otwórz stronę} w \emph{Ustawieniach} przejdź na \url{http://localhost:5174/t/liga-osiedlowa-2026-administrator}. Dodatkowo można uruchomić testy: \texttt{make test} (backend), \texttt{npm test} (frontend i serwer MCP) oraz \texttt{npm run test:e2e} (end-to-end; wymaga wolnych portów 5173 i 5174 i działającego \texttt{make up}).\par
+\textbf{Oczekiwany rezultat:} panel pokazuje sześć turniejów konta demonstracyjnego; tabela ,,Ligi Osiedlowej 2026'' ma trzy drużyny z prowadzącymi Wilkami Bemowo (6 punktów), a strona publiczna pokazuje tę samą tabelę -- co potwierdza połączenie panelu, strony publicznej, API i bazy. Testy kończą się bez błędów.
+
+\subsection{Typowe problemy}
+\podpowiedz{Opisz rzeczywiście napotkane lub przewidywalne problemy instalacyjne i konfiguracyjne. Podaj objaw, sposób ustalenia przyczyny oraz działanie naprawcze. Wskaż logi lub polecenia diagnostyczne, jeśli pomagają. Dodaj wiersze według potrzeb.}
+\begin{tabularx}{\textwidth}{@{}Y Y Y@{}}
+\toprule
+Objaw & Przyczyna / diagnostyka & Rozwiązanie\\
+\midrule
+\texttt{make} lub Sail kończy się błędem \texttt{Unsupported operating system} & polecenia uruchomiono w Git Bashu lub PowerShellu & uruchamiać \texttt{make} w powłoce WSL2\\
+API zwraca 500 z komunikatem o \texttt{tempnam()} & repozytorium na dysku \texttt{C:}: proces PHP nie może pisać do \texttt{storage/}; widać to w \texttt{laravel.log} & odkomentować \texttt{SUPERVISOR\_PHP\_USER=root} w \texttt{backend/.env} i ponowić \texttt{make up}; albo przenieść repozytorium do WSL2\\
+API zwraca 500 na każde żądanie & brak tabel w bazie (np. nowy wolumen) & \texttt{make up} (wykonuje migracje) albo \texttt{make fresh}\\
+Błąd 500 przy zdarzeniach meczowych & baza bez najnowszych migracji & \texttt{make migrate}\\
+Logo i herby zwracają 403 & brak dowiązania \texttt{public/storage} & \texttt{make up} (tworzy dowiązanie \texttt{storage:link})\\
+,,Connection refused'' pod \texttt{127.0.0.1:5173} & Vite nasłuchuje na IPv6 & otwierać adresy przez \texttt{localhost}\\
+Panel nie łączy się z API, błąd CORS w konsoli przeglądarki & panel działa pod innym adresem lub portem niż 5173/5174 & uruchomić panel na domyślnym porcie albo dopisać adres w \texttt{backend/config/cors.php}\\
+Panel pokazuje dane, których nie ma w bazie & aplikacja korzysta z mocka kontraktu & ustawić \texttt{VITE\_API\_URL} w \texttt{apps/*/.env} i zrestartować serwer Vite\\
+Niespójne wersje pakietów, błędy budowania & \texttt{npm install} uruchomione w podkatalogu & usunąć \texttt{node\_modules} w podkatalogu i uruchomić \texttt{npm install} w katalogu głównym\\
+\texttt{npm run test:e2e} nie startuje & zajęte porty 5173/5174 albo nie działa MySQL & zatrzymać \texttt{dev:admin} i \texttt{dev:public}; uruchomić \texttt{make up}\\
+Serwer \texttt{turnieje} nie pojawia się w Claude Desktop & błędna ścieżka w konfiguracji, za stary Node.js lub nie działa backend & sprawdzić ścieżkę absolutną, \texttt{node --version} (24+) i \url{http://localhost:8000/}; zamknąć Claude Desktop całkowicie i uruchomić ponownie\\
+\bottomrule
+\end{tabularx}
+
+
+\subsection{Utrzymanie i usunięcie instalacji}
+\podpowiedz{Jeśli dotyczy: opisz kopie zapasowe i odtwarzanie danych, aktualizację projektu, powrót do poprzedniej wersji i usunięcie instalacji. Wskaż, które pliki lub dane należy zachować oraz które czynności mogą spowodować ich utratę. Dostosuj zakres do projektu; nie twórz procedur dla funkcji, których rozwiązanie nie ma.}
+\textbf{Kopia zapasowa danych.} Dane turniejów są w bazie MySQL (wolumen Dockera) oraz w katalogu \texttt{backend/storage/app/public} (wgrane logo i herby). Kopię bazy wykonuje się poleceniem uruchomionym w katalogu \texttt{backend/}:
+\begin{verbatim}
+docker compose exec mysql mysqldump -u root -p laravel > kopia.sql
+\end{verbatim}
+a odtwarza poleceniem \texttt{docker compose exec -T mysql mysql -u root -p laravel < kopia.sql}; hasło to wartość \texttt{DB\_PASSWORD} z \texttt{backend/.env}.
+
+\textbf{Aktualizacja.} \texttt{git pull}, następnie \texttt{npm install} w katalogu głównym, \texttt{make up} (wykonuje nowe migracje) i ponowne uruchomienie serwerów Vite. Powrót do poprzedniej wersji: \texttt{git checkout <commit>} i te same kroki; migracje niezgodne wstecz wymagają odtworzenia bazy z kopii.
+
+\textbf{Czynności powodujące utratę danych.} \texttt{make fresh} czyści bazę i ładuje dane demonstracyjne; \texttt{docker compose down -v} (w \texttt{backend/}) usuwa wolumen z bazą.
+
+\textbf{Usunięcie instalacji.} \texttt{make down}, następnie w katalogu \texttt{backend/} \texttt{docker compose down -v --rmi local} (usuwa kontenery, wolumeny i obraz aplikacji), a na końcu katalog repozytorium. Docker Desktop, Node.js i Git odinstalowuje się standardowo, jeśli nie są potrzebne do innych celów.
+
+\subsection{Źródła i materiały pomocnicze}
+\podpowiedz{Wskaż wykorzystane instrukcje producentów, dokumentację narzędzi oraz przekazane pliki pomocnicze, np. przykładową konfigurację i skrypty instalacyjne. Podaj nazwy i lokalizacje plików; dla źródeł internetowych - tytuł, adres i datę dostępu. Usuń podsekcję, jeśli nie ma takich materiałów.}
+\begin{itemize}
+\item Pliki w repozytorium: \texttt{README.md}, \texttt{docs/BACKEND.md} (uruchomienie backendu), \texttt{docs/BACKEND-INSTALACJA.md} (zapis instalacji szkieletu), \texttt{docs/MCP.md} (serwer MCP), \texttt{Makefile}, \texttt{backend/.env.example}, \texttt{apps/admin/.env.example}, \texttt{apps/public/.env.example}, \texttt{e2e/scripts/backend.sh}.
+\item Laravel Sail -- dokumentacja, \url{https://laravel.com/docs/sail}, dostęp: 19.11.2026.
+\item Docker Desktop: WSL 2 backend on Windows, \url{https://docs.docker.com/desktop/features/wsl/}, dostęp: 19.11.2026.
+\item Instalacja WSL, Microsoft Learn, \url{https://learn.microsoft.com/windows/wsl/install}, dostęp: 19.11.2026.
+\item Node.js, \url{https://nodejs.org}, dostęp: 19.11.2026.
+\item Connect to local MCP servers (Claude Desktop), \url{https://modelcontextprotocol.io/docs/develop/connect-local-servers}, dostęp: 19.11.2026.
+\end{itemize}
+\end{document}

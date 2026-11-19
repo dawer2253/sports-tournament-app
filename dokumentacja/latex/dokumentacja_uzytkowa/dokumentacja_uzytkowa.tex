@@ -1,0 +1,310 @@
+% Autor szablonu: dr Roman Czapla
+% Kompilacja: pdfLaTeX (dwukrotnie, aby zaktualizować spis treści).
+% Wymagane logo uczelni: images/logo.png (ścieżka względem pliku głównego).
+\documentclass[11pt,a4paper,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish,provide=*]{babel}
+\usepackage{lmodern,microtype}
+\usepackage[margin=25mm,headheight=14pt]{geometry}
+\usepackage{xcolor,graphicx,tabularx,booktabs,array,enumitem,fancyhdr,titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\definecolor{accent}{HTML}{344B59}
+\definecolor{hintcolor}{HTML}{58636A}
+\hypersetup{pdfauthor={Wojciech Czachurski, Julia Gawlik, Dawid Pątko},pdftitle={Projekt inżynierski - Dokumentacja użytkowa}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\renewcommand{\arraystretch}{1.3}
+\setlength{\emergencystretch}{2em}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection.}{0.5em}{}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Projekt inżynierski}
+\fancyhead[R]{\small Dokumentacja użytkowa}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% Podpowiedzi są widoczne podczas wypełniania szablonu.
+% Przed oddaniem: uzupełnij pola, zastąp przykłady własną treścią
+% i zmień poniższy przełącznik na \podpowiedzifalse.
+\newif\ifpodpowiedzi
+%\podpowiedzitrue
+\podpowiedzifalse
+\newcommand{\podpowiedz}[1]{\ifpodpowiedzi\par\begingroup\small\color{hintcolor}\textit{Wskazówka: #1}\par\endgroup\fi}
+\newcommand{\pole}[1]{\textnormal{[#1]}}
+
+% Dane dokumentu - uzupełnij w jednym miejscu.
+% Ścieżkę logo można zmienić poniżej.
+\newcommand{\pliklogo}{images/logo.png}
+\newcommand{\logouczelni}{%
+  \includegraphics[width=0.8\textwidth,height=40mm,keepaspectratio]{\pliklogo}%
+}
+\newcommand{\tytulprojektu}{System do zarządzania rozgrywkami sportowymi}
+\newcommand{\rokakademicki}{2026/2027}
+\newcommand{\semestrprojektu}{VII, zimowy}
+\newcommand{\datadokumentu}{19.11.2026}
+\newcommand{\wersjadokumentu}{1.0}
+% Zespół dwuosobowy tylko za zgodą dyrekcji: zmień na \trzeciaosobafalse.
+\newif\iftrzeciaosoba
+\trzeciaosobatrue
+\newcommand{\studentA}{Wojciech Czachurski}
+\newcommand{\studentB}{Julia Gawlik}
+\newcommand{\studentC}{Dawid Pątko}
+\newcommand{\albumA}{168750}
+\newcommand{\albumB}{168679}
+\newcommand{\albumC}{168744}
+\newcommand{\prowadzacyA}{mgr Wojciech Baran}
+\newcommand{\prowadzacyB}{dr Wojciech Gwizdała}
+
+\begin{document}
+\begin{titlepage}
+\centering
+{\large Uniwersytet Komisji Edukacji Narodowej w Krakowie\par}
+{\normalsize Instytut Bezpieczeństwa i Informatyki\par}
+\vspace{8mm}
+\logouczelni\par
+\vspace{10mm}
+{\Large\bfseries\color{accent} PROJEKT INŻYNIERSKI\par}
+\vspace{3mm}
+{\large Dokumentacja użytkowa\par}
+\vspace{15mm}
+{\LARGE\bfseries\tytulprojektu\par}
+\vspace{15mm}
+{\small ZESPÓŁ PROJEKTOWY\par}
+\vspace{3mm}
+\begin{tabular}{ll}
+\studentA & Nr albumu: \albumA\\
+\studentB & Nr albumu: \albumB
+\iftrzeciaosoba\\
+\studentC & Nr albumu: \albumC\fi
+\end{tabular}
+\vspace{12mm}
+
+{\small PROWADZĄCY ZAJĘCIA PROJEKTOWE\par}
+\vspace{3mm}
+\prowadzacyA\par
+\prowadzacyB\par
+\vfill
+Rok akademicki: \rokakademicki\quad Semestr: \semestrprojektu\par
+Data dokumentu: \datadokumentu\quad Wersja: \wersjadokumentu\par
+\vspace{6mm}
+Kraków\par
+
+\end{titlepage}
+
+\tableofcontents
+\sloppy
+\podpowiedz{Dokument jest skierowany do osoby korzystającej z rezultatu projektu. Zakres uzgodnij z prowadzącymi i dostosuj do odbiorcy: użytkownika aplikacji, operatora prototypu, odbiorcy animacji albo programisty korzystającego z biblioteki. Usuń podsekcje nieadekwatne. Nie powielaj opisu architektury ani instrukcji instalacji, jeśli znajdują się w osobnych dokumentach. Uzupełnij pola, usuń przykłady i wyłącz podpowiedzi przed oddaniem.}
+
+\newcommand{\zrzut}[3]{%
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth,height=0.4\textheight,keepaspectratio]{images/#1.png}
+\caption{#2}
+\label{fig:#3}
+\end{figure}}
+
+\section{Szczegółowa dokumentacja użytkowa}
+\subsection{Przeznaczenie i odbiorcy}
+\podpowiedz{Wyjaśnij, do czego służy rozwiązanie, kto może z niego korzystać i jakie zadania umożliwia. Podaj wersję projektu, której dotyczy instrukcja. Używaj języka zrozumiałego dla wskazanego odbiorcy.}
+\textbf{Przeznaczenie:} aplikacja służy do prowadzenia amatorskich lig i turniejów sportowych w piłce nożnej, koszykówce i siatkówce. Organizator zakłada w niej turniej, układa terminarz albo drabinkę, wpisuje wyniki i zdarzenia meczowe, a aplikacja sama liczy tabelę i klasyfikację zawodników. Kibice i zawodnicy śledzą rozgrywki na publicznej stronie turnieju, a drużyny mogą przez nią zgłosić się do turnieju.\par
+\textbf{Odbiorcy:} organizator rozgrywek (panel organizatora) -- wystarczy umiejętność obsługi przeglądarki internetowej i znajomość regulaminu prowadzonych rozgrywek; kibice, zawodnicy i kapitanowie drużyn (strona publiczna) -- nie potrzebują konta ani żadnej wiedzy technicznej. Opcjonalnie organizator może prowadzić turniej przez asystenta AI w aplikacji Claude Desktop.\par
+\textbf{Wersja projektu:} wersja 1.0, stan z 19.11.2026.
+
+\subsection{Rozpoczęcie korzystania}
+\podpowiedz{Podaj wymagania istotne dla użytkownika i sposób rozpoczęcia pracy: adres aplikacji, uruchamiany plik, odtwarzacz, urządzenie lub punkt wejścia do biblioteki. Wskaż potrzebne konto, uprawnienia i dane wejściowe, jeśli występują. Odwołaj się do dokumentacji instalacyjnej, jeśli jest wymagana; nie opisuj środowiska deweloperskiego.}
+Do korzystania potrzebna jest aktualna przeglądarka internetowa (Chrome, Edge, Firefox lub Safari) oraz uruchomiona aplikacja -- sposób jej przygotowania opisuje dokumentacja instalacyjno-konfiguracyjna. W wersji lokalnej aplikacja ma dwa adresy:
+\begin{itemize}
+\item \textbf{panel organizatora:} \url{http://localhost:5173} -- wymaga zalogowania;
+\item \textbf{strona publiczna turnieju:} \url{http://localhost:5174/t/<adres-turnieju>}, np. \url{http://localhost:5174/t/liga-osiedlowa-2026-administrator} -- dostępna bez logowania. Adres turnieju (tzw. slug) organizator widzi w panelu i może go zmienić w ustawieniach.
+\end{itemize}
+Do pokazu przygotowano konto demonstracyjne \textbf{administrator@example.com} z hasłem \textbf{tajnehaslo123}. Formularz logowania podpowiada je automatycznie (rys.~\ref{fig:logowanie}), więc wystarczy nacisnąć \emph{Zaloguj}. Konto ma sześć gotowych turniejów z drużynami, wynikami i zdarzeniami. Nowe konto organizatora można też założyć przez API rejestracji (\texttt{POST /register}).
+
+\zrzut{admin-logowanie}{Ekran logowania panelu organizatora.}{logowanie}
+
+Po zalogowaniu widoczna jest lista turniejów organizatora (rys.~\ref{fig:turnieje}) z nazwą, sportem, liczbą drużyn, statusem i adresem publicznym. Lewy pasek prowadzi do bieżących turniejów, a pole wyszukiwania u góry pozwala szybko znaleźć turniej lub drużynę.
+
+\zrzut{admin-turnieje}{Lista turniejów organizatora.}{turnieje}
+
+\subsection{Opis funkcji i sposobu obsługi}
+\podpowiedz{Opisz dostępne funkcje oraz sposób ich użycia, grupując je według zadań użytkownika. Wyjaśnij istotne elementy interfejsu, polecenia i ustawienia. Dla animacji może to być sposób odtwarzania i korzystania z przekazanych formatów; dla prototypu - sterowanie; dla biblioteki - publiczny interfejs i przykłady wywołań.}
+\pagebreak[3]
+\subsubsection*{Panel organizatora}
+
+\textbf{Zakładanie turnieju.} Przycisk \emph{Nowy turniej} otwiera formularz (rys.~\ref{fig:nowy}), w którym podaje się nazwę, wybiera sport (piłka nożna, koszykówka, siatkówka) i format rozgrywek: \emph{Liga każdy z każdym}, \emph{Puchar (drabinka)} albo \emph{Grupy + playoff}. Turniej powstaje jako szkic -- kibice go nie widzą, dopóki organizator go nie opublikuje. Punktacja, kryteria rozstrzygania remisów i długość meczu przyjmują wartości domyślne dla sportu i można je później zmienić.
+
+\zrzut{admin-nowy-turniej}{Formularz zakładania turnieju.}{nowy}
+
+\textbf{Zakładki turnieju.} Po wejściu w turniej u góry widoczne są jego nazwa, sport, adres publiczny i status, a pod nimi zakładki (rys.~\ref{fig:druzyny}):
+\begin{itemize}
+\item \emph{Drużyny} -- lista drużyn z liczbą zawodników; przycisk \emph{Dodaj drużynę}; po wejściu w drużynę można zmienić jej nazwę, wgrać herb oraz dodawać, edytować i usuwać zawodników (imię i nazwisko, numer, pozycja);
+\item \emph{Zgłoszenia} -- zgłoszenia drużyn przesłane przez stronę publiczną (rys.~\ref{fig:zgloszenia}); liczba przy zakładce to zgłoszenia oczekujące; \emph{Przyjmij} dodaje drużynę wraz ze zgłoszonym składem, \emph{Odrzuć} zamyka zgłoszenie;
+\item \emph{Grupy} -- w formacie grupowym: losowanie lub ręczne ustalenie składu grup oraz liczby drużyn awansujących z każdej grupy (rys.~\ref{fig:admin-grupy});
+\item \emph{Obiekty} -- boiska i hale (nazwa, adres), przypisywane do meczów;
+\item \emph{Grafiki} -- generator grafik do mediów społecznościowych (rys.~\ref{fig:grafiki});
+\item \emph{Ustawienia} -- status, logo, nazwa, adres strony, kolor, długość i podział meczu, punktacja, kolejność kryteriów remisów, zapisy oraz usuwanie turnieju (rys.~\ref{fig:ustawienia});
+\item \emph{Terminarz}, \emph{Tabela}, \emph{Drabinka} -- prowadzenie rozgrywek, opisane niżej.
+\end{itemize}
+
+\zrzut{admin-przeglad}{Turniej w panelu -- zakładka Drużyny.}{druzyny}
+
+\textbf{Terminarz i wyniki.} W turnieju ligowym lub grupowym organizator przyciskiem \emph{Wygeneruj terminarz} tworzy pary każdy z każdym (jedna runda albo dwie, z rewanżami); mecze powstają bez dat, a przyciskiem \emph{Rozłóż daty} rozkłada kolejki od wybranej daty co zadaną liczbę dni. Lewa kolumna zakładki \emph{Terminarz} (rys.~\ref{fig:terminarz}) pokazuje kolejki z liczbą rozegranych meczów, prawa -- mecze wybranej kolejki z godziną, obiektem, wynikiem i statusem. Gdy dwa mecze tej samej drużyny lub na tym samym obiekcie nakładają się w czasie, aplikacja to sygnalizuje. Kliknięcie meczu otwiera okno meczu (rys.~\ref{fig:mecz-admin}), w którym:
+\begin{itemize}
+\item wpisuje się wynik i stan meczu: \emph{Zaplanowany}, \emph{Trwa} albo \emph{Zakończony};
+\item w sekcji \emph{Termin i obiekt} zmienia się datę, godzinę i obiekt;
+\item przyciskami w sekcji \emph{Zdarzenia} dodaje się zdarzenia dla każdej drużyny (w piłce nożnej: bramka, bramka samobójcza, żółta i czerwona kartka; w koszykówce: rzuty za 1, 2 i 3 punkty; w siatkówce wynik setów), wskazując zawodnika i minutę. Zdarzenia zapisują się od razu i w meczu trwającym aktualizują wynik, a przycisk \emph{Zapisz} dotyczy wyniku, stanu, terminu i obiektu.
+\end{itemize}
+
+\zrzut{admin-terminarz}{Zakładka Terminarz -- kolejki i mecze.}{terminarz}
+\zrzut{admin-mecz}{Okno meczu: wynik, stan meczu i zdarzenia.}{mecz-admin}
+
+\textbf{Tabela.} Zakładka \emph{Tabela} (rys.~\ref{fig:tabela-admin}) pokazuje tabelę liczoną na bieżąco z meczów zakończonych: mecze, zwycięstwa, remisy, porażki, zdobycze, różnicę i punkty. Kolejność kryteriów rozstrzygania remisów (np. bezpośredni mecz, różnica bramek, bramki zdobyte) organizator ustawia, przeciągając je na liście. W turnieju grupowym widoczne są osobne tabele grup z linią awansu.
+
+\zrzut{admin-tabela}{Zakładka Tabela w panelu.}{tabela-admin}
+
+\textbf{Drabinka i grupy.} W pucharze organizator generuje drabinkę z rozstawieniem ręcznym lub losowym; w formacie grupowym -- po fazie grupowej -- z rozstawienia krzyżowego (1A--2B, 1B--2A), które przed startem fazy może poprawić ręcznie. Drabinka (rys.~\ref{fig:drabinka-admin}) pokazuje rundy od ćwierćfinałów do finału oraz mecz o 3. miejsce. Po wpisaniu wyniku zwycięzca automatycznie przechodzi do następnej rundy. Jeśli organizator poprawi wynik i zmieni się zwycięzca, aplikacja podmieni drużynę w kolejnym meczu, o ile ten się jeszcze nie rozpoczął; jeśli się rozpoczął, zmiana zostanie odrzucona.
+
+\zrzut{admin-drabinka}{Zakładka Drabinka w turnieju pucharowym.}{drabinka-admin}
+\zrzut{admin-grupy}{Zakładka Grupy -- skład grup i liczba drużyn awansujących.}{admin-grupy}
+
+\textbf{Ustawienia i publikacja.} W zakładce \emph{Ustawienia} (rys.~\ref{fig:ustawienia}) organizator publikuje turniej (status \emph{Trwa}), kończy go albo cofa do szkicu; zmiana statusu zapisuje się od razu. Może też wgrać logo (PNG, JPG lub WebP, do 2 MB), zmienić nazwę i adres strony, wybrać kolor wiodący strony publicznej, ustawić długość meczu i jego podział na części, punktację za zwycięstwo, remis i porażkę oraz otworzyć zapisy drużyn z opcjonalnym terminem. Pozostałe zmiany zapisuje przycisk \emph{Zapisz zmiany}. Na dole strony znajduje się usuwanie turnieju.
+
+\zrzut{admin-ustawienia}{Zakładka Ustawienia.}{ustawienia}
+
+\textbf{Zgłoszenia drużyn.} Gdy zapisy są otwarte, kapitanowie zgłaszają drużyny przez stronę publiczną. Zgłoszenie zawiera nazwę drużyny, osobę kontaktową, e-mail, opcjonalnie telefon i skład. Organizator rozpatruje je w zakładce \emph{Zgłoszenia} (rys.~\ref{fig:zgloszenia}); rozpatrzone zgłoszenia przechodzą do sekcji \emph{Rozpatrzone} z oznaczeniem \emph{Przyjęte} lub \emph{Odrzucone}.
+
+\zrzut{admin-zgloszenia}{Zakładka Zgłoszenia.}{zgloszenia}
+
+\textbf{Grafiki.} W zakładce \emph{Grafiki} (rys.~\ref{fig:grafiki}) organizator wybiera rodzaj grafiki (\emph{Zapowiedź meczu}, \emph{Wynik meczu}, \emph{Tabela}, \emph{Klasyfikacja}), mecz oraz format: 4:5 (post, 1440$\times$1800 px) albo 9:16 (relacja, 1440$\times$2560 px). Podgląd po prawej odświeża się na bieżąco, a przycisk \emph{Pobierz PNG} zapisuje grafikę. W przeglądarkach, które to obsługują, dostępny jest także przycisk \emph{Udostępnij}.
+
+\zrzut{admin-grafiki}{Generator grafik do mediów społecznościowych.}{grafiki}
+
+\subsubsection*{Strona publiczna turnieju}
+Strona publiczna jest dostępna dla każdego, kto zna adres turnieju, i odświeża się automatycznie co 15 sekund, więc nie trzeba jej przeładowywać w trakcie meczów. Ma kolor i logo ustawione przez organizatora oraz zakładki:
+\begin{itemize}
+\item \emph{Przegląd} -- najbliższe i ostatnie mecze, mecze trwające, skrót tabeli i najlepsi zawodnicy (rys.~\ref{fig:pub-przeglad});
+\item \emph{Tabela} -- pełna tabela z formą drużyn i opisem kryteriów rozstrzygania remisów (rys.~\ref{fig:pub-tabela}); w turnieju grupowym -- tabele grup (rys.~\ref{fig:pub-grupy});
+\item \emph{Drabinka} -- w pucharze i fazie pucharowej (rys.~\ref{fig:pub-drabinka});
+\item \emph{Terminarz} i \emph{Wyniki} -- mecze nadchodzące i rozegrane, pogrupowane w kolejki (rys.~\ref{fig:pub-terminarz} i~\ref{fig:pub-wyniki});
+\item \emph{Statystyki} -- klasyfikacja zawodników, np. strzelców (rys.~\ref{fig:pub-statystyki});
+\item strona meczu -- wynik, strzelcy i przebieg meczu z podziałem na części gry; w meczu trwającym także zegar meczu (rys.~\ref{fig:pub-mecz}).
+\end{itemize}
+
+\zrzut{public-przeglad}{Strona publiczna -- Przegląd.}{pub-przeglad}
+\zrzut{public-tabela}{Strona publiczna -- Tabela.}{pub-tabela}
+\zrzut{public-grupy}{Strona publiczna -- tabele grup z linią awansu.}{pub-grupy}
+\zrzut{public-drabinka}{Strona publiczna -- Drabinka.}{pub-drabinka}
+\zrzut{public-terminarz}{Strona publiczna -- Terminarz.}{pub-terminarz}
+\zrzut{public-wyniki}{Strona publiczna -- Wyniki.}{pub-wyniki}
+\zrzut{public-statystyki}{Strona publiczna -- Statystyki.}{pub-statystyki}
+\zrzut{public-mecz}{Strona publiczna -- relacja meczu.}{pub-mecz}
+
+Gdy organizator otworzył zapisy, strona turnieju pokazuje pasek \emph{Zgłoś drużynę} z formularzem zgłoszenia (rys.~\ref{fig:pub-zgloszenie}).
+
+\zrzut{public-zgloszenie}{Strona publiczna turnieju z otwartymi zapisami.}{pub-zgloszenie}
+
+\subsubsection*{Asystent AI (opcjonalnie)}
+Po skonfigurowaniu serwera MCP w Claude Desktop (dokumentacja instalacyjno-konfiguracyjna) organizator może wydawać polecenia w zwykłym języku, np. \emph{,,Załóż ligę piłkarską z czterema drużynami i wygeneruj terminarz''} albo \emph{,,Wpisz wynik 2:1 w meczu Wilki Bemowo -- Sokoły Ursus''}. Asystent wykonuje je tymi samymi operacjami co panel, a przed każdą zmianą lub usunięciem danych pyta o zgodę. Efekty są od razu widoczne w panelu i na stronie publicznej.
+
+\podpowiedz{Dodaj czytelne zrzuty ekranu lub ilustracje tam, gdzie pomagają wykonać zadanie. Każdy rysunek powinien mieć podpis i odwołanie w tekście przez \texttt{\textbackslash ref}. Nie zastępuj instrukcji samymi obrazami.}
+% Przykład - odkomentuj po dodaniu pliku:
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.9\linewidth]{images/ekran.png}
+%   \caption{Widok funkcji z perspektywy użytkownika.}
+%   \label{fig:ekran}
+% \end{figure}
+
+\clearpage
+\subsection{Przykładowe działanie}
+\podpowiedz{Przedstaw konkretne scenariusze najważniejszych zadań. Dla każdego podaj cel, warunki początkowe, przykładowe dane, kolejne kroki i oczekiwany rezultat. Przykład powinien być możliwy do odtworzenia. Powielaj poniższy blok według potrzeb.}
+\subsubsection{Przeprowadzenie ligi od założenia do tabeli}
+\textbf{Cel:} założyć ligę piłkarską, wygenerować terminarz, wpisać wynik i zobaczyć tabelę na stronie publicznej.\par
+\textbf{Warunki i dane:} organizator zalogowany na koncie \texttt{administrator@example.com}; przykładowe dane: turniej ,,Liga Testowa'', drużyny ,,Lwy'', ,,Tygrysy'', ,,Pumy'', ,,Rysie''.
+\begin{enumerate}
+\item Na liście turniejów naciśnij \emph{Nowy turniej}, wpisz nazwę ,,Liga Testowa'', wybierz \emph{Piłka nożna} i \emph{Liga każdy z każdym}, naciśnij \emph{Załóż turniej}. Aplikacja otwiera nowy turniej w statusie szkicu.
+\item W zakładce \emph{Drużyny} dodaj kolejno cztery drużyny przyciskiem \emph{Dodaj drużynę}. Lista pokazuje cztery drużyny bez zawodników; w każdej drużynie możesz dopisać zawodników.
+\item W zakładce \emph{Terminarz} naciśnij \emph{Wygeneruj terminarz} (jedna runda), a następnie przyciskiem \emph{Rozłóż daty} ustaw datę pierwszej kolejki i odstęp 7 dni. Pojawiają się trzy kolejki po dwa mecze z datami.
+\item W zakładce \emph{Ustawienia} naciśnij \emph{Opublikuj}. Status zmienia się na \emph{Trwa}, a turniej staje się widoczny na stronie publicznej.
+\item W \emph{Terminarzu} kliknij pierwszy mecz kolejki 1, wpisz wynik 2:1, ustaw stan \emph{Zakończony} i naciśnij \emph{Zapisz}. Mecz otrzymuje wynik i oznaczenie zakończonego.
+\item Przejdź do zakładki \emph{Tabela} albo otwórz stronę publiczną przyciskiem \emph{Otwórz stronę}.
+\end{enumerate}
+\textbf{Oczekiwany rezultat:} zwycięzca meczu ma w tabeli 3 punkty i jest na 1. miejscu, przegrany ma 0 punktów; drużyny bez rozegranego meczu mają zera. Ta sama tabela jest widoczna na stronie publicznej w zakładce \emph{Tabela}.
+
+\subsubsection{Wpisanie zdarzeń meczu i klasyfikacja strzelców}
+\textbf{Cel:} odnotować strzelców bramek i sprawdzić klasyfikację zawodników.\par
+\textbf{Warunki i dane:} turniej ,,Liga Osiedlowa 2026'' na koncie demonstracyjnym; mecz kolejki 5 ,,Wilki Bemowo -- Orły Bielany''.
+\begin{enumerate}
+\item W zakładce \emph{Terminarz} wybierz \emph{Kolejka 5} i kliknij mecz. Otwiera się okno meczu.
+\item Ustaw stan \emph{Trwa}. W sekcji \emph{Zdarzenia} po stronie ,,Wilki Bemowo'' naciśnij \emph{Bramka}, wybierz zawodnika ,,Marek Nowak'' i wpisz minutę 15. Zdarzenie pojawia się na liście, a wynik zmienia się na 1:0.
+\item Dodaj w ten sam sposób żółtą kartkę dla zawodnika Orłów Bielany, a na koniec ustaw stan \emph{Zakończony} i naciśnij \emph{Zapisz}.
+\item Otwórz stronę publiczną turnieju i przejdź do zakładki \emph{Statystyki}, a następnie do \emph{Wyniki} i kliknij rozegrany mecz.
+\end{enumerate}
+\textbf{Oczekiwany rezultat:} Marek Nowak ma w klasyfikacji strzelców o jedną bramkę więcej; strona meczu pokazuje bramkę w 15. minucie i żółtą kartkę w przebiegu meczu.
+
+\subsubsection{Zgłoszenie drużyny i jego przyjęcie}
+\textbf{Cel:} zgłosić drużynę przez stronę publiczną i przyjąć ją w panelu.\par
+\textbf{Warunki i dane:} turniej ,,Liga Letnia 2026'' na koncie demonstracyjnym ma otwarte zapisy; przykładowa drużyna ,,Orły Testowe'', osoba kontaktowa ,,Jan Kowalski'', e-mail \texttt{jan@example.com}.
+\begin{enumerate}
+\item Otwórz \url{http://localhost:5174/t/liga-letnia-2026-administrator} i naciśnij \emph{Zgłoś drużynę}.
+\item Wypełnij nazwę drużyny, osobę kontaktową i e-mail, opcjonalnie dodaj zawodników i wyślij formularz. Strona wyświetla komunikat \emph{Zgłoszenie wysłane}.
+\item W panelu otwórz turniej ,,Liga Letnia 2026'' i zakładkę \emph{Zgłoszenia}; przy zgłoszeniu ,,Orły Testowe'' naciśnij \emph{Przyjmij}.
+\end{enumerate}
+\textbf{Oczekiwany rezultat:} zgłoszenie przechodzi do sekcji \emph{Rozpatrzone} z oznaczeniem \emph{Przyjęte}, a drużyna ,,Orły Testowe'' wraz ze zgłoszonym składem pojawia się w zakładce \emph{Drużyny}.
+
+\subsection{Dane wejściowe i wyniki}
+\podpowiedz{Jeśli dotyczy: opisz obsługiwane formaty, wymagane pola, dopuszczalne wartości i ograniczenia danych. Wyjaśnij zapis, eksport, odtwarzanie lub interpretację wyników. Wskaż czynności mogące nadpisać lub usunąć dane. Dla animacji możesz opisać formaty plików wynikowych i parametry odtwarzania.}
+\begin{itemize}
+\item \textbf{Turniej:} nazwa (wymagana), sport i format wybierane przy zakładaniu; adres strony (slug) musi być unikalny w całej aplikacji; punktacja za wynik w zakresie 0--10.
+\item \textbf{Drużyny i zawodnicy:} nazwa drużyny unikalna w turnieju; zawodnik ma imię i nazwisko (wymagane) oraz opcjonalnie numer i pozycję; liczba zawodników w drużynie ma limit techniczny.
+\item \textbf{Obrazy:} logo turnieju i herby drużyn w formacie PNG, JPG lub WebP, do 2 MB, od 64$\times$64 do 4096$\times$4096 px.
+\item \textbf{Wyniki:} liczby całkowite nieujemne; mecz trwający lub zakończony wymaga obu wyników; w siatkówce wynikiem są sety, a mecz zakończony musi mieć zwycięzcę; rzuty karne wpisuje się tylko przy remisie w fazie pucharowej.
+\item \textbf{Daty:} wyświetlane w strefie czasowej przeglądarki użytkownika.
+\item \textbf{Wyniki pracy aplikacji:} tabela, klasyfikacja i drabinka są liczone automatycznie i widoczne w panelu oraz na stronie publicznej; grafiki można pobrać jako pliki PNG.
+\end{itemize}
+\textbf{Czynności nieodwracalne:} usunięcie turnieju kasuje jego drużyny, mecze i wyniki i nie da się go cofnąć; ponowne wygenerowanie terminarza lub drabinki zastępuje dotychczasowe mecze fazy. Dlatego aplikacja nie pozwala usunąć drużyny, zawodnika, obiektu ani przegenerować fazy, jeśli są z nimi związane mecze rozegrane lub trwające.
+
+\subsection{Problemy i komunikaty}
+\podpowiedz{Opisz typowe problemy z perspektywy użytkownika: jak je rozpoznać, co oznaczają i jakie działania podjąć. Podaj rzeczywiste komunikaty, jeśli występują. Dodaj wiersze według potrzeb.}
+\begin{tabularx}{\textwidth}{@{}Y Y Y@{}}
+\toprule
+Objaw / komunikat & Możliwa przyczyna & Działanie użytkownika\\
+\midrule
+,,Nieprawidłowy e-mail lub hasło.'' & błędne dane logowania & sprawdź adres e-mail i hasło; dla konta demonstracyjnego użyj podpowiedzianych danych\\
+Strona publiczna turnieju pokazuje, że nie znaleziono strony & turniej jest szkicem albo adres jest błędny & opublikuj turniej w \emph{Ustawieniach}; skopiuj adres z panelu\\
+,,Faza ma rozegrane mecze, więc nie można wygenerować terminarza ponownie.'' & w fazie są już mecze rozegrane & popraw pojedyncze mecze w terminarzu zamiast generować go od nowa\\
+,,Terminarz potrzebuje co najmniej dwóch drużyn (\dots)'' & za mało drużyn w turnieju & dodaj drużyny w zakładce \emph{Drużyny}\\
+,,Mecz trwający albo zakończony potrzebuje obu wyników.'' & brak wyniku jednej z drużyn & uzupełnij oba pola wyniku\\
+,,Nie można usunąć: \dots{} ma rozegrane lub trwające mecze.'' & ochrona historii rozegranych meczów & nie usuwaj; w razie wycofania drużyny wpisz walkowery\\
+,,Nie udało się wysłać zgłoszenia. Spróbuj ponownie.'' & chwilowy brak połączenia z serwerem lub zamknięte zapisy & spróbuj ponownie; sprawdź u organizatora, czy zapisy są otwarte\\
+Brak przycisku \emph{Udostępnij} w zakładce \emph{Grafiki} & przeglądarka nie obsługuje udostępniania plików lub strona nie jest otwarta przez HTTPS albo \texttt{localhost} & użyj przycisku \emph{Pobierz PNG}\\
+\bottomrule
+\end{tabularx}
+
+\subsection{Ograniczenia i zalecenia}
+\podpowiedz{Wskaż ograniczenia mające wpływ na korzystanie z projektu oraz praktyczne zalecenia. Jeśli użytkownik korzysta z funkcji AI, wyjaśnij charakter wyników, ich ograniczenia i potrzebę weryfikacji tam, gdzie ma to znaczenie. Nie dodawaj informacji o AI, jeśli nie jest częścią rozwiązania i nie wpływa na użytkowanie.}
+\begin{itemize}
+\item Aplikacja działa lokalnie; strona publiczna jest dostępna dla innych osób tylko w tej samej sieci albo po wystawieniu aplikacji pod adresem publicznym.
+\item Każdy organizator widzi i zmienia tylko swoje turnieje.
+\item Turniej ma jednego właściciela; współpracownicy mogą korzystać ze wspólnego konta, ale nie ma osobnych ról.
+\item Drużyny i zawodnicy należą do jednego turnieju -- w nowym sezonie trzeba je dodać ponownie.
+\item Puchar obsługuje pojedyncze mecze w parze (bez dwumeczów).
+\item Strona publiczna odświeża się co 15 sekund, więc wynik na żywo może pojawić się z niewielkim opóźnieniem.
+\item Zgłaszający drużynę nie dostaje automatycznego powiadomienia o decyzji -- organizator kontaktuje się z nim samodzielnie, korzystając z danych kontaktowych ze zgłoszenia.
+\item Zalecenie: przed publikacją sprawdź punktację i kolejność kryteriów remisów w \emph{Ustawieniach}, bo od nich zależy kolejność w tabeli.
+\item Asystent AI interpretuje polecenia w języku naturalnym i może je zrozumieć inaczej, niż zamierzał organizator -- przed zatwierdzeniem zmiany przeczytaj, co asystent zamierza wykonać, a po wykonaniu sprawdź efekt w panelu.
+\end{itemize}
+
+\subsection{Materiały pomocnicze}
+\podpowiedz{Wskaż przydatne instrukcje, przykładowe pliki oraz obowiązkowe nagranie pokazujące działanie lub rezultat oddanej wersji projektu. Podaj nazwy i lokalizację materiałów. Źródła zewnętrzne przywołane w instrukcji opisz tytułem, adresem i datą dostępu. Jeśli materiały zostały już wymienione w sprawozdaniu końcowym, możesz odwołać się do odpowiedniej sekcji. Podsekcję można usunąć, jeśli nie wnosi dodatkowych informacji; nie znosi to obowiązku przekazania nagrania i wskazania go w wykazie załączników sprawozdania końcowego.}
+\begin{itemize}
+\item Dane demonstracyjne: konto \texttt{administrator@example.com} z sześcioma turniejami (liga piłkarska, liga koszykówki, liga siatkówki, puchar, grupy z fazą pucharową, liga z otwartymi zapisami).
+\item Nagranie wideo: \pole{nazwa pliku nagrania i lokalizacja} -- wykaz załączników w sprawozdaniu końcowym.
+\item Dokumentacja instalacyjno-konfiguracyjna -- uruchomienie aplikacji i konfiguracja asystenta AI.
+\item Repozytorium projektu: \url{https://github.com/dawer2253/sports-tournament-app}, w nim \texttt{docs/MCP.md} -- pełna lista poleceń (narzędzi) asystenta AI.
+\end{itemize}
+\end{document}

@@ -1,0 +1,207 @@
+% Autor szablonu: dr Roman Czapla
+% Kompilacja: pdfLaTeX (dwukrotnie, aby zaktualizować spis treści).
+% Wymagane logo uczelni: images/logo.png (ścieżka względem pliku głównego).
+\documentclass[11pt,a4paper,oneside]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish,provide=*]{babel}
+\usepackage{lmodern,microtype}
+\usepackage[margin=25mm,headheight=14pt]{geometry}
+\usepackage{xcolor,graphicx,tabularx,booktabs,array,enumitem,fancyhdr,titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xurl}
+\definecolor{accent}{HTML}{344B59}
+\definecolor{hintcolor}{HTML}{58636A}
+\hypersetup{pdfauthor={Wojciech Czachurski, Julia Gawlik, Dawid Pątko},pdftitle={Projekt inżynierski - Wybór projektu}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\renewcommand{\arraystretch}{1.3}
+\setlength{\emergencystretch}{2em}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\titleformat{\section}{\Large\bfseries\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{accent}}{\thesubsection.}{0.5em}{}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Projekt inżynierski}
+\fancyhead[R]{\small Wybór projektu}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+% Podpowiedzi są widoczne podczas wypełniania szablonu.
+% Przed oddaniem: uzupełnij pola, zastąp przykłady własną treścią
+% i zmień poniższy przełącznik na \podpowiedzifalse.
+\newif\ifpodpowiedzi
+%\podpowiedzitrue
+\podpowiedzifalse
+\newcommand{\podpowiedz}[1]{\ifpodpowiedzi\par\begingroup\small\color{hintcolor}\textit{Wskazówka: #1}\par\endgroup\fi}
+\newcommand{\pole}[1]{\textnormal{[#1]}}
+
+% Dane dokumentu - uzupełnij w jednym miejscu.
+% Ścieżkę logo można zmienić poniżej.
+\newcommand{\pliklogo}{images/logo.png}
+\newcommand{\logouczelni}{%
+  \includegraphics[width=0.55\textwidth,height=40mm,keepaspectratio]{\pliklogo}%
+}
+\newcommand{\tytulprojektu}{System do zarządzania rozgrywkami sportowymi}
+\newcommand{\rokakademicki}{2026/2027}
+\newcommand{\semestrprojektu}{VII, zimowy}
+\newcommand{\datadokumentu}{19.11.2026}
+\newcommand{\wersjadokumentu}{1.0}
+\newcommand{\studentA}{Wojciech Czachurski}
+\newcommand{\studentB}{Julia Gawlik}
+\newcommand{\studentC}{Dawid Pątko}
+\newcommand{\albumA}{168750}
+\newcommand{\albumB}{168679}
+\newcommand{\albumC}{168744}
+\newcommand{\prowadzacyA}{mgr Wojciech Baran}
+\newcommand{\prowadzacyB}{dr Wojciech Gwizdała}
+
+\begin{document}
+\begin{titlepage}
+\centering
+{\large Uniwersytet Komisji Edukacji Narodowej w Krakowie\par}
+{\normalsize Instytut Bezpieczeństwa i Informatyki\par}
+\vspace{8mm}
+\logouczelni\par
+\vspace{10mm}
+{\Large\bfseries\color{accent} PROJEKT INŻYNIERSKI\par}
+\vspace{3mm}
+{\large Wybór projektu\par}
+\vspace{15mm}
+{\LARGE\bfseries\tytulprojektu\par}
+\vspace{15mm}
+{\small ZESPÓŁ PROJEKTOWY\par}
+\vspace{3mm}
+\begin{tabular}{ll}
+\studentA & Nr albumu: \albumA\\
+\studentB & Nr albumu: \albumB\\
+\studentC & Nr albumu: \albumC
+\end{tabular}
+\vspace{12mm}
+
+{\small PROWADZĄCY ZAJĘCIA PROJEKTOWE\par}
+\vspace{3mm}
+\prowadzacyA\par
+\prowadzacyB\par
+\vfill
+Rok akademicki: \rokakademicki\quad Semestr: \semestrprojektu\par
+Data dokumentu: \datadokumentu\quad Wersja: \wersjadokumentu\par
+\vspace{6mm}
+Kraków\par
+
+\end{titlepage}
+
+\tableofcontents
+\sloppy
+\vspace{5mm}
+\podpowiedz{Dokument przygotuj na drugie spotkanie projektowe. Podpowiedzi i przykłady służą do opracowania własnej treści; nie pozostawiaj ich w wersji oddawanej. Zakres uzgodnij z obojgiem prowadzących. Po uzupełnieniu wyłącz podpowiedzi przełącznikiem w preambule i sprawdź wynikowy PDF.}
+
+\section{Informacje o projekcie i zespole}
+\subsection{Wybrany temat}
+\podpowiedz{Podaj uzgodniony tytuł projektu, zgodny ze stroną tytułową. Powinien wskazywać przedmiot i cel pracy.}
+\tytulprojektu
+
+\subsection{Zespół projektowy}
+\podpowiedz{Podaj dane wszystkich członków zespołu. Zespół jest co do zasady trzyosobowy; w wyjątkowych, uzasadnionych przypadkach, za zgodą dyrekcji instytutu, może być dwuosobowy. W takim przypadku usuń dane trzeciej osoby ze strony tytułowej i tabeli.}
+\begin{tabularx}{\textwidth}{@{}Y Y Y@{}}
+\toprule
+Osoba / nr albumu & Kierunek / forma studiów & E-mail\\
+\midrule
+\studentA / \albumA & Informatyka / studia stacjonarne, grupa L5 & \small s168750@student.uken.krakow.pl\\
+\studentB / \albumB & Informatyka / studia stacjonarne, grupa L5 & \small s168679@student.uken.krakow.pl\\
+\studentC / \albumC & Informatyka / studia stacjonarne, grupa L5 & \small s168744@student.uken.krakow.pl\\
+\bottomrule
+\end{tabularx}
+\newpage
+\subsection{Opis tematu i cel projektu}
+\podpowiedz{Opisz problem, odbiorców i zamierzony rezultat. Jeśli korzystasz z opisu prowadzących, dostosuj go do uzgodnionego zakresu. Wyjaśnij, na czym polega praktyczny i inżynierski charakter pracy oraz po czym będzie można poznać, że cel został osiągnięty.}
+Amatorskie ligi i turnieje sportowe -- osiedlowe, szkolne, firmowe czy klubowe -- są najczęściej prowadzone w arkuszach kalkulacyjnych, komunikatorach i na kartkach. Organizator ręcznie układa terminarz, przelicza tabelę po każdym meczu i rozsyła wyniki uczestnikom, a kibice nie mają jednego miejsca, w którym zobaczą aktualny stan rozgrywek. Takie prowadzenie rozgrywek jest pracochłonne i podatne na błędy, zwłaszcza przy rozstrzyganiu remisów w tabeli i przy układaniu drabinki pucharowej.
+
+Celem projektu jest aplikacja webowa, w której organizator zakłada turniej, dodaje drużyny, zawodników i obiekty, generuje terminarz albo drabinkę, a następnie wpisuje wyniki i zdarzenia meczowe. Aplikacja sama liczy tabelę i klasyfikację zawodników, a kibice oglądają rozgrywki na publicznej stronie turnieju pod stałym adresem, bez zakładania konta.
+
+Odbiorcami są organizatorzy amatorskich rozgrywek (panel organizatora) oraz zawodnicy i kibice (strona publiczna).
+
+Inżynierski charakter pracy polega na zaprojektowaniu i wykonaniu kompletnego systemu: interfejsu programistycznego (REST API) opisanego kontraktem, relacyjnego modelu danych, algorytmów generowania terminarza (metoda kołowa, ang. \emph{circle method}), drabinki pucharowej z awansem zwycięzców, klasyfikacji z konfigurowalnymi kryteriami rozstrzygania remisów oraz dwóch aplikacji frontendowych.
+
+Cel zostanie osiągnięty, gdy organizator przeprowadzi w aplikacji pełny turniej w formacie ligowym, pucharowym oraz grupowym z fazą pucharową, a strona publiczna pokaże aktualną tabelę, terminarz, wyniki i drabinkę zgodne z danymi wprowadzonymi w panelu.
+
+\subsection{Założenia projektowe}
+\podpowiedz{Określ zakres możliwy do wykonania przez zespół w jednym semestrze, z uwzględnieniem jego liczebności. Oddziel wymagania podstawowe od rozszerzeń, które zostaną wykonane, jeśli pozwoli na to czas. Poniższe punkty dostosuj do charakteru projektu.}
+\begin{itemize}
+\item \textbf{Zakres i wymagania:} wymagania podstawowe: rejestracja i logowanie organizatora; zakładanie turnieju (sport, format, punktacja, kryteria rozstrzygania remisów); zarządzanie drużynami, zawodnikami i obiektami; formaty: liga (każdy z każdym), puchar (pojedyncza eliminacja) oraz grupy z fazą pucharową; generator terminarza z rozkładem dat; wpisywanie wyników i zdarzeń meczowych (bramki, kartki); tabela liczona na bieżąco z meczów; klasyfikacja strzelców; publiczna strona turnieju z tabelą, terminarzem, wynikami i drabinką, odświeżana automatycznie. Sporty: piłka nożna i koszykówka. Rozszerzenia wykonywane, jeśli pozwoli czas: zgłoszenia drużyn do turnieju przez stronę publiczną, generator grafik do mediów społecznościowych, obsługa turnieju przez asystenta AI oraz trzeci sport z setami. Poza zakresem: płatności, aplikacje mobilne, powiadomienia e-mail, historia drużyn między sezonami.
+\item \textbf{Technologie i narzędzia:} backend: PHP 8 i Laravel 13 (REST API, Sanctum do uwierzytelniania tokenem Bearer), baza MySQL 8, środowisko w kontenerach Docker (Laravel Sail), identyczne u każdej osoby w zespole; frontend: React 19 i TypeScript, Vite, React Router, TanStack Query i TanStack Table, Zod do walidacji formularzy, Tailwind CSS, komponenty shadcn/ui i ikony Lucide, wspólny design system w Storybooku z porównywaniem wyglądu w Chromatic; kontrakt API w formacie OpenAPI, z którego generowane są typy dla frontendu i serwer mock (Prism); testy: Pest i Spectator, Vitest, Testing Library i MSW, Playwright; jednolity styl kodu: Oxlint i Laravel Pint; GitHub Actions do automatycznego uruchamiania testów. Wybór uzasadniają: dojrzałość i dokumentacja Laravela, popularność Reacta, rozdzielenie panelu i strony publicznej oraz możliwość równoległej pracy frontendu na mocku kontraktu, zanim powstanie backend.
+\item \textbf{Dane i zasoby:} aplikacja nie korzysta z zewnętrznych zbiorów danych. Dane demonstracyjne (turnieje, drużyny, zawodnicy, wyniki) zostaną przygotowane przez zespół i wprowadzone skryptem inicjalizującym bazę (seederem). Biblioteki i fonty pochodzą z otwartych źródeł na licencjach dopuszczających wykorzystanie (m.in. MIT, SIL OFL).
+\item \textbf{Weryfikacja:} testy jednostkowe i funkcjonalne backendu (Pest), w tym asercje zgodności odpowiedzi z kontraktem OpenAPI; testy komponentów i ekranów frontendu (Vitest, Testing Library); testy end-to-end (Playwright); automatyczne uruchamianie testów w GitHub Actions przy każdym pull requeście; przegląd kodu każdego pull requesta przez inną osobę z zespołu. Kryterium akceptacji: przejście pełnego scenariusza turnieju w każdym formacie, z poprawnie przeliczoną tabelą i drabinką.
+\item \textbf{Ryzyka i ograniczenia:} przeszacowanie zakresu (ograniczane fazowaniem formatów i jasnym podziałem na wymagania podstawowe i rozszerzenia); rozjazd między frontendem a backendem (kontrakt OpenAPI jako jedyne źródło prawdy i testy zgodności); złożoność rozstrzygania remisów i awansu w drabince (wczesne pokrycie testami, uproszczone reguły bez rekurencji); nierówny wkład członków zespołu (wspólny backlog, rotacja zadań i wzajemny przegląd kodu).
+\end{itemize}
+
+\podpowiedz{Jeżeli przewidujecie wykorzystanie AI, określcie, czy ma wspomagać prace, stanowić część rozwiązania, czy pełnić obie role. Jeśli AI jest elementem wymagań projektu, wskażcie sposób oceny jej działania. Gdy nie planujecie AI, wpiszcie tę informację.}
+\textbf{Planowane wykorzystanie AI:} AI ma wspomagać prace zespołu: agent Claude Code (Anthropic, modele Opus i Sonnet), działający według zasad zapisanych w repozytorium i korzystający ze skilli, posłuży do analizy zgłoszeń, przygotowywania szkiców kodu, testów i dokumentacji oraz do wstępnego przeglądu zmian. Każdy wynik pracy AI trafia do repozytorium wyłącznie przez pull request, który przechodzi automatyczne testy i przegląd przez członka zespołu. Jako rozszerzenie, jeśli pozwoli czas, planowany jest lokalny serwer MCP (Model Context Protocol), przez który asystent AI mógłby prowadzić turniej na polecenie organizatora; jego działanie zostanie ocenione scenariuszem prowadzenia całego turnieju przez asystenta i porównaniem efektów z panelem.
+
+\subsection{Wstępny harmonogram i podział zadań}
+\podpowiedz{Podziel prace na etapy z konkretnymi terminami i sprawdzalnymi rezultatami. Wskaż osoby odpowiedzialne; przy zadaniach wspólnych określ indywidualne obowiązki. Uwzględnij czas na integrację, testy, dokumentację, nagranie i poprawki. W razie potrzeby dodaj wiersze.}
+Prace są podzielone na dwutygodniowe sprinty. Zadania każdego sprintu trafiają do wspólnego backlogu w GitHub Issues, a członkowie zespołu wybierają je rotacyjnie, tak aby każda osoba pracowała we wszystkich warstwach systemu (kontrakt API, backend, frontend, testy) i znała całość rozwiązania. Każdą zmianę przegląda inna osoba niż jej autor.
+
+\begin{tabularx}{\textwidth}{@{}p{0.14\textwidth} Y p{0.21\textwidth} Y@{}}
+\toprule
+Termin & Zadania / etap & Odpowiedzialni & Rezultat\\
+\midrule
+lipiec -- sierpień 2026 & S0 -- fundament: repozytorium, baza danych, logowanie, CI & cały zespół & logowanie organizatora działa od panelu do bazy\\
+wrzesień -- 10.10.2026 & S1 -- dane podstawowe: turnieje, drużyny, zawodnicy, boiska & cały zespół & organizator zakłada kompletny turniej\\
+październik 2026 & S2 -- liga: terminarz, tabela, kryteria przy remisie & cały zespół & działająca liga z tabelą\\
+październik 2026 & S3 -- zdarzenia meczu i strona publiczna & cały zespół & publiczny adres turnieju z tabelą, terminarzem i wynikami\\
+październik 2026 & S4 -- puchar: drabinka i awans zwycięzcy & cały zespół & działający format pucharowy\\
+październik 2026 & S5 -- grupy i playoff & cały zespół & wszystkie trzy formaty działają\\
+listopad 2026 & S6 -- wdrożenie pod stały adres w internecie & cały zespół & aplikacja dostępna z sieci; odstąpiono po uzgodnieniu z prowadzącymi\\
+listopad 2026 & S7 -- dopracowanie wyglądu strony publicznej; rozszerzenia (serwer MCP, grafiki, zgłoszenia, siatkówka) & cały zespół & wersja do oddania na lokalnym środowisku\\
+listopad -- grudzień 2026 & dokumentacja, nagranie wideo, poprawki po konsultacjach & cały zespół & komplet materiałów końcowych\\
+\bottomrule
+\end{tabularx}
+\podpowiedz{Od trzeciego spotkania przygotowujcie wspólny raport za okres między poprzednim a bieżącym spotkaniem, z podziałem wykonanych prac na członków zespołu.}
+
+\newpage
+\subsection{Przechowywanie materiałów i organizacja współpracy}
+
+\podpowiedz{W projekcie programistycznym podaj adres repozytorium kodu. W projekcie o innym charakterze, np. animacji 3D, wskaż uzgodnione z prowadzącymi miejsce przechowywania plików źródłowych, zasobów i rezultatów. Opisz sposób oznaczania kolejnych wersji i zapewnij dostęp obojgu prowadzącym.}
+
+\textbf{Repozytorium lub miejsce przechowywania materiałów:}
+\url{https://github.com/dawer2253/sports-tournament-app} -- repozytorium Git na GitHubie (monorepo z backendem, aplikacjami frontendowymi, kontraktem API i dokumentacją techniczną).\par
+
+\textbf{Wersjonowanie:}
+Git; główna gałąź \texttt{main} jest chroniona, a każda zmiana powstaje na osobnej gałęzi i trafia do \texttt{main} przez pull request po przejściu testów automatycznych (GitHub Actions) i przeglądzie przez innego członka zespołu.\par
+
+\textbf{Dostęp prowadzących:}
+repozytorium jest publiczne, więc oboje prowadzący mają do niego dostęp do odczytu; mgr Wojciech Baran został dodatkowo dodany jako współpracownik repozytorium.\par
+
+\textbf{Organizacja współpracy:}
+zadania i błędy są prowadzone w GitHub Issues, pogrupowane w kamienie milowe odpowiadające sprintom; dyskusja techniczna toczy się w pull requestach, a bieżąca komunikacja zespołu na Discordzie i w Messengerze.
+
+\subsection{Uzgodnione materiały końcowe}
+\podpowiedz{Uzupełnij tabelę z prowadzącymi. Sprawozdanie końcowe, kompletny projekt z plikami źródłowymi oraz nagranie są wymagane. Pozostałą dokumentację dostosujcie do projektu. Wpiszcie zakres i formę; przy dokumencie niewymaganym podajcie krótkie uzasadnienie.}
+\begin{tabularx}{\textwidth}{@{}p{0.35\textwidth} Y@{}}
+\toprule
+Materiał & Uzgodniony zakres / forma\\
+\midrule
+Sprawozdanie końcowe & opis projektu, przebiegu prac, weryfikacji, wkładu członków zespołu i wykorzystania AI; PDF według szablonu.\\
+Dokumentacja projektowa & architektura, model danych, kontrakt API, najważniejsze algorytmy, testy; PDF według szablonu.\\
+Dokumentacja użytkowa & obsługa panelu organizatora i strony publicznej ze zrzutami ekranu; PDF według szablonu.\\
+Dokumentacja instalacyjna & przygotowanie środowiska lokalnego (Docker, Node.js), uruchomienie, konfiguracja i weryfikacja; PDF według szablonu.\\
+Kompletny projekt & kod źródłowy całego monorepo (backend, aplikacje frontendowe, kontrakt API, testy, dane demonstracyjne) z historią zmian w repozytorium Git.\\
+Nagranie wideo & zakładanie turnieju, generowanie terminarza i drabinki, wpisywanie wyników i zdarzeń, tabela i strona publiczna, zgłoszenia drużyn, grafiki oraz prowadzenie turnieju przez asystenta AI.\\
+\bottomrule
+\end{tabularx}
+\podpowiedz{Dokumenty przygotowuje się w LaTeX-u według udostępnionych szablonów i oddaje w PDF. Istotne późniejsze zmiany ustaleń wymagają uzgodnienia z prowadzącymi i odnotowania.}
+
+\subsection{Źródła i materiały referencyjne}
+\podpowiedz{Wskaż źródła wykorzystane przy opracowaniu koncepcji: dokumentację techniczną, publikacje, zbiory danych, zasoby i rozwiązania referencyjne. Dla stron internetowych podaj tytuł, adres i datę dostępu. Jeśli nie korzystano ze źródeł zewnętrznych, wpisz tę informację.}
+% Przykład odnośnika: \href{https://adres.example}{Tytuł dokumentacji}
+\begin{enumerate}
+\item Tournify -- aplikacja do organizacji turniejów (rozwiązanie referencyjne), \url{https://www.tournifyapp.com}, dostęp: 19.11.2026.
+\item Laravel -- dokumentacja frameworka, \url{https://laravel.com/docs}, dostęp: 19.11.2026.
+\item React -- dokumentacja biblioteki, \url{https://react.dev}, dostęp: 19.11.2026.
+\item OpenAPI Specification, \url{https://spec.openapis.org/oas/latest.html}, dostęp: 19.11.2026.
+\item Round-robin tournament (metoda kołowa układania terminarza), Wikipedia, \url{https://en.wikipedia.org/wiki/Round-robin_tournament}, dostęp: 19.11.2026.
+\item Model Context Protocol -- specyfikacja, \url{https://modelcontextprotocol.io}, dostęp: 19.11.2026.
+\end{enumerate}
+\end{document}
