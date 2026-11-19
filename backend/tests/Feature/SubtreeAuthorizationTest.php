@@ -55,6 +55,10 @@ const SUBTREE_PARAMETERS = ['tournament', 'team', 'player', 'venue', 'stage', 'g
 const SUBTREE_EXCEPTIONS = [
     'POST /logout',
     'GET /me',
+    // Zmiana konta działa wyłącznie na organizerze z tokenu, więc nie ma
+    // cudzego zasobu, którego własność trzeba by sprawdzić.
+    'PATCH /me',
+    'PUT /me/password',
     'GET /sports',
     'GET /tournaments',
     'POST /tournaments',
