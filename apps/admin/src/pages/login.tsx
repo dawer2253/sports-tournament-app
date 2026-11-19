@@ -6,7 +6,7 @@ import { setToken } from '../lib/session';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('dawid@example.com');
+  const [email, setEmail] = useState('administrator@example.com');
   const [password, setPassword] = useState('tajnehaslo123');
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

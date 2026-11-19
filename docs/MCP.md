@@ -111,6 +111,10 @@ kolumny `added_time`).
 
 Konto organizatora z seeda: `dawid@example.com` / `tajnehaslo123`
 (`grep -n "dawid@example.com" -A1 backend/database/seeders/DemoTournamentSeeder.php`).
+Na nagranie demo ustaw w `TOURNAMENT_EMAIL` domyślne konto
+`administrator@example.com` — to samo hasło i te same turnieje, pod slugami
+z dopiskiem `-administrator`
+(`grep -n administrator backend/database/seeders/TeamAdminsSeeder.php`).
 
 ## 2. Zależności i panel
 
