@@ -96,6 +96,13 @@ znacznie szybszy.
 pierwszą rundę i rewanże w terminarzu. Organizer loguje się jako
 `dawid@example.com` / `tajnehaslo123`.
 
+Domyślne konto do zrzutów ekranu i nagrania demo to
+`administrator@example.com` / `tajnehaslo123`, które podpowiada formularz
+logowania panelu. Ma komplet tych samych turniejów, meczów i kolejek co Dawid,
+pod slugami z dopiskiem `-administrator` (`/t/liga-osiedlowa-2026-administrator`).
+Obok stoją zbudowane tak samo konta Julii i Wojciecha
+(`grep -n "example.com" backend/database/seeders/TeamAdminsSeeder.php`).
+
 Dane są przepisane z przykładów w kontrakcie, żeby `apps/public` pokazywało to
 samo na mocku i na Laravelu. Sporty seeder pomija — wstawia je migracja, bo są
 danymi systemowymi (decyzja #10). Sam seeder jest idempotentny: `db:seed` na

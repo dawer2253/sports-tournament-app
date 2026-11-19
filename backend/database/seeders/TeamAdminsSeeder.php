@@ -6,7 +6,8 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
- * Konta organizerów zespołu obok konta Dawida: Julia i Wojciech. Każde ma te
+ * Konta organizerów obok konta Dawida: domyślne konto „Administrator" do
+ * zrzutów ekranu i nagrania demo oraz konta Julii i Wojciecha. Każde ma te
  * same dane demo co Dawid (patrz `DemoTournamentSeeder`), tyle że we własnych
  * kopiach turniejów — slug jest globalnie unikalny, więc kopie dostają
  * dopisek z klucza konta (`liga-osiedlowa-2026-julia`). Hasło jak u Dawida.
@@ -15,6 +16,7 @@ class TeamAdminsSeeder extends Seeder
 {
     /** Klucz konta (dopisek sluga) => [e-mail, imię]. */
     private const ADMINS = [
+        'administrator' => ['administrator@example.com', 'Administrator'],
         'julia' => ['julia@example.com', 'Julia Gawlik'],
         'wojciech' => ['wojciech@example.com', 'Wojciech Czachurski'],
     ];

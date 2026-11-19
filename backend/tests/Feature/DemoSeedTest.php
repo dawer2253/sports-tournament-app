@@ -31,12 +31,18 @@ beforeEach(function () {
     $this->seed(DemoTournamentSeeder::class);
 });
 
-it('daje Julii i Wojciechowi konta z własnymi kopiami tych samych turniejów co Dawid', function () {
+it('daje administratorowi, Julii i Wojciechowi konta z własnymi kopiami tych samych turniejów co Dawid', function () {
     $this->seed(TeamAdminsSeeder::class);
 
     $dawid = Tournament::query()->whereRelation('user', 'email', 'dawid@example.com')->count();
 
-    foreach (['julia' => 'julia@example.com', 'wojciech' => 'wojciech@example.com'] as $key => $email) {
+    $accounts = [
+        'administrator' => 'administrator@example.com',
+        'julia' => 'julia@example.com',
+        'wojciech' => 'wojciech@example.com',
+    ];
+
+    foreach ($accounts as $key => $email) {
         $user = User::firstWhere('email', $email);
 
         expect($user)->not->toBeNull()
