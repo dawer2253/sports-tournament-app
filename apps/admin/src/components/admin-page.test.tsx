@@ -273,3 +273,125 @@ describe('AdminPage — bieżące turnieje w sidebarze', () => {
     expect(sidebar.queryByText(/więcej/)).not.toBeInTheDocument();
   });
 });
+
+/** Pozycje menu konta; każda zaczyna od otwarcia menu. */
+async function openAccountItem(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole('button', { name: 'Menu konta' }));
+  await user.click(await screen.findByRole('menuitem', { name }));
+  return screen.findByRole('dialog', { name });
+}
+
+describe('AdminPage — ustawienia konta', () => {
+  it('„Ustawienia konta” otwiera okno, a zapis zmienia nazwę w headerze', async () => {
+    const recordBody = vi.fn<(body: unknown) => void>();
+    server.use(
+      http.patch(`${API}/me`, async ({ request }) => {
+        const body = (await request.json()) as { name: string; email: string };
+        recordBody(body);
+        return HttpResponse.json({ data: { ...ME.data, ...body } });
+      }),
+    );
+    const user = renderPage();
+    await screen.findAllByText('Dawid Patko');
+
+    const dialog = within(await openAccountItem(user, 'Ustawienia konta'));
+    const name = dialog.getByLabelText('Nazwa');
+    expect(name).toHaveValue('Dawid Patko');
+    expect(dialog.getByLabelText('E-mail')).toHaveValue('dawid@example.com');
+
+    await user.clear(name);
+    await user.type(name, 'Klub Sportowy Orzeł');
+    await user.click(dialog.getByRole('button', { name: 'Zapisz' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(recordBody).toHaveBeenCalledWith({ name: 'Klub Sportowy Orzeł', email: 'dawid@example.com' });
+    expect((await screen.findAllByText('Klub Sportowy Orzeł')).length).toBeGreaterThan(0);
+  });
+
+  it('zajęty e-mail z `422` siada pod polem, a okno zostaje', async () => {
+    server.use(
+      http.patch(`${API}/me`, () =>
+        HttpResponse.json(
+          { message: 'Pole e-mail jest już zajęte.', errors: { email: ['Pole e-mail jest już zajęte.'] } },
+          { status: 422 },
+        ),
+      ),
+    );
+    const user = renderPage();
+    await screen.findAllByText('Dawid Patko');
+
+    const dialog = within(await openAccountItem(user, 'Ustawienia konta'));
+    const email = dialog.getByLabelText('E-mail');
+    await user.clear(email);
+    await user.type(email, 'zajety@example.com');
+    await user.click(dialog.getByRole('button', { name: 'Zapisz' }));
+
+    expect(await dialog.findByText('Pole e-mail jest już zajęte.')).toBeInTheDocument();
+    expect(email).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('dialog', { name: 'Ustawienia konta' })).toBeInTheDocument();
+  });
+
+  it('„Zmień hasło” wysyła obecne i nowe hasło, a złe obecne hasło siada pod polem', async () => {
+    const recordBody = vi.fn<(body: unknown) => void>();
+    server.use(
+      http.put(`${API}/me/password`, async ({ request }) => {
+        const body = (await request.json()) as { currentPassword: string };
+        recordBody(body);
+        return body.currentPassword === 'tajnehaslo123'
+          ? new HttpResponse(null, { status: 204 })
+          : HttpResponse.json(
+              {
+                message: 'Podane hasło jest nieprawidłowe.',
+                errors: { currentPassword: ['Podane hasło jest nieprawidłowe.'] },
+              },
+              { status: 422 },
+            );
+      }),
+    );
+    const user = renderPage();
+    await screen.findAllByText('Dawid Patko');
+
+    const dialog = within(await openAccountItem(user, 'Zmień hasło'));
+    await user.type(dialog.getByLabelText('Obecne hasło'), 'zlehaslo');
+    await user.type(dialog.getByLabelText('Nowe hasło'), 'nowehaslo456');
+    await user.type(dialog.getByLabelText('Powtórz nowe hasło'), 'nowehaslo456');
+    await user.click(dialog.getByRole('button', { name: 'Zmień hasło' }));
+
+    expect(await dialog.findByText('Podane hasło jest nieprawidłowe.')).toBeInTheDocument();
+
+    const current = dialog.getByLabelText('Obecne hasło');
+    await user.clear(current);
+    await user.type(current, 'tajnehaslo123');
+    await user.click(dialog.getByRole('button', { name: 'Zmień hasło' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(recordBody).toHaveBeenLastCalledWith({
+      currentPassword: 'tajnehaslo123',
+      password: 'nowehaslo456',
+      passwordConfirmation: 'nowehaslo456',
+    });
+    // Organizer zostaje w panelu: zmiana hasła nie zamyka sesji.
+    expect(getToken()).toBe(TOKEN);
+  });
+
+  it('niezgodne powtórzone hasło zatrzymuje okno bez żądania', async () => {
+    const recordRequest = vi.fn();
+    server.use(
+      http.put(`${API}/me/password`, () => {
+        recordRequest();
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const user = renderPage();
+    await screen.findAllByText('Dawid Patko');
+
+    const dialog = within(await openAccountItem(user, 'Zmień hasło'));
+    await user.type(dialog.getByLabelText('Obecne hasło'), 'tajnehaslo123');
+    await user.type(dialog.getByLabelText('Nowe hasło'), 'nowehaslo456');
+    await user.type(dialog.getByLabelText('Powtórz nowe hasło'), 'innehaslo456');
+    await user.click(dialog.getByRole('button', { name: 'Zmień hasło' }));
+
+    expect(await dialog.findByText('Hasła nie są takie same.')).toBeInTheDocument();
+    expect(recordRequest).not.toHaveBeenCalled();
+  });
+});
