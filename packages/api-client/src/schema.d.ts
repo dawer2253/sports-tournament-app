@@ -224,6 +224,118 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Zmień dane konta
+         * @description Oba pola można pominąć. `email` podlega tym samym zasadom co przy
+         *     `POST /register`: adres zajęty przez inne konto daje `422` z błędem pod
+         *     `email`. Własny, niezmieniony adres przechodzi.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Dawid Patko",
+                     *       "email": "dawid.patko@example.com"
+                     *     }
+                     */
+                    "application/json": {
+                        name?: string;
+                        /** Format: email */
+                        email?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Konto po zmianie */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "id": 1,
+                         *         "name": "Dawid Patko",
+                         *         "email": "dawid.patko@example.com",
+                         *         "createdAt": "2026-09-01T08:00:00+00:00"
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: components["schemas"]["User"];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthenticated"];
+                422: components["responses"]["ValidationError"];
+            };
+        };
+        trace?: never;
+    };
+    "/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Zmień hasło
+         * @description Wymaga bieżącego hasła: złe daje `422` z błędem pod `currentPassword`.
+         *     Nowe hasło podlega tym samym zasadom co przy `POST /register`.
+         *
+         *     Po zmianie unieważnia wszystkie tokeny konta **poza** tym użytym
+         *     w żądaniu, więc organizer zostaje zalogowany tutaj, a inne urządzenia
+         *     muszą zalogować się nowym hasłem.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "currentPassword": "tajnehaslo123",
+                     *       "password": "nowehaslo456",
+                     *       "passwordConfirmation": "nowehaslo456"
+                     *     }
+                     */
+                    "application/json": {
+                        currentPassword: string;
+                        password: string;
+                        passwordConfirmation: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Hasło zmienione */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthenticated"];
+                422: components["responses"]["ValidationError"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
