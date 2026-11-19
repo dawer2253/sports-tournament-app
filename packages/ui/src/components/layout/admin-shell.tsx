@@ -1,7 +1,7 @@
 import * as React from 'react'
 import {
   LayoutGrid, Users, CalendarDays, MapPin, BarChart3, Settings,
-  Trophy, Search, Bell, LogOut, GitFork, ListOrdered, Layers, Menu, Inbox, Image,
+  Trophy, Search, Bell, LogOut, KeyRound, GitFork, ListOrdered, Layers, Menu, Inbox, Image,
 } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
@@ -149,6 +149,14 @@ export interface AdminShellProps {
   tournamentHref?: (id: number) => string
   /** Przejęcie kliknięcia w turniej z listy, np. przez router. */
   onOpenTournament?: (id: number) => void
+  /**
+   * Otwarcie okna z nazwą i e-mailem konta. Bez niego menu konta nie ma
+   * pozycji „Ustawienia konta”: pozycja bez akcji wyglądała na czynną, a po
+   * kliknięciu nic się nie działo.
+   */
+  onAccountSettings?: () => void
+  /** Otwarcie okna zmiany hasła. Bez niego menu nie ma pozycji „Zmień hasło”. */
+  onChangePassword?: () => void
   onLogout?: () => void
 }
 
@@ -581,6 +589,8 @@ export function AdminShell({
   onNavigate,
   tournamentHref,
   onOpenTournament,
+  onAccountSettings,
+  onChangePassword,
   onLogout,
 }: AdminShellProps) {
   const nav: NavProps = { active, navHref, navDisabledReason, sectionBadge, onNavigate }
@@ -623,7 +633,12 @@ export function AdminShell({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{account.name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem><Settings className="size-4" /> Ustawienia konta</DropdownMenuItem>
+                {onAccountSettings && (
+                  <DropdownMenuItem onSelect={onAccountSettings}><Settings className="size-4" /> Ustawienia konta</DropdownMenuItem>
+                )}
+                {onChangePassword && (
+                  <DropdownMenuItem onSelect={onChangePassword}><KeyRound className="size-4" /> Zmień hasło</DropdownMenuItem>
+                )}
                 <DropdownMenuItem variant="destructive" onClick={onLogout}><LogOut className="size-4" /> Wyloguj</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
