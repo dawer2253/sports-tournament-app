@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\UpdateAccountRequest;
+use App\Http\Requests\Auth\UpdatePasswordRequest;
 use App\Http\Resources\AuthPayloadResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -55,6 +58,31 @@ class AuthController extends Controller
     public function me(Request $request): UserResource
     {
         return new UserResource($request->user());
+    }
+
+    public function update(UpdateAccountRequest $request): UserResource
+    {
+        $user = $request->user();
+        $user->update($request->validated());
+
+        return new UserResource($user);
+    }
+
+    /**
+     * Nowe hasło unieważnia tokeny pozostałych urządzeń, bo zmiana hasła to
+     * zwykle reakcja na podejrzenie, że ktoś je zna. Token z tego żądania
+     * zostaje, żeby organizer nie wylatywał z panelu, w którym je zmienił.
+     */
+    public function updatePassword(UpdatePasswordRequest $request): Response
+    {
+        $user = $request->user();
+
+        DB::transaction(function () use ($user, $request) {
+            $user->update(['password' => $request->validated('password')]);
+            $user->tokens()->whereKeyNot($user->currentAccessToken()->getKey())->delete();
+        });
+
+        return response()->noContent();
     }
 
     private function authPayloadFor(User $user): AuthPayloadResource

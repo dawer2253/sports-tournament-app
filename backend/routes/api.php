@@ -47,6 +47,8 @@ Route::prefix('/public/t/{slug}')->middleware(AddHttpValidators::class)->group(f
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::patch('/me', [AuthController::class, 'update']);
+    Route::put('/me/password', [AuthController::class, 'updatePassword']);
 
     Route::get('/sports', [SportController::class, 'index']);
     Route::get('/tournaments', [TournamentController::class, 'index']);
