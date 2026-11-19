@@ -223,6 +223,74 @@ paths:
                   email: dawid@example.com
                   createdAt: '2026-09-01T08:00:00+00:00'
         '401': { $ref: '#/components/responses/Unauthenticated' }
+    patch:
+      tags: [Auth]
+      summary: Zmień dane konta
+      description: |
+        Oba pola można pominąć. `email` podlega tym samym zasadom co przy
+        `POST /register`: adres zajęty przez inne konto daje `422` z błędem pod
+        `email`. Własny, niezmieniony adres przechodzi.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 2, maxLength: 120 }
+                email: { type: string, format: email, maxLength: 255 }
+            example:
+              name: Dawid Patko
+              email: dawid.patko@example.com
+      responses:
+        '200':
+          description: Konto po zmianie
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+              example:
+                data:
+                  id: 1
+                  name: Dawid Patko
+                  email: dawid.patko@example.com
+                  createdAt: '2026-09-01T08:00:00+00:00'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/password:
+    put:
+      tags: [Auth]
+      summary: Zmień hasło
+      description: |
+        Wymaga bieżącego hasła: złe daje `422` z błędem pod `currentPassword`.
+        Nowe hasło podlega tym samym zasadom co przy `POST /register`.
+
+        Po zmianie unieważnia wszystkie tokeny konta **poza** tym użytym
+        w żądaniu, więc organizer zostaje zalogowany tutaj, a inne urządzenia
+        muszą zalogować się nowym hasłem.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, password, passwordConfirmation]
+              properties:
+                currentPassword: { type: string }
+                password: { type: string, minLength: 8 }
+                passwordConfirmation: { type: string, minLength: 8 }
+            example:
+              currentPassword: tajnehaslo123
+              password: nowehaslo456
+              passwordConfirmation: nowehaslo456
+      responses:
+        '204': { description: Hasło zmienione }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
 
   /sports:
     get:

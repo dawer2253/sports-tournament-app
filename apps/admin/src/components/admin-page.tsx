@@ -9,8 +9,9 @@ import {
   type AdminNavKey,
   type AdminSectionKey,
 } from '@tournament/ui';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
+import { AccountSettingsDialog, ChangePasswordDialog } from './account-dialogs';
 import { api } from '../lib/api';
 import { useStages } from '../lib/schedule-queries';
 import { SECTION_ROUTES } from '../lib/section-route';
@@ -111,6 +112,8 @@ export function AdminPage(props: AdminPageProps) {
   const { tournament, actions, children } = props;
   const navigate = useNavigate();
   const account = useAccount();
+  const knownAccount = account !== null && account !== 'pending' ? account : undefined;
+  const [accountDialog, setAccountDialog] = useState<'settings' | 'password' | null>(null);
   const tournaments = useCurrentTournaments();
   // Trasa-rodzic bez danych z API zna tylko `id` z adresu, a reszta (nazwa,
   // status, sport) idzie z listy bieżących — tej samej pozycji, którą
@@ -167,11 +170,19 @@ export function AdminPage(props: AdminPageProps) {
       onOpenTournament={(id) => void navigate(tournamentRoute(id))}
       // Drugi klik przed odpowiedzią wysłałby drugie `/logout`, a to już na
       // unieważnionym tokenie — czyli 401 i przekierowanie w poprzek pierwszego.
+      // Okno konta potrzebuje danych z `/me`, więc pozycje menu pojawiają się
+      // dopiero z kontem; w drodze albo po błędzie zostaje samo „Wyloguj”.
+      onAccountSettings={knownAccount ? () => setAccountDialog('settings') : undefined}
+      onChangePassword={knownAccount ? () => setAccountDialog('password') : undefined}
       onLogout={() => {
         if (!logout.isPending) logout.mutate();
       }}
     >
       {children}
+      {accountDialog === 'settings' && knownAccount && (
+        <AccountSettingsDialog account={knownAccount} onClose={() => setAccountDialog(null)} />
+      )}
+      {accountDialog === 'password' && <ChangePasswordDialog onClose={() => setAccountDialog(null)} />}
     </AdminShell>
   );
 }

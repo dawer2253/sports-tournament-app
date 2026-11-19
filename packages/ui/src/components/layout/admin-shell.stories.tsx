@@ -484,7 +484,7 @@ export const TelefonWTurnieju: Story = {
  * myszki. Test nie klika triggera — dochodzi do niego tabem.
  */
 export const MenuKontaZKlawiatury: Story = {
-  args: { onLogout: fn() },
+  args: { onAccountSettings: fn(), onChangePassword: fn(), onLogout: fn() },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
     // Treść menu Radix portaluje do `body`, poza `canvasElement`.
@@ -517,15 +517,43 @@ export const MenuKontaZKlawiatury: Story = {
     await waitFor(() => expect(page.queryByRole('menu')).not.toBeInTheDocument())
     await expect(trigger).toHaveFocus()
 
-    // Enter otwiera z fokusem na pierwszej pozycji, strzałka przechodzi na
-    // „Wyloguj", Enter wybiera.
+    // Enter otwiera z fokusem na pierwszej pozycji i ją wybiera: „Ustawienia
+    // konta” mają akcję, a nie tylko wygląd pozycji menu.
     await userEvent.keyboard('{Enter}')
     await expect(await page.findByRole('menuitem', { name: 'Ustawienia konta' })).toHaveFocus()
+    await userEvent.keyboard('{Enter}')
+    await expect(args.onAccountSettings).toHaveBeenCalledOnce()
+    await waitFor(() => expect(page.queryByRole('menu')).not.toBeInTheDocument())
+
+    // Strzałka przechodzi przez „Zmień hasło” na „Wyloguj”, Enter wybiera.
+    trigger.focus()
+    await userEvent.keyboard('{Enter}')
+    await expect(await page.findByRole('menuitem', { name: 'Ustawienia konta' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(page.getByRole('menuitem', { name: 'Zmień hasło' })).toHaveFocus()
     await userEvent.keyboard('{ArrowDown}')
     const logoutItem = page.getByRole('menuitem', { name: 'Wyloguj' })
     await expect(logoutItem).toHaveFocus()
     await userEvent.keyboard('{Enter}')
     await expect(args.onLogout).toHaveBeenCalledOnce()
+    await expect(args.onChangePassword).not.toHaveBeenCalled()
+  },
+}
+
+/**
+ * Pozycja bez akcji wyglądała na czynną i nic nie robiła. Bez callbacków menu
+ * konta ma samo „Wyloguj”.
+ */
+export const MenuKontaBezUstawien: Story = {
+  args: { onLogout: fn() },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const page = within(canvasElement.ownerDocument.body)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Menu konta' }))
+    await expect(await page.findByRole('menuitem', { name: 'Wyloguj' })).toBeInTheDocument()
+    await expect(page.queryByRole('menuitem', { name: 'Ustawienia konta' })).not.toBeInTheDocument()
+    await expect(page.queryByRole('menuitem', { name: 'Zmień hasło' })).not.toBeInTheDocument()
   },
 }
 

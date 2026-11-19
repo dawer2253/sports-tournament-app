@@ -204,6 +204,7 @@ return [
         'name' => 'nazwa',
         'password' => 'hasło',
         'passwordConfirmation' => 'powtórzone hasło',
+        'currentPassword' => 'obecne hasło',
         'sportId' => 'sport',
         'format' => 'format',
         'address' => 'adres',
