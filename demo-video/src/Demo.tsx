@@ -3,11 +3,11 @@ import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import React from "react";
 import markers from "../public/clips/markers.json";
-import { outLength, segments, srcToOut, type Zoom } from "./components/Clip";
+import { outLength, segments, srcToOut, type CameraKey, type Segment, type Zoom } from "./components/Clip";
 import { AppScene } from "./scenes/AppScene";
 import { GraphicsScene } from "./scenes/GraphicsScene";
 import { Intro } from "./scenes/Intro";
-import { McpChat } from "./scenes/McpChat";
+import { McpDesktop } from "./scenes/McpDesktop";
 import { Outro } from "./scenes/Outro";
 import { PublicScene } from "./scenes/PublicScene";
 import { s } from "./theme";
@@ -67,6 +67,37 @@ const phoneRate = (at("telefon", "koniec") - phoneFrom) / desktopSeconds;
 // Grafiki: plik wjeżdża 1,3 s po kliknięciu „Pobierz PNG” i zostaje 3,1 s.
 const graphics = cut("grafiki", "start", "koniec", 1.4);
 const revealAt = srcToOut(graphics.segs, at("grafiki", "pobierz")) + 1.3;
+
+// Rozmowa w aplikacji Claude (nagranie ekranu, sekundy nagrania). Wysłanie
+// wiadomości i odpowiedzi agenta grają w 1×, czekanie na agenta jest
+// przyspieszone tak jak wpisywanie w panelu.
+const MCP_SEGS: Segment[] = [
+  { s0: 2.6, s1: 4.6, rate: 1 }, // wklejenie i wysłanie polecenia
+  { s0: 4.6, s1: 64, rate: 8 }, // agent pracuje, lista kroków się odhacza
+  { s0: 64, s1: 65.5, rate: 1 }, // wszystkie kroki odhaczone, agent kończy
+  // Cięcie 65,5–80,5 (ekran przeskakuje na dół odpowiedzi i wraca w górę)
+  // jako przenikanie do początku odpowiedzi.
+  { s0: 80.5, s1: 87, rate: 1, xfade: 0.8 }, // odpowiedź z terminarzem, czas na przeczytanie
+  { s0: 87, s1: 91.6, rate: 4 }, // poprawka czeka w polu wiadomości
+  { s0: 91.6, s1: 94.2, rate: 1 }, // wysłanie poprawki
+  { s0: 94.2, s1: 111, rate: 6 }, // agent przelicza godziny
+  { s0: 111, s1: 117.5, rate: 1 }, // odpowiedź z nowymi godzinami
+];
+const MCP_CAMERA: CameraKey[] = [
+  { at: 2.6, scale: 1.5, x: 0.5, y: 1 }, // pole wiadomości na dole
+  { at: 3.6, scale: 1.5, x: 0.5, y: 1 },
+  // Polecenie i lista kroków u góry. y 0,2 zamiast 0 chowa nad kadrem pasek
+  // z tytułem rozmowy, który przy zbliżeniu byłby ucięty z lewej.
+  { at: 4.6, scale: 1.4, x: 0.5, y: 0.2 },
+  // W czasie przenikania (od 80,5 przez 0,8 s) kamera odjeżdża do całej odpowiedzi.
+  { at: 80.5, scale: 1.4, x: 0.5, y: 0.2 },
+  { at: 81.3, scale: 1.2, x: 0.5, y: 0.5 }, // cała odpowiedź
+  { at: 89, scale: 1.2, x: 0.5, y: 0.5 },
+  { at: 91.6, scale: 1.2, x: 0.5, y: 0.75 }, // poprawka w polu wiadomości
+  { at: 111, scale: 1.2, x: 0.5, y: 0.75 },
+  { at: 112.2, scale: 1.2, x: 0.5, y: 0.4 }, // nowe godziny
+];
+const mcpSeconds = outLength(MCP_SEGS);
 
 export const SCENES: Scene[] = [
   { id: "intro", seconds: 5, el: <Intro /> },
@@ -162,17 +193,20 @@ export const SCENES: Scene[] = [
     [zoom("mecz", at("mecz", "rozpocznij") - 0.8, "koniec", 1.15, 0.5, 0.5)],
   ),
   app("mecz-kibic", "mecz-kibic", ["start", "koniec"], 1, {
-    title: "Kibic widzi to od razu",
-    text: "Wynik, przerwa i relacja minuta po minucie na stronie meczu.",
+    title: "Kibic widzi to na bieżąco",
+    text: "Wynik, przerwa i zdarzenia meczu na jego stronie - odświeżanej automatycznie co 15 sekund.",
   }),
   {
     id: "mcp",
-    seconds: 16.5,
+    seconds: mcpSeconds,
     el: (
-      <McpChat
+      <McpDesktop
+        segs={MCP_SEGS}
+        camera={MCP_CAMERA}
+        caption={[srcToOut(MCP_SEGS, 4.2), srcToOut(MCP_SEGS, 64.8)]}
         step="10"
         title="Agent AI przez MCP"
-        text="Organizator pisze zwykłym językiem, a agent zakłada cały turniej."
+        text="Organizator pisze zwykłym językiem w aplikacji Claude, a agent zakłada cały turniej i poprawia go na prośbę."
       />
     ),
   },

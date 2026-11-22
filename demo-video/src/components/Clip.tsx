@@ -13,8 +13,18 @@ import {
 /** Najazd kamery: od `at` do `to` (sekundy nagrania) skala i punkt, w który patrzymy (0–1). */
 export type Zoom = { at: number; to: number; scale: number; x: number; y: number };
 
-/** Odcinek nagrania [s0, s1] (sekundy) grany w tempie `rate`. */
-export type Segment = { s0: number; s1: number; rate: number };
+/**
+ * Odcinek nagrania [s0, s1] (sekundy) grany w tempie `rate`. `xfade` (sekundy
+ * filmu): odcinek wchodzi tyle wcześniej, przenikając się z poprzednim —
+ * łagodne cięcie zamiast skoku obrazu.
+ */
+export type Segment = { s0: number; s1: number; rate: number; xfade?: number };
+
+/**
+ * Ujęcie kamery w sekundzie nagrania `at`: skala i punkt, w który patrzymy
+ * (0–1). Między ujęciami kamera przechodzi płynnie.
+ */
+export type CameraKey = { at: number; scale: number; x: number; y: number };
 
 // Ile przed kliknięciem nawigacji i ile po nim nagranie gra w 1×: kursor
 // dojeżdża do zakładki, klik, nowy widok ma chwilę, żeby się pokazać.
@@ -49,12 +59,17 @@ export function segments(from: number, to: number, rate: number, navs: number[] 
 }
 
 /** Długość odcinków w sekundach filmu. */
-export const outLength = (segs: Segment[]) => segs.reduce((sum, g) => sum + (g.s1 - g.s0) / g.rate, 0);
+export const outLength = (segs: Segment[]) =>
+  segs.reduce((sum, g) => sum + (g.s1 - g.s0) / g.rate - (g.xfade ?? 0), 0);
 
-/** Sekunda nagrania → sekunda filmu. */
+/**
+ * Sekunda nagrania → sekunda filmu. Odcinek z `xfade` zaczyna się w filmie
+ * przed końcem poprzedniego, więc na styku czasy się zakładają.
+ */
 export function srcToOut(segs: Segment[], t: number): number {
   let acc = 0;
   for (const g of segs) {
+    acc -= g.xfade ?? 0;
     if (t <= g.s1) return acc + (Math.max(t, g.s0) - g.s0) / g.rate;
     acc += (g.s1 - g.s0) / g.rate;
   }
@@ -63,10 +78,20 @@ export function srcToOut(segs: Segment[], t: number): number {
 
 const ease = Easing.bezier(0.65, 0, 0.35, 1);
 
+/** Odcinek z `xfade` wchodzi przez przenikanie nad poprzednim. */
+const FadeIn: React.FC<{ seconds: number; children: React.ReactNode }> = ({ seconds, children }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const opacity =
+    seconds > 0 ? interpolate(frame, [0, seconds * fps], [0, 1], { extrapolateRight: "clamp", easing: ease }) : 1;
+  return <AbsoluteFill style={{ opacity }}>{children}</AbsoluteFill>;
+};
+
 /**
  * Ujęcie z nagrania aplikacji (1920×1080) na cały kadr, od sekundy `from` do
  * `to`, przyspieszone `rate` poza kliknięciami nawigacji. Najazdy kamery
- * wchodzą i schodzą płynnie w 0,6 s.
+ * wchodzą i schodzą płynnie w 0,6 s. Zamiast tego można podać własne odcinki
+ * (`segs`) i ujęcia kamery (`camera`), gdy tempo zmienia się w scenie kilka razy.
  */
 export const Clip: React.FC<{
   src: string;
@@ -75,15 +100,24 @@ export const Clip: React.FC<{
   rate?: number;
   navs?: number[];
   zooms?: Zoom[];
-}> = ({ src, from, to, rate = 1, navs = [], zooms = [] }) => {
+  segs?: Segment[];
+  camera?: CameraKey[];
+}> = ({ src, from, to, rate = 1, navs = [], zooms = [], segs: ownSegs, camera = [] }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
-  const segs = segments(from, to, rate, navs);
+  const segs = ownSegs ?? segments(from, to, rate, navs);
 
   let scale = 1;
   let ox = 0.5;
   let oy = 0.5;
+  if (camera.length > 1) {
+    const times = camera.map((k) => srcToOut(segs, k.at));
+    const opts = { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: ease } as const;
+    scale = interpolate(t, times, camera.map((k) => k.scale), opts);
+    ox = interpolate(t, times, camera.map((k) => k.x), opts);
+    oy = interpolate(t, times, camera.map((k) => k.y), opts);
+  }
   for (const z of zooms) {
     const a = srcToOut(segs, z.at);
     const b = srcToOut(segs, z.to);
@@ -102,6 +136,7 @@ export const Clip: React.FC<{
   // Granice odcinków liczone narastająco, żeby zaokrąglenia nie robiły dziur.
   let acc = 0;
   const parts = segs.map((g) => {
+    acc -= g.xfade ?? 0;
     const start = Math.round(acc * fps);
     acc += (g.s1 - g.s0) / g.rate;
     return { ...g, start, end: Math.round(acc * fps) };
@@ -118,13 +153,15 @@ export const Clip: React.FC<{
             durationInFrames={i === parts.length - 1 ? Infinity : Math.max(1, g.end - g.start)}
             layout="absolute-fill"
           >
-            <Video
-              src={staticFile(`clips/${src}.mp4`)}
-              trimBefore={Math.round(g.s0 * fps)}
-              playbackRate={g.rate}
-              muted
-              style={{ width: "100%", height: "100%" }}
-            />
+            <FadeIn seconds={g.xfade ?? 0}>
+              <Video
+                src={staticFile(`clips/${src}.mp4`)}
+                trimBefore={Math.round(g.s0 * fps)}
+                playbackRate={g.rate}
+                muted
+                style={{ width: "100%", height: "100%" }}
+              />
+            </FadeIn>
           </Sequence>
         ))}
       </AbsoluteFill>
