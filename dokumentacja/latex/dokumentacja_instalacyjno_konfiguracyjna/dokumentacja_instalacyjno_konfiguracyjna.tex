@@ -152,6 +152,7 @@ Kod źródłowy znajduje się w repozytorium \url{https://github.com/dawer2253/s
 \item \texttt{apps/mcp-server/} -- serwer MCP;
 \item \texttt{packages/} -- kontrakt API, wygenerowany klient i design system;
 \item \texttt{e2e/} -- testy end-to-end; \texttt{docs/} -- dokumentacja techniczna;
+\item \texttt{demo-video/} -- film demonstracyjny (projekt Remotion z~nagranymi ujęciami); ma własny \texttt{package.json} i~nie należy do przestrzeni roboczych npm;
 \item \texttt{Makefile}, \texttt{package.json}, \texttt{package-lock.json}, \texttt{.nvmrc}.
 \end{itemize}
 Katalogi \texttt{node\_modules/}, \texttt{backend/vendor/} i pliki \texttt{.env} nie są przechowywane w repozytorium -- powstają podczas instalacji. Dane demonstracyjne nie wymagają przygotowania: tworzy je seeder w kroku~\ref{krok:fresh}. Na Windowsie zaleca się umieszczenie repozytorium w systemie plików WSL2 (np. \texttt{\textasciitilde/sports-tournament-app}), a nie na dysku \texttt{C:}, bo działa to szybciej i bez problemów z uprawnieniami.
@@ -265,10 +266,22 @@ a odtwarza poleceniem \texttt{docker compose exec -T mysql mysql -u root -p lara
 
 \textbf{Usunięcie instalacji.} \texttt{make down}, następnie w katalogu \texttt{backend/} \texttt{docker compose down -v --rmi local} (usuwa kontenery, wolumeny i obraz aplikacji), a na końcu katalog repozytorium. Docker Desktop, Node.js i Git odinstalowuje się standardowo, jeśli nie są potrzebne do innych celów.
 
+\subsection{Film demonstracyjny (opcjonalnie)}
+Katalog \texttt{demo-video/} zawiera projekt Remotion z~nagranymi ujęciami aplikacji, z~którego powstaje film demonstracyjny. Gotowy film jest też do pobrania z~wydania \texttt{film-demo-2026-11} w~repozytorium, więc render jest potrzebny tylko po zmianie scen. Film renderuje się poleceniami:
+\begin{verbatim}
+cd demo-video
+npm install
+npx remotion render DemoTurnieju out/demo-turnieju.mp4 --crf=18
+\end{verbatim}
+Efekt: plik \texttt{demo-video/out/demo-turnieju.mp4} (ok. 2,5 min). Przy pierwszym renderze Remotion pobiera własną przeglądarkę Chromium.
+
+Nowe ujęcia nagrywa \texttt{node demo-video/record/record.mjs} uruchomione z~katalogu głównego. Wymaga to działającego backendu (\texttt{make up}), obu aplikacji frontendowych połączonych z~backendem oraz przeglądarki Playwright (\texttt{npx playwright install chromium}). Skrypt pracuje na koncie demonstracyjnym: na starcie usuwa turnieje ,,Liga Podwórkowa 2026'' i~,,Turniej Szkół 2026'' z~poprzedniego nagrania, a pierwszy z~nich zakłada od nowa. Drugi przed nagraniem sceny \texttt{mcp} trzeba założyć narzędziami serwera MCP. Szczegóły: \texttt{demo-video/README.md}.
+
 \subsection{Źródła i materiały pomocnicze}
 \podpowiedz{Wskaż wykorzystane instrukcje producentów, dokumentację narzędzi oraz przekazane pliki pomocnicze, np. przykładową konfigurację i skrypty instalacyjne. Podaj nazwy i lokalizacje plików; dla źródeł internetowych - tytuł, adres i datę dostępu. Usuń podsekcję, jeśli nie ma takich materiałów.}
 \begin{itemize}
-\item Pliki w repozytorium: \texttt{README.md}, \texttt{docs/BACKEND.md} (uruchomienie backendu), \texttt{docs/BACKEND-INSTALACJA.md} (zapis instalacji szkieletu), \texttt{docs/MCP.md} (serwer MCP), \texttt{Makefile}, \texttt{backend/.env.example}, \texttt{apps/admin/.env.example}, \texttt{apps/public/.env.example}, \texttt{e2e/scripts/backend.sh}.
+\item Pliki w repozytorium: \texttt{README.md}, \texttt{docs/BACKEND.md} (uruchomienie backendu), \texttt{docs/BACKEND-INSTALACJA.md} (zapis instalacji szkieletu), \texttt{docs/MCP.md} (serwer MCP), \texttt{Makefile}, \texttt{backend/.env.example}, \texttt{apps/admin/.env.example}, \texttt{apps/public/.env.example}, \texttt{e2e/scripts/backend.sh}, \texttt{demo-video/README.md} (nagranie i~render filmu demonstracyjnego).
+\item Remotion -- dokumentacja, \url{https://www.remotion.dev/docs}, dostęp: 22.11.2026.
 \item Laravel Sail -- dokumentacja, \url{https://laravel.com/docs/sail}, dostęp: 19.11.2026.
 \item Docker Desktop: WSL 2 backend on Windows, \url{https://docs.docker.com/desktop/features/wsl/}, dostęp: 19.11.2026.
 \item Instalacja WSL, Microsoft Learn, \url{https://learn.microsoft.com/windows/wsl/install}, dostęp: 19.11.2026.

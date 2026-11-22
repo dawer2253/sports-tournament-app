@@ -126,6 +126,7 @@ Katalog & Zawartość i odpowiedzialność\\
 \texttt{apps/mcp-server} & lokalny serwer MCP dla asystenta AI\\
 \texttt{backend} & Laravel 13: REST API \texttt{/api/v1}, logika rozgrywek, baza MySQL\\
 \texttt{e2e} & testy end-to-end (Playwright) przez panel, stronę publiczną i backend\\
+\texttt{demo-video} & film demonstracyjny aplikacji (Remotion): skrypt nagrywania ekranów, sceny i~render do MP4; poza przestrzeniami roboczymi npm\\
 \bottomrule
 \end{tabularx}
 
@@ -245,6 +246,13 @@ Dane demonstracyjne tworzą seedery (\texttt{backend/database/seeders}): sześć
 
 \textbf{Frontend.} Obie aplikacje korzystają z typowanego klienta z kontraktu i z TanStack Query do pobierania i buforowania danych. Panel zawiera kreator turnieju i zakładki: Drużyny, Zgłoszenia, Grupy, Obiekty, Grafiki, Ustawienia, Terminarz, Tabela, Drabinka. Strona publiczna ma zakładki Przegląd, Tabela, Drabinka, Terminarz, Wyniki, Statystyki oraz stronę meczu z relacją. Generator grafik rysuje w przeglądarce zapowiedź meczu, wynik, tabelę lub klasyfikację w formacie 4:5 albo 9:16 i eksportuje je do PNG. Wspólne komponenty i motyw dostarcza \texttt{packages/ui}.
 
+\textbf{Film demonstracyjny} (\texttt{demo-video}). Film (2:31, bez dźwięku, 1920$\times$1080) pokazuje kolejno panel organizatora, założenie turnieju, drużyny i~zawodników, terminarz z~wynikiem i~tabelą, zmianę ustawień i~koloru, stronę publiczną na komputerze i~telefonie, generator grafik, mecz na żywo z~widokiem kibica oraz turniej założony przez asystenta AI. Wszystkie ujęcia pochodzą z~działającej aplikacji, a nie z~makiet. Film powstaje w~dwóch krokach:
+\begin{itemize}
+\item \textbf{Nagranie.} Skrypt \texttt{record/record.mjs} steruje przez Playwright panelem i~stroną publiczną na lokalnym backendzie: loguje się kontem demonstracyjnym, zakłada turniej, dodaje drużyny i~zawodników, wpisuje wyniki i~zdarzenia meczu. Obraz zapisuje przez screencast Chrome DevTools Protocol, osobno dla każdej sceny. Czas oczekiwania na odpowiedzi API jest wycinany z~nagrania. Chwile poszczególnych kroków oraz kliknięcia przechodzące na inny ekran trafiają do pliku \texttt{public/clips/markers.json}.
+\item \textbf{Montaż.} Projekt Remotion (sceny w~React) składa ujęcia z~podpisami kroków, planszami i~przejściami, a długości scen liczy ze znaczników nagrania. Wpisywanie i~zaznaczanie jest przyspieszone (1,25--3,5$\times$), ale od 0,6~s przed do 1,4~s po każdym przejściu na inny ekran film gra w~zwykłym tempie, żeby widz zdążył zobaczyć, co kliknięto. Scena z~asystentem AI odtwarza rzeczywiste wywołania narzędzi serwera MCP; panel pokazany po niej nagrano z~turnieju założonego tymi samymi wywołaniami.
+\end{itemize}
+Gotowy plik MP4 nie trafia do repozytorium: jest załącznikiem wydania \texttt{film-demo-2026-11} na GitHubie, oznaczonego jako wstępne, żeby nie dostało etykiety ,,Latest'' zarezerwowanej dla wersji aplikacji. Instrukcję nagrania i~renderu zawiera \texttt{demo-video/README.md}.
+
 \newpage
 \subsection{Mechanizmy AI w rozwiązaniu}
 \podpowiedz{Ta podsekcja dotyczy AI stanowiącej część projektu. Opisz model lub usługę, wersję, zadanie, dane wejściowe i wyjściowe, integrację, konfigurację i ograniczenia. Jeśli rozwiązanie obejmuje uczenie, opisz dane, podział zbiorów, parametry i ocenę wyników. Dla usług zewnętrznych wskaż wymagane połączenia i zależności, bez ujawniania kluczy dostępowych. Jeśli AI tylko wspomagała pracę zespołu, jej wykorzystanie opisz w sprawozdaniu, a tę podsekcję usuń.}
@@ -283,6 +291,7 @@ Pest, Spectator & 4.7 / 3.0 & testy backendu i zgodności z kontraktem\\
 Vitest, Testing Library, MSW & 4.1 / -- / 2.15 & testy frontendu\\
 Playwright & 1.62 & testy end-to-end\\
 MCP TypeScript SDK & 1.32 & serwer MCP\\
+Remotion & 4.0 & film demonstracyjny: składanie scen i~render do MP4\\
 \bottomrule
 \end{tabularx}
 
@@ -331,7 +340,8 @@ Ograniczenia sprawdzeń: testy obejmują środowisko lokalne i przeglądarkę Ch
 \item Storybook, \url{https://storybook.js.org}, dostęp: 19.11.2026 (MIT).
 \item Vitest, \url{https://vitest.dev}; Playwright, \url{https://playwright.dev}; Mock Service Worker, \url{https://mswjs.io}, dostęp: 19.11.2026 (MIT / Apache 2.0).
 \item Model Context Protocol -- specyfikacja i TypeScript SDK, \url{https://modelcontextprotocol.io}, dostęp: 19.11.2026 (MIT).
+\item Remotion -- dokumentacja, \url{https://www.remotion.dev/docs}, dostęp: 22.11.2026 (licencja Remotion, bezpłatna dla osób prywatnych i~organizacji do trzech pracowników).
 \item Round-robin tournament, Wikipedia, \url{https://en.wikipedia.org/wiki/Round-robin_tournament}, dostęp: 19.11.2026.
-\item Dokumentacja techniczna w repozytorium projektu: \texttt{docs/PLAN.md}, \texttt{docs/adr/}, \texttt{docs/BACKEND.md}, \texttt{docs/MCP.md}, \texttt{CONTEXT.md}.
+\item Dokumentacja techniczna w repozytorium projektu: \texttt{docs/PLAN.md}, \texttt{docs/adr/}, \texttt{docs/BACKEND.md}, \texttt{docs/MCP.md}, \texttt{CONTEXT.md}, \texttt{demo-video/README.md}.
 \end{enumerate}
 \end{document}
