@@ -37,7 +37,6 @@ Zasady szablonu (z `Readme.pdf`):
 
 ## Do uzupełnienia
 
-- nazwa pliku z nagraniem demo (sprawozdanie końcowe, dokumentacja użytkowa);
 - końcowy commit / tag wersji oddanej (sprawozdanie końcowe).
 
 Po zmianie `.tex` przekompiluj PDF i wrzuć oba pliki, żeby wersje się zgadzały.
