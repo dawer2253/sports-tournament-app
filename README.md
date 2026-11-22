@@ -7,6 +7,10 @@ pod publicznym adresem.
 Projekt inżynierski, zespół trzyosobowy. Zakres i harmonogram: [`docs/PLAN.md`](docs/PLAN.md).
 Backlog z podziałem pracy: [`docs/TASKS.md`](docs/TASKS.md).
 
+**Film demo** (2:31, bez dźwięku): [pobierz MP4](https://github.com/dawer2253/sports-tournament-app/releases/download/film-demo-2026-11/demo-turnieju.mp4)
+z [wydania `film-demo-2026-11`](https://github.com/dawer2253/sports-tournament-app/releases/tag/film-demo-2026-11).
+Jak go nagrać i wyrenderować: [`demo-video/README.md`](demo-video/README.md).
+
 ## Czego potrzebujesz
 
 | Narzędzie | Po co | Uwagi |

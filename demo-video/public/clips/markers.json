@@ -1,0 +1,186 @@
+{
+  "logowanie": {
+    "duration": 9.28,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 0.64,
+      "lista": 6.1,
+      "koniec": 9.28
+    },
+    "navs": [
+      5.67
+    ]
+  },
+  "nowy-turniej": {
+    "duration": 11.44,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 1.39,
+      "zalozony": 8.49,
+      "koniec": 11.44
+    },
+    "navs": [
+      1.99,
+      8.03,
+      9.82
+    ]
+  },
+  "druzyny": {
+    "duration": 67.05,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 0.78,
+      "sklad": 26.08,
+      "koniec": 67.05
+    },
+    "navs": [
+      27.19
+    ]
+  },
+  "terminarz": {
+    "duration": 30.75,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 1.39,
+      "wygenerowany": 7.09,
+      "daty": 13.78,
+      "wynik": 16.24,
+      "tabela": 27.55,
+      "koniec": 30.75
+    },
+    "navs": [
+      1.98,
+      6.63,
+      15.77,
+      28.13
+    ]
+  },
+  "ustawienia": {
+    "duration": 14.89,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 1.38,
+      "kolor": 4.77,
+      "publikacja": 10.96,
+      "koniec": 14.89
+    },
+    "navs": [
+      1.98,
+      11.96
+    ]
+  },
+  "publiczna": {
+    "duration": 13.3,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 2.15,
+      "tabela": 5.87,
+      "terminarz": 8.65,
+      "koniec": 13.3
+    },
+    "navs": [
+      6.45,
+      9.22
+    ]
+  },
+  "telefon": {
+    "duration": 9.09,
+    "size": [
+      780,
+      1688
+    ],
+    "marks": {
+      "start": 2.86,
+      "tabela": 6.58,
+      "koniec": 9.09
+    },
+    "navs": []
+  },
+  "grafiki": {
+    "duration": 13.25,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 0.78,
+      "wynik": 3.6,
+      "tabela": 5.4,
+      "klasyfikacja": 8.2,
+      "pobierz": 10.99,
+      "koniec": 13.25
+    },
+    "navs": [
+      1.38
+    ]
+  },
+  "mcp-panel": {
+    "duration": 10.2,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 1.57,
+      "grupy": 4.1,
+      "terminarz": 6.93,
+      "koniec": 10.2
+    },
+    "navs": [
+      2.17,
+      4.69,
+      7.57
+    ]
+  },
+  "mecz": {
+    "duration": 32.05,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 0.89,
+      "rozpocznij": 3.1,
+      "bramka": 6.55,
+      "kartka": 13.64,
+      "bramka2": 20.8,
+      "przerwa": 28.03,
+      "koniec": 32.05
+    },
+    "navs": [
+      1.99,
+      4.58,
+      29.37
+    ]
+  },
+  "mecz-kibic": {
+    "duration": 8.34,
+    "size": [
+      1920,
+      1080
+    ],
+    "marks": {
+      "start": 2.16,
+      "koniec": 8.34
+    },
+    "navs": []
+  }
+}
