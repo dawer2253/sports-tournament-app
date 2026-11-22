@@ -44,3 +44,19 @@ cd demo-video
 npm run dev                                                # Remotion Studio
 npx remotion render DemoTurnieju out/demo-turnieju.mp4 --crf=18
 ```
+
+## 3. Publikacja
+
+Gotowy film nie trafia do repo (`out/` jest w `.gitignore`), tylko do wydania
+na GitHubie:
+[`film-demo-2026-11`](https://github.com/dawer2253/sports-tournament-app/releases/tag/film-demo-2026-11).
+Nową wersję filmu wgrywa się do tego samego wydania, w miejsce starego pliku:
+
+```bash
+gh release upload film-demo-2026-11 demo-video/out/demo-turnieju.mp4 --clobber
+```
+
+Wydanie jest oznaczone jako wstępne (`--prerelease`), więc GitHub nie daje mu
+etykiety „Latest”. Ta etykieta wskazuje najnowszą wersję aplikacji, a film nią
+nie jest. Nie zaznaczaj „Set as the latest release” przy edycji wydania.
+Nowe wydanie filmu też zakładaj z `--prerelease` albo z `--latest=false`.
