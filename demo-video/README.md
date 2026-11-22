@@ -33,9 +33,19 @@ Czekanie na API nie trafia do nagrania: przy żądaniach do backendu nagranie
 stoi, a w filmie zostaje cięcie. Laravel w Sailu na dysku Windows potrafi
 pod obciążeniem odpowiadać po kilkanaście sekund.
 
-Scena `mcp` nagrywa panel turnieju, który najpierw trzeba założyć przez serwer
-MCP (`apps/mcp-server`) — rozmowa w filmie (`src/scenes/McpChat.tsx`) odtwarza
-te same wywołania narzędzi.
+Rozmowa z agentem to prawdziwe nagranie ekranu aplikacji Claude z serwerem MCP
+`turnieje` (`apps/mcp-server`), nagrane ręcznie (Xbox Game Bar, `Win + Alt + R`)
+i zapisane jako `public/clips/mcp-desktop.mp4` w stałych 30 kl./s:
+
+```bash
+npx remotion ffmpeg -i "<nagranie>.mp4" -an -r 30 -c:v libx264 -crf 16 -pix_fmt yuv420p public/clips/mcp-desktop.mp4
+```
+
+Momenty cięcia, tempo i ruch kamery tej sceny są wpisane ręcznie w
+`MCP_SEGS` i `MCP_CAMERA` w `src/Demo.tsx` — po nowym nagraniu trzeba je
+poprawić. Przed nagraniem usuń „Turniej Szkół 2026”, żeby agent założył go od
+nowa pod wolnym adresem. Scena `mcp` skryptu nagrywa potem panel turnieju
+założonego przez agenta.
 
 ## 2. Podgląd i render
 

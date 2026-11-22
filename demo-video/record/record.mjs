@@ -196,7 +196,26 @@ function run(cmd, args) {
   });
 }
 
-async function scene(name, fn, { mobile = false, auth = true } = {}) {
+/**
+ * Turnieje ukryte w listach panelu. Turniej założony przez agenta (scena `mcp`)
+ * istnieje już w bazie, ale w filmie powstaje dopiero na końcu — wcześniejsze
+ * sceny nie mogą go pokazywać w liście turniejów ani w pasku bocznym.
+ */
+async function hideTournaments(context, names) {
+  if (!names.length) return;
+  await context.route(/\/api\/v1\/tournaments(\?.*)?$/, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue();
+    const response = await route.fetch();
+    const json = await response.json().catch(() => null);
+    if (!json || !Array.isArray(json.data)) return route.fulfill({ response });
+    const data = json.data.filter((t) => !names.includes(t.name));
+    const removed = json.data.length - data.length;
+    const meta = json.meta?.total != null ? { ...json.meta, total: json.meta.total - removed } : json.meta;
+    await route.fulfill({ response, json: { ...json, data, ...(meta ? { meta } : {}) } });
+  });
+}
+
+async function scene(name, fn, { mobile = false, auth = true, hide = [MCP_NAME] } = {}) {
   await rm(TMP, { recursive: true, force: true });
   await mkdir(TMP, { recursive: true });
   const viewport = mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 };
@@ -215,6 +234,7 @@ async function scene(name, fn, { mobile = false, auth = true } = {}) {
   });
   if (auth) await context.addInitScript(([k, v]) => localStorage.setItem(k, v), [TOKEN_KEY, token]);
   if (!mobile) await context.addInitScript(CURSOR_SCRIPT);
+  await hideTournaments(context, hide);
   const page = await context.newPage();
 
   // Laravel w Sailu na dysku Windows potrafi pod obciążeniem odpowiadać po
@@ -328,11 +348,11 @@ const nav = (page, name) =>
 // ---------- sceny ----------
 const SCENES = {
   async logowanie() {
-    // Lista turniejów w kadrze ma być bez śladu poprzedniego przebiegu.
-    for (const name of [DEMO.name, MCP_NAME]) {
-      const old = await findTournament(name);
-      if (old) await removeTournament(old.id);
-    }
+    // Lista turniejów w kadrze ma być bez śladu poprzedniego przebiegu. Turniej
+    // agenta zostaje w bazie (jego panel nagrywa scena `mcp`), a z list
+    // znika przez `hide` w `scene()`.
+    const old = await findTournament(DEMO.name);
+    if (old) await removeTournament(old.id);
     await scene(
       'logowanie',
       async ({ page, h, mark }) => {
@@ -346,8 +366,9 @@ const SCENES = {
         await page.getByRole('heading', { name: /turnieje/i }).waitFor();
         mark('lista');
         await sleep(900);
-        await h.move(page.getByRole('button', { name: /Otwórz turniej Liga Osiedlowa/ }), { pause: 600 });
-        await h.move(page.getByRole('button', { name: 'Nowy turniej' }), { pause: 800 });
+        // Ujęcie kończy się kursorem na „Nowy turniej”: następna scena zaczyna
+        // w tym samym miejscu i dopiero tam klika.
+        await h.move(page.getByRole('button', { name: 'Nowy turniej' }), { steps: 30, pause: 900 });
       },
       { auth: false },
     );
@@ -358,10 +379,14 @@ const SCENES = {
     if (old) await removeTournament(old.id);
     await scene('nowy-turniej', async ({ page, h, mark }) => {
       await page.goto(ADMIN);
-      await page.getByRole('button', { name: 'Nowy turniej' }).waitFor();
-      await sleep(500);
+      const create = page.getByRole('button', { name: 'Nowy turniej' });
+      await create.waitFor();
+      // Kursor stoi już na przycisku, tak jak na końcu sceny logowania.
+      const box = await create.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await sleep(700);
       mark('start');
-      await h.nav(page.getByRole('button', { name: 'Nowy turniej' }));
+      await h.nav(create);
       await h.type(page.getByLabel('Nazwa turnieju'), DEMO.name);
       const form = page.getByRole('main');
       await h.click(form.getByText('Piłka nożna', { exact: true }));
@@ -491,7 +516,13 @@ const SCENES = {
       mark('start');
       await h.nav(nav(page, 'Ustawienia'));
       await page.getByLabel('Długość meczu (min)').waitFor();
-      await sleep(600);
+      // Najpierw cały ekran ustawień, potem płynne przewinięcie do sekcji
+      // wyglądu i rozgrywek (zamiast skoku przy wpisywaniu).
+      await sleep(2200);
+      mark('przewin');
+      await h.park(820, 470);
+      await h.wheel(520, { steps: 18 });
+      await sleep(300);
       await h.type(page.getByLabel('Długość meczu (min)'), '60', { clear: true, delay: 90 });
       await sleep(300);
       mark('kolor');
@@ -670,7 +701,7 @@ const SCENES = {
       mark('terminarz');
       await h.nav(nav(page, 'Terminarz'));
       await sleep(2200);
-    });
+    }, { hide: [] });
   },
 };
 
