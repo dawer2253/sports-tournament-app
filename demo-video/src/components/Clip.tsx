@@ -3,6 +3,7 @@ import React from "react";
 import {
   AbsoluteFill,
   Easing,
+  Freeze,
   interpolate,
   Sequence,
   staticFile,
@@ -16,9 +17,13 @@ export type Zoom = { at: number; to: number; scale: number; x: number; y: number
 /**
  * Odcinek nagrania [s0, s1] (sekundy) grany w tempie `rate`. `xfade` (sekundy
  * filmu): odcinek wchodzi tyle wcześniej, przenikając się z poprzednim —
- * łagodne cięcie zamiast skoku obrazu.
+ * łagodne cięcie zamiast skoku obrazu. `hold` (sekundy filmu): po odcinku
+ * kadr stoi na jego ostatniej klatce, żeby widz zdążył obejrzeć wynik.
  */
-export type Segment = { s0: number; s1: number; rate: number; xfade?: number };
+export type Segment = { s0: number; s1: number; rate: number; xfade?: number; hold?: number };
+
+/** Długość odcinka w filmie razem z przytrzymaniem, bez przenikania. */
+const segLength = (g: Segment) => (g.s1 - g.s0) / g.rate + (g.hold ?? 0);
 
 /**
  * Ujęcie kamery w sekundzie nagrania `at`: skala i punkt, w który patrzymy
@@ -58,9 +63,45 @@ export function segments(from: number, to: number, rate: number, navs: number[] 
   return out;
 }
 
+/**
+ * Wstawia przytrzymania kadru: `[sekunda nagrania, ile sekund filmu]`. Odcinek,
+ * w który wypada przytrzymanie, dzieli się w tym miejscu na dwa.
+ */
+export function withHolds(segs: Segment[], holds: [number, number][]): Segment[] {
+  let out = segs;
+  for (const [at, seconds] of holds) {
+    out = out.flatMap((g) => {
+      if (at <= g.s0 || at > g.s1) return [g];
+      if (at === g.s1) return [{ ...g, hold: (g.hold ?? 0) + seconds }];
+      return [
+        { ...g, s1: at, hold: seconds },
+        { s0: at, s1: g.s1, rate: g.rate, hold: g.hold },
+      ];
+    });
+  }
+  return out;
+}
+
+/**
+ * Wycina z odcinków fragmenty nagrania `[od, do]` (sekundy nagrania) — postoje,
+ * w których nic się nie dzieje. Na nieruchomym ekranie cięcia nie widać.
+ */
+export function withCuts(segs: Segment[], cuts: [number, number][]): Segment[] {
+  let out = segs;
+  for (const [a, b] of cuts) {
+    out = out.flatMap((g) => {
+      if (b <= g.s0 || a >= g.s1) return [g];
+      const parts: Segment[] = [];
+      if (a > g.s0) parts.push({ ...g, s1: a, hold: undefined });
+      if (b < g.s1) parts.push({ s0: b, s1: g.s1, rate: g.rate, hold: g.hold });
+      return parts;
+    });
+  }
+  return out;
+}
+
 /** Długość odcinków w sekundach filmu. */
-export const outLength = (segs: Segment[]) =>
-  segs.reduce((sum, g) => sum + (g.s1 - g.s0) / g.rate - (g.xfade ?? 0), 0);
+export const outLength = (segs: Segment[]) => segs.reduce((sum, g) => sum + segLength(g) - (g.xfade ?? 0), 0);
 
 /**
  * Sekunda nagrania → sekunda filmu. Odcinek z `xfade` zaczyna się w filmie
@@ -71,7 +112,7 @@ export function srcToOut(segs: Segment[], t: number): number {
   for (const g of segs) {
     acc -= g.xfade ?? 0;
     if (t <= g.s1) return acc + (Math.max(t, g.s0) - g.s0) / g.rate;
-    acc += (g.s1 - g.s0) / g.rate;
+    acc += segLength(g);
   }
   return acc;
 }
@@ -134,36 +175,47 @@ export const Clip: React.FC<{
   }
 
   // Granice odcinków liczone narastająco, żeby zaokrąglenia nie robiły dziur.
+  // Przytrzymanie to osobna część: zamrożona ostatnia klatka odcinka.
+  type Part = { g: Segment; freeze: boolean; start: number; end: number };
+  const parts: Part[] = [];
   let acc = 0;
-  const parts = segs.map((g) => {
+  for (const g of segs) {
     acc -= g.xfade ?? 0;
     const start = Math.round(acc * fps);
     acc += (g.s1 - g.s0) / g.rate;
-    return { ...g, start, end: Math.round(acc * fps) };
-  });
+    const end = Math.round(acc * fps);
+    parts.push({ g, freeze: false, start, end });
+    if (g.hold) {
+      acc += g.hold;
+      parts.push({ g, freeze: true, start: end, end: Math.round(acc * fps) });
+    }
+  }
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#fff", overflow: "hidden" }}>
       <AbsoluteFill style={{ scale: String(scale), transformOrigin: `${ox * 100}% ${oy * 100}%` }}>
-        {parts.map((g, i) => (
-          <Sequence
-            key={i}
-            from={g.start}
-            // Ostatni odcinek trzyma ostatnią klatkę do końca sceny.
-            durationInFrames={i === parts.length - 1 ? Infinity : Math.max(1, g.end - g.start)}
-            layout="absolute-fill"
-          >
-            <FadeIn seconds={g.xfade ?? 0}>
-              <Video
-                src={staticFile(`clips/${src}.mp4`)}
-                trimBefore={Math.round(g.s0 * fps)}
-                playbackRate={g.rate}
-                muted
-                style={{ width: "100%", height: "100%" }}
-              />
-            </FadeIn>
-          </Sequence>
-        ))}
+        {parts.map(({ g, freeze, start, end }, i) => {
+          const video = (
+            <Video
+              src={staticFile(`clips/${src}.mp4`)}
+              trimBefore={Math.round((freeze ? g.s1 : g.s0) * fps)}
+              playbackRate={g.rate}
+              muted
+              style={{ width: "100%", height: "100%" }}
+            />
+          );
+          return (
+            <Sequence
+              key={i}
+              from={start}
+              // Ostatnia część trzyma ostatnią klatkę do końca sceny.
+              durationInFrames={i === parts.length - 1 ? Infinity : Math.max(1, end - start)}
+              layout="absolute-fill"
+            >
+              {freeze ? <Freeze frame={0}>{video}</Freeze> : <FadeIn seconds={g.xfade ?? 0}>{video}</FadeIn>}
+            </Sequence>
+          );
+        })}
       </AbsoluteFill>
     </AbsoluteFill>
   );

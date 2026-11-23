@@ -125,9 +125,35 @@ const CURSOR_SCRIPT = `
 })();
 `;
 
+const easeInOut = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+
 function human(page, settle, onNav = () => {}) {
   let pos = { x: 640, y: 400 };
+  /**
+   * Płynny ruch kursora: 0,3–0,9 s zależnie od odległości, zdarzenie co
+   * ~16 ms, z rozpędem i hamowaniem. `mouse.move` ze `steps` wysyła kroki bez
+   * przerw, więc w nagraniu kursor przeskakiwał w kilku klatkach.
+   */
+  async function glide(x, y) {
+    const from = pos;
+    const dist = Math.hypot(x - from.x, y - from.y);
+    const n = Math.max(1, Math.round(Math.min(900, 300 + dist * 0.7) / 16));
+    for (let i = 1; i <= n; i++) {
+      const k = easeInOut(i / n);
+      await page.mouse.move(from.x + (x - from.x) * k, from.y + (y - from.y) * k);
+      await sleep(16);
+    }
+    pos = { x, y };
+  }
   return {
+    get pos() {
+      return pos;
+    },
+    /** Kursor od razu w punkcie, bez ruchu (początek sceny). */
+    async place(p) {
+      await page.mouse.move(p.x, p.y);
+      pos = { x: p.x, y: p.y };
+    },
     /**
      * Klik, który zmienia widok (zakładka, nowy ekran, okno meczu). Moment
      * kliknięcia trafia do `markers.json` pod `navs`: film puszcza go w tempie
@@ -140,14 +166,11 @@ function human(page, settle, onNav = () => {}) {
       await settle();
       await sleep(250);
     },
-    async move(locator, { steps = 22, pause = 180 } = {}) {
+    async move(locator, { pause = 180 } = {}) {
       await locator.scrollIntoViewIfNeeded();
       const box = await locator.boundingBox();
       if (!box) throw new Error('brak boundingBox');
-      const x = box.x + box.width / 2;
-      const y = box.y + box.height / 2;
-      await page.mouse.move(x, y, { steps });
-      pos = { x, y };
+      await glide(box.x + box.width / 2, box.y + box.height / 2);
       await sleep(pause);
     },
     async click(locator, opts) {
@@ -173,8 +196,7 @@ function human(page, settle, onNav = () => {}) {
       await sleep(300);
     },
     async park(x, y) {
-      await page.mouse.move(x, y, { steps: 20 });
-      pos = { x, y };
+      await glide(x, y);
     },
   };
 }
@@ -215,7 +237,12 @@ async function hideTournaments(context, names) {
   });
 }
 
-async function scene(name, fn, { mobile = false, auth = true, hide = [MCP_NAME] } = {}) {
+/**
+ * `after`: scena, która w filmie stoi tuż przed tą. Ta zaczyna z kursorem tam,
+ * gdzie tamta go zostawiła (`enter()` przed `mark('start')`) — inaczej na
+ * przenikaniu scen widać dwa kursory.
+ */
+async function scene(name, fn, { mobile = false, auth = true, hide = [MCP_NAME], after } = {}) {
   await rm(TMP, { recursive: true, force: true });
   await mkdir(TMP, { recursive: true });
   const viewport = mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 };
@@ -300,9 +327,15 @@ async function scene(name, fn, { mobile = false, auth = true, hide = [MCP_NAME] 
   const mark = (label) => marks.push({ label, wall: now() - offset });
   const navs = [];
   const h = human(page, settle, () => navs.push(now() - offset));
+  const enterAt = after ? markers[after]?.cursor : undefined;
+  if (after && !enterAt) throw new Error(`Brak pozycji kursora z „${after}” — nagraj najpierw tamtą scenę.`);
+  const enter = async () => {
+    if (enterAt) await h.place(enterAt);
+    await sleep(400);
+  };
   console.log(`▶ ${name}`);
   try {
-    await fn({ page, h, mark, hold, settle });
+    await fn({ page, h, mark, hold, settle, enter });
     mark('koniec');
   } catch (error) {
     await page.screenshot({ path: path.join(OUT, `${name}-BLAD.png`) });
@@ -336,6 +369,8 @@ async function scene(name, fn, { mobile = false, auth = true, hide = [MCP_NAME] 
         size: [viewport.width * scale, viewport.height * scale],
         marks: Object.fromEntries(marks.map((m) => [m.label, +(m.wall - t0).toFixed(2)])),
         navs: navs.map((t) => +(t - t0).toFixed(2)),
+        // Gdzie kursor kończy scenę (piksele CSS) — tu zaczyna następna.
+        cursor: { x: Math.round(h.pos.x), y: Math.round(h.pos.y) },
       };
       console.log(`  ${frames.length} klatek, ${(end - t0).toFixed(1)} s`);
     }
@@ -348,20 +383,25 @@ const nav = (page, name) =>
 // ---------- sceny ----------
 const SCENES = {
   async logowanie() {
-    // Lista turniejów w kadrze ma być bez śladu poprzedniego przebiegu. Turniej
-    // agenta zostaje w bazie (jego panel nagrywa scena `mcp`), a z list
-    // znika przez `hide` w `scene()`.
-    const old = await findTournament(DEMO.name);
-    if (old) await removeTournament(old.id);
+    // Lista turniejów w kadrze ma być bez śladu turniejów, które w filmie
+    // powstają później: demo (scena `nowy`) i agenta (scena `mcp`). Oba mogą
+    // być w bazie — z list znikają przez `hide`, więc logowanie da się
+    // nagrać ponownie bez reszty łańcucha.
     await scene(
       'logowanie',
       async ({ page, h, mark }) => {
         await page.goto(`${ADMIN}/login`);
         await page.getByLabel('E-mail').waitFor();
-        await sleep(600);
+        // Formularz w panelu ma wpisane konto demo (wygoda przy pracy lokalnej);
+        // w filmie logowanie zaczyna się od pustych pól.
+        await page.getByLabel('E-mail').fill('');
+        await page.getByLabel('Hasło').fill('');
+        // Ujęcie zaczyna się od klikniętego pola e-mail.
+        await h.click(page.getByLabel('E-mail'));
+        await sleep(400);
         mark('start');
-        await h.type(page.getByLabel('E-mail'), ACCOUNT.email, { clear: true, delay: 35 });
-        await h.type(page.getByLabel('Hasło'), ACCOUNT.password, { clear: true, delay: 45 });
+        await h.type(page.getByLabel('E-mail'), ACCOUNT.email, { delay: 35 });
+        await h.type(page.getByLabel('Hasło'), ACCOUNT.password, { delay: 45 });
         await h.nav(page.getByRole('button', { name: 'Zaloguj' }));
         await page.getByRole('heading', { name: /turnieje/i }).waitFor();
         mark('lista');
@@ -370,45 +410,54 @@ const SCENES = {
         // w tym samym miejscu i dopiero tam klika.
         await h.move(page.getByRole('button', { name: 'Nowy turniej' }), { steps: 30, pause: 900 });
       },
-      { auth: false },
+      { auth: false, hide: [MCP_NAME, DEMO.name] },
     );
   },
 
   async nowy() {
     const old = await findTournament(DEMO.name);
     if (old) await removeTournament(old.id);
-    await scene('nowy-turniej', async ({ page, h, mark }) => {
-      await page.goto(ADMIN);
-      const create = page.getByRole('button', { name: 'Nowy turniej' });
-      await create.waitFor();
-      // Kursor stoi już na przycisku, tak jak na końcu sceny logowania.
-      const box = await create.boundingBox();
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      await sleep(700);
-      mark('start');
-      await h.nav(create);
-      await h.type(page.getByLabel('Nazwa turnieju'), DEMO.name);
-      const form = page.getByRole('main');
-      await h.click(form.getByText('Piłka nożna', { exact: true }));
-      await h.click(form.getByText('Liga każdy z każdym', { exact: true }));
-      await sleep(300);
-      await h.nav(page.getByRole('button', { name: 'Załóż turniej' }));
-      mark('zalozony');
-      const open = page.getByRole('button', { name: `Otwórz turniej ${DEMO.name}` });
-      await open.waitFor();
-      await sleep(700);
-      await h.nav(open);
-      await page.getByRole('heading', { name: DEMO.name }).waitFor();
-      await sleep(1200);
-    });
+    await scene(
+      'nowy-turniej',
+      async ({ page, h, mark, enter }) => {
+        await page.goto(ADMIN);
+        const create = page.getByRole('button', { name: 'Nowy turniej' });
+        await create.waitFor();
+        // Kursor stoi już na przycisku, tak jak na końcu sceny logowania.
+        await enter();
+        await sleep(300);
+        mark('start');
+        await h.nav(create);
+        await h.type(page.getByLabel('Nazwa turnieju'), DEMO.name);
+        const form = page.getByRole('main');
+        await h.click(form.getByText('Piłka nożna', { exact: true }));
+        await sleep(300);
+        // Formaty rozgrywek wyżej, nad podpisem w lewym dolnym rogu filmu.
+        await h.wheel(300, { steps: 16 });
+        await h.click(form.getByText('Liga każdy z każdym', { exact: true }));
+        // Wypełniony formularz zostaje chwilę w kadrze przed założeniem.
+        mark('formularz');
+        await sleep(1200);
+        await h.nav(page.getByRole('button', { name: 'Załóż turniej' }));
+        mark('zalozony');
+        const open = page.getByRole('button', { name: `Otwórz turniej ${DEMO.name}` });
+        await open.waitFor();
+        mark('lista');
+        await sleep(1200);
+        await h.nav(open);
+        await page.getByRole('heading', { name: DEMO.name }).waitFor();
+        await sleep(1200);
+      },
+      { after: 'logowanie' },
+    );
   },
 
   async druzyny() {
     const t = await findTournament(DEMO.name);
-    await scene('druzyny', async ({ page, h, mark }) => {
+    await scene('druzyny', async ({ page, h, mark, enter }) => {
       await page.goto(`${ADMIN}/tournaments/${t.id}/teams`);
       await page.getByRole('heading', { name: DEMO.name }).waitFor();
-      await sleep(500);
+      await enter();
       mark('start');
       for (const team of DEMO.teams) {
         await h.click(page.getByRole('button', { name: 'Dodaj drużynę' }).first(), { steps: 14 });
@@ -440,7 +489,7 @@ const SCENES = {
         await sleep(300);
       }
       await sleep(1200);
-    });
+    }, { after: 'nowy-turniej' });
     // Reszta składów poza kadrem, żeby strona publiczna i grafiki miały kim grać.
     const detail = await api('GET', `/tournaments/${t.id}/teams`);
     const rosters = {
@@ -457,21 +506,27 @@ const SCENES = {
 
   async terminarz() {
     const t = await findTournament(DEMO.name);
-    await scene('terminarz', async ({ page, h, mark, hold }) => {
+    await scene('terminarz', async ({ page, h, mark, hold, enter }) => {
       await page.goto(`${ADMIN}/tournaments/${t.id}/teams`);
       await page.getByRole('heading', { name: DEMO.name }).waitFor();
-      await sleep(500);
+      await enter();
       mark('start');
       await h.nav(nav(page, 'Terminarz'));
-      await h.click(page.getByRole('button', { name: 'Wygeneruj terminarz' }).first());
+      // Okna to też zmiana widoku: kliknięcie i otwarcie grają w 1×.
+      await h.nav(page.getByRole('button', { name: 'Wygeneruj terminarz' }).first());
       const gen = page.getByRole('dialog', { name: 'Wygeneruj terminarz' });
+      await gen.waitFor();
+      await sleep(700);
       await h.click(gen.getByText('Raz', { exact: true }));
       await h.nav(gen.getByRole('button', { name: 'Wygeneruj' }));
       await gen.waitFor({ state: 'hidden' });
       mark('wygenerowany');
       await sleep(1400);
-      await h.click(page.getByRole('button', { name: 'Rozłóż daty' }).first());
+      await h.nav(page.getByRole('button', { name: 'Rozłóż daty' }).first());
       const dates = page.getByRole('dialog', { name: 'Rozłóż daty' });
+      await dates.waitFor();
+      mark('okno-dat');
+      await sleep(1000);
       const start = dates.getByLabel('Start (pierwsza kolejka)');
       await h.click(start);
       await start.fill('2026-11-28T10:00');
@@ -504,15 +559,15 @@ const SCENES = {
       await h.nav(nav(page, 'Tabela'));
       await page.getByRole('table').waitFor();
       await sleep(2200);
-    });
+    }, { after: 'druzyny' });
   },
 
   async ustawienia() {
     const t = await findTournament(DEMO.name);
-    await scene('ustawienia', async ({ page, h, mark }) => {
+    await scene('ustawienia', async ({ page, h, mark, enter }) => {
       await page.goto(`${ADMIN}/tournaments/${t.id}/standings`);
       await page.getByRole('heading', { name: DEMO.name }).waitFor();
-      await sleep(500);
+      await enter();
       mark('start');
       await h.nav(nav(page, 'Ustawienia'));
       await page.getByLabel('Długość meczu (min)').waitFor();
@@ -523,22 +578,35 @@ const SCENES = {
       await h.park(820, 470);
       await h.wheel(520, { steps: 18 });
       await sleep(300);
-      await h.type(page.getByLabel('Długość meczu (min)'), '60', { clear: true, delay: 90 });
+      // Domyślnie 60 min; 90 to 2 × 45 z podziału meczu obok, więc zmiana
+      // jest widoczna i ma sens.
+      await h.type(page.getByLabel('Długość meczu (min)'), '90', { clear: true, delay: 90 });
       await sleep(300);
       mark('kolor');
       const picker = page.locator('[data-slot="brand-color-picker"]');
       await h.click(picker.getByText('Granat', { exact: true }));
       await sleep(700);
       await h.click(picker.getByText('Bordo', { exact: true }));
+      // Nowe ustawienia w całym kadrze przed zapisaniem.
       await sleep(1000);
-      await h.click(page.getByRole('button', { name: 'Zapisz zmiany' }));
+      mark('zapisz');
+      await sleep(1200);
+      // Przycisk jest na dole formularza: płynne przewinięcie do niego zamiast
+      // skoku przy `scrollIntoViewIfNeeded` w kliknięciu.
+      const save = page.getByRole('button', { name: 'Zapisz zmiany' });
+      const box = await save.boundingBox();
+      const dy = box.y + box.height / 2 - 720 * 0.6;
+      if (dy > 0) await h.wheel(dy, { steps: Math.max(12, Math.round(dy / 35)) });
+      await sleep(300);
+      await h.click(save);
       await sleep(1400);
       mark('publikacja');
-      await page.mouse.wheel(0, -2000);
-      await sleep(400);
+      await h.wheel(-1200, { steps: 20 });
+      await sleep(600);
       await h.nav(page.getByRole('button', { name: 'Opublikuj' }));
+      mark('opublikowano');
       await sleep(2500);
-    });
+    }, { after: 'terminarz' });
   },
 
   async publiczna() {
@@ -670,17 +738,18 @@ const SCENES = {
     // Kibic na stronie meczu: wynik, zegar części i oś zdarzeń.
     await scene(
       'mecz-kibic',
-      async ({ page, h, mark }) => {
+      async ({ page, h, mark, enter }) => {
         await page.goto(`${PUBLIC}/t/${DEMO.slug}/mecze/${match.id}`);
         await page.getByRole('region', { name: `Mecz: ${title}` }).waitFor();
-        await sleep(800);
+        await sleep(400);
+        await enter();
         mark('start');
         await h.park(640, 300);
         await sleep(2500);
         await h.wheel(380);
         await sleep(2500);
       },
-      { auth: false },
+      { auth: false, after: 'mecz' },
     );
   },
 

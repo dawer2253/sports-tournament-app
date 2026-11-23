@@ -18,16 +18,32 @@ node demo-video/record/record.mjs            # sceny domyślne (bez „mecz” i
 node demo-video/record/record.mjs mecz mcp   # wybrane sceny
 ```
 
-Skrypt usuwa „Ligę Podwórkową 2026” i „Turniej Szkół 2026” z poprzedniego
-przebiegu, nagrywa każdą scenę w osobnej przeglądarce (1280×720 przy DPR 1,5,
-czyli ostre 1920×1080) i składa ją w `public/clips/<scena>.mp4`. Znaczniki
-kroków lądują w `public/clips/markers.json` — z nich `src/Demo.tsx` liczy
-początek, koniec i długość każdej sceny.
+Scena `nowy` usuwa „Ligę Podwórkową 2026” z poprzedniego przebiegu i zakłada
+ją od nowa. Turnieje, które w filmie powstają później (demo i „Turniej Szkół
+2026” agenta), są ukrywane w listach wcześniejszych scen (`hide` w `scene()`),
+więc logowanie da się nagrać ponownie osobno. Skrypt nagrywa każdą scenę
+w osobnej przeglądarce (1280×720 przy DPR 1,5, czyli ostre 1920×1080) i składa
+ją w `public/clips/<scena>.mp4`. Znaczniki kroków lądują
+w `public/clips/markers.json` — z nich `src/Demo.tsx` liczy początek, koniec
+i długość każdej sceny.
+
+Kursor płynie między celami (0,3–0,9 s, z rozpędem i hamowaniem). Skrypt
+zapisuje też, gdzie kursor kończy scenę (`cursor` w `markers.json`), a scena
+następna w filmie zaczyna w tym samym miejscu (`after` w `scene()`) — na
+przenikaniu scen nie widać dwóch kursorów. Dlatego sceny nagrywa się
+w kolejności filmu.
 
 Kliknięcia przejścia na inny ekran (zakładka, otwarcie turnieju, meczu) skrypt
 zapisuje osobno, pod `navs`. Film przyspiesza wpisywanie i zaznaczanie, ale
 od 0,6 s przed takim kliknięciem do 1,4 s po nim gra w zwykłym tempie, żeby
 widz zdążył zobaczyć, co kliknięto i dokąd to prowadzi.
+
+Tempo, przytrzymania i cięcia każdej sceny ustawia się w `src/Demo.tsx`
+w wywołaniu `app()`: `holds` zatrzymuje kadr na chwilę po wyniku (żeby dało
+się zatrzymać film i opowiedzieć, co się stało), `cuts` wycina postoje
+z nagrania, a `captionUntil` chowa podpis, gdy zasłaniałby ważną część
+ekranu. Przytrzymanie stawiaj tam, gdzie kursor stoi — w ruchu wygląda jak
+zacięcie.
 
 Czekanie na API nie trafia do nagrania: przy żądaniach do backendu nagranie
 stoi, a w filmie zostaje cięcie. Laravel w Sailu na dysku Windows potrafi
