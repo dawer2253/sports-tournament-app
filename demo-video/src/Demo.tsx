@@ -3,7 +3,16 @@ import { fade } from "@remotion/transitions/fade";
 import { slide } from "@remotion/transitions/slide";
 import React from "react";
 import markers from "../public/clips/markers.json";
-import { outLength, segments, srcToOut, type CameraKey, type Segment, type Zoom } from "./components/Clip";
+import {
+  outLength,
+  segments,
+  srcToOut,
+  withCuts,
+  withHolds,
+  type CameraKey,
+  type Segment,
+  type Zoom,
+} from "./components/Clip";
 import { AppScene } from "./scenes/AppScene";
 import { GraphicsScene } from "./scenes/GraphicsScene";
 import { Intro } from "./scenes/Intro";
@@ -22,16 +31,33 @@ const REC = markers as unknown as Record<string, Recording>;
 const at = (src: string, point: string | number) =>
   typeof point === "number" ? point : REC[src].marks[point];
 
+/** Przytrzymanie kadru: [moment nagrania, ile sekund filmu stoi]. */
+type Hold = [string | number, number];
+
+/** Wycięty postój: [od, do] w sekundach nagrania. */
+type Cut = [number, number];
+
 /**
  * Fragment nagrania [from, to] w tempie `rate` poza kliknięciami nawigacji
- * (te grają w 1×). Zwraca propsy ujęcia i długość sceny w sekundach.
+ * (te grają w 1×), bez wyciętych postojów i z przytrzymaniami kadru po
+ * ważnych momentach. Zwraca propsy ujęcia i długość sceny w sekundach.
  */
-function cut(src: string, from: string | number, to: string | number, rate: number) {
+function cut(
+  src: string,
+  from: string | number,
+  to: string | number,
+  rate: number,
+  holds: Hold[] = [],
+  cuts: Cut[] = [],
+) {
   const f = at(src, from);
   const t = at(src, to);
   const navs = (REC[src].navs ?? []).filter((n) => n >= f && n <= t);
-  const segs = segments(f, t, rate, navs);
-  return { clip: { src, from: f, to: t, rate, navs }, seconds: outLength(segs), segs };
+  const segs = withHolds(
+    withCuts(segments(f, t, rate, navs), cuts),
+    holds.map(([point, seconds]) => [at(src, point), seconds]),
+  );
+  return { clip: { src, from: f, to: t, rate, navs, segs }, seconds: outLength(segs), segs };
 }
 
 /** Najazd kamery między dwoma znacznikami nagrania. */
@@ -43,6 +69,9 @@ const zoom = (src: string, a: string | number, b: string | number, scale: number
   y,
 });
 
+/** Moment `seconds` po znaczniku - wynik akcji zdążył się już pokazać. */
+const after = (src: string, mark: string, seconds: number) => at(src, mark) + seconds;
+
 type Scene = { id: string; seconds: number; el: React.ReactNode };
 
 function app(
@@ -51,19 +80,35 @@ function app(
   range: [string | number, string | number],
   rate: number,
   caption: { step?: string; title: string; text?: string },
-  zooms: Zoom[] = [],
+  {
+    zooms = [],
+    holds = [],
+    cuts = [],
+    captionUntil,
+  }: {
+    zooms?: Zoom[];
+    holds?: Hold[];
+    cuts?: Cut[];
+    /** Moment nagrania, przed którym podpis znika (gdy zasłaniałby ekran). */
+    captionUntil?: string | number;
+  } = {},
 ): Scene {
-  const { clip, seconds } = cut(src, range[0], range[1], rate);
-  return { id, seconds, el: <AppScene {...clip} zooms={zooms} {...caption} /> };
+  const { clip, seconds, segs } = cut(src, range[0], range[1], rate, holds, cuts);
+  const until = captionUntil === undefined ? undefined : srcToOut(segs, at(src, captionUntil));
+  return { id, seconds, el: <AppScene {...clip} zooms={zooms} captionUntil={until} {...caption} /> };
 }
 
-// Strona publiczna: komputer o włos przyspieszony, telefon dopasowany do długości sceny.
-// Oba ujęcia grają jednym tempem (bez zwolnień przy nawigacji), bo 1,12× to prawie 1×.
+// Tempo filmu: nagrania grają w 1× albo niewiele szybciej (wpisywanie danych),
+// a po każdym wyniku kadr stoi 1,5–3 s. Można wtedy zatrzymać film i opowiedzieć,
+// co się stało, a bez zatrzymania widz i tak zdąży przeczytać ekran.
+
+// Strona publiczna: komputer w 1×, telefon dopasowany do długości sceny.
 const desktopFrom = at("publiczna", "start");
-const desktopSeconds = (at("publiczna", "koniec") - desktopFrom) / 1.12;
+const desktopSeconds = at("publiczna", "koniec") - desktopFrom;
 const phoneFrom = at("telefon", "start");
 const phoneRate = (at("telefon", "koniec") - phoneFrom) / desktopSeconds;
 
+// Grafiki, mecz na żywo i rozmowa z agentem zostają w tempie z wersji 2.
 // Grafiki: plik wjeżdża 1,3 s po kliknięciu „Pobierz PNG” i zostaje 3,1 s.
 const graphics = cut("grafiki", "start", "koniec", 1.4);
 const revealAt = srcToOut(graphics.segs, at("grafiki", "pobierz")) + 1.3;
@@ -100,57 +145,103 @@ const MCP_CAMERA: CameraKey[] = [
 const mcpSeconds = outLength(MCP_SEGS);
 
 export const SCENES: Scene[] = [
-  { id: "intro", seconds: 5, el: <Intro /> },
-  app("panel", "logowanie", ["start", "koniec"], 1.25, {
-    step: "01",
-    title: "Panel organizatora",
-    text: "Logowanie na konto administratora i wszystkie turnieje w jednym miejscu.",
-  }),
-  app("nowy", "nowy-turniej", ["start", "koniec"], 1.3, {
-    step: "02",
-    title: "Nowy turniej",
-    text: "Nazwa, sport i format: liga, puchar albo grupy z fazą pucharową.",
-  }),
-  app("druzyny", "druzyny", ["start", "sklad"], 2, {
-    step: "03",
-    title: "Drużyny",
-    text: "Cztery drużyny w kilkanaście sekund - herby z inicjałami powstają same.",
-  }),
+  { id: "intro", seconds: 3.5, el: <Intro /> },
+  app(
+    "panel",
+    "logowanie",
+    ["start", "koniec"],
+    1,
+    {
+      step: "01",
+      title: "Panel organizatora",
+      text: "Logowanie na konto administratora i wszystkie turnieje w jednym miejscu.",
+    },
+  ),
+  app(
+    "nowy",
+    "nowy-turniej",
+    ["start", "koniec"],
+    1.3,
+    {
+      step: "02",
+      title: "Nowy turniej",
+      text: "Nazwa, sport i format: liga, puchar albo grupy z fazą pucharową.",
+    },
+    {
+      // Wypełniony formularz zostaje chwilę w kadrze przed założeniem turnieju.
+      holds: [["formularz", 1.5]],
+      // Podpis znika przed wyborem formatu: karta „Liga każdy z każdym” leży
+      // na dole strony, pod podpisem, i niżej przewinąć się nie da.
+      captionUntil: at("nowy-turniej", "formularz") - 2.5,
+    },
+  ),
+  app(
+    "druzyny",
+    "druzyny",
+    ["start", "sklad"],
+    1.8,
+    {
+      step: "03",
+      title: "Drużyny",
+      text: "Cztery drużyny w kilkanaście sekund - herby z inicjałami powstają same.",
+    },
+    { holds: [[at("druzyny", "sklad") - 0.3, 2.5]] },
+  ),
   app(
     "zawodnicy",
     "druzyny",
     ["sklad", "koniec"],
-    3.5,
+    3,
     {
       step: "04",
       title: "Zawodnicy",
       text: "Skład z numerami i pozycjami - z niego liczy się klasyfikacja strzelców.",
     },
-    [zoom("druzyny", at("druzyny", "sklad") + 2.5, "koniec", 1.25, 0.5, 0.35)],
+    {
+      zooms: [zoom("druzyny", at("druzyny", "sklad") + 2.5, "koniec", 1.25, 0.5, 0.35)],
+      holds: [["koniec", 2.5]],
+    },
   ),
   app(
     "terminarz",
     "terminarz",
     ["start", "koniec"],
-    2,
+    1.9,
     {
       step: "05",
       title: "Mecze i wyniki",
       text: "Terminarz każdy z każdym, daty jednym oknem, wynik meczu - tabela liczy się sama.",
     },
-    [zoom("terminarz", at("terminarz", "wynik") + 0.4, at("terminarz", "tabela") - 0.3, 1.4, 0.5, 0.3)],
+    {
+      zooms: [zoom("terminarz", at("terminarz", "wynik") + 0.4, at("terminarz", "tabela") - 0.3, 1.4, 0.5, 0.3)],
+      holds: [
+        [after("terminarz", "wygenerowany", 1), 2],
+        [after("terminarz", "daty", 1.2), 2],
+        ["koniec", 3],
+      ],
+    },
   ),
   app(
     "ustawienia",
     "ustawienia",
     ["start", "koniec"],
-    1.4,
+    1.3,
     {
       step: "06",
       title: "Edycja turnieju",
       text: "Długość meczu, kolor wiodący strony i publikacja jednym przyciskiem.",
     },
-    [zoom("ustawienia", "kolor", at("ustawienia", "publikacja") - 0.2, 1.55, 0.72, 0.32)],
+    {
+      // Zbliżenie na wygląd i rozgrywki, potem odjazd do całego ekranu; krótka
+      // pauza na nowych ustawieniach przed „Zapisz zmiany” jest już w nagraniu.
+      zooms: [zoom("ustawienia", "kolor", "zapisz", 1.55, 0.72, 0.32)],
+      holds: [
+        [after("ustawienia", "opublikowano", 1), 2],
+        ["koniec", 1],
+      ],
+      // Cały ekran ustawień po wejściu stoi w nagraniu ponad 2 s; zostaje ~1 s.
+      cuts: [[at("ustawienia", "przewin") - 1.3, at("ustawienia", "przewin") - 0.2]],
+    },
   ),
   {
     id: "publiczna",
@@ -158,7 +249,7 @@ export const SCENES: Scene[] = [
     el: (
       <PublicScene
         desktopFrom={desktopFrom}
-        desktopRate={1.12}
+        desktopRate={1}
         phoneFrom={phoneFrom}
         phoneRate={phoneRate}
         step="07"
@@ -190,12 +281,19 @@ export const SCENES: Scene[] = [
       title: "Mecz na żywo",
       text: "Start meczu, gole i kartki z minutą. Wynik liczy się sam, a zegar odmierza połowy.",
     },
-    [zoom("mecz", at("mecz", "rozpocznij") - 0.8, "koniec", 1.15, 0.5, 0.5)],
+    { zooms: [zoom("mecz", at("mecz", "rozpocznij") - 0.8, "koniec", 1.15, 0.5, 0.5)] },
   ),
-  app("mecz-kibic", "mecz-kibic", ["start", "koniec"], 1, {
-    title: "Kibic widzi to na bieżąco",
-    text: "Wynik, przerwa i zdarzenia meczu na jego stronie - odświeżanej automatycznie co 15 sekund.",
-  }),
+  app(
+    "mecz-kibic",
+    "mecz-kibic",
+    ["start", "koniec"],
+    1,
+    {
+      title: "Kibic widzi to na bieżąco",
+      text: "Wynik, przerwa i zdarzenia meczu na jego stronie - odświeżanej automatycznie co 15 sekund.",
+    },
+    { holds: [["koniec", 3]] },
+  ),
   {
     id: "mcp",
     seconds: mcpSeconds,
@@ -210,10 +308,17 @@ export const SCENES: Scene[] = [
       />
     ),
   },
-  app("mcp-panel", "mcp-panel", ["start", "koniec"], 1.15, {
-    title: "Od razu w panelu",
-    text: "8 szkół, 2 grupy, 12 meczów na dwóch boiskach - bez jednego kliknięcia.",
-  }),
+  app(
+    "mcp-panel",
+    "mcp-panel",
+    ["start", "koniec"],
+    1,
+    {
+      title: "Od razu w panelu",
+      text: "8 szkół, 2 grupy, 12 meczów na dwóch boiskach - bez jednego kliknięcia.",
+    },
+    { holds: [[after("mcp-panel", "terminarz", 1.5), 2]] },
+  ),
   { id: "outro", seconds: 8, el: <Outro /> },
 ];
 

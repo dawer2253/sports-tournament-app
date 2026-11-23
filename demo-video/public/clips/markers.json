@@ -1,187 +1,238 @@
 {
   "logowanie": {
-    "duration": 8.84,
+    "duration": 11.7,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 1.02,
-      "lista": 6.49,
-      "koniec": 8.84
+      "start": 2.2,
+      "lista": 8.27,
+      "koniec": 11.7
     },
     "navs": [
-      6.07
-    ]
+      7.85
+    ],
+    "cursor": {
+      "x": 1192,
+      "y": 99
+    }
   },
   "nowy-turniej": {
-    "duration": 10.73,
+    "duration": 18.27,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 1,
-      "zalozony": 7.8,
-      "koniec": 10.73
+      "start": 0.99,
+      "formularz": 10.38,
+      "zalozony": 13.9,
+      "lista": 13.9,
+      "koniec": 18.27
     },
     "navs": [
-      1.58,
-      7.36,
-      9.09
-    ]
+      1.85,
+      13.45,
+      16.63
+    ],
+    "cursor": {
+      "x": 1208,
+      "y": 229
+    }
   },
   "druzyny": {
-    "duration": 54.47,
+    "duration": 76.86,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 0.77,
-      "sklad": 21.73,
-      "koniec": 54.47
+      "start": 0.68,
+      "sklad": 33.7,
+      "koniec": 76.86
     },
     "navs": [
-      22.82
-    ]
+      35.73
+    ],
+    "cursor": {
+      "x": 786,
+      "y": 489
+    }
   },
   "terminarz": {
-    "duration": 28.52,
+    "duration": 41.48,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 0.79,
-      "wygenerowany": 6.56,
-      "daty": 13.38,
-      "wynik": 15.85,
-      "tabela": 25.32,
-      "koniec": 28.52
+      "start": 1.28,
+      "wygenerowany": 10.44,
+      "okno-dat": 13.97,
+      "daty": 21.52,
+      "wynik": 24.8,
+      "tabela": 37.39,
+      "koniec": 41.48
     },
     "navs": [
-      1.38,
-      6.09,
-      15.38,
-      25.9
-    ]
+      2.69,
+      4.38,
+      9.94,
+      13.48,
+      24.33,
+      38.83
+    ],
+    "cursor": {
+      "x": 1076,
+      "y": 157
+    }
   },
   "ustawienia": {
-    "duration": 17.68,
+    "duration": 26.47,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 0.77,
-      "przewin": 4,
-      "kolor": 7.56,
-      "publikacja": 13.76,
-      "koniec": 17.68
+      "start": 0.69,
+      "przewin": 4.51,
+      "kolor": 9.34,
+      "zapisz": 13.92,
+      "publikacja": 19.99,
+      "opublikowano": 23.97,
+      "koniec": 26.47
     },
     "navs": [
-      1.37,
-      14.74
-    ]
+      1.9,
+      23.55
+    ],
+    "cursor": {
+      "x": 664,
+      "y": 264
+    }
   },
   "publiczna": {
-    "duration": 13.38,
+    "duration": 15.02,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 2.16,
-      "tabela": 5.95,
-      "terminarz": 8.73,
-      "koniec": 13.38
+      "start": 2.67,
+      "tabela": 6.69,
+      "terminarz": 10.13,
+      "koniec": 15.02
     },
     "navs": [
-      6.53,
-      9.3
-    ]
+      7.91,
+      10.96
+    ],
+    "cursor": {
+      "x": 966,
+      "y": 38
+    }
   },
   "telefon": {
-    "duration": 7.44,
+    "duration": 8.08,
     "size": [
       780,
       1688
     ],
     "marks": {
-      "start": 1.23,
-      "tabela": 4.93,
-      "koniec": 7.44
+      "start": 1.22,
+      "tabela": 5.58,
+      "koniec": 8.08
     },
-    "navs": []
+    "navs": [],
+    "cursor": {
+      "x": 321,
+      "y": 422
+    }
   },
   "grafiki": {
-    "duration": 13.31,
+    "duration": 16.63,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 0.76,
-      "wynik": 3.58,
-      "tabela": 5.39,
-      "klasyfikacja": 8.22,
-      "pobierz": 11.03,
-      "koniec": 13.31
+      "start": 0.78,
+      "wynik": 4.68,
+      "tabela": 6.49,
+      "klasyfikacja": 10.01,
+      "pobierz": 13.51,
+      "koniec": 16.63
     },
     "navs": [
-      1.36
-    ]
+      2.01
+    ],
+    "cursor": {
+      "x": 960,
+      "y": 674
+    }
   },
   "mcp-panel": {
-    "duration": 11.06,
+    "duration": 13.41,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 2.47,
-      "grupy": 5.02,
-      "terminarz": 7.85,
-      "koniec": 11.06
+      "start": 1.58,
+      "grupy": 5.23,
+      "terminarz": 9.3,
+      "koniec": 13.41
     },
     "navs": [
-      3.06,
-      5.6,
-      8.42
-    ]
+      3.29,
+      7.07,
+      10.77
+    ],
+    "cursor": {
+      "x": 968,
+      "y": 157
+    }
   },
   "mecz": {
-    "duration": 32.86,
+    "duration": 39.69,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 1.48,
-      "rozpocznij": 3.67,
-      "bramka": 7.02,
-      "kartka": 14.18,
-      "bramka2": 21.53,
-      "przerwa": 28.8,
-      "koniec": 32.86
+      "start": 0.85,
+      "rozpocznij": 3.72,
+      "bramka": 7.47,
+      "kartka": 15.55,
+      "bramka2": 25.25,
+      "przerwa": 34.33,
+      "koniec": 39.69
     },
     "navs": [
-      2.58,
-      5.07,
-      30.2
-    ]
+      2.6,
+      5.47,
+      37
+    ],
+    "cursor": {
+      "x": 308,
+      "y": 222
+    }
   },
   "mecz-kibic": {
-    "duration": 8.8,
+    "duration": 9.19,
     "size": [
       1920,
       1080
     ],
     "marks": {
-      "start": 2.65,
-      "koniec": 8.8
+      "start": 2.18,
+      "koniec": 9.19
     },
-    "navs": []
+    "navs": [],
+    "cursor": {
+      "x": 640,
+      "y": 300
+    }
   }
 }

@@ -11,7 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import { Caption } from "../components/Caption";
-import { Clip } from "../components/Clip";
+import { Clip, type Segment } from "../components/Clip";
 import { bodyFont, headingFont, typo } from "../theme";
 
 const ease = Easing.bezier(0.16, 1, 0.3, 1);
@@ -22,18 +22,19 @@ export const GraphicsScene: React.FC<{
   to: number;
   navs?: number[];
   rate: number;
+  segs?: Segment[];
   revealAt: number;
   step?: string;
   title: string;
   text?: string;
-}> = ({ from, to, navs, rate, revealAt, step, title, text }) => {
+}> = ({ from, to, navs, rate, segs, revealAt, step, title, text }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const r = revealAt * fps;
 
   return (
     <AbsoluteFill name="Grafiki">
-      <Clip src="grafiki" from={from} to={to} rate={rate} navs={navs} />
+      <Clip src="grafiki" from={from} to={to} rate={rate} navs={navs} segs={segs} />
       <AbsoluteFill
         style={{
           // Pełne krycie: nagranie kończy się chwilę po odsłonięciu pliku.
